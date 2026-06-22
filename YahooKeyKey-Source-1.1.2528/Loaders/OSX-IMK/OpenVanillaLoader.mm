@@ -291,45 +291,55 @@ using namespace OpenVanilla;
 
   // NSLog(@"db file = %s", dbFile.c_str());
 
+  OVSQLiteConnection *dbc = 0;
+  if (OVPathHelper::PathExists(dbFile)) {
 #ifndef OVLOADER_USE_SQLITE_CRYPTO
-  _SQLiteDatabaseService = OVSQLiteDatabaseService::Create(dbFile);
+    _SQLiteDatabaseService = OVSQLiteDatabaseService::Create(dbFile);
 #else
 #ifdef OPENVANILLA_CEROD_DATABASE_FILE
-  dbFile = FetchSQLiteCERODKey(dbFile);
-  OVSQLiteConnection *dbc = OVSQLiteConnection::Open(dbFile);
+    string openedDBFile = FetchSQLiteCERODKey(dbFile);
+    dbc = OVSQLiteConnection::Open(openedDBFile);
 
-  if (OVPathHelper::PathExists(supplementDBFile)) {
-    NSLog(@"supplement database file = %s, exists: %d",
-          supplementDBFile.c_str(), OVPathHelper::PathExists(supplementDBFile));
+    if (dbc && OVPathHelper::PathExists(supplementDBFile)) {
+      NSLog(@"supplement database file = %s, exists: %d",
+            supplementDBFile.c_str(),
+            OVPathHelper::PathExists(supplementDBFile));
 
-    supplementDBFile = FetchSQLiteCERODKey(supplementDBFile);
-    int attachResult =
-        dbc->execute("ATTACH %Q AS supplement", supplementDBFile.c_str());
-    // NSLog(@"attach result: %d", attachResult);
+      string openedSupplementDBFile = FetchSQLiteCERODKey(supplementDBFile);
+      int attachResult =
+          dbc->execute("ATTACH %Q AS supplement",
+                       openedSupplementDBFile.c_str());
+      // NSLog(@"attach result: %d", attachResult);
 
-    if (attachResult == SQLITE_OK) {
-      NSLog(@"fetching attached db version info");
-      supplementDBVersion =
-          FetchDatabaseVersionInfo(dbc, "supplement.cooked_information");
+      if (attachResult == SQLITE_OK) {
+        NSLog(@"fetching attached db version info");
+        supplementDBVersion =
+            FetchDatabaseVersionInfo(dbc, "supplement.cooked_information");
+      }
     }
-  }
 #else
-  OVSQLiteConnection *dbc = OVSQLiteConnection::Open(dbFile);
-  InitSQLiteCrypto(dbc->connection());
+    dbc = OVSQLiteConnection::Open(dbFile);
+    if (dbc) InitSQLiteCrypto(dbc->connection());
 #endif
 
-  _SQLiteDatabaseService =
-      OVSQLiteDatabaseService::ServiceWithExistingConnection(dbc, true);
+    if (dbc) {
+      _SQLiteDatabaseService =
+          OVSQLiteDatabaseService::ServiceWithExistingConnection(dbc, true);
 
-  if (dbc->execute("PRAGMA synchronous = OFF") == SQLITE_OK) {
-    // NSLog(@"pragma executed");
-  } else {
-    // NSLog(@"pragma execution failed");
+      if (dbc->execute("PRAGMA synchronous = OFF") == SQLITE_OK) {
+        // NSLog(@"pragma executed");
+      } else {
+        // NSLog(@"pragma execution failed");
+      }
+    }
+#endif
   }
 
-  mainDBVersion = FetchDatabaseVersionInfo(_SQLiteDatabaseService->connection(),
-                                           "cooked_information");
-#endif
+  if (_SQLiteDatabaseService) {
+    mainDBVersion =
+        FetchDatabaseVersionInfo(_SQLiteDatabaseService->connection(),
+                                 "cooked_information");
+  }
 
   if (supplementDBVersion.size()) {
     _versionChecker->registerComponentVersion(
@@ -345,7 +355,7 @@ using namespace OpenVanilla;
     if (mainDBVersion.size()) {
       if (VersionNumber(mainDBVersion) >= VersionNumber(supplementDBVersion)) {
         NSLog(@"Detaching supplement DB because it's older");
-        dbc->execute("DETACH supplement");
+        if (dbc) dbc->execute("DETACH supplement");
         _versionChecker->registerComponentVersion(
             OPENVANILLA_DATABASE_COMPONENT_NAME, mainDBVersion, true);
         [_databaseVersion autorelease];
@@ -586,7 +596,7 @@ using namespace OpenVanilla;
   if (writeConfig) _loader->syncLoaderConfig(true);
 
   if (!_loader->primaryInputMethod().size()) {
-    _loader->setPrimaryInputMethod("SmartMandarin");
+    _loader->setPrimaryInputMethod(OVIMTRADITIONALMANDARIN_IDENTIFIER);
     _loader->syncSandwichConfig();
   }
 
@@ -1296,42 +1306,7 @@ using namespace OpenVanilla;
 }
 
 - (void)scheduleDataProvisionServices {
-  // NSLog(@"Scheduling auto update and server-side data provision services");
-
-  OVKeyValueMap kvm = _loader->configKeyValueMap();
-  if (!kvm.hasKey("ShouldCheckUpdateOnLaunch")) {
-    kvm.setKeyStringValue("ShouldCheckUpdateOnLaunch", "true");
-    _loader->syncLoaderConfig(true);
-  }
-
-  if (kvm.isKeyTrue("ShouldCheckUpdateOnLaunch")) {
-    // NSLog(@"fire handle update");
-    [NSTimer scheduledTimerWithTimeInterval:OVLOADER_HTTP_FIRST_FETCH_DELAY
-                                     target:self
-                                   selector:@selector(_handleAutoUpdateTimer:)
-                                   userInfo:nil
-                                    repeats:NO];
-  } else {
-    // check update a day later
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleAutoUpdateTimer:)
-                              userInfo:nil
-                               repeats:NO];
-  }
-
-  [NSTimer scheduledTimerWithTimeInterval:OVLOADER_HTTP_FIRST_FETCH_DELAY
-                                   target:self
-                                 selector:@selector(_handleOneKeyTimer:)
-                                 userInfo:nil
-                                  repeats:NO];
-
-  [NSTimer scheduledTimerWithTimeInterval:OVLOADER_HTTP_FIRST_FETCH_DELAY
-                                   target:self
-                                 selector:@selector(_handleCannedMessagesTimer:)
-                                 userInfo:nil
-                                  repeats:NO];
+  NSLog(@"Skipping legacy online update and data provision services");
 }
 
 - (void)mergeCannedMessagesData {
@@ -1341,8 +1316,10 @@ using namespace OpenVanilla;
     string cannedMsgs =
         _userPersistence->fetchLatestValueByKeyAndPopulateUserDB(
             "canned_messages");
+    PVPlistValue emptyDictionary(PVPlistValue::Dictionary);
     PVPlistValue *parsed =
         PVPropertyList::ParsePlistFromString(cannedMsgs.c_str());
+    if (!parsed) parsed = &emptyDictionary;
 
     string localDT = OVDateTimeHelper::LocalDateTimeString();
 
@@ -1352,6 +1329,7 @@ using namespace OpenVanilla;
     pvs[1] = _userCannedMessagePlist->rootDictionary();
 
     for (size_t pi = 0; pi < 2; pi++) {
+      if (!pvs[pi]) continue;
       PVPlistValue *msgs = pvs[pi]->valueForKey("CannedMessages");
       if (msgs) {
         for (size_t i = 0; i < msgs->arraySize(); i++) {
@@ -1495,6 +1473,8 @@ using namespace OpenVanilla;
 
     PVPlistValue *parsed =
         PVPropertyList::ParsePlistFromString(oneKeyRawData.c_str());
+    PVPlistValue emptyDictionary(PVPlistValue::Dictionary);
+    if (!parsed) parsed = &emptyDictionary;
     vector<string> keys = parsed->dictionaryKeys();
 
     _mergedOneKeyData->removeAllKeysAndValues();
@@ -1524,7 +1504,7 @@ using namespace OpenVanilla;
     }
 
     PVPlistValue *userDict = _userOneKeyPlist->rootDictionary();
-    PVPlistValue *userFeatures = userDict->valueForKey("Features");
+    PVPlistValue *userFeatures = userDict ? userDict->valueForKey("Features") : 0;
     if (userFeatures) {
       if (userFeatures->type() == PVPlistValue::Array) {
         size_t as = userFeatures->arraySize();

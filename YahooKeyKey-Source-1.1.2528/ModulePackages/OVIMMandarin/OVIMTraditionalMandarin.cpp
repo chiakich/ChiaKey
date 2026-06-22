@@ -483,6 +483,7 @@ bool OVIMTraditionalMandarin::initialize(OVPathInfo* pathInfo,
     if (!m_punctuationTable) {
       tables = (*iter)->tables(
           string(OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX "-punctuation*"));
+      if (!tables.size()) tables = (*iter)->tables(string("bpmf-punctuation*"));
       if (tables.size())
         m_punctuationTable =
             (*iter)->createKeyValueDataTableInterface(tables[0]);
@@ -490,6 +491,7 @@ bool OVIMTraditionalMandarin::initialize(OVPathInfo* pathInfo,
 
     if (!m_BPMFTable) {
       tables = (*iter)->tables(string(OVIMMANDARIN_DATA_TABLE_PREFIX "-bpmf*"));
+      if (!tables.size()) tables = (*iter)->tables(string("bpmf*"));
       if (tables.size())
         m_BPMFTable = (*iter)->createKeyValueDataTableInterface(tables[0]);
     }

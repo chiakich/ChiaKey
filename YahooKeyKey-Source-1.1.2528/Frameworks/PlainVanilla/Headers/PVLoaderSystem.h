@@ -469,29 +469,16 @@ class PVLoader : public OVBase {
 
       m_cfgPrimaryInputMethod = "";
 
-      // // find next usable module
-      // vector<string> inputMethods = allInputMethodIdentifiers();
-      // for (vector<string>::iterator iter = inputMethods.begin(); iter !=
-      // inputMethods.end(); ++iter)
-      // {
-      //     m_loaderService->logger("Loader") << "Trying " << *iter << endl;
-      //
-      //     if (!isFailedModule(*iter)) {
-      //         m_loaderService->logger("Loader") << "Not failed" << endl;
-      //         if (moduleWithName(*iter)) {
-      //             m_cfgPrimaryInputMethod = *iter;
-      //             m_loaderService->logger("Loader") << "Good: " << *iter <<
-      //             endl; break;
-      //         }
-      //     }
-      //     else {
-      //         m_loaderService->logger("Loader") << "Failed! " << *iter <<
-      //         endl;
-      //     }
-      // }
-      //
-      // m_loaderService->logger("Loader") << "Number of available input method
-      // modules: " << inputMethods.size() << endl;
+      vector<string> inputMethods = allInputMethodIdentifiers();
+      for (vector<string>::iterator iter = inputMethods.begin();
+           iter != inputMethods.end(); ++iter) {
+        if (!isFailedModule(*iter) && moduleWithName(*iter)) {
+          m_cfgPrimaryInputMethod = *iter;
+          m_loaderService->logger("Loader")
+              << "Falling back to input method: " << *iter << endl;
+          break;
+        }
+      }
     } else {
       //                m_loaderService->logger("Loader") << "Input method
       //                module found." << endl;

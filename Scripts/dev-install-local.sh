@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Takao.xcodeproj"
+DATA_TABLES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/DataTables"
+DATABASES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Distributions/Takao/CookedDatabase"
 SCHEME="Takao-All"
 APP_NAME="Chiaki KeyKey.app"
 PROCESS_NAME="Chiaki KeyKey"
@@ -96,6 +98,7 @@ case "${CONFIGURATION}" in
 esac
 
 BUILT_APP="${DERIVED_DATA_PATH}/Build/Products/${CONFIGURATION}/${APP_NAME}"
+BUILT_RESOURCES="${BUILT_APP}/Contents/Resources"
 INSTALL_APP="${INSTALL_DIR}/${APP_NAME}"
 
 case "${INSTALL_APP}" in
@@ -120,6 +123,15 @@ fi
 if [[ "${DRY_RUN}" != "1" && ! -d "${BUILT_APP}" ]]; then
   echo "Build product not found: ${BUILT_APP}" >&2
   exit 1
+fi
+
+run /bin/mkdir -p "${BUILT_RESOURCES}"
+run /bin/rm -rf "${BUILT_RESOURCES}/DataTables"
+run /usr/bin/ditto "${DATA_TABLES_DIR}" "${BUILT_RESOURCES}/DataTables"
+
+if [[ "${DRY_RUN}" == "1" || -d "${DATABASES_DIR}" ]]; then
+  run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
+  run /usr/bin/ditto "${DATABASES_DIR}" "${BUILT_RESOURCES}/Databases"
 fi
 
 run /bin/mkdir -p "${INSTALL_DIR}"

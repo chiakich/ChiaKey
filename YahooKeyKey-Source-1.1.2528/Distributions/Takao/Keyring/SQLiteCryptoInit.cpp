@@ -65,7 +65,6 @@ string FetchSQLiteCERODKey(const string& filename) {
       VendorMotcleSize);
   if (phrase.first) {
     string ph(phrase.first, phrase.second);
-    free(phrase.first);
     result += ph;
   }
 
