@@ -66,6 +66,11 @@
 	<string>zh-Hant</string>
 	<key>TISIconIsTemplate</key>
 	<true/>
+	<key>TISIconLabels</key>
+	<dict>
+		<key>Primary</key>
+		<string>千</string>
+	</dict>
 	<key>TICapsLockLanguageSwitchCapable</key>
 	<true/>
 	<key>tsInputMethodCharacterRepertoireKey</key>

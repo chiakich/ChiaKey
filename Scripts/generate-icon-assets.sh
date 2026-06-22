@@ -17,7 +17,7 @@ require_tool() {
 }
 
 require_tool magick
-require_tool tiff2icns
+require_tool ruby
 
 if [[ ! -f "${SOURCE_SVG}" ]]; then
   echo "error: source SVG not found: ${SOURCE_SVG}" >&2
@@ -31,8 +31,7 @@ MASTER_PNG="${WORK_DIR}/ChiakiKeyKey.png"
 SOURCE_PNG="${WORK_DIR}/ChiakiKeyKey-source.png"
 SOURCE_ALPHA="${WORK_DIR}/ChiakiKeyKey-source-alpha.png"
 INK_ALPHA="${WORK_DIR}/ChiakiKeyKey-ink-alpha.png"
-MULTI_TIFF="${WORK_DIR}/ChiakiKeyKey.tiff"
-TIFF_FILES=()
+ICONSET_DIR="${WORK_DIR}/ChiakiKeyKey.iconset"
 
 magick \
   -background none \
@@ -79,20 +78,54 @@ if magick \
   exit 1
 fi
 
+mkdir -p "${ICONSET_DIR}"
+
 for size in 16 32 128 256 512; do
-  tiff_file="${WORK_DIR}/icon_${size}.tiff"
+  png_file="${ICONSET_DIR}/icon_${size}x${size}.png"
   magick \
     "${MASTER_PNG}" \
     -filter Lanczos \
     -resize "${size}x${size}" \
     -alpha on \
     -strip \
-    "${tiff_file}"
-  TIFF_FILES+=("${tiff_file}")
+    "PNG32:${png_file}"
 done
 
-magick "${TIFF_FILES[@]}" "${MULTI_TIFF}"
-tiff2icns "${MULTI_TIFF}" "${OUTPUT_ICNS}"
+for size in 16 32 128 256 512; do
+  doubled_size=$((size * 2))
+  magick \
+    "${MASTER_PNG}" \
+    -filter Lanczos \
+    -resize "${doubled_size}x${doubled_size}" \
+    -alpha on \
+    -strip \
+    "PNG32:${ICONSET_DIR}/icon_${size}x${size}@2x.png"
+done
+
+# Write a modern PNG-backed ICNS directly. This keeps the Retina @2x layers in
+# the asset even on systems where iconutil rejects generated iconsets.
+ruby - "${ICONSET_DIR}" "${OUTPUT_ICNS}" <<'RUBY'
+iconset_dir, output_path = ARGV
+chunks = [
+  ["icp4", "icon_16x16.png"],
+  ["ic11", "icon_16x16@2x.png"],
+  ["icp5", "icon_32x32.png"],
+  ["ic12", "icon_32x32@2x.png"],
+  ["ic07", "icon_128x128.png"],
+  ["ic13", "icon_128x128@2x.png"],
+  ["ic08", "icon_256x256.png"],
+  ["ic14", "icon_256x256@2x.png"],
+  ["ic09", "icon_512x512.png"],
+  ["ic10", "icon_512x512@2x.png"]
+]
+
+payload = chunks.map do |type, file_name|
+  png_data = File.binread(File.join(iconset_dir, file_name))
+  type.b + [png_data.bytesize + 8].pack("N") + png_data
+end.join
+
+File.binwrite(output_path, "icns".b + [payload.bytesize + 8].pack("N") + payload)
+RUBY
 
 # Keep the legacy separate names expected by the project and input-source plist.
 cp "${OUTPUT_ICNS}" "${OUTPUT_ICNS_16}"
