@@ -85,6 +85,34 @@ On the first local install, add the input method from System Settings > Keyboard
 
 The development bundle uses `Chiaki KeyKey.app` and `com.chiaki.inputmethod.ChiakiKeyKey`, so it can be installed next to the historical `Yahoo! KeyKey.app` / `com.yahoo.inputmethod.KeyKey` input source.
 
+### Lexicon Release Testing
+
+Chiaki KeyKey can load an external Smart Mandarin database from:
+
+```text
+~/Library/Application Support/Chiaki KeyKey/Lexicons/active/KeyKeySource.db
+```
+
+If that database is missing or invalid, the input method falls back to the bundled `KeyKeySource.db` inside the app.
+
+Install the current seed lexicon release with:
+
+```sh
+Scripts/install-lexicon-release.sh
+```
+
+Useful variants:
+
+```sh
+Scripts/install-lexicon-release.sh --tag 2026.06.1
+Scripts/install-lexicon-release.sh --dry-run
+Scripts/install-lexicon-release.sh --keep-downloads
+```
+
+The installer reads `lexicon-manifest.json` from the GitHub Release, downloads the declared DB and metadata artifacts, verifies their SHA-256 checksums, validates the required SQLite tables, installs into a versioned directory, and atomically updates the `active` symlink.
+
+After installing a lexicon, switch away from and back to Chiaki KeyKey, or rerun `Scripts/dev-install-local.sh`, so the input method process reopens the database.
+
 ## Source Layout
 
 - `YahooKeyKey-Source-1.1.2528/` - original Yahoo! KeyKey source package.

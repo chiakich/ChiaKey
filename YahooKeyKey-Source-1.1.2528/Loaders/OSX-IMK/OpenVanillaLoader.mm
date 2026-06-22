@@ -46,6 +46,42 @@ string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
   return result;
 }
 
+static bool ValidateKeyKeySourceDatabase(OVSQLiteConnection *connection,
+                                         const string &databaseFile) {
+  if (!connection) return false;
+
+  const char *requiredTables[] = {
+      "cooked_information",
+      "prepopulated_service_data",
+      "unigrams",
+      "bigrams",
+  };
+
+  for (size_t index = 0;
+       index < sizeof(requiredTables) / sizeof(requiredTables[0]); index++) {
+    if (!connection->hasTable(requiredTables[index])) {
+      NSLog(@"Rejected KeyKeySource database %s: missing table %s",
+            databaseFile.c_str(), requiredTables[index]);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+static OVSQLiteDatabaseService *CreateValidatedKeyKeySourceDatabaseService(
+    const string &databaseFile) {
+  if (!OVPathHelper::PathExists(databaseFile)) return 0;
+
+  OVSQLiteDatabaseService *service = OVSQLiteDatabaseService::Create(databaseFile);
+  if (!service || !ValidateKeyKeySourceDatabase(service->connection(), databaseFile)) {
+    if (service) delete service;
+    return 0;
+  }
+
+  return service;
+}
+
 class CVLoaderHookedServiceDelegate : public PVLoaderHookedServiceDelegate {
  public:
   virtual void *loaderSpecificDataObjectForName(const string &name) {
@@ -254,6 +290,10 @@ using namespace OpenVanilla;
   string userDataPath = OVDirectoryHelper::UserApplicationSupportDataDirectory(
       _loaderPolicy->loaderName());
   string userTablePath = OVPathHelper::PathCat(userDataPath, "DataTables");
+  string userLexiconPath = OVPathHelper::PathCat(
+      OVPathHelper::PathCat(userDataPath, "Lexicons"), "active");
+  string userKeyKeySourceDBFile =
+      OVPathHelper::PathCat(userLexiconPath, "KeyKeySource.db");
 
   NSString *libAppSupportPath = [NSSearchPathForDirectoriesInDomains(
       NSApplicationSupportDirectory, NSLocalDomainMask, YES) objectAtIndex:0];
@@ -293,11 +333,32 @@ using namespace OpenVanilla;
   // NSLog(@"db file = %s", dbFile.c_str());
 
   OVSQLiteConnection *dbc = 0;
-  if (OVPathHelper::PathExists(plainDBFile)) {
-    _SQLiteDatabaseService = OVSQLiteDatabaseService::Create(plainDBFile);
-  } else if (OVPathHelper::PathExists(dbFile)) {
+  string selectedDBFile;
+
+  _SQLiteDatabaseService =
+      CreateValidatedKeyKeySourceDatabaseService(userKeyKeySourceDBFile);
+  if (_SQLiteDatabaseService) {
+    selectedDBFile = userKeyKeySourceDBFile;
+    NSLog(@"Using external Chiaki KeyKey lexicon database: %s",
+          selectedDBFile.c_str());
+  } else if (OVPathHelper::PathExists(userKeyKeySourceDBFile)) {
+    NSLog(@"Falling back from invalid external Chiaki KeyKey lexicon database: %s",
+          userKeyKeySourceDBFile.c_str());
+  }
+
+  if (!_SQLiteDatabaseService) {
+    _SQLiteDatabaseService = CreateValidatedKeyKeySourceDatabaseService(plainDBFile);
+    if (_SQLiteDatabaseService) {
+      selectedDBFile = plainDBFile;
+      NSLog(@"Using bundled Chiaki KeyKey lexicon database: %s",
+            selectedDBFile.c_str());
+    }
+  }
+
+  if (!_SQLiteDatabaseService && OVPathHelper::PathExists(dbFile)) {
 #ifndef OVLOADER_USE_SQLITE_CRYPTO
-    _SQLiteDatabaseService = OVSQLiteDatabaseService::Create(dbFile);
+    _SQLiteDatabaseService = CreateValidatedKeyKeySourceDatabaseService(dbFile);
+    if (_SQLiteDatabaseService) selectedDBFile = dbFile;
 #else
 #ifdef OPENVANILLA_CEROD_DATABASE_FILE
     string openedDBFile = FetchSQLiteCERODKey(dbFile);
@@ -325,15 +386,19 @@ using namespace OpenVanilla;
     if (dbc) InitSQLiteCrypto(dbc->connection());
 #endif
 
-    if (dbc) {
+    if (dbc && ValidateKeyKeySourceDatabase(dbc, dbFile)) {
       _SQLiteDatabaseService =
           OVSQLiteDatabaseService::ServiceWithExistingConnection(dbc, true);
+      selectedDBFile = dbFile;
 
       if (dbc->execute("PRAGMA synchronous = OFF") == SQLITE_OK) {
         // NSLog(@"pragma executed");
       } else {
         // NSLog(@"pragma execution failed");
       }
+    } else if (dbc) {
+      delete dbc;
+      dbc = 0;
     }
 #endif
   }
@@ -380,7 +445,7 @@ using namespace OpenVanilla;
   if (!_SQLiteDatabaseService) {
     NSLog(
         @"Cannot open database file %s, use in-memory SQLite database instead",
-        dbFile.c_str());
+        userKeyKeySourceDBFile.c_str());
     _SQLiteDatabaseService = OVSQLiteDatabaseService::Create();
   }
   _userPersistence->setDefaultDatabaseConnection(
