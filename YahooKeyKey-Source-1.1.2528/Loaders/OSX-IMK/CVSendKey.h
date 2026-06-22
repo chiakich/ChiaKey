@@ -1,6 +1,5 @@
 // [AUTO_HEADER]
 
-#import <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 
 @interface CVSendKey : NSObject {
@@ -8,12 +7,6 @@
 + (CVSendKey *)sharedSendKey;
 - (void)typeString:(NSString *)string;
 @end
-
-typedef struct {
-  short kchrID;
-  Str255 KCHRname;
-  short transtable[256];
-} Ascii2KeyCodeTable;
 
 enum {
   /* modifier keys */

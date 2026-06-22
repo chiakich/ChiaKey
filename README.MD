@@ -28,6 +28,34 @@ The full input method target still needs modernization before it can be treated 
 
 Local environment note: Xcode 26.5 is available on the current development machine.
 
+## Building on Modern macOS
+
+The first modern build milestone is to keep the historical targets compiling with Xcode 26+ on Apple Silicon.
+
+Verified locally on 2026-06-22:
+
+```sh
+xcodebuild -workspace KeyKey.xcworkspace \
+  -scheme Takao-All \
+  -configuration Debug \
+  -derivedDataPath /private/tmp/ChiakiKeyKeyDerivedAll \
+  CODE_SIGNING_ALLOWED=NO \
+  ONLY_ACTIVE_ARCH=YES \
+  build
+
+xcodebuild -workspace KeyKey.xcworkspace \
+  -scheme Takao-All \
+  -configuration Release \
+  -derivedDataPath /private/tmp/ChiakiKeyKeyDerivedRelease \
+  CODE_SIGNING_ALLOWED=NO \
+  ONLY_ACTIVE_ARCH=YES \
+  build
+```
+
+Both commands currently produce `Yahoo! KeyKey.app`, `Preferences.app`, `PhraseEditor.app`, installer helper apps, and the OpenVanilla / PlainVanilla frameworks under the selected DerivedData products directory.
+
+This build still emits many deprecation warnings from legacy AppKit, WebKit `WebView`, `NSConnection`, old nib loading, and installer-era file manager APIs. Those warnings are expected for now; the current milestone is successful compilation, not runtime certification or notarized distribution.
+
 ## Source Layout
 
 - `YahooKeyKey-Source-1.1.2528/` - original Yahoo! KeyKey source package.
