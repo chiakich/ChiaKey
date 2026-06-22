@@ -113,6 +113,8 @@ The installer reads `lexicon-manifest.json` from the GitHub Release, downloads t
 
 After installing a lexicon, switch away from and back to Chiaki KeyKey, or rerun `Scripts/dev-install-local.sh`, so the input method process reopens the database.
 
+The Preferences app also exposes a Lexicon update page. It checks the latest `Chiaki-KeyKey-Lexicon` GitHub Release and runs the bundled installer script, so the same checksum and SQLite schema validation path is used by both the UI and CLI.
+
 ## Source Layout
 
 - `YahooKeyKey-Source-1.1.2528/` - original Yahoo! KeyKey source package.

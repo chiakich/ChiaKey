@@ -8,7 +8,7 @@
 "Simplex" = "簡易";
 "Phrase" = "詞彙管理";
 "Misc" = "其他";
-"Update" = "軟體更新";
+"Update" = "詞庫更新";
 "Please choose the audio clip which you want to use:" = "請選擇您想要使用的音效檔案:";
 "Choose Audio Clip..."="選擇音效檔案…";
 "Choose" = "選用";
@@ -37,6 +37,13 @@
 "Please check your Internet connection and try again." = "請檢查您的網路連線狀況，然後重試看看。";
 "You are now using the newest version." = "您現在使用的已經是最新版本";
 "You need not to update your software" = "您不需要更新軟體";
+"You need not to update your lexicon" = "您不需要更新詞庫";
+"No lexicon installed" = "尚未安裝外部詞庫";
+"Not checked yet" = "尚未檢查";
+"Lexicon updated" = "詞庫已更新";
+"Lexicon update failed" = "詞庫更新失敗";
+"Lexicon installer was not found." = "找不到詞庫安裝工具。";
+"Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it." = "已安裝詞庫 %@。請切換離開再切回 Chiaki KeyKey，讓輸入法重新載入詞庫。";
 "A newer version is available." = "網路上已經有新版軟體可供下載";
 "Do you want to download it right now?" = "請問您現在就要下載嗎？";
 "Unknown errors happened, please try again." = "發生不知名的錯誤，請重試。";

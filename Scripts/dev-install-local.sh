@@ -7,6 +7,7 @@ DATA_TABLES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/DataTables"
 DATABASES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Distributions/Takao/CookedDatabase"
 SMART_MANDARIN_DB="${DATABASES_DIR}/KeyKeySource.db"
 SMART_MANDARIN_DB_SCRIPT="${ROOT_DIR}/Scripts/build-dev-smart-mandarin-db.rb"
+LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 SCHEME="Takao-All"
 APP_NAME="Chiaki KeyKey.app"
 PROCESS_NAME="Chiaki KeyKey"
@@ -138,6 +139,11 @@ fi
 if [[ "${DRY_RUN}" == "1" || -d "${DATABASES_DIR}" ]]; then
   run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
   run /usr/bin/ditto "${DATABASES_DIR}" "${BUILT_RESOURCES}/Databases"
+fi
+
+if [[ "${DRY_RUN}" == "1" || -f "${LEXICON_INSTALL_SCRIPT}" ]]; then
+  run /bin/mkdir -p "${BUILT_RESOURCES}/Scripts"
+  run /bin/cp "${LEXICON_INSTALL_SCRIPT}" "${BUILT_RESOURCES}/Scripts/install-lexicon-release.sh"
 fi
 
 run /bin/mkdir -p "${INSTALL_DIR}"

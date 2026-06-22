@@ -8,7 +8,7 @@
 "Simplex" = "Simplex";
 "Phrase" = "Phrase";
 "Misc" = "Misc";
-"Update" = "Update";
+"Update" = "Lexicon";
 "Please choose the audio clip which you want to use:" = "Choose the audio clip you want to use:";
 "Choose Audio Clip..."="Choose Audio Clip...";
 "Choose" = "Choose";
@@ -37,6 +37,13 @@
 "Please check your Internet connection and try again." = "Please check your Internet connection and try again.";
 "You are now using the newest version." = "You are already using the latest version.";
 "You need not to update your software" = "There's no need to update the software";
+"You need not to update your lexicon" = "Your lexicon is already up to date.";
+"No lexicon installed" = "No external lexicon installed";
+"Not checked yet" = "Not checked yet";
+"Lexicon updated" = "Lexicon updated";
+"Lexicon update failed" = "Lexicon update failed";
+"Lexicon installer was not found." = "The lexicon installer was not found.";
+"Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it." = "Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it.";
 "A newer version is available." = "A new version is available.";
 "Do you want to download it right now?" = "Do you want to download it now?";
 "Unknown errors happened, please try again." = "We've got some problem. Please try again.";

@@ -9,6 +9,13 @@ file for terms.
 
 #import "TakaoHelper.h"
 
+static NSString *const ChiakiLexiconLatestURL =
+    @"https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/latest";
+static NSString *const ChiakiLatestLexiconDefaultsKey =
+    @"ChiakiLatestLexiconVersion";
+static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
+    @"ChiakiLatestLexiconCheck";
+
 @implementation TakaoUpdate
 
 - (void)dealloc {
@@ -16,166 +23,281 @@ file for terms.
   [_task release];
   [super dealloc];
 }
-- (void)_getVersionInfo {
-  id ovService;
 
-  // @try {
-  ovService = [NSConnection
-      rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                          host:nil];
-  // }
-  // @catch(NSException *e) {
-  // NSLog(@"Exceptions raise on retreiving version info");
-  // [_currentVersionTextField setStringValue:@""];
-  // [_latestVersionTextField setStringValue:@""];
-  // [_latestCheckTextField setStringValue:@""];
-  // return;
-  // }
+- (NSDictionary *)_jsonDictionaryFromData:(NSData *)data
+                                    error:(NSError **)error {
+  if (!data) return nil;
 
-  if (ovService) {
-    [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
-    NSString *version = [ovService version];
-    if (version)
-      [_currentVersionTextField setStringValue:version];
-    else
-      [_currentVersionTextField setStringValue:@""];
+  id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:error];
+  if (![object isKindOfClass:[NSDictionary class]]) return nil;
 
-    NSString *latestVersion = [ovService latestVersion];
-    if (latestVersion)
-      [_latestVersionTextField setStringValue:latestVersion];
-    else
-      [_latestVersionTextField setStringValue:@""];
-
-    NSString *latestCheck = [ovService latestCheck];
-    if (latestCheck)
-      [_latestCheckTextField setStringValue:latestCheck];
-    else
-      [_latestCheckTextField setStringValue:@""];
-  } else {
-    [_currentVersionTextField setStringValue:@""];
-    [_latestVersionTextField setStringValue:@""];
-    [_latestCheckTextField setStringValue:@""];
-  }
+  return object;
 }
+
+- (NSDictionary *)_jsonDictionaryAtPath:(NSString *)path {
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  return [self _jsonDictionaryFromData:data error:nil];
+}
+
+- (NSString *)_lexiconInstallRoot {
+  NSArray *paths = NSSearchPathForDirectoriesInDomains(
+      NSApplicationSupportDirectory, NSUserDomainMask, YES);
+  NSString *basePath =
+      ([paths count] > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
+  return [basePath stringByAppendingPathComponent:
+                       @"Chiaki KeyKey/Lexicons"];
+}
+
+- (NSString *)_currentLexiconVersion {
+  NSString *activePath =
+      [[self _lexiconInstallRoot] stringByAppendingPathComponent:@"active"];
+
+  NSDictionary *metadata = [self
+      _jsonDictionaryAtPath:[activePath stringByAppendingPathComponent:
+                                            @"metadata.json"]];
+  NSString *version = [metadata objectForKey:@"version"];
+  if ([version length]) return version;
+
+  NSDictionary *manifest = [self
+      _jsonDictionaryAtPath:[activePath stringByAppendingPathComponent:
+                                            @"lexicon-manifest.json"]];
+  version = [manifest objectForKey:@"version"];
+  if ([version length]) return version;
+
+  return nil;
+}
+
+- (NSString *)_displayString:(NSString *)string fallback:(NSString *)fallback {
+  return [string length] ? string : fallback;
+}
+
+- (NSString *)_formatDate:(NSDate *)date {
+  NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease];
+  [formatter setDateFormat:@"yyyy-MM-dd HH:mm"];
+  return [formatter stringFromDate:date];
+}
+
+- (void)_getVersionInfo {
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSString *currentVersion = [self _currentLexiconVersion];
+  NSString *latestVersion =
+      [defaults stringForKey:ChiakiLatestLexiconDefaultsKey];
+  NSString *latestCheck =
+      [defaults stringForKey:ChiakiLatestLexiconCheckDefaultsKey];
+
+  [_currentVersionTextField
+      setStringValue:[self _displayString:currentVersion
+                                  fallback:LFLSTR(@"No lexicon installed")]];
+  [_latestVersionTextField
+      setStringValue:[self _displayString:latestVersion
+                                  fallback:LFLSTR(@"Not checked yet")]];
+  [_latestCheckTextField
+      setStringValue:[self _displayString:latestCheck
+                                  fallback:LFLSTR(@"Not checked yet")]];
+}
+
 - (void)awakeFromNib {
   [_checkProgressIndicator setHidden:YES];
   [self _getVersionInfo];
 }
-- (void)launchDownload:(NSString *)actionURL
-          signatureURL:(NSString *)signatureURL
-          changeLogURL:(NSString *)changeLogURL {
-  if (_task) {
-    if ([_task isRunning])
-      return;
-    else
-      [_task release];
+
+- (void)_latestLexiconReleaseTagWithCompletion:
+    (void (^)(NSString *tag, NSError *error))completion {
+  NSURL *url = [NSURL URLWithString:ChiakiLexiconLatestURL];
+  NSMutableURLRequest *request =
+      [NSMutableURLRequest requestWithURL:url
+                              cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                          timeoutInterval:20.0];
+  [request setValue:@"Chiaki KeyKey Preferences"
+      forHTTPHeaderField:@"User-Agent"];
+  [request setHTTPMethod:@"HEAD"];
+
+  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+      dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *response,
+                            NSError *requestError) {
+          NSString *tag = nil;
+          NSError *completionError = requestError;
+          NSInteger statusCode = 0;
+
+          if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = [(NSHTTPURLResponse *)response statusCode];
+          }
+
+          if (!completionError && statusCode >= 400) {
+            NSDictionary *userInfo = [NSDictionary
+                dictionaryWithObject:@"GitHub returned an error."
+                              forKey:NSLocalizedDescriptionKey];
+            completionError = [NSError errorWithDomain:@"ChiakiKeyKeyLexiconUpdate"
+                                                  code:statusCode
+                                              userInfo:userInfo];
+          }
+
+          if (!completionError && response) {
+            NSArray *pathComponents = [[[response URL] path] pathComponents];
+            NSUInteger tagIndex = [pathComponents indexOfObject:@"tag"];
+            if (tagIndex != NSNotFound &&
+                tagIndex + 1 < [pathComponents count]) {
+              tag = [pathComponents objectAtIndex:tagIndex + 1];
+            }
+          }
+
+          if (completion) completion(tag, completionError);
+        }];
+  [task resume];
+}
+
+- (NSComparisonResult)_compareVersion:(NSString *)lhs toVersion:(NSString *)rhs {
+  NSArray *leftParts = [lhs componentsSeparatedByString:@"."];
+  NSArray *rightParts = [rhs componentsSeparatedByString:@"."];
+  NSUInteger count = MAX([leftParts count], [rightParts count]);
+
+  for (NSUInteger index = 0; index < count; index++) {
+    NSInteger leftValue =
+        (index < [leftParts count]) ? [[leftParts objectAtIndex:index] integerValue] : 0;
+    NSInteger rightValue =
+        (index < [rightParts count]) ? [[rightParts objectAtIndex:index] integerValue] : 0;
+    if (leftValue < rightValue) return NSOrderedAscending;
+    if (leftValue > rightValue) return NSOrderedDescending;
   }
 
-  NSString *supportPath =
-      [[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-  NSString *commandPath =
-      [supportPath stringByAppendingString:
-                       @"/DownloadUpdate.app/Contents/MacOS/DownloadUpdate"];
-#else
-  NSString *commandPath = [supportPath
-      stringByAppendingString:
-          @"/DownloadUpdateTiger.app/Contents/MacOS/DownloadUpdateTiger"];
-#endif
-  NSArray *arguments = [NSArray
-      arrayWithObjects:actionURL, signatureURL,
-                       ((changeLogURL && [changeLogURL length]) ? changeLogURL
-                                                                : @"(null)"),
-                       nil];
+  return NSOrderedSame;
+}
 
-  _task = [NSTask launchedTaskWithLaunchPath:commandPath arguments:arguments];
-  [_task retain];
+- (NSString *)_bundledLexiconInstallerPath {
+  NSString *preferencesPath = [[NSBundle mainBundle] bundlePath];
+  NSString *sharedSupportPath =
+      [preferencesPath stringByDeletingLastPathComponent];
+  NSString *contentsPath = [sharedSupportPath stringByDeletingLastPathComponent];
+  NSString *resourcesPath =
+      [contentsPath stringByAppendingPathComponent:@"Resources"];
+
+  NSString *scriptPath = [resourcesPath
+      stringByAppendingPathComponent:@"Scripts/install-lexicon-release.sh"];
+  if ([[NSFileManager defaultManager] fileExistsAtPath:scriptPath])
+    return scriptPath;
+
+  scriptPath =
+      [resourcesPath stringByAppendingPathComponent:@"install-lexicon-release.sh"];
+  if ([[NSFileManager defaultManager] fileExistsAtPath:scriptPath])
+    return scriptPath;
+
+  return nil;
+}
+
+- (BOOL)_installLexiconRelease:(NSString *)tag output:(NSString **)output {
+  NSString *scriptPath = [self _bundledLexiconInstallerPath];
+  if (![scriptPath length]) {
+    if (output) *output = LFLSTR(@"Lexicon installer was not found.");
+    return NO;
+  }
+
+  if (_task) {
+    if ([_task isRunning]) return NO;
+    [_task release];
+    _task = nil;
+  }
+
+  NSPipe *pipe = [NSPipe pipe];
+  _task = [[NSTask alloc] init];
+  [_task setLaunchPath:@"/bin/bash"];
+  [_task setArguments:[NSArray arrayWithObjects:scriptPath, @"--tag", tag, nil]];
+  [_task setStandardOutput:pipe];
+  [_task setStandardError:pipe];
   [_task launch];
   [_task waitUntilExit];
+
+  NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
+  NSString *taskOutput =
+      [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
+          autorelease];
+  if (output) *output = taskOutput;
+
+  return [_task terminationStatus] == 0;
+}
+
+- (void)_showAlertWithTitle:(NSString *)title message:(NSString *)message {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:title ? title : @""];
+  [alert setInformativeText:message ? message : @""];
+  [alert addButtonWithTitle:LFLSTR(@"OK")];
+  [alert beginSheetModalForWindow:_window completionHandler:nil];
+}
+
+- (void)_stopChecking {
+  [_checkProgressIndicator stopAnimation:self];
+  [_checkProgressIndicator setHidden:YES];
+}
+
+- (void)_handleLatestLexiconTag:(NSString *)latestTag error:(NSError *)error {
+  NSString *checkTime = [self _formatDate:[NSDate date]];
+
+  if ([latestTag length]) {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:latestTag forKey:ChiakiLatestLexiconDefaultsKey];
+    [defaults setObject:checkTime forKey:ChiakiLatestLexiconCheckDefaultsKey];
+    [defaults synchronize];
+  }
+
+  if (![latestTag length]) {
+    [self _stopChecking];
+    [self _showAlertWithTitle:LFLSTR(@"Unable to check for update via the Internet.")
+                      message:LFLSTR(@"Please check your Internet connection and try again.")];
+    [self _getVersionInfo];
+    return;
+  }
+
+  NSString *currentTag = [self _currentLexiconVersion];
+  if ([currentTag length] &&
+      [self _compareVersion:currentTag toVersion:latestTag] !=
+          NSOrderedAscending) {
+    [self _stopChecking];
+    [self _showAlertWithTitle:LFLSTR(@"You are now using the newest version.")
+                      message:LFLSTR(@"You need not to update your lexicon")];
+    [self _getVersionInfo];
+    return;
+  }
+
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSString *output = nil;
+    BOOL installed = [self _installLexiconRelease:latestTag output:&output];
+    NSString *installOutput = [output copy];
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self _stopChecking];
+
+      if (installed) {
+        [self _showAlertWithTitle:LFLSTR(@"Lexicon updated")
+                          message:[NSString
+                                      stringWithFormat:
+                                          LFLSTR(@"Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it."),
+                                          latestTag]];
+      } else {
+        [self _showAlertWithTitle:LFLSTR(@"Lexicon update failed")
+                          message:[self _displayString:installOutput
+                                              fallback:LFLSTR(@"Unknown errors happened, please try again.")]];
+      }
+
+      [self _getVersionInfo];
+      [installOutput release];
+    });
+  });
 }
 
 #pragma mark Interface Builder actions
 
 - (IBAction)checkUpdateNow:(id)sender {
+  if (![_checkProgressIndicator isHidden]) return;
+
   [_checkProgressIndicator startAnimation:self];
   [_checkProgressIndicator setHidden:NO];
 
-  NSDictionary *updateDictionary;
-
-  id ovService = [NSConnection
-      rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                          host:nil];
-  if (ovService) {
-    [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
-    updateDictionary = [ovService shouldUpdate];
-
-    [_checkProgressIndicator stopAnimation:self];
-    [_checkProgressIndicator setHidden:YES];
-    // NSLog(@"update dict: %@", [updateDictionary description]);
-
-    NSString *status = [updateDictionary valueForKey:@"Status"];
-    if ([status isEqualToString:@"Error"]) {
-      NSAlert *alert = [NSAlert
-               alertWithMessageText:
-                   LFLSTR(@"Unable to check for update via the Internet.")
-                      defaultButton:LFLSTR(@"OK")
-                    alternateButton:nil
-                        otherButton:nil
-          informativeTextWithFormat:
-              LFLSTR(@"Please check your Internet connection and try again.")];
-      [alert beginSheetModalForWindow:_window
-                        modalDelegate:self
-                       didEndSelector:nil
-                          contextInfo:nil];
-    } else if ([status isEqualToString:@"No"]) {
-      NSAlert *alert =
-          [NSAlert alertWithMessageText:
-                       LFLSTR(@"You are now using the newest version.")
-                          defaultButton:LFLSTR(@"OK")
-                        alternateButton:nil
-                            otherButton:nil
-              informativeTextWithFormat:
-                  LFLSTR(@"You need not to update your software")];
-      [alert beginSheetModalForWindow:_window
-                        modalDelegate:self
-                       didEndSelector:nil
-                          contextInfo:nil];
-    } else if ([status isEqualToString:@"Yes"]) {
-      NSString *actionURL = [updateDictionary objectForKey:@"ActionURL"];
-      NSString *signatureURL = [updateDictionary objectForKey:@"SignatureURL"];
-      NSString *changeLogURL = [updateDictionary objectForKey:@"ChangeLogURL"];
-      [self launchDownload:actionURL
-              signatureURL:signatureURL
-              changeLogURL:changeLogURL];
-    } else {
-      NSAlert *alert =
-          [NSAlert alertWithMessageText:
-                       LFLSTR(@"Unable to check for update via the Internet.")
-                          defaultButton:LFLSTR(@"OK")
-                        alternateButton:nil
-                            otherButton:nil
-              informativeTextWithFormat:
-                  LFLSTR(@"Unknown errors happened, please try again.")];
-      [alert beginSheetModalForWindow:_window
-                        modalDelegate:self
-                       didEndSelector:nil
-                          contextInfo:nil];
-    }
-  } else {
-    [_checkProgressIndicator stopAnimation:self];
-    [_checkProgressIndicator setHidden:YES];
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:
-                     LFLSTR(@"Unable to check for update via the Internet.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"If you are nor running Chiaki KeyKey, you are not "
-                       @"able to check for update.")];
-    [alert runModal];
-  }
-  [self _getVersionInfo];
+  [self _latestLexiconReleaseTagWithCompletion:^(NSString *latestTag,
+                                                 NSError *error) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self _handleLatestLexiconTag:latestTag error:error];
+    });
+  }];
 }
 
 @end

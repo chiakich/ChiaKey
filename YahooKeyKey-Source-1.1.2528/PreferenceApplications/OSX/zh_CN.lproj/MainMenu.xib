@@ -1156,9 +1156,9 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </progressIndicator>
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="537">
-                    <rect key="frame" x="291" y="126" width="81" height="28"/>
+                    <rect key="frame" x="22" y="126" width="102" height="28"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="立刻检查" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="538">
+                    <buttonCell key="cell" type="push" title="检查并安装" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="538">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="smallSystem"/>
                     </buttonCell>
@@ -1166,7 +1166,7 @@
                         <action selector="checkUpdateNow:" target="695" id="719"/>
                     </connections>
                 </button>
-                <box autoresizesSubviews="NO" borderType="line" title="软件版本资讯" id="659">
+                <box autoresizesSubviews="NO" borderType="line" title="词库版本资讯" id="659">
                     <rect key="frame" x="22" y="16" width="441" height="98"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <view key="contentView" id="D5j-Yp-9g5">
@@ -1203,7 +1203,7 @@
                             <textField verticalHuggingPriority="750" id="615">
                                 <rect key="frame" x="12" y="12" width="114" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次检查更新的时间：" id="616">
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次检查：" id="616">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1212,7 +1212,7 @@
                             <textField verticalHuggingPriority="750" id="605">
                                 <rect key="frame" x="18" y="34" width="108" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="您目前使用的版本：" id="606">
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前词库：" id="606">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1221,7 +1221,7 @@
                             <textField verticalHuggingPriority="750" id="535">
                                 <rect key="frame" x="12" y="56" width="114" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次检查时的最新版：" id="536">
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新词库：" id="536">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1230,7 +1230,7 @@
                         </subviews>
                     </view>
                 </box>
-                <button imageHugsTitle="YES" id="613">
+                <button hidden="YES" imageHugsTitle="YES" id="613">
                     <rect key="frame" x="151" y="132" width="139" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="check" title="开始使用时检查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="614">
@@ -1241,7 +1241,7 @@
                         <action selector="writePreference:" target="591" id="648"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" id="609">
+                <textField hidden="YES" verticalHuggingPriority="750" id="609">
                     <rect key="frame" x="22" y="133" width="118" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="软件更新功能：" id="610">
