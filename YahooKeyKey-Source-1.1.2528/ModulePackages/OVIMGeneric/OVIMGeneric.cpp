@@ -757,8 +757,10 @@ bool OVIMGenericContext::candidateNonPanelKeyReceived(
   return false;
 }
 
-OVIMGeneric::OVIMGeneric(const string& name, OVDatabaseService* databaseService)
+OVIMGeneric::OVIMGeneric(const string& name, OVDatabaseService* databaseService,
+                         const string& tableName)
     : m_name(name),
+      m_tableName(tableName.size() ? tableName : name),
       m_databaseService(databaseService),
       m_dataTable(0),
       m_caseSensitive(false),
@@ -795,21 +797,21 @@ OVIMGeneric::OVIMGeneric(const string& name, OVDatabaseService* databaseService)
   }
 
   string selkeys;
-  selkeys = databaseService->valueForPropertyInTable("selkey", name);
+  selkeys = databaseService->valueForPropertyInTable("selkey", m_tableName);
   if (selkeys.length()) m_cfgCandidateSelectionKeys = selkeys;
 
   string ename, cname, tcname, scname;
 
-  ename = databaseService->valueForPropertyInTable("ename", name);
+  ename = databaseService->valueForPropertyInTable("ename", m_tableName);
   if (!ename.length()) ename = m_name;
 
-  cname = databaseService->valueForPropertyInTable("cname", name);
+  cname = databaseService->valueForPropertyInTable("cname", m_tableName);
   if (!cname.length()) cname = ename;
 
-  tcname = databaseService->valueForPropertyInTable("tcname", name);
+  tcname = databaseService->valueForPropertyInTable("tcname", m_tableName);
   if (!tcname.length()) tcname = cname;
 
-  scname = databaseService->valueForPropertyInTable("scname", name);
+  scname = databaseService->valueForPropertyInTable("scname", m_tableName);
   if (!scname.length()) scname = cname;
 
   m_localizedNames["en"] = ename;
@@ -841,7 +843,7 @@ bool OVIMGeneric::initialize(OVPathInfo* pathInfo,
                              OVLoaderService* loaderService) {
   bool caseSensitive = OVWildcard::Match(m_name, "*-casesensitive*");
   m_dataTable = m_databaseService->createKeyValueDataTableInterface(
-      m_name, caseSensitive);
+      m_tableName, caseSensitive);
 
   if (m_dataTable) {
     // loaderService->logger(OVIMGENERIC_IDENTIFIER_PREFIX) << "successfully got

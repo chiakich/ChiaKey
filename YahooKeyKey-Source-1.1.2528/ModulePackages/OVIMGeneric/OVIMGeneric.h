@@ -101,7 +101,8 @@ class OVIMGenericContext : public OVEventHandlingContext {
 
 class OVIMGeneric : public OVInputMethod {
  public:
-  OVIMGeneric(const string& name, OVDatabaseService* databaseService);
+  OVIMGeneric(const string& name, OVDatabaseService* databaseService,
+              const string& tableName = "");
   ~OVIMGeneric();
 
   virtual OVEventHandlingContext* createContext();
@@ -118,6 +119,7 @@ class OVIMGeneric : public OVInputMethod {
   friend class OVIMGenericContext;
 
   string m_name;
+  string m_tableName;
   OVKeyValueDataTableInterface* m_dataTable;
   OVKeyValueDataTableInterface* m_overrideTable;
   OVDatabaseService* m_databaseService;

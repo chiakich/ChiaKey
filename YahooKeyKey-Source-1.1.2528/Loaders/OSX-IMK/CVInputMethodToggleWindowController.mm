@@ -82,12 +82,19 @@
     }
     currentIndex++;
   }
-  if (currentIndex >= [inputMethodArray count] - 1)
-    currentIndex = 0;
-  else
-    currentIndex++;
+  for (NSUInteger count = 0; count < [inputMethodArray count]; count++) {
+    if (currentIndex >= [inputMethodArray count] - 1)
+      currentIndex = 0;
+    else
+      currentIndex++;
 
-  d = [inputMethodArray objectAtIndex:currentIndex];
+    d = [inputMethodArray objectAtIndex:currentIndex];
+    NSString *identifier = [d valueForKey:@"identifier"];
+    if (![OpenVanillaLoader sharedLoader]->isFailedModule(
+            [identifier UTF8String]))
+      break;
+  }
+
   currentSelectedInputMethod = [d valueForKey:@"identifier"];
   [OpenVanillaLoader sharedLoader]->setPrimaryInputMethod(
       [currentSelectedInputMethod UTF8String]);

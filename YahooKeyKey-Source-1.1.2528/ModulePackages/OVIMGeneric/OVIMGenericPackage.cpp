@@ -47,9 +47,26 @@ bool OVIMGenericPackage::initialize(OVPathInfo*,
     for (vector<string>::iterator siter = tables.begin(); siter != tables.end();
          ++siter) {
       m_tableMap[*siter] = *iter;
+      m_actualTableNameMap[*siter] = *siter;
       //            loaderService->logger(OVIMGENERIC_IDENTIFIER_PREFIX) <<
       //            "adding module " << *siter << " from service " << *iter <<
       //            endl;
+    }
+
+    if (m_tableMap.find(string("Generic-cj-cin")) == m_tableMap.end()) {
+      vector<string> fallbackTables = service->tables(string("cj-ext-cin"));
+      if (fallbackTables.size()) {
+        m_tableMap[string("Generic-cj-cin")] = service;
+        m_actualTableNameMap[string("Generic-cj-cin")] = fallbackTables[0];
+      }
+    }
+
+    if (m_tableMap.find(string("Generic-simplex-cin")) == m_tableMap.end()) {
+      vector<string> fallbackTables = service->tables(string("simplex-ext-cin"));
+      if (fallbackTables.size()) {
+        m_tableMap[string("Generic-simplex-cin")] = service;
+        m_actualTableNameMap[string("Generic-simplex-cin")] = fallbackTables[0];
+      }
     }
   }
 

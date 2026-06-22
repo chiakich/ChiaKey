@@ -48,6 +48,7 @@ using namespace std;
 class OVIMGenericPackage : public OVModulePackage {
  protected:
   map<string, OVDatabaseService*> m_tableMap;
+  map<string, string> m_actualTableNameMap;
   vector<string> m_tableNames;
 
  public:
@@ -59,7 +60,7 @@ class OVIMGenericPackage : public OVModulePackage {
     if (index >= m_tableNames.size()) return 0;
 
     string name = m_tableNames[index];
-    return new OVIMGeneric(name, m_tableMap[name]);
+    return new OVIMGeneric(name, m_tableMap[name], m_actualTableNameMap[name]);
   }
 
   virtual bool initialize(OVPathInfo*, OVLoaderService* loaderService);
