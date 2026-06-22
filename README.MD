@@ -56,6 +56,29 @@ Both commands currently produce `Yahoo! KeyKey.app`, `Preferences.app`, `PhraseE
 
 This build still emits many deprecation warnings from legacy AppKit, WebKit `WebView`, `NSConnection`, old nib loading, and installer-era file manager APIs. Those warnings are expected for now; the current milestone is successful compilation, not runtime certification or notarized distribution.
 
+### Local Input Method Testing
+
+For day-to-day development, use the local install helper instead of rebuilding a distribution installer:
+
+```sh
+Scripts/dev-install-local.sh
+```
+
+The script builds `Takao-All`, copies `Yahoo! KeyKey.app` into `~/Library/Input Methods/`, ad-hoc signs the copied app, and kills any currently running `Yahoo! KeyKey` process so macOS can launch the new build.
+
+Useful variants:
+
+```sh
+Scripts/dev-install-local.sh --configuration Release
+Scripts/dev-install-local.sh --skip-build
+Scripts/dev-install-local.sh --dry-run
+Scripts/dev-install-local.sh --open-settings
+```
+
+On the first local install, add the input method from System Settings > Keyboard > Text Input. After that, most edit/build/test cycles only need this helper script plus switching away from and back to the input method. If macOS keeps an old cached input source, log out and back in once.
+
+The development bundle still uses the historical `Yahoo! KeyKey.app` name and `com.yahoo.inputmethod.KeyKey` input source ID. Renaming the runtime product to Chiaki KeyKey should be handled as a separate migration so it does not collide with old installed Yahoo! KeyKey builds.
+
 ## Source Layout
 
 - `YahooKeyKey-Source-1.1.2528/` - original Yahoo! KeyKey source package.
