@@ -7,18 +7,6 @@ MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/Chiaki KeyKey/Lexicons"
 DRY_RUN=0
 KEEP_DOWNLOADS=0
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PUNCTUATION_CIN=""
-
-for candidate in \
-  "${SCRIPT_DIR}/DataTables/bpmf-punctuations.cin" \
-  "${SCRIPT_DIR}/../DataTables/bpmf-punctuations.cin" \
-  "${SCRIPT_DIR}/../YahooKeyKey-Source-1.1.2528/DataTables/bpmf-punctuations.cin"; do
-  if [[ -f "${candidate}" ]]; then
-    PUNCTUATION_CIN="${candidate}"
-    break
-  fi
-done
 
 usage() {
   cat <<EOF
@@ -192,98 +180,56 @@ validate_db_table() {
   fi
 }
 
+validate_db_scalar() {
+  local description="$1"
+  local sql="$2"
+  local expected="$3"
+  local actual
+
+  actual="$(/usr/bin/sqlite3 "${DB_DOWNLOAD}" "${sql}")"
+  if [[ "${actual}" != "${expected}" ]]; then
+    echo "Database validation failed: ${description}" >&2
+    echo "  expected: ${expected}" >&2
+    echo "  actual:   ${actual:-<empty>}" >&2
+    exit 1
+  fi
+}
+
+validate_db_minimum_count() {
+  local description="$1"
+  local sql="$2"
+  local minimum="$3"
+  local actual
+
+  actual="$(/usr/bin/sqlite3 "${DB_DOWNLOAD}" "${sql}")"
+  if ! [[ "${actual}" =~ ^[0-9]+$ ]] || (( actual < minimum )); then
+    echo "Database validation failed: ${description}" >&2
+    echo "  expected at least: ${minimum}" >&2
+    echo "  actual:            ${actual:-<empty>}" >&2
+    exit 1
+  fi
+}
+
+echo "Validating database health:"
+validate_db_scalar "SQLite integrity check" "PRAGMA integrity_check;" "ok"
+
 validate_db_table "cooked_information"
 validate_db_table "prepopulated_service_data"
 validate_db_table "unigrams"
 validate_db_table "bigrams"
+validate_db_table "Mandarin-bpmf-cin"
+validate_db_table "chiaki_db_metadata"
+validate_db_table "chiaki_db_sources"
 
-import_punctuation_rows() {
-  local db_path="$1"
-
-  if [[ -z "${PUNCTUATION_CIN}" || ! -f "${PUNCTUATION_CIN}" ]]; then
-    echo "Warning: bpmf-punctuations.cin was not found; skipping punctuation import." >&2
-    return
-  fi
-
-  echo "Importing punctuation table:"
-  echo "  ${PUNCTUATION_CIN}"
-
-  /usr/bin/ruby -rdigest -ropen3 - "${db_path}" "${PUNCTUATION_CIN}" <<'RUBY'
-db_path = ARGV.fetch(0)
-punctuation_path = ARGV.fetch(1)
-
-def sql(value)
-  "'#{value.to_s.gsub("'", "''")}'"
-end
-
-rows = []
-row_set = {}
-seen = 0
-inside_chardef = false
-
-File.foreach(punctuation_path, chomp: true) do |line|
-  line = line.sub(/\s+#.*$/, "").strip
-  next if line.empty? || line.start_with?("#")
-
-  if line =~ /^%chardef\s+begin/i
-    inside_chardef = true
-    next
-  end
-
-  if line =~ /^%chardef\s+end/i
-    inside_chardef = false
-    next
-  end
-
-  next unless inside_chardef
-
-  key, value = line.split(/\s+/, 2)
-  seen += 1
-  next unless key&.start_with?("_") && value && !value.empty?
-
-  row_key = [key, value]
-  next if row_set[row_key]
-
-  row_set[row_key] = true
-  rows << [key, value]
-end
-
-offsets_by_qstring = Hash.new(0)
-source = "YahooKeyKey-Source-1.1.2528/DataTables/bpmf-punctuations.cin"
-sha256 = Digest::SHA256.file(punctuation_path).hexdigest
-skipped = seen - rows.length
-
-statements = []
-statements << "BEGIN;"
-statements << "DELETE FROM unigrams WHERE qstring GLOB '_punctuation_*' OR qstring GLOB '_ctrl_*';"
-statements << "DELETE FROM 'Mandarin-bpmf-cin' WHERE key GLOB '_punctuation_*' OR key GLOB '_ctrl_*';"
-
-rows.each do |qstring, value|
-  offset = offsets_by_qstring[qstring]
-  offsets_by_qstring[qstring] += 1
-  probability = 0.0 - (offset * 0.001)
-  statements << "INSERT INTO unigrams VALUES(#{sql(qstring)}, #{sql(value)}, #{probability}, 0.0);"
-  statements << "INSERT INTO 'Mandarin-bpmf-cin' VALUES(#{sql(qstring)}, #{sql(value)});"
-end
-
-statements << "UPDATE chiaki_db_metadata SET value = (SELECT COUNT(*) FROM unigrams) WHERE key = 'unigram_count';"
-statements << "UPDATE chiaki_db_metadata SET value = (SELECT COUNT(*) FROM 'Mandarin-bpmf-cin') WHERE key = 'candidate_count';"
-statements << "DELETE FROM chiaki_db_sources WHERE source = #{sql(source)};"
-statements << "INSERT INTO chiaki_db_sources VALUES(#{sql(source)}, 'punctuation', #{sql(sha256)}, #{seen}, #{rows.length}, #{skipped});"
-statements << "COMMIT;"
-
-stdout, stderr, status = Open3.capture3("/usr/bin/sqlite3", db_path, stdin_data: statements.join("\n"))
-unless status.success?
-  warn stderr
-  warn stdout
-  exit status.exitstatus || 1
-end
-
-puts "Imported #{rows.length} punctuation rows."
-RUBY
-}
-
-import_punctuation_rows "${DB_DOWNLOAD}"
+validate_db_minimum_count "unigrams table has enough rows" "SELECT COUNT(*) FROM unigrams;" 1000
+validate_db_minimum_count "Mandarin-bpmf-cin table has enough rows" "SELECT COUNT(*) FROM 'Mandarin-bpmf-cin';" 1000
+validate_db_scalar "metadata schema_version" "SELECT value FROM chiaki_db_metadata WHERE key = 'schema_version';" "1"
+validate_db_scalar "cooked_information version" "SELECT COUNT(*) FROM cooked_information WHERE key = 'version' AND value != '';" "1"
+validate_db_scalar "Shift+, punctuation unigram" "SELECT current FROM unigrams WHERE qstring = '_punctuation_<' ORDER BY probability DESC, current LIMIT 1;" "，"
+validate_db_scalar "Standard Shift+, punctuation unigram" "SELECT current FROM unigrams WHERE qstring = '_punctuation_Standard_<' ORDER BY probability DESC, current LIMIT 1;" "，"
+validate_db_scalar "Shift+, punctuation candidate" "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_<' ORDER BY value LIMIT 1;" "，"
+validate_db_scalar "Standard Shift+, punctuation candidate" "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_Standard_<' ORDER BY value LIMIT 1;" "，"
+echo "Database health validation passed."
 
 VERSION_DIR="${INSTALL_ROOT}/versions/${VERSION}"
 ACTIVE_LINK="${INSTALL_ROOT}/active"
