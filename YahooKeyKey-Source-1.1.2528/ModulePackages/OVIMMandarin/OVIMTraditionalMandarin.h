@@ -83,6 +83,7 @@ class OVIMTraditionalMandarinContext : public OVEventHandlingContext {
 
   pair<bool, string> findPunctuationKey(const string& keyString);
   const BopomofoKeyboardLayout* currentKeyboardLayout();
+  const string readingQueryString();
 
   BopomofoReadingBuffer m_readingBuffer;
   OVIMTraditionalMandarin* m_module;
@@ -108,6 +109,7 @@ class OVIMTraditionalMandarin : public OVInputMethod {
 
   OVKeyValueDataTableInterface* m_punctuationTable;
   OVKeyValueDataTableInterface* m_BPMFTable;
+  bool m_useStandardLayoutQueryString;
 
  protected:
   // configurable items

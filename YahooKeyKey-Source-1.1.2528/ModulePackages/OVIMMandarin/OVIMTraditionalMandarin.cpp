@@ -46,6 +46,17 @@ OVIMTraditionalMandarinContext::currentKeyboardLayout() {
   return layout;
 }
 
+const string OVIMTraditionalMandarinContext::readingQueryString() {
+#ifndef OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING
+  return m_readingBuffer.standardLayoutQueryString();
+#else
+  if (m_module->m_useStandardLayoutQueryString)
+    return m_readingBuffer.standardLayoutQueryString();
+
+  return m_readingBuffer.absoluteOrderQueryString();
+#endif
+}
+
 void OVIMTraditionalMandarinContext::startSession(
     OVLoaderService* loaderService) {
   m_readingBuffer.setKeyboardLayout(currentKeyboardLayout());
@@ -259,15 +270,9 @@ bool OVIMTraditionalMandarinContext::handleKey(
       return false;
     }
 
-#ifndef OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING
-    return queryAndCompose(
-        m_module->m_BPMFTable, m_readingBuffer.standardLayoutQueryString(),
-        readingText, composingText, candidateService, loaderService);
-#else
-    return queryAndCompose(
-        m_module->m_BPMFTable, m_readingBuffer.absoluteOrderQueryString(),
-        readingText, composingText, candidateService, loaderService);
-#endif
+    return queryAndCompose(m_module->m_BPMFTable, readingQueryString(),
+                           readingText, composingText, candidateService,
+                           loaderService);
   }
 
   if (key->keyCode() == OVKeyCode::Esc) {
@@ -289,15 +294,9 @@ bool OVIMTraditionalMandarinContext::handleKey(
     readingText->updateDisplay();
 
     if (m_readingBuffer.hasToneMarker())
-#ifndef OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING
-      return queryAndCompose(
-          m_module->m_BPMFTable, m_readingBuffer.standardLayoutQueryString(),
-          readingText, composingText, candidateService, loaderService);
-#else
-      return queryAndCompose(
-          m_module->m_BPMFTable, m_readingBuffer.absoluteOrderQueryString(),
-          readingText, composingText, candidateService, loaderService);
-#endif
+      return queryAndCompose(m_module->m_BPMFTable, readingQueryString(),
+                             readingText, composingText, candidateService,
+                             loaderService);
 
     return true;
   }
@@ -428,7 +427,9 @@ pair<bool, string> OVIMTraditionalMandarinContext::findPunctuationKey(
 }
 
 OVIMTraditionalMandarin::OVIMTraditionalMandarin()
-    : m_BPMFTable(0), m_punctuationTable(0) {}
+    : m_punctuationTable(0),
+      m_BPMFTable(0),
+      m_useStandardLayoutQueryString(false) {}
 
 OVIMTraditionalMandarin::~OVIMTraditionalMandarin() {
   if (m_punctuationTable && m_punctuationTable != m_BPMFTable)
@@ -483,7 +484,6 @@ bool OVIMTraditionalMandarin::initialize(OVPathInfo* pathInfo,
     if (!m_punctuationTable) {
       tables = (*iter)->tables(
           string(OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX "-punctuation*"));
-      if (!tables.size()) tables = (*iter)->tables(string("bpmf-punctuation*"));
       if (tables.size())
         m_punctuationTable =
             (*iter)->createKeyValueDataTableInterface(tables[0]);
@@ -491,9 +491,32 @@ bool OVIMTraditionalMandarin::initialize(OVPathInfo* pathInfo,
 
     if (!m_BPMFTable) {
       tables = (*iter)->tables(string(OVIMMANDARIN_DATA_TABLE_PREFIX "-bpmf*"));
-      if (!tables.size()) tables = (*iter)->tables(string("bpmf*"));
       if (tables.size())
         m_BPMFTable = (*iter)->createKeyValueDataTableInterface(tables[0]);
+    }
+  }
+
+  for (vector<OVDatabaseService*>::iterator iter = databases.begin();
+       iter != databases.end(); ++iter) {
+    vector<string> tables;
+
+    if (!m_punctuationTable) {
+      tables = (*iter)->tables(string("bpmf-punctuation*"));
+      if (tables.size())
+        m_punctuationTable =
+            (*iter)->createKeyValueDataTableInterface(tables[0]);
+    }
+
+    if (!m_BPMFTable) {
+      tables = (*iter)->tables(string("bpmf-cin"));
+      if (!tables.size()) tables = (*iter)->tables(string("bpmf*"));
+
+      for (vector<string>::iterator table = tables.begin();
+           table != tables.end() && !m_BPMFTable; ++table) {
+        if ((*table).find("punctuation") != string::npos) continue;
+        m_BPMFTable = (*iter)->createKeyValueDataTableInterface(*table);
+        if (m_BPMFTable) m_useStandardLayoutQueryString = true;
+      }
     }
   }
 
