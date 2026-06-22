@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="akira02/Chiaki-KeyKey-Lexicon"
-TAG="2026.06.1"
+TAG="2026.06.4"
 MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/Chiaki KeyKey/Lexicons"
 DRY_RUN=0
