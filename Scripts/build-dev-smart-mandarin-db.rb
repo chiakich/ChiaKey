@@ -8,6 +8,7 @@ require "set"
 
 ROOT = File.expand_path("..", __dir__)
 SOURCE_CIN = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "DataTables", "bpmf.cin")
+PUNCTUATION_CIN = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "DataTables", "bpmf-punctuations.cin")
 DATA_SOURCE = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "Distributions", "Takao", "DataSource")
 ADDENDUM_DIR = File.join(DATA_SOURCE, "Addendum")
 OVERRIDES_DIR = File.join(DATA_SOURCE, "Overrides")
@@ -33,6 +34,7 @@ PROB_EXPLICIT_BPMF = -0.5
 PROB_PROMOTE_HIGHEST = -0.05
 PROB_DEMOTE_LOWEST = -40.0
 PROB_BIGRAM = -0.1
+PROB_PUNCTUATION = 0.0
 
 COMPONENTS = {
   "ㄅ" => 0x0001, "ㄆ" => 0x0002, "ㄇ" => 0x0003, "ㄈ" => 0x0004,
@@ -231,8 +233,34 @@ def add_explicit_bpmf(text, bpmf, probability, source_path, kind, unigrams, tabl
   added ? stat.added += 1 : stat.skipped += 1
 end
 
+def add_punctuation_rows(path, unigrams, table_rows, table_row_set, stats)
+  stat = source_stats_for(stats, path, "punctuation")
+  _keynames, chardefs, _properties = parse_cin(path)
+  offsets_by_qstring = Hash.new(0)
+
+  chardefs.each do |qstring, value|
+    stat.seen += 1
+    unless qstring&.start_with?("_") && value && !value.empty?
+      stat.skipped += 1
+      next
+    end
+
+    offset = offsets_by_qstring[qstring]
+    offsets_by_qstring[qstring] += 1
+    probability = PROB_PUNCTUATION - (offset * 0.001)
+    added_unigram = add_unigram(unigrams, qstring, value, probability)
+    added_table_row = add_table_row(table_rows, table_row_set, qstring, value)
+    (added_unigram || added_table_row) ? stat.added += 1 : stat.skipped += 1
+  end
+end
+
 unless File.exist?(SOURCE_CIN)
   warn "Missing source CIN: #{SOURCE_CIN}"
+  exit 1
+end
+
+unless File.exist?(PUNCTUATION_CIN)
+  warn "Missing punctuation CIN: #{PUNCTUATION_CIN}"
   exit 1
 end
 
@@ -271,6 +299,8 @@ end
 unigrams[["*", ""]] = { probability: PROB_UNK, backoff: 0.0 }
 unigrams[["!", ""]] = { probability: 0.0, backoff: 0.0 }
 unigrams[["$", ""]] = { probability: 0.0, backoff: 0.0 }
+
+add_punctuation_rows(PUNCTUATION_CIN, unigrams, table_rows, table_row_set, stats)
 
 Dir[File.join(ADDENDUM_DIR, "*.txt")].sort.each do |path|
   each_data_line(path) do |phrase|
