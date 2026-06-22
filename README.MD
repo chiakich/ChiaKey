@@ -35,7 +35,7 @@ The first modern build milestone is to keep the historical targets compiling wit
 Verified locally on 2026-06-22:
 
 ```sh
-xcodebuild -workspace KeyKey.xcworkspace \
+xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
   -scheme Takao-All \
   -configuration Debug \
   -derivedDataPath /private/tmp/ChiakiKeyKeyDerivedAll \
@@ -43,7 +43,7 @@ xcodebuild -workspace KeyKey.xcworkspace \
   ONLY_ACTIVE_ARCH=YES \
   build
 
-xcodebuild -workspace KeyKey.xcworkspace \
+xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
   -scheme Takao-All \
   -configuration Release \
   -derivedDataPath /private/tmp/ChiakiKeyKeyDerivedRelease \

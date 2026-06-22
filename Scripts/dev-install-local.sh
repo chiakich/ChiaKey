@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKSPACE="${ROOT_DIR}/KeyKey.xcworkspace"
+PROJECT="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Takao.xcodeproj"
 SCHEME="Takao-All"
 APP_NAME="Chiaki KeyKey.app"
 PROCESS_NAME="Chiaki KeyKey"
@@ -108,7 +108,7 @@ esac
 
 if [[ "${SKIP_BUILD}" != "1" ]]; then
   run /usr/bin/xcodebuild \
-    -workspace "${WORKSPACE}" \
+    -project "${PROJECT}" \
     -scheme "${SCHEME}" \
     -configuration "${CONFIGURATION}" \
     -derivedDataPath "${DERIVED_DATA_PATH}" \
