@@ -28,6 +28,8 @@
 
 #include "OVIMTraditionalMandarin.h"
 
+#include "OVIMMandarinKeyUtils.h"
+
 namespace OpenVanilla {
 
 using namespace Formosa::Mandarin;
@@ -316,7 +318,7 @@ bool OVIMTraditionalMandarinContext::handleKey(
   }
 
   pair<bool, string> hasPunctuation;
-  hasPunctuation = findPunctuationKey(key->receivedString());
+  hasPunctuation = findPunctuationKey(key);
   if (hasPunctuation.first)
     return queryAndCompose(m_module->m_punctuationTable, hasPunctuation.second,
                            readingText, composingText, candidateService,
@@ -377,7 +379,7 @@ bool OVIMTraditionalMandarinContext::candidateNonPanelKeyReceived(
     if (m_readingBuffer.isValidKey(key->keyCode()) && !key->isDirectTextKey())
       state = 1;
     else {
-      hasPunctuation = findPunctuationKey(key->receivedString());
+      hasPunctuation = findPunctuationKey(key);
       if (hasPunctuation.first) state = 2;
     }
 
@@ -410,18 +412,15 @@ bool OVIMTraditionalMandarinContext::candidateNonPanelKeyReceived(
 }
 
 pair<bool, string> OVIMTraditionalMandarinContext::findPunctuationKey(
-    const string& keyString) {
-  string prefix = "_punctuation_";
-  string withLayout =
-      prefix + currentKeyboardLayout()->name() + "_" + keyString;
-  string punctuation = prefix + keyString;
+    const OVKey* key) {
+  vector<string> queries =
+      OVIMMandarinPunctuationQueriesForKey(currentKeyboardLayout(), key);
 
-  vector<string> results =
-      m_module->m_punctuationTable->valuesForKey(withLayout);
-  if (results.size()) return pair<bool, string>(true, withLayout);
-
-  results = m_module->m_punctuationTable->valuesForKey(punctuation);
-  if (results.size()) return pair<bool, string>(true, punctuation);
+  for (vector<string>::const_iterator iter = queries.begin();
+       iter != queries.end(); ++iter) {
+    vector<string> results = m_module->m_punctuationTable->valuesForKey(*iter);
+    if (results.size()) return pair<bool, string>(true, *iter);
+  }
 
   return pair<bool, string>(false, "");
 }

@@ -28,6 +28,7 @@
 
 #include "OVIMSmartMandarin.h"
 
+#include "OVIMMandarinKeyUtils.h"
 #include "OVIMMandarinConfig.h"
 
 //#ifdef OVIMSMARTMANDARIN_USE_SQLITE_CRYPTO
@@ -661,8 +662,6 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
           } else {
             bool composingBufferEmpty = composingText->isEmpty();
 
-            string keystr = key->keyCode() ? string(1, key->keyCode())
-                                           : key->receivedString();
             string prefix = "_punctuation_";
             string punctuation;
             bool found = false;
@@ -670,23 +669,24 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
                 (key->isCapsLockOn() || key->isDirectTextKey() ||
                  !key->keyCode());
 
-            // find if it's a punctuation key first
-            string byLayout =
-                prefix + currentKeyboardLayout()->name() + "_" + keystr;
-            if (!byPassPunctuation &&
-                m_module->m_LM->isInDictionary(byLayout, true, &filter)) {
-              punctuation = byLayout;
-              found = true;
-            }
+            if (!byPassPunctuation) {
+              vector<string> punctuationQueries =
+                  OVIMMandarinPunctuationQueriesForKey(currentKeyboardLayout(),
+                                                       key);
+              for (vector<string>::const_iterator iter =
+                       punctuationQueries.begin();
+                   iter != punctuationQueries.end(); ++iter) {
+                if (!m_module->m_LM->isInDictionary(*iter, true, &filter))
+                  continue;
 
-            if (!byPassPunctuation && !found) {
-              punctuation = prefix + keystr;
-              if (m_module->m_LM->isInDictionary(punctuation, true, &filter))
+                punctuation = *iter;
                 found = true;
+                break;
+              }
             }
 
+            string keystr = key->receivedString();
             if (!found && keystr.size()) {
-              keystr = key->receivedString();
 
               if (keystr.size() == 1 &&
                   (key->isCapsLockOn() || key->isShiftPressed())) {

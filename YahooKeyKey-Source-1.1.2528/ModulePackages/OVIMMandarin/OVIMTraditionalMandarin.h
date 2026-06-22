@@ -81,7 +81,7 @@ class OVIMTraditionalMandarinContext : public OVEventHandlingContext {
                                OVCandidateService* candidateService,
                                OVLoaderService* loaderService);
 
-  pair<bool, string> findPunctuationKey(const string& keyString);
+  pair<bool, string> findPunctuationKey(const OVKey* key);
   const BopomofoKeyboardLayout* currentKeyboardLayout();
   const string readingQueryString();
 
