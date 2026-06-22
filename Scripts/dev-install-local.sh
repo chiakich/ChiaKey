@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKSPACE="${ROOT_DIR}/KeyKey.xcworkspace"
 SCHEME="Takao-All"
-APP_NAME="Yahoo! KeyKey.app"
-PROCESS_NAME="Yahoo! KeyKey"
+APP_NAME="Chiaki KeyKey.app"
+PROCESS_NAME="Chiaki KeyKey"
 
 CONFIGURATION="${CONFIGURATION:-Debug}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${TMPDIR:-/tmp}/ChiakiKeyKeyDevInstall}"

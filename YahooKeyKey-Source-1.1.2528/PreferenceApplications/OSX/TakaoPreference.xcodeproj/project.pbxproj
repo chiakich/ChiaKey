@@ -50,7 +50,7 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* TakaoPreference_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TakaoPreference_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
-		8D1107320486CEB800E47090 /* Yahoo! KeyKey Preferences.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Yahoo! KeyKey Preferences.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D1107320486CEB800E47090 /* Chiaki KeyKey Preferencess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Chiaki KeyKey Preferencess.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D401CE010D07ED7B00A2A4C1 /* TakaoPhonetic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TakaoPhonetic.h; sourceTree = "<group>"; };
 		D401CE020D07ED7B00A2A4C1 /* TakaoPhonetic.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TakaoPhonetic.m; sourceTree = "<group>"; wrapsLines = 1; };
 		D401CE710D080F4F00A2A4C1 /* TakaoHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TakaoHelper.h; sourceTree = "<group>"; };
@@ -144,7 +144,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8D1107320486CEB800E47090 /* Yahoo! KeyKey Preferences.app */,
+				8D1107320486CEB800E47090 /* Chiaki KeyKey Preferencess.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -274,7 +274,7 @@
 			name = TakaoPreference;
 			productInstallPath = "$(HOME)/Applications";
 			productName = TakaoPreference;
-			productReference = 8D1107320486CEB800E47090 /* Yahoo! KeyKey Preferences.app */;
+			productReference = 8D1107320486CEB800E47090 /* Chiaki KeyKey Preferencess.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -404,7 +404,7 @@
 				GCC_PREFIX_HEADER = TakaoPreference_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				PRODUCT_NAME = "Yahoo! KeyKey Preferences";
+				PRODUCT_NAME = "Chiaki KeyKey Preferencess";
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
 			};
@@ -419,7 +419,7 @@
 				GCC_PREFIX_HEADER = TakaoPreference_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				PRODUCT_NAME = "Yahoo! KeyKey Preferences";
+				PRODUCT_NAME = "Chiaki KeyKey Preferencess";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

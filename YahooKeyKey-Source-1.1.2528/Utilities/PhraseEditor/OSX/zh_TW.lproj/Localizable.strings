@@ -5,8 +5,8 @@
 "Reload" = "重新載入";
 "Import Address Book" = "匯入通訊錄人名";
 
-"Yahoo! KeyKey is not running." = "Yahoo! 奇摩輸入法並不在執行中";
-"Since Yahoo! KeyKey is not running, you cannot use the Phrase Editor to alter your phrases." = "因為您沒有執行 Yahoo! 奇摩輸入法，因此無法使用詞彙編程式";
+"Chiaki KeyKey is not running." = "Chiaki KeyKey並不在執行中";
+"Since Chiaki KeyKey is not running, you cannot use the Phrase Editor to alter your phrases." = "因為您沒有執行 Chiaki KeyKey，因此無法使用詞彙編程式";
 
 "%d user phrase(s)" = "%d 筆使用者自定詞";
 "No user phrases" = "沒有使用者自定詞";
@@ -27,8 +27,8 @@
 "Choose" = "選用";
 "Your phrases are successfully exported." = "成功匯出資料庫";
 "Unable to export database." = "無法匯出資料庫";
-"If you are not runnung Yahoo! KeyKey, you are not able to export your database." = "如果 Yahoo! 奇摩輸入法不在使用中，您便無法匯出自訂詞資料庫。";
-"If you are not runnung Yahoo! KeyKey, you are not able to import your database." = "如果 Yahoo! 奇摩輸入法不在使用中，您便無法匯入自訂詞資料庫。";
+"If you are not runnung Chiaki KeyKey, you are not able to export your database." = "如果 Chiaki KeyKey不在使用中，您便無法匯出自訂詞資料庫。";
+"If you are not runnung Chiaki KeyKey, you are not able to import your database." = "如果 Chiaki KeyKey不在使用中，您便無法匯入自訂詞資料庫。";
 
 "You must select at least one option from \"Import Last + First Name\" and \"Import Fist Name\"." = "您至少要選擇「匯入姓名」或「只匯入名字」其中之一。";
 

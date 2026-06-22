@@ -123,9 +123,9 @@ int main(int argc, char *argv[]) {
   NSString *prefPath = [libPath stringByAppendingPathComponent:@"Preferences"];
   NSFileManager *mgr = [NSFileManager defaultManager];
   NSString *oldSearchPlist = [prefPath
-      stringByAppendingPathComponent:@"com.yahoo.KeyKey.Search.plist"];
+      stringByAppendingPathComponent:@"com.chiaki.KeyKey.Search.plist"];
   NSString *oneKeyPlist = [prefPath
-      stringByAppendingPathComponent:@"com.yahoo.KeyKey.OneKey.plist"];
+      stringByAppendingPathComponent:@"com.chiaki.KeyKey.OneKey.plist"];
 
   if ([mgr fileExistsAtPath:oldSearchPlist]) {
     if (![mgr fileExistsAtPath:oneKeyPlist]) {

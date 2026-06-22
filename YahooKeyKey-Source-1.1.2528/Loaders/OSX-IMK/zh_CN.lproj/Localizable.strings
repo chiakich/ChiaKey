@@ -4,7 +4,7 @@
 "Simplex" = "简易";
 "Help" = "帮助";
 "Preferences..." = "偏好设置";
-"About Yahoo! KeyKey" = "关于 Yahoo! 奇摩输入法";
+"About Chiaki KeyKey" = "关于 Chiaki KeyKey";
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>错误</h2><p>无法连接在线字典。</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>找不到</h2><p>找不到匹配“%@”的项目。";
 "<h2>Loading...</h2><p>Please wait</p></body></html>" = "<h2>加载中…</h2><p>请稍候</p></body></html>";

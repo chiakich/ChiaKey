@@ -171,7 +171,7 @@ file for terms.
                       alternateButton:nil
                           otherButton:nil
             informativeTextWithFormat:
-                LFLSTR(@"If you are nor running Yahoo! KeyKey, you are not "
+                LFLSTR(@"If you are nor running Chiaki KeyKey, you are not "
                        @"able to check for update.")];
     [alert runModal];
   }

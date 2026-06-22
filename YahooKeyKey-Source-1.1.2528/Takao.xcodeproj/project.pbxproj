@@ -1036,7 +1036,7 @@
 		6A4771640D5C5E3900C6C744 /* LFExtensions-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "LFExtensions-Info.plist"; path = "Frameworks/LFExtensions/LFExtensions-Info.plist"; sourceTree = "<group>"; };
 		6A47716F0D5C5E5500C6C744 /* PlainVanilla.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PlainVanilla.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4771700D5C5E5500C6C744 /* PlainVanilla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PlainVanilla-Info.plist"; path = "Frameworks/PlainVanilla/PlainVanilla-Info.plist"; sourceTree = "<group>"; };
-		6A4772930D5C5FCE00C6C744 /* Yahoo! KeyKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Yahoo! KeyKey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A4772930D5C5FCE00C6C744 /* Chiaki KeyKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Chiaki KeyKey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4772970D5C5FCE00C6C744 /* Takao-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Takao-Info.plist"; path = "Loaders/OSX-IMK/Takao-Info.plist"; sourceTree = "<group>"; };
 		6A4772DC0D5C607200C6C744 /* CVApplicationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVApplicationController.h; path = "Loaders/OSX-IMK/CVApplicationController.h"; sourceTree = "<group>"; };
 		6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVApplicationController.mm; path = "Loaders/OSX-IMK/CVApplicationController.mm"; sourceTree = "<group>"; wrapsLines = 1; };
@@ -1752,7 +1752,7 @@
 				6A4770540D5C529400C6C744 /* TestOpenVanilla */,
 				6A4771630D5C5E3900C6C744 /* LFExtensions.framework */,
 				6A47716F0D5C5E5500C6C744 /* PlainVanilla.framework */,
-				6A4772930D5C5FCE00C6C744 /* Yahoo! KeyKey.app */,
+				6A4772930D5C5FCE00C6C744 /* Chiaki KeyKey.app */,
 				6ACA0C4F0D5C87FB00514BC7 /* libTakaoModulePackages.a */,
 				6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */,
 				6A2D56120D5D889400E710D6 /* libManjusri.a */,
@@ -3409,7 +3409,7 @@
 			);
 			name = "Takao (Loader OSX-IMK)";
 			productName = Takao;
-			productReference = 6A4772930D5C5FCE00C6C744 /* Yahoo! KeyKey.app */;
+			productReference = 6A4772930D5C5FCE00C6C744 /* Chiaki KeyKey.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6A859F350E41A495002C3544 /* LFWebAPIToolbox */ = {
@@ -4716,7 +4716,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.KeyKey.YKAFWordCountPackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFWordCountPackage;
 				PRODUCT_NAME = YKAFWordCount;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -4743,7 +4743,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.KeyKey.YKAFWordCountPackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFWordCountPackage;
 				PRODUCT_NAME = YKAFWordCount;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5241,11 +5241,11 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
-					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"",
-					"OPENVANILLA_CONNECTION_NAME=@\\\"YahooKeyKey_1_Connection\\\"",
+					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"",
+					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiakiKeyKey_1_Connection\\\"",
 					OVLOADER_USE_SQLITE_CRYPTO,
-					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.yahoo.KeyKey\\\"",
-					"PVLOADERPOLICY_LOADER_NAME=\\\"Yahoo!\\ KeyKey\\\"",
+					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiaki.KeyKey\\\"",
+					"PVLOADERPOLICY_LOADER_NAME=\\\"Chiaki\\ KeyKey\\\"",
 					"SQLITE_HAS_CODEC=1",
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
@@ -5265,8 +5265,8 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey;
-				PRODUCT_NAME = "Yahoo! KeyKey";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey;
+				PRODUCT_NAME = "Chiaki KeyKey";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
@@ -5288,11 +5288,11 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
-					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"",
-					"OPENVANILLA_CONNECTION_NAME=@\\\"YahooKeyKey_1_Connection\\\"",
+					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"",
+					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiakiKeyKey_1_Connection\\\"",
 					OVLOADER_USE_SQLITE_CRYPTO,
-					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.yahoo.KeyKey\\\"",
-					"PVLOADERPOLICY_LOADER_NAME=\\\"Yahoo!\\ KeyKey\\\"",
+					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiaki.KeyKey\\\"",
+					"PVLOADERPOLICY_LOADER_NAME=\\\"Chiaki\\ KeyKey\\\"",
 					"SQLITE_HAS_CODEC=1",
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
@@ -5313,8 +5313,8 @@
 					AppKit,
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey;
-				PRODUCT_NAME = "Yahoo! KeyKey";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey;
+				PRODUCT_NAME = "Chiaki KeyKey";
 				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -5532,7 +5532,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.KeyKey.YKAFPhraseAwarePackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFPhraseAwarePackage;
 				PRODUCT_NAME = YKAFPhraseAware;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5559,7 +5559,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.KeyKey.YKAFPhraseAwarePackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFPhraseAwarePackage;
 				PRODUCT_NAME = YKAFPhraseAware;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5788,7 +5788,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.KeyKey.AFPhraseConverter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.AFPhraseConverter;
 				PRODUCT_NAME = YKAFPhraseConverter;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5817,7 +5817,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.KeyKey.AFPhraseConverter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.AFPhraseConverter;
 				PRODUCT_NAME = YKAFPhraseConverter;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5920,7 +5920,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = Utilities/PhraseEditor/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5931,7 +5931,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.PhraseEditor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.PhraseEditor;
 				PRODUCT_NAME = PhraseEditor;
 				SDKROOT = macosx;
 			};
@@ -5952,7 +5952,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = Utilities/PhraseEditor/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5963,7 +5963,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.PhraseEditor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.PhraseEditor;
 				PRODUCT_NAME = PhraseEditor;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;
@@ -5984,7 +5984,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/DownloadUpdateOSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5995,7 +5995,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.DownloadUpdate;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.DownloadUpdate;
 				PRODUCT_NAME = DownloadUpdate;
 				SDKROOT = macosx;
 			};
@@ -6014,7 +6014,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/DownloadUpdateOSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -6025,7 +6025,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.DownloadUpdate;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.DownloadUpdate;
 				PRODUCT_NAME = DownloadUpdate;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;
@@ -6056,7 +6056,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.InstallerUI;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerUI;
 				PRODUCT_NAME = Installer;
 				SDKROOT = macosx;
 			};
@@ -6085,7 +6085,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.InstallerUI;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerUI;
 				PRODUCT_NAME = Installer;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;
@@ -6109,7 +6109,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -6120,7 +6120,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.Preferences;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -6144,7 +6144,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"YahooKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -6155,7 +6155,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.Preferences;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -6187,7 +6187,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.InstallerHelp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerHelp;
 				PRODUCT_NAME = InstallerHelp;
 				SDKROOT = macosx;
 			};
@@ -6215,7 +6215,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.inputmethod.KeyKey.InstallerHelp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerHelp;
 				PRODUCT_NAME = InstallerHelp;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;

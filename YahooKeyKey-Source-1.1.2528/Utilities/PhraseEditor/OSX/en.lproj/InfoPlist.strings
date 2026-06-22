@@ -1,5 +1,5 @@
 ﻿/* Localized versions of Info.plist keys */
 
 CFBundleName = "Phrase Editor";
-CFBundleDisplayName = "Yahoo! KeyKey Phrase Editor";
+CFBundleDisplayName = "Chiaki KeyKey Phrase Editor";
 NSHumanReadableCopyright = "Copyright © 2008, Yahoo! Taiwan All Rights Reserved.";

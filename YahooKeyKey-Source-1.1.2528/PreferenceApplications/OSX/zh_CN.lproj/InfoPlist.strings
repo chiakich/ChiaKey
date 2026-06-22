@@ -1,5 +1,5 @@
 /* Localized versions of Info.plist keys */
 
-CFBundleName = "Yahoo! 奇摩输入法偏好设置";
-CFBundleDisplayName = "Yahoo! 奇摩输入法偏好设置";
+CFBundleName = "Chiaki KeyKey偏好设置";
+CFBundleDisplayName = "Chiaki KeyKey偏好设置";
 NSHumanReadableCopyright = "雅虎国际资讯 版权所有 © 2008-2010, Yahoo! Taiwan All Rights Reserved.";

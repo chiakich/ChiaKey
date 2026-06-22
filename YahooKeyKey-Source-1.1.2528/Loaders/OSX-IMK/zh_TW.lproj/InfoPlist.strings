@@ -1,4 +1,4 @@
-CFBundleName = "Yahoo! 奇摩輸入法";
-CFBundleDisplayName = "Yahoo! 奇摩輸入法";
+CFBundleName = "Chiaki KeyKey";
+CFBundleDisplayName = "Chiaki KeyKey";
 NSHumanReadableCopyright = "雅虎國際資訊 版權所有\n© 2008-2010 Yahoo! Taiwan All Rights Reserved";
-com.yahoo.inputmethod.KeyKey = "Yahoo! 奇摩輸入法";
+com.chiaki.inputmethod.ChiakiKeyKey = "Chiaki KeyKey";

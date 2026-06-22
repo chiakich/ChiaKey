@@ -114,7 +114,7 @@
   NSString *basePath =
       ([paths count] > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
   return
-      [basePath stringByAppendingPathComponent:@"com.yahoo.KeyKey.Dictionary"];
+      [basePath stringByAppendingPathComponent:@"com.chiaki.KeyKey.Dictionary"];
 }
 // Clean up some stored XML files in the cache folder
 // if they are already too old. A XML file will be expired
@@ -582,7 +582,7 @@
   [_webview setUIDelegate:(id)self];
   [_webview setFrameLoadDelegate:(id)self];
   [_webview setPolicyDelegate:(id)self];
-  [_webview setApplicationNameForUserAgent:@"Yahoo! KeyKey"];
+  [_webview setApplicationNameForUserAgent:@"Chiaki KeyKey"];
 
   // must be IE6...
   [_webview setCustomUserAgent:

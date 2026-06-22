@@ -1,5 +1,5 @@
 ﻿/* Localized versions of Info.plist keys */
 
 CFBundleName = "Preference";
-CFBundleDisplayName = "Yahoo! KeyKey Preference";
+CFBundleDisplayName = "Chiaki KeyKey Preferences";
 NSHumanReadableCopyright = "Copyright © 2008-2010, Yahoo! Taiwan All Rights Reserved.";

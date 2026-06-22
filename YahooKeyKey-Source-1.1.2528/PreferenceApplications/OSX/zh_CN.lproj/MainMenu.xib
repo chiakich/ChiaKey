@@ -11,10 +11,10 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <menu title="AMainMenu" systemMenu="main" id="29" userLabel="MainMenu">
             <items>
-                <menuItem title="Yahoo! 奇摩快打偏好设置" id="56">
-                    <menu key="submenu" title="Yahoo! 奇摩快打偏好设置" systemMenu="apple" id="57">
+                <menuItem title="Chiaki KeyKey 偏好设置" id="56">
+                    <menu key="submenu" title="Chiaki KeyKey 偏好设置" systemMenu="apple" id="57">
                         <items>
-                            <menuItem title="关于 Yahoo! 奇摩快打偏好设置" id="58">
+                            <menuItem title="关于 Chiaki KeyKey 偏好设置" id="58">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="orderFrontStandardAboutPanel:" target="-2" id="142"/>
@@ -29,7 +29,7 @@
                             <menuItem isSeparatorItem="YES" id="144">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="隐藏 Yahoo! 奇摩快打偏好设置" keyEquivalent="h" id="134">
+                            <menuItem title="隐藏 Chiaki KeyKey 偏好设置" keyEquivalent="h" id="134">
                                 <connections>
                                     <action selector="hide:" target="-1" id="367"/>
                                 </connections>
@@ -48,7 +48,7 @@
                             <menuItem isSeparatorItem="YES" id="149">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="退出 Yahoo! 奇摩快打偏好设置" keyEquivalent="q" id="136" userLabel="1111">
+                            <menuItem title="退出 Chiaki KeyKey 偏好设置" keyEquivalent="q" id="136" userLabel="1111">
                                 <connections>
                                     <action selector="terminate:" target="-1" id="369"/>
                                 </connections>
@@ -271,7 +271,7 @@
                 <menuItem title="帮助" id="103" userLabel="1">
                     <menu key="submenu" title="帮助" id="106" userLabel="2">
                         <items>
-                            <menuItem title="Yahoo! 奇摩快打偏好设置帮助" keyEquivalent="?" id="111">
+                            <menuItem title="Chiaki KeyKey 偏好设置帮助" keyEquivalent="?" id="111">
                                 <connections>
                                     <action selector="showHelp:" target="-1" id="360"/>
                                 </connections>

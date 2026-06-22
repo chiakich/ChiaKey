@@ -16,41 +16,41 @@ file for terms.
         @define PLIST_GLOBAL_FILENAME
         @abstract The file name of the plist file for global settings.
 */
-#define PLIST_GLOBAL_FILENAME @"com.yahoo.KeyKey.plist"
+#define PLIST_GLOBAL_FILENAME @"com.chiaki.KeyKey.plist"
 /*!
         @define PLIST_PHONETIC_FILENAME
         @abstract The file name of the plist file for settings of the
         Traditional Phonetic Input Method.
 */
-#define PLIST_PHONETIC_FILENAME @"com.yahoo.KeyKey.TraditionalMandarin.plist"
+#define PLIST_PHONETIC_FILENAME @"com.chiaki.KeyKey.TraditionalMandarin.plist"
 /*!
         @define PLIST_SMARTPHONETIC_FILENAME
         @abstract The file name of the plist file for settings of the
         Smart Phonetic Input Method.
 */
-#define PLIST_SMARTPHONETIC_FILENAME @"com.yahoo.KeyKey.SmartMandarin.plist"
+#define PLIST_SMARTPHONETIC_FILENAME @"com.chiaki.KeyKey.SmartMandarin.plist"
 /*!
         @define PLIST_CANGJIE_FILENAME
         @abstract The file name of the plist file for settings of the
         Cangjie Phonetic Input Method.
 */
-#define PLIST_CANGJIE_FILENAME @"com.yahoo.KeyKey.Generic-cj-cin.plist"
+#define PLIST_CANGJIE_FILENAME @"com.chiaki.KeyKey.Generic-cj-cin.plist"
 /*!
         @define PLIST_SIMPLEX_FILENAME
         @abstract The file name of the plist file for settings of the
         Simplex Phonetic Input Method.
 */
-#define PLIST_SIMPLEX_FILENAME @"com.yahoo.KeyKey.Generic-simplex-cin.plist"
-#define PLIST_SEARCH_FILENAME @"com.yahoo.KeyKey.OneKey.plist"
+#define PLIST_SIMPLEX_FILENAME @"com.chiaki.KeyKey.Generic-simplex-cin.plist"
+#define PLIST_SEARCH_FILENAME @"com.chiaki.KeyKey.OneKey.plist"
 #define PLIST_GENERIC_FILENAME(x) \
-  [NSString stringWithFormat:@"com.yahoo.KeyKey.%@.plist", x]
-#define PLIST_WORDCOUNT_FILENAME @"com.yahoo.KeyKey.YKAFWordCount.plist"
+  [NSString stringWithFormat:@"com.chiaki.KeyKey.%@.plist", x]
+#define PLIST_WORDCOUNT_FILENAME @"com.chiaki.KeyKey.YKAFWordCount.plist"
 
 /*!
         @define CACHE_FOLDER
         @abstract The name of the cache folder
 */
-#define CACHE_FOLDER @"com.yahoo.KeyKey"
+#define CACHE_FOLDER @"com.chiaki.KeyKey"
 /*!
         @define OPENVANILLA_DO_CONNECTION_NAME
         @abstract The identifer of the DO connection between OpenVanilla

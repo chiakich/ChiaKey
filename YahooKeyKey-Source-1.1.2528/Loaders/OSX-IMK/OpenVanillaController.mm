@@ -898,7 +898,7 @@ static id OVCActiveContextSender = nil;
   if (![[NSWorkspace sharedWorkspace] openFile:preferencePath]) {
     [[NSWorkspace sharedWorkspace]
          launchAppWithBundleIdentifier:
-             @"com.yahoo.inputmethod.KeyKey.Preferences"
+             @"com.chiaki.inputmethod.ChiakiKeyKey.Preferences"
                                options:NSWorkspaceLaunchDefault
         additionalEventParamDescriptor:nil
                       launchIdentifier:nil];
@@ -1064,7 +1064,7 @@ static id OVCActiveContextSender = nil;
   NSMenuItem *aboutMenuItem = [[[NSMenuItem alloc] init] autorelease];
   [aboutMenuItem setTarget:self];
   [aboutMenuItem setAction:@selector(aboutAction:)];
-  [aboutMenuItem setTitle:LFLSTR(@"About Yahoo! KeyKey")];
+  [aboutMenuItem setTitle:LFLSTR(@"About Chiaki KeyKey")];
   [menu addItem:aboutMenuItem];
 
   return menu;

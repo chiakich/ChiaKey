@@ -17,22 +17,22 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
-	<string>YHOO</string>
+	<string>CKYK</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>Yahoo! KeyKey</string>
+			<string>Chiaki KeyKey</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>ykeykey</string>
+				<string>chiakikeykey</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1.1.2528</string>
 	<key>InputMethodConnectionName</key>
-	<string>YahooKeyKey_1_Connection</string>
+	<string>ChiakiKeyKey_1_Connection</string>
 	<key>InputMethodServerControllerClass</key>
 	<string>OpenVanillaController</string>
 	<key>InputMethodServerDelegateClass</key>
@@ -61,7 +61,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>TISInputSourceID</key>
-	<string>com.yahoo.inputmethod.KeyKey</string>
+	<string>com.chiaki.inputmethod.ChiakiKeyKey</string>
 	<key>TISIntendedLanguage</key>
 	<string>zh-Hant</string>
 	<key>tsInputMethodCharacterRepertoireKey</key>

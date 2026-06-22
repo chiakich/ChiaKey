@@ -4,7 +4,7 @@
 "Simplex" = "Simplex";
 "Help" = "Help";
 "Preferences..." = "Preferences...";
-"About Yahoo! KeyKey" = "About Yahoo! KeyKey";
+"About Chiaki KeyKey" = "About Chiaki KeyKey";
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>Not Found</h2><p>Unable to find anything that matches '%@'.";
 "<h2>Loading...</h2><p>Please wait</p></body></html>" = "<h2>Loading...</h2><p>Please wait</p></body></html>";

@@ -572,7 +572,7 @@ extern size_t VendorMotcleSize;
   return [prefPath stringByAppendingPathComponent:filename];
 }
 - (NSString *)_versionInfoPath {
-  [self _plistFilepath:@"com.yahoo.KeyKey.UpdateCheck.plist"];
+  [self _plistFilepath:@"com.chiaki.KeyKey.UpdateCheck.plist"];
 }
 - (void)_saveVersionInfo {
   NSString *errorString = nil;
@@ -631,7 +631,7 @@ extern size_t VendorMotcleSize;
   NSString *url =
       [[[event paramDescriptorForKeyword:keyDirectObject] stringValue]
           stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-  if ([url hasPrefix:@"ykeykey://"]) {
+  if ([url hasPrefix:@"chiakikeykey://"]) {
     NSString *string =
         [url substringWithRange:NSMakeRange(10, [url length] - 10)];
     NSArray *a = [string componentsSeparatedByString:@"_"];

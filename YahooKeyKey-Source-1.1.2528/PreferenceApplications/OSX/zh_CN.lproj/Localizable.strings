@@ -40,11 +40,11 @@
 "A newer version is available." = "已经有新版软件可供下载";
 "Do you want to download it right now?" = "请问您现在就要下载么？";
 "Unknown errors happened, please try again." = "发生不知名的错误，请重试。";
-"If you are nor running Yahoo! KeyKey, you are not able to check for update." = "如果 Yahoo! 奇摩输入法不在执行中，我们便无法至执行更新检查功能。";
+"If you are nor running Chiaki KeyKey, you are not able to check for update." = "如果 Chiaki KeyKey不在执行中，我们便无法至执行更新检查功能。";
 "Yes" = "是";
 "No" = "否";
-"If you are not runnung Yahoo! KeyKey, you are not able to export your database." = "如果 Yahoo! 奇摩输入法不在使用中，您便无法导出自订词数据库。";
-"If you are not runnung Yahoo! KeyKey, you are not able to import your database." = "如果 Yahoo! 奇摩输入法不在使用中，您便无法导入自订词数据库。";
+"If you are not runnung Chiaki KeyKey, you are not able to export your database." = "如果 Chiaki KeyKey不在使用中，您便无法导出自订词数据库。";
+"If you are not runnung Chiaki KeyKey, you are not able to import your database." = "如果 Chiaki KeyKey不在使用中，您便无法导入自订词数据库。";
 "Unable to login MobileMe." = "无法登入 MobileMe.";
 "Open MobileMe Preference" = "打开 MobileMe 偏好设置";
 "Register a New Account" = "注册新帐号";
@@ -58,7 +58,7 @@
 "The downloaded file is blank." = "您下载了一个空文件";
 "Successfuly upload your phrases database to iDisk." = "已经成功将您的自订词备份上传到 iDisk 了。";
 "Unable to interact with MobileMe because of a networking error." = "与 MobileMe 的连线有问题，请重试看看。";
-"Yahoo! KeyKey user phrases database was not found on your iDisk." = "在您的 iDisk 上找不到 Yahoo! 奇摩输入法的自订词数据库备份。";
+"Chiaki KeyKey user phrases database was not found on your iDisk." = "在您的 iDisk 上找不到 Chiaki KeyKey的自订词数据库备份。";
 "The iDisk servie is now busy, please wait for a while and try again." = "目前 iDisk 服务忙线中，请重试看看。";
 "A user-provided parameter was invalid." = "使用者参数设置错误。";
 "Purple" = "紫色";

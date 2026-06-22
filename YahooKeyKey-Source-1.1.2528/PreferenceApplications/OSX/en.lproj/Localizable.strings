@@ -40,10 +40,10 @@
 "A newer version is available." = "A new version is available.";
 "Do you want to download it right now?" = "Do you want to download it now?";
 "Unknown errors happened, please try again." = "We've got some problem. Please try again.";
-"If you are nor running Yahoo! KeyKey, you are not able to check for update." = "If you are nor running Yahoo! KeyKey, you won't be able to check for updates.";
+"If you are nor running Chiaki KeyKey, you are not able to check for update." = "If you are nor running Chiaki KeyKey, you won't be able to check for updates.";
 "Yes" = "Yes";
 "No" = "No";
-"If you are not runnung Yahoo! KeyKey, you are not able to export your database." = "If you are nor running Yahoo! KeyKey, you won't be able export your database.";
+"If you are not runnung Chiaki KeyKey, you are not able to export your database." = "If you are nor running Chiaki KeyKey, you won't be able export your database.";
 "Unable to login to MobileMe." = "Unable to login to MobileMe.";
 "Open MobileMe Preferences" = "Open MobileMe Preferences";
 "Register a New Account" = "Register a New Account";
@@ -57,7 +57,7 @@
 "The downloaded file is blank." = "The downloaded database is empty.";
 "Successfully upload your phrases database to iDisk." = "Successfully uploaded your phrase database to iDisk.";
 "Unable to interact with MobileMe because of a networking error." = "Unable to talk to MobileMe because of a network error.";
-"Yahoo! KeyKey user phrases database was not found on your iDisk." = "No phrase database is found on your iDisk.";
+"Chiaki KeyKey user phrases database was not found on your iDisk." = "No phrase database is found on your iDisk.";
 "The iDisk servie is now busy, please wait for a while and try again." = "The iDisk service is busy, please try again later.";
 "A user-provided parameter was invalid." = "A user parameter was invalid.";
 "Purple" = "Purple";
