@@ -269,6 +269,7 @@ using namespace OpenVanilla;
 
   string supplementDBVersion;
   string mainDBVersion;
+  string plainDBFile = OVPathHelper::PathCat(dbPath, "KeyKeySource.db");
 
 #ifdef OPENVANILLA_CEROD_DATABASE_FILE
   string dbFile = OVPathHelper::PathCat(
@@ -292,7 +293,9 @@ using namespace OpenVanilla;
   // NSLog(@"db file = %s", dbFile.c_str());
 
   OVSQLiteConnection *dbc = 0;
-  if (OVPathHelper::PathExists(dbFile)) {
+  if (OVPathHelper::PathExists(plainDBFile)) {
+    _SQLiteDatabaseService = OVSQLiteDatabaseService::Create(plainDBFile);
+  } else if (OVPathHelper::PathExists(dbFile)) {
 #ifndef OVLOADER_USE_SQLITE_CRYPTO
     _SQLiteDatabaseService = OVSQLiteDatabaseService::Create(dbFile);
 #else

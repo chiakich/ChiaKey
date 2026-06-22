@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Takao.xcodeproj"
 DATA_TABLES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/DataTables"
 DATABASES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Distributions/Takao/CookedDatabase"
+SMART_MANDARIN_DB="${DATABASES_DIR}/KeyKeySource.db"
+SMART_MANDARIN_DB_SCRIPT="${ROOT_DIR}/Scripts/build-dev-smart-mandarin-db.rb"
 SCHEME="Takao-All"
 APP_NAME="Chiaki KeyKey.app"
 PROCESS_NAME="Chiaki KeyKey"
@@ -128,6 +130,10 @@ fi
 run /bin/mkdir -p "${BUILT_RESOURCES}"
 run /bin/rm -rf "${BUILT_RESOURCES}/DataTables"
 run /usr/bin/ditto "${DATA_TABLES_DIR}" "${BUILT_RESOURCES}/DataTables"
+
+if [[ ! -f "${SMART_MANDARIN_DB}" && -f "${SMART_MANDARIN_DB_SCRIPT}" ]]; then
+  run /usr/bin/ruby "${SMART_MANDARIN_DB_SCRIPT}"
+fi
 
 if [[ "${DRY_RUN}" == "1" || -d "${DATABASES_DIR}" ]]; then
   run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
