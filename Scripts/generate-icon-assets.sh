@@ -37,7 +37,7 @@ TIFF_FILES=()
 magick \
   -size 1024x1024 \
   canvas:none \
-  -draw "fill none stroke white stroke-width 28 stroke-linejoin round path 'M304,152 H720 C826,152 872,198 872,304 V720 C872,826 826,872 720,872 H304 C198,872 152,826 152,720 V304 C152,198 198,152 304,152 Z' stroke-linecap round stroke-linejoin round stroke-width 72 path 'M344,302 C446,286 562,258 680,222' stroke-width 82 path 'M290,446 H734' stroke-width 86 path 'M520,282 V760'" \
+  -draw "fill none stroke white stroke-width 28 stroke-linejoin round path 'M304,152 H720 C826,152 872,198 872,304 V720 C872,826 826,872 720,872 H304 C198,872 152,826 152,720 V304 C152,198 198,152 304,152 Z' push graphic-context fill white stroke none translate 202.6,202.6 scale 0.68,0.68 path 'M 454 909 C 485 909 499 891 499 852 L 499 463 L 856 463 C 892 463 910 450 910 420 C 910 391 891 377 856 377 L 499 377 L 499 135 C 650 120 738 105 766 96 C 807 82 816 47 795 21 C 778 0 743 8 711 17 C 596 49 316 76 119 77 C 84 77 57 91 57 120 C 57 149 74 163 108 163 C 154 163 254 158 408 145 L 408 377 L 53 377 C 17 377 0 390 0 419 C 0 449 18 463 53 463 L 408 463 L 408 852 C 408 891 423 909 454 909 Z' pop graphic-context" \
   "PNG32:${MASTER_PNG}"
 
 for size in 16 32 128 256 512; do
