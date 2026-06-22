@@ -28,17 +28,56 @@ WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/chiaki-keykey-icon.XXXXXX")"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
 MASTER_PNG="${WORK_DIR}/ChiakiKeyKey.png"
+SOURCE_PNG="${WORK_DIR}/ChiakiKeyKey-source.png"
+SOURCE_ALPHA="${WORK_DIR}/ChiakiKeyKey-source-alpha.png"
+INK_ALPHA="${WORK_DIR}/ChiakiKeyKey-ink-alpha.png"
 MULTI_TIFF="${WORK_DIR}/ChiakiKeyKey.tiff"
 TIFF_FILES=()
 
-# The editable SVG is kept beside the generated icons. Some local ImageMagick
-# builds silently rasterize SVG as a transparent blank image, so this script
-# mirrors the SVG geometry with ImageMagick's native vector drawing commands.
 magick \
-  -size 1024x1024 \
-  canvas:none \
-  -draw "fill none stroke white stroke-width 28 stroke-linejoin round path 'M304,152 H720 C826,152 872,198 872,304 V720 C872,826 826,872 720,872 H304 C198,872 152,826 152,720 V304 C152,198 198,152 304,152 Z' push graphic-context fill white stroke none translate 202.6,202.6 scale 0.68,0.68 path 'M 454 909 C 485 909 499 891 499 852 L 499 463 L 856 463 C 892 463 910 450 910 420 C 910 391 891 377 856 377 L 499 377 L 499 135 C 650 120 738 105 766 96 C 807 82 816 47 795 21 C 778 0 743 8 711 17 C 596 49 316 76 119 77 C 84 77 57 91 57 120 C 57 149 74 163 108 163 C 154 163 254 158 408 145 L 408 377 L 53 377 C 17 377 0 390 0 419 C 0 449 18 463 53 463 L 408 463 L 408 852 C 408 891 423 909 454 909 Z' pop graphic-context" \
+  -background none \
+  "${SOURCE_SVG}" \
+  -resize 1024x1024 \
+  "PNG32:${SOURCE_PNG}"
+
+# The SVG is authored as black ink plus a white cut-out glyph. Convert that
+# rendered artwork into a monochrome template icon with transparent cut-outs.
+magick "${SOURCE_PNG}" -alpha extract "${SOURCE_ALPHA}"
+magick \
+  "${SOURCE_PNG}" \
+  \( +clone -alpha off -colorspace Gray -negate \) \
+  \( "${SOURCE_ALPHA}" \) \
+  -delete 0 \
+  -compose Multiply \
+  -composite \
+  "${INK_ALPHA}"
+magick \
+  -size 1024x1024 xc:black \
+  "${INK_ALPHA}" \
+  -alpha off \
+  -compose CopyOpacity \
+  -composite \
   "PNG32:${MASTER_PNG}"
+
+alpha_mean="$(magick "${MASTER_PNG}" -format "%[fx:mean.a]" info:)"
+if ! awk "BEGIN { exit (${alpha_mean} > 0.05 && ${alpha_mean} < 0.95 ? 0 : 1) }"; then
+  echo "error: rendered SVG produced an unexpected alpha coverage: ${alpha_mean}" >&2
+  exit 1
+fi
+
+if magick \
+  "${MASTER_PNG}" \
+  \( \
+    +clone \
+    -alpha extract \
+    -threshold 0 \
+  \) \
+  -compose CopyOpacity \
+  -composite \
+  -format "%[fx:mean.a]" info: | awk '{ exit ($1 == 0 ? 0 : 1) }'; then
+  echo "error: rendered SVG appears blank" >&2
+  exit 1
+fi
 
 for size in 16 32 128 256 512; do
   tiff_file="${WORK_DIR}/icon_${size}.tiff"
