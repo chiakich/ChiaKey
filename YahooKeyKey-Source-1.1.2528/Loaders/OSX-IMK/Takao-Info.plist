@@ -66,6 +66,8 @@
 	<string>zh-Hant</string>
 	<key>TISIconIsTemplate</key>
 	<true/>
+	<key>TICapsLockLanguageSwitchCapable</key>
+	<true/>
 	<key>tsInputMethodCharacterRepertoireKey</key>
 	<array>
 		<string>Hant</string>
