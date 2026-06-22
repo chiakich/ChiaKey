@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title>Chiaki KeyKey icon draft</title>
+  <desc>A white squircle-cornered rounded rectangle enclosing a simple 千 glyph.</desc>
+  <path
+    id="squircle-frame"
+    d="M304 152
+       H720
+       C826 152 872 198 872 304
+       V720
+       C872 826 826 872 720 872
+       H304
+       C198 872 152 826 152 720
+       V304
+       C152 198 198 152 304 152
+       Z"
+    fill="none"
+    stroke="#fff"
+    stroke-width="28"
+    stroke-linejoin="round" />
+  <g
+    id="glyph-chi"
+    fill="none"
+    stroke="#fff"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+    <path d="M344 302 C446 286 562 258 680 222" stroke-width="72" />
+    <path d="M290 446 H734" stroke-width="82" />
+    <path d="M520 282 V760" stroke-width="86" />
+  </g>
+</svg>
