@@ -402,7 +402,7 @@
 		D42B09FE0EBDD37B00AB5B7A /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F90EBDD37B00AB5B7A /* MainMenu.xib */; };
 		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
-		D42EEF5C0D924B7B00C6053C /* Yahoo.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* Yahoo.icns */; };
+		D42EEF5C0D924B7B00C6053C /* ChiakiKeyKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */; };
 		D42EEFA90D924F2200C6053C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D42EEFA80D924F2200C6053C /* Localizable.strings */; };
 		D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
@@ -410,16 +410,16 @@
 		D440D5A20D630FA7000A483C /* CVDictionaryController+Toolbar.m in Sources */ = {isa = PBXBuildFile; fileRef = D440D5A10D630FA7000A483C /* CVDictionaryController+Toolbar.m */; };
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
 		D4447D630E346C5D00BE7D9E /* playSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D610E346C5D00BE7D9E /* playSound.tiff */; };
-		D4466AAE0D912A6800A530D4 /* Yahoo.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* Yahoo.icns */; };
+		D4466AAE0D912A6800A530D4 /* ChiakiKeyKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */; };
 		D4466C600D916C2400A530D4 /* DownloadUpdate.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D4466C470D916B9200A530D4 /* DownloadUpdate.app */; };
 		D4466C7B0D916D4500A530D4 /* DownloadController.m in Sources */ = {isa = PBXBuildFile; fileRef = D4466C780D916D4500A530D4 /* DownloadController.m */; };
 		D4466C7C0D916D4500A530D4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D4466C7A0D916D4500A530D4 /* main.m */; };
 		D4466C830D916D5800A530D4 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D4466C7F0D916D5800A530D4 /* InfoPlist.strings */; };
 		D4466C840D916D5900A530D4 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = D4466C810D916D5800A530D4 /* MainMenu.nib */; };
 		D44DB8D5106F0A3C001308F8 /* reload.png in Resources */ = {isa = PBXBuildFile; fileRef = D44DB8D4106F0A3C001308F8 /* reload.png */; };
-		D450DE5D0D5F1117009A9C2A /* Yahoo.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* Yahoo.icns */; };
-		D450DE5E0D5F1117009A9C2A /* Yahoo16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* Yahoo16.icns */; };
-		D450DE5F0D5F1117009A9C2A /* Yahoo32.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5C0D5F1117009A9C2A /* Yahoo32.icns */; };
+		D450DE5D0D5F1117009A9C2A /* ChiakiKeyKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */; };
+		D450DE5E0D5F1117009A9C2A /* ChiakiKeyKey16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* ChiakiKeyKey16.icns */; };
+		D450DE5F0D5F1117009A9C2A /* ChiakiKeyKey32.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5C0D5F1117009A9C2A /* ChiakiKeyKey32.icns */; };
 		D455A6391062575F00CC2B47 /* plugin.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D455A6371062575F00CC2B47 /* plugin.tiff */; };
 		D45A178C0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */ = {isa = PBXBuildFile; fileRef = D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */; };
 		D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */; };
@@ -1239,9 +1239,9 @@
 		D4466C780D916D4500A530D4 /* DownloadController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = DownloadController.m; path = PreferenceApplications/DownloadUpdateOSX/DownloadController.m; sourceTree = "<group>"; wrapsLines = 1; };
 		D4466C7A0D916D4500A530D4 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = PreferenceApplications/DownloadUpdateOSX/main.m; sourceTree = "<group>"; };
 		D44DB8D4106F0A3C001308F8 /* reload.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = reload.png; path = Utilities/PhraseEditor/OSX/Images/reload.png; sourceTree = "<group>"; };
-		D450DE5A0D5F1117009A9C2A /* Yahoo.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Yahoo.icns; path = "Loaders/OSX-IMK/Images/Yahoo.icns"; sourceTree = "<group>"; };
-		D450DE5B0D5F1117009A9C2A /* Yahoo16.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Yahoo16.icns; path = "Loaders/OSX-IMK/Images/Yahoo16.icns"; sourceTree = "<group>"; };
-		D450DE5C0D5F1117009A9C2A /* Yahoo32.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Yahoo32.icns; path = "Loaders/OSX-IMK/Images/Yahoo32.icns"; sourceTree = "<group>"; };
+		D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiakiKeyKey.icns; path = "Loaders/OSX-IMK/Images/ChiakiKeyKey.icns"; sourceTree = "<group>"; };
+		D450DE5B0D5F1117009A9C2A /* ChiakiKeyKey16.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiakiKeyKey16.icns; path = "Loaders/OSX-IMK/Images/ChiakiKeyKey16.icns"; sourceTree = "<group>"; };
+		D450DE5C0D5F1117009A9C2A /* ChiakiKeyKey32.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiakiKeyKey32.icns; path = "Loaders/OSX-IMK/Images/ChiakiKeyKey32.icns"; sourceTree = "<group>"; };
 		D455A6371062575F00CC2B47 /* plugin.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = plugin.tiff; path = PreferenceApplications/OSX/Images/plugin.tiff; sourceTree = "<group>"; };
 		D455A7FF106267A200CC2B47 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVSymbolController.h; path = "Loaders/OSX-IMK/CVSymbolController.h"; sourceTree = "<group>"; };
@@ -2401,9 +2401,9 @@
 				D49CAECC0D8ECE3500738634 /* About.jpg */,
 				D4112E840D631738001475CB /* FontSmaller.tiff */,
 				D4112E850D631738001475CB /* FontBigger.tiff */,
-				D450DE5A0D5F1117009A9C2A /* Yahoo.icns */,
-				D450DE5B0D5F1117009A9C2A /* Yahoo16.icns */,
-				D450DE5C0D5F1117009A9C2A /* Yahoo32.icns */,
+				D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */,
+				D450DE5B0D5F1117009A9C2A /* ChiakiKeyKey16.icns */,
+				D450DE5C0D5F1117009A9C2A /* ChiakiKeyKey32.icns */,
 			);
 			name = Images;
 			sourceTree = "<group>";
@@ -3787,9 +3787,9 @@
 			files = (
 				6AB5B3080D5C8D350040CD26 /* InfoPlist.strings in Resources */,
 				D47D5F2A0D5EEB0A0093524C /* Localizable.strings in Resources */,
-				D450DE5D0D5F1117009A9C2A /* Yahoo.icns in Resources */,
-				D450DE5E0D5F1117009A9C2A /* Yahoo16.icns in Resources */,
-				D450DE5F0D5F1117009A9C2A /* Yahoo32.icns in Resources */,
+				D450DE5D0D5F1117009A9C2A /* ChiakiKeyKey.icns in Resources */,
+				D450DE5E0D5F1117009A9C2A /* ChiakiKeyKey16.icns in Resources */,
+				D450DE5F0D5F1117009A9C2A /* ChiakiKeyKey32.icns in Resources */,
 				D4112E860D631738001475CB /* FontSmaller.tiff in Resources */,
 				D4112E870D631738001475CB /* FontBigger.tiff in Resources */,
 				D49CAECD0D8ECE3500738634 /* About.jpg in Resources */,
@@ -3854,7 +3854,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D42EEF5C0D924B7B00C6053C /* Yahoo.icns in Resources */,
+				D42EEF5C0D924B7B00C6053C /* ChiakiKeyKey.icns in Resources */,
 				D4466C830D916D5800A530D4 /* InfoPlist.strings in Resources */,
 				D4466C840D916D5900A530D4 /* MainMenu.nib in Resources */,
 				D42EEFA90D924F2200C6053C /* Localizable.strings in Resources */,
@@ -3874,7 +3874,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D4466AAE0D912A6800A530D4 /* Yahoo.icns in Resources */,
+				D4466AAE0D912A6800A530D4 /* ChiakiKeyKey.icns in Resources */,
 				D47D5E7F0D5EDE120093524C /* InfoPlist.strings in Resources */,
 				D47D5E800D5EDE120093524C /* Localizable.strings in Resources */,
 				D47D5E900D5EDE440093524C /* generic.tiff in Resources */,

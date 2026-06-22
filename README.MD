@@ -54,6 +54,12 @@ xcodebuild -workspace KeyKey.xcworkspace \
 
 Both commands currently produce `Chiaki KeyKey.app`, `Preferences.app`, `PhraseEditor.app`, installer helper apps, and the OpenVanilla / PlainVanilla frameworks under the selected DerivedData products directory.
 
+Regenerate the app and input-source `.icns` assets from the scripted vector icon drawing with:
+
+```sh
+Scripts/generate-icon-assets.sh
+```
+
 This build still emits many deprecation warnings from legacy AppKit, WebKit `WebView`, `NSConnection`, old nib loading, and installer-era file manager APIs. Those warnings are expected for now; the current milestone is successful compilation, not runtime certification or notarized distribution.
 
 ### Local Input Method Testing
