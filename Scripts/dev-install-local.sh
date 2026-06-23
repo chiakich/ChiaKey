@@ -142,6 +142,9 @@ fi
 if [[ "${DRY_RUN}" == "1" || -d "${DATABASES_DIR}" ]]; then
   run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
   run /usr/bin/ditto "${DATABASES_DIR}" "${BUILT_RESOURCES}/Databases"
+  if [[ "${DRY_RUN}" == "1" || -f "${BUILT_RESOURCES}/Databases/ChiaKeySource.db" ]]; then
+    run /bin/rm -f "${BUILT_RESOURCES}/Databases/KeyKeySource.db"
+  fi
 fi
 
 if [[ "${DRY_RUN}" == "1" || -f "${LEXICON_INSTALL_SCRIPT}" ]]; then
