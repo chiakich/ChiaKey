@@ -399,7 +399,7 @@
 		D42B09FE0EBDD37B00AB5B7A /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F90EBDD37B00AB5B7A /* MainMenu.xib */; };
 		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
-		D42EEF5C0D924B7B00C6053C /* ChiakiKeyKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */; };
+		D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		D42EEFA90D924F2200C6053C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D42EEFA80D924F2200C6053C /* Localizable.strings */; };
 		D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
@@ -407,7 +407,7 @@
 		D440D5A20D630FA7000A483C /* CVDictionaryController+Toolbar.m in Sources */ = {isa = PBXBuildFile; fileRef = D440D5A10D630FA7000A483C /* CVDictionaryController+Toolbar.m */; };
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
 		D4447D630E346C5D00BE7D9E /* playSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D610E346C5D00BE7D9E /* playSound.tiff */; };
-		D4466AAE0D912A6800A530D4 /* ChiakiKeyKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */; };
+		D4466AAE0D912A6800A530D4 /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		D4466C600D916C2400A530D4 /* DownloadUpdate.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D4466C470D916B9200A530D4 /* DownloadUpdate.app */; };
 		D4466C7B0D916D4500A530D4 /* DownloadController.m in Sources */ = {isa = PBXBuildFile; fileRef = D4466C780D916D4500A530D4 /* DownloadController.m */; };
 		D4466C7C0D916D4500A530D4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D4466C7A0D916D4500A530D4 /* main.m */; };
@@ -415,9 +415,9 @@
 		D4466C840D916D5900A530D4 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = D4466C810D916D5800A530D4 /* MainMenu.nib */; };
 		C1A1F0010F00000100000002 /* install-lexicon-release.sh in Resources */ = {isa = PBXBuildFile; fileRef = C1A1F0010F00000100000001 /* install-lexicon-release.sh */; };
 		D44DB8D5106F0A3C001308F8 /* reload.png in Resources */ = {isa = PBXBuildFile; fileRef = D44DB8D4106F0A3C001308F8 /* reload.png */; };
-		D450DE5D0D5F1117009A9C2A /* ChiakiKeyKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */; };
-		D450DE5E0D5F1117009A9C2A /* ChiakiKeyKey16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* ChiakiKeyKey16.icns */; };
-		D450DE5F0D5F1117009A9C2A /* ChiakiKeyKey32.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5C0D5F1117009A9C2A /* ChiakiKeyKey32.icns */; };
+		D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
+		D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */; };
+		D450DE5F0D5F1117009A9C2A /* ChiaKey32.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */; };
 		D455A6391062575F00CC2B47 /* plugin.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D455A6371062575F00CC2B47 /* plugin.tiff */; };
 		D45A178C0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */ = {isa = PBXBuildFile; fileRef = D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */; };
 		D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */; };
@@ -1033,7 +1033,7 @@
 		6A4771640D5C5E3900C6C744 /* LFExtensions-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "LFExtensions-Info.plist"; path = "Frameworks/LFExtensions/LFExtensions-Info.plist"; sourceTree = "<group>"; };
 		6A47716F0D5C5E5500C6C744 /* PlainVanilla.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PlainVanilla.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4771700D5C5E5500C6C744 /* PlainVanilla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PlainVanilla-Info.plist"; path = "Frameworks/PlainVanilla/PlainVanilla-Info.plist"; sourceTree = "<group>"; };
-		6A4772930D5C5FCE00C6C744 /* Chiaki KeyKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Chiaki KeyKey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A4772930D5C5FCE00C6C744 /* 千秋輸入法.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "千秋輸入法.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4772970D5C5FCE00C6C744 /* Takao-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Takao-Info.plist"; path = "Loaders/OSX-IMK/Takao-Info.plist"; sourceTree = "<group>"; };
 		6A4772DC0D5C607200C6C744 /* CVApplicationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVApplicationController.h; path = "Loaders/OSX-IMK/CVApplicationController.h"; sourceTree = "<group>"; };
 		6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVApplicationController.mm; path = "Loaders/OSX-IMK/CVApplicationController.mm"; sourceTree = "<group>"; wrapsLines = 1; };
@@ -1234,9 +1234,9 @@
 		D4466C7A0D916D4500A530D4 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = PreferenceApplications/DownloadUpdateOSX/main.m; sourceTree = "<group>"; };
 		C1A1F0010F00000100000001 /* install-lexicon-release.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = "install-lexicon-release.sh"; path = "../Scripts/install-lexicon-release.sh"; sourceTree = SOURCE_ROOT; };
 		D44DB8D4106F0A3C001308F8 /* reload.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = reload.png; path = Utilities/PhraseEditor/OSX/Images/reload.png; sourceTree = "<group>"; };
-		D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiakiKeyKey.icns; path = "Loaders/OSX-IMK/Images/ChiakiKeyKey.icns"; sourceTree = "<group>"; };
-		D450DE5B0D5F1117009A9C2A /* ChiakiKeyKey16.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiakiKeyKey16.icns; path = "Loaders/OSX-IMK/Images/ChiakiKeyKey16.icns"; sourceTree = "<group>"; };
-		D450DE5C0D5F1117009A9C2A /* ChiakiKeyKey32.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiakiKeyKey32.icns; path = "Loaders/OSX-IMK/Images/ChiakiKeyKey32.icns"; sourceTree = "<group>"; };
+		D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey.icns; path = "Loaders/OSX-IMK/Images/ChiaKey.icns"; sourceTree = "<group>"; };
+		D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey16.icns; path = "Loaders/OSX-IMK/Images/ChiaKey16.icns"; sourceTree = "<group>"; };
+		D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey32.icns; path = "Loaders/OSX-IMK/Images/ChiaKey32.icns"; sourceTree = "<group>"; };
 		D455A6371062575F00CC2B47 /* plugin.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = plugin.tiff; path = PreferenceApplications/OSX/Images/plugin.tiff; sourceTree = "<group>"; };
 		D455A7FF106267A200CC2B47 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVSymbolController.h; path = "Loaders/OSX-IMK/CVSymbolController.h"; sourceTree = "<group>"; };
@@ -1746,7 +1746,7 @@
 				6A4770540D5C529400C6C744 /* TestOpenVanilla */,
 				6A4771630D5C5E3900C6C744 /* LFExtensions.framework */,
 				6A47716F0D5C5E5500C6C744 /* PlainVanilla.framework */,
-				6A4772930D5C5FCE00C6C744 /* Chiaki KeyKey.app */,
+				6A4772930D5C5FCE00C6C744 /* 千秋輸入法.app */,
 				6ACA0C4F0D5C87FB00514BC7 /* libTakaoModulePackages.a */,
 				6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */,
 				6A2D56120D5D889400E710D6 /* libManjusri.a */,
@@ -2394,9 +2394,9 @@
 				D49CAECC0D8ECE3500738634 /* About.jpg */,
 				D4112E840D631738001475CB /* FontSmaller.tiff */,
 				D4112E850D631738001475CB /* FontBigger.tiff */,
-				D450DE5A0D5F1117009A9C2A /* ChiakiKeyKey.icns */,
-				D450DE5B0D5F1117009A9C2A /* ChiakiKeyKey16.icns */,
-				D450DE5C0D5F1117009A9C2A /* ChiakiKeyKey32.icns */,
+				D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */,
+				D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */,
+				D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */,
 			);
 			name = Images;
 			sourceTree = "<group>";
@@ -3388,7 +3388,7 @@
 			);
 			name = "Takao (Loader OSX-IMK)";
 			productName = Takao;
-			productReference = 6A4772930D5C5FCE00C6C744 /* Chiaki KeyKey.app */;
+			productReference = 6A4772930D5C5FCE00C6C744 /* 千秋輸入法.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6A859F350E41A495002C3544 /* LFWebAPIToolbox */ = {
@@ -3766,9 +3766,9 @@
 			files = (
 				6AB5B3080D5C8D350040CD26 /* InfoPlist.strings in Resources */,
 				D47D5F2A0D5EEB0A0093524C /* Localizable.strings in Resources */,
-				D450DE5D0D5F1117009A9C2A /* ChiakiKeyKey.icns in Resources */,
-				D450DE5E0D5F1117009A9C2A /* ChiakiKeyKey16.icns in Resources */,
-				D450DE5F0D5F1117009A9C2A /* ChiakiKeyKey32.icns in Resources */,
+				D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */,
+				D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */,
+				D450DE5F0D5F1117009A9C2A /* ChiaKey32.icns in Resources */,
 				D4112E860D631738001475CB /* FontSmaller.tiff in Resources */,
 				D4112E870D631738001475CB /* FontBigger.tiff in Resources */,
 				D49CAECD0D8ECE3500738634 /* About.jpg in Resources */,
@@ -3834,7 +3834,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D42EEF5C0D924B7B00C6053C /* ChiakiKeyKey.icns in Resources */,
+				D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */,
 				D4466C830D916D5800A530D4 /* InfoPlist.strings in Resources */,
 				D4466C840D916D5900A530D4 /* MainMenu.nib in Resources */,
 				D42EEFA90D924F2200C6053C /* Localizable.strings in Resources */,
@@ -3854,7 +3854,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D4466AAE0D912A6800A530D4 /* ChiakiKeyKey.icns in Resources */,
+				D4466AAE0D912A6800A530D4 /* ChiaKey.icns in Resources */,
 				D47D5E7F0D5EDE120093524C /* InfoPlist.strings in Resources */,
 				D47D5E800D5EDE120093524C /* Localizable.strings in Resources */,
 				D47D5E900D5EDE440093524C /* generic.tiff in Resources */,
@@ -4694,7 +4694,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFWordCountPackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFWordCountPackage;
 				PRODUCT_NAME = YKAFWordCount;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -4721,7 +4721,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFWordCountPackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFWordCountPackage;
 				PRODUCT_NAME = YKAFWordCount;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5219,11 +5219,11 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
-					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"",
-					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiakiKeyKey_1_Connection\\\"",
+					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
+					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
 					OVLOADER_USE_SQLITE_CRYPTO,
-					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiaki.KeyKey\\\"",
-					"PVLOADERPOLICY_LOADER_NAME=\\\"Chiaki\\ KeyKey\\\"",
+					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
+					"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
 					"SQLITE_HAS_CODEC=1",
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
@@ -5243,8 +5243,8 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey;
-				PRODUCT_NAME = "Chiaki KeyKey";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey;
+				PRODUCT_NAME = "千秋輸入法";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
@@ -5266,11 +5266,11 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
-					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"",
-					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiakiKeyKey_1_Connection\\\"",
+					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
+					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
 					OVLOADER_USE_SQLITE_CRYPTO,
-					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiaki.KeyKey\\\"",
-					"PVLOADERPOLICY_LOADER_NAME=\\\"Chiaki\\ KeyKey\\\"",
+					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
+					"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
 					"SQLITE_HAS_CODEC=1",
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
@@ -5291,8 +5291,8 @@
 					AppKit,
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey;
-				PRODUCT_NAME = "Chiaki KeyKey";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey;
+				PRODUCT_NAME = "千秋輸入法";
 				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -5510,7 +5510,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFPhraseAwarePackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFPhraseAwarePackage;
 				PRODUCT_NAME = YKAFPhraseAware;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5537,7 +5537,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.YKAFPhraseAwarePackage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFPhraseAwarePackage;
 				PRODUCT_NAME = YKAFPhraseAware;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5766,7 +5766,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.AFPhraseConverter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.AFPhraseConverter;
 				PRODUCT_NAME = YKAFPhraseConverter;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5795,7 +5795,7 @@
 					"-framework",
 					Carbon,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.KeyKey.AFPhraseConverter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.AFPhraseConverter;
 				PRODUCT_NAME = YKAFPhraseConverter;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -5898,7 +5898,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = Utilities/PhraseEditor/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5909,7 +5909,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.PhraseEditor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.PhraseEditor;
 				PRODUCT_NAME = PhraseEditor;
 				SDKROOT = macosx;
 			};
@@ -5930,7 +5930,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = Utilities/PhraseEditor/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5941,7 +5941,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.PhraseEditor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.PhraseEditor;
 				PRODUCT_NAME = PhraseEditor;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;
@@ -5962,7 +5962,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/DownloadUpdateOSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5973,7 +5973,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.DownloadUpdate;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.DownloadUpdate;
 				PRODUCT_NAME = DownloadUpdate;
 				SDKROOT = macosx;
 			};
@@ -5992,7 +5992,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/DownloadUpdateOSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -6003,7 +6003,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.DownloadUpdate;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.DownloadUpdate;
 				PRODUCT_NAME = DownloadUpdate;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;
@@ -6034,7 +6034,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerUI;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerUI;
 				PRODUCT_NAME = Installer;
 				SDKROOT = macosx;
 			};
@@ -6063,7 +6063,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerUI;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerUI;
 				PRODUCT_NAME = Installer;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;
@@ -6087,7 +6087,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -6098,7 +6098,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.Preferences;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -6122,7 +6122,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiakiKeyKeyService\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -6133,7 +6133,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.Preferences;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -6165,7 +6165,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerHelp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerHelp;
 				PRODUCT_NAME = InstallerHelp;
 				SDKROOT = macosx;
 			};
@@ -6193,7 +6193,7 @@
 					"-framework",
 					AppKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiaki.inputmethod.ChiakiKeyKey.InstallerHelp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerHelp;
 				PRODUCT_NAME = InstallerHelp;
 				SDKROOT = macosx;
 				ZERO_LINK = NO;

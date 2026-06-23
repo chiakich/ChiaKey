@@ -4,7 +4,7 @@
 "Simplex" = "簡易";
 "Help" = "輔助說明";
 "Preferences..." = "偏好設定…";
-"About Chiaki KeyKey" = "關於 Chiaki KeyKey";
+"About ChiaKey" = "關於千秋輸入法";
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>錯誤</h2><p>無法與線上字典連線。</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>找不到</h2><p>找不到符合「%@」的項目";
 "<h2>Loading...</h2><p>Please wait</p></body></html>" = "<h2>載入中…</h2><p>請稍候</p></body></html>";

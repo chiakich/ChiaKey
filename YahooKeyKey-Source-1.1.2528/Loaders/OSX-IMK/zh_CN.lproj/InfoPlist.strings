@@ -1,4 +1,4 @@
-CFBundleName = "Chiaki KeyKey";
-CFBundleDisplayName = "Chiaki KeyKey";
-NSHumanReadableCopyright = "雅虎国际资讯 版权所有\n© 2008-2010 Yahoo! Taiwan All Rights Reserved";
-com.chiaki.inputmethod.ChiakiKeyKey = "Chiaki KeyKey";
+CFBundleName = "千秋輸入法";
+CFBundleDisplayName = "千秋輸入法";
+NSHumanReadableCopyright = "雅虎國際資訊 版權所有\n© 2008-2010 Yahoo! Taiwan All Rights Reserved";
+com.chiakey.inputmethod.ChiaKey = "千秋輸入法";

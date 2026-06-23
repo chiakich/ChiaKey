@@ -24,7 +24,7 @@ OUTPUT_DB = File.join(
   "KeyKeySource.db"
 )
 
-VERSION = "chiaki-modern-2026.06-dev1"
+VERSION = "chiakey-modern-2026.06-dev1"
 MAX_PHRASE_CODEPOINTS = 7
 PROB_UNK = -99.0
 PROB_SINGLE_PRIMARY = -3.0

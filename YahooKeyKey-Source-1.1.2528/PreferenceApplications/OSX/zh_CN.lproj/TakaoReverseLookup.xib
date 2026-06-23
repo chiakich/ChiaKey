@@ -17,7 +17,7 @@
         <box autoresizesSubviews="NO" borderType="line" title="字根反查" id="2">
             <rect key="frame" x="0.0" y="0.0" width="372" height="100"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-            <view key="contentView" id="wND-t5-ASJ">
+            <view key="contentView" id="ISN-gt-7cC">
                 <rect key="frame" x="3" y="3" width="366" height="82"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
@@ -30,9 +30,9 @@
                             <menu key="menu" title="OtherViews" id="20">
                                 <items>
                                     <menuItem title="不使用" state="on" id="21"/>
-                                    <menuItem title="仓颉" id="22"/>
+                                    <menuItem title="倉頡" id="22"/>
                                     <menuItem title="注音" id="23"/>
-                                    <menuItem title="汉语拼音" id="24"/>
+                                    <menuItem title="漢語拼音" id="24"/>
                                 </items>
                             </menu>
                             <connections>
@@ -41,7 +41,7 @@
                         </popUpButtonCell>
                     </popUpButton>
                     <textField verticalHuggingPriority="750" id="25">
-                        <rect key="frame" x="15" y="51" width="49" height="17"/>
+                        <rect key="frame" x="15" y="52" width="49" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="使用：" id="26">
                             <font key="font" size="13" name="LiHeiPro"/>

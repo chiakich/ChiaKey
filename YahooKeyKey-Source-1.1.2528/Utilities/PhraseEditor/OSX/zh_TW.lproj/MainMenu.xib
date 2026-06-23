@@ -14,7 +14,7 @@
                 <menuItem title="Phrase Editor" id="56">
                     <menu key="submenu" title="Phrase Editor" systemMenu="apple" id="57">
                         <items>
-                            <menuItem title="關於 Chiaki KeyKey 詞彙編輯程式" id="58">
+                            <menuItem title="關於千秋詞彙編輯器" id="58">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="orderFrontStandardAboutPanel:" target="-2" id="142"/>
@@ -29,7 +29,7 @@
                             <menuItem isSeparatorItem="YES" id="144">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="隱藏 Chiaki KeyKey 詞彙編輯程式" keyEquivalent="h" id="134">
+                            <menuItem title="隱藏千秋詞彙編輯器" keyEquivalent="h" id="134">
                                 <connections>
                                     <action selector="hide:" target="-1" id="367"/>
                                 </connections>
@@ -48,7 +48,7 @@
                             <menuItem isSeparatorItem="YES" id="149">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="結束 Chiaki KeyKey 詞彙編輯程式" keyEquivalent="q" id="136" userLabel="1111">
+                            <menuItem title="結束千秋詞彙編輯器" keyEquivalent="q" id="136" userLabel="1111">
                                 <connections>
                                     <action selector="terminate:" target="-3" id="449"/>
                                 </connections>
@@ -166,7 +166,7 @@
                 <menuItem title="輔助說明" id="103" userLabel="1">
                     <menu key="submenu" title="輔助說明" id="106" userLabel="2">
                         <items>
-                            <menuItem title="Chiaki KeyKey 詞彙編輯程式輔助說明" keyEquivalent="?" id="111">
+                            <menuItem title="千秋詞彙編輯器輔助說明" keyEquivalent="?" id="111">
                                 <connections>
                                     <action selector="launchOnlineHelp:" target="459" id="555"/>
                                 </connections>

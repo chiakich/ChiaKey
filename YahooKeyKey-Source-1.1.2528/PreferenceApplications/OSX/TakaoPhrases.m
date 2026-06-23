@@ -8,7 +8,7 @@ file for terms.
 #import "TakaoPhrases.h"
 
 #define OPENVANILLA_DOTMAC_ID @"YHKK"
-#define OPENVANILLA_APPLICATION_NAME @"Chiaki KeyKey"
+#define OPENVANILLA_APPLICATION_NAME @"ChiaKey"
 
 #ifdef __x86_64__
 #warning Not working under x86_64
@@ -59,7 +59,7 @@ file for terms.
                       alternateButton:nil
                           otherButton:nil
             informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung Chiaki KeyKey, you are not "
+                LFLSTR(@"If you are not runnung ChiaKey, you are not "
                        @"able to export your database.")];
     [alert beginSheetModalForWindow:window
                       modalDelegate:self
@@ -140,7 +140,7 @@ file for terms.
                       alternateButton:nil
                           otherButton:nil
             informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung Chiaki KeyKey, you are not "
+                LFLSTR(@"If you are not runnung ChiaKey, you are not "
                        @"able to import your database.")];
     [alert beginSheetModalForWindow:window
                       modalDelegate:self
@@ -271,7 +271,7 @@ file for terms.
   //			NSAlert *alert = [NSAlert
   //alertWithMessageText:LFLSTR(@"Unable to export database.")
   // defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil
-  // informativeTextWithFormat:LFLSTR(@"If you are not runnung Chiaki KeyKey,
+  // informativeTextWithFormat:LFLSTR(@"If you are not runnung ChiaKey,
   // you are not able to export your database.")]; 			[alert
   // beginSheetModalForWindow:window modalDelegate:self didEndSelector:nil
   // contextInfo:nil]; 			return;
@@ -320,7 +320,7 @@ file for terms.
   // setDelegate:(id)self]; 		NSData *messageData = [NSData
   //dataWithContentsOfFile:path]; 		_transactionType = tUpload; 		DMTransaction
   //*uploadTransaction = [mySession putData:messageData
-  // toPath:@"/Documents/Chiaki KeyKey Phrases.txt"]; 		if
+  // toPath:@"/Documents/ChiaKey Phrases.txt"]; 		if
   // (uploadTransaction != nil) {
   //			[[NSApplication sharedApplication]
   //beginSheet:_progressWindow modalForWindow:window modalDelegate:self
@@ -347,7 +347,7 @@ file for terms.
   // host:nil]; 		if (!ovService) { 			NSAlert *alert =
   // [NSAlert alertWithMessageText:LFLSTR(@"Unable to import database.")
   // defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil
-  // informativeTextWithFormat:LFLSTR(@"If you are not runnung Chiaki KeyKey,
+  // informativeTextWithFormat:LFLSTR(@"If you are not runnung ChiaKey,
   // you are not able to import your database.")]; 			[alert
   // beginSheetModalForWindow:window modalDelegate:self didEndSelector:nil
   // contextInfo:nil]; 			return;
@@ -384,7 +384,7 @@ file for terms.
   //		DMiDiskSession *mySession = [DMiDiskSession
   // iDiskSessionWithAccount:myMemberAccount]; 		[mySession
   // setDelegate:(id)self]; 		_transactionType = tDownload; 		DMTransaction
-  //*downloadTransaction = [mySession getDataAtPath:@"/Documents/Chiaki KeyKey
+  //*downloadTransaction = [mySession getDataAtPath:@"/Documents/ChiaKey
   // Phrases.txt"]; 		if (downloadTransaction != nil) {
   //			[[NSApplication sharedApplication]
   //beginSheet:_progressWindow modalForWindow:window modalDelegate:self
@@ -472,7 +472,7 @@ file for terms.
 //		case kDMNetworkError:
 //			errorDescription = LFLSTR(@"Unable to interact with
 //MobileMe because of a networking error."); 			break;
-// case kDMResourceNotFound: 			errorDescription = LFLSTR(@"Chiaki KeyKey user
+// case kDMResourceNotFound: 			errorDescription = LFLSTR(@"ChiaKey user
 //phrases database was not found on your iDisk."); 			break;
 // case kDMServiceBusy: 			errorDescription = LFLSTR(@"The iDisk servie is now
 //busy, please wait for a while and try again."); 			break;
@@ -510,7 +510,7 @@ file for terms.
   if (![[NSWorkspace sharedWorkspace] openFile:phraseEditorPath]) {
     [[NSWorkspace sharedWorkspace]
          launchAppWithBundleIdentifier:
-             @"com.chiaki.inputmethod.ChiakiKeyKey.PhraseEditor"
+             @"com.chiakey.inputmethod.ChiaKey.PhraseEditor"
                                options:NSWorkspaceLaunchDefault
         additionalEventParamDescriptor:nil
                       launchIdentifier:nil];

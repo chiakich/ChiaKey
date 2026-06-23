@@ -308,10 +308,10 @@ using namespace OpenVanilla;
       CreateValidatedKeyKeySourceDatabaseService(userKeyKeySourceDBFile);
   if (_SQLiteDatabaseService) {
     selectedDBFile = userKeyKeySourceDBFile;
-    NSLog(@"Using external Chiaki KeyKey lexicon database: %s",
+    NSLog(@"Using external ChiaKey lexicon database: %s",
           selectedDBFile.c_str());
   } else if (OVPathHelper::PathExists(userKeyKeySourceDBFile)) {
-    NSLog(@"Falling back from invalid external Chiaki KeyKey lexicon database: %s",
+    NSLog(@"Falling back from invalid external ChiaKey lexicon database: %s",
           userKeyKeySourceDBFile.c_str());
   }
 
@@ -319,7 +319,7 @@ using namespace OpenVanilla;
     _SQLiteDatabaseService = CreateValidatedKeyKeySourceDatabaseService(plainDBFile);
     if (_SQLiteDatabaseService) {
       selectedDBFile = plainDBFile;
-      NSLog(@"Using bundled Chiaki KeyKey lexicon database: %s",
+      NSLog(@"Using bundled ChiaKey lexicon database: %s",
             selectedDBFile.c_str());
     }
   }

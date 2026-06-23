@@ -9,11 +9,11 @@ SMART_MANDARIN_DB="${DATABASES_DIR}/KeyKeySource.db"
 SMART_MANDARIN_DB_SCRIPT="${ROOT_DIR}/Scripts/build-dev-smart-mandarin-db.rb"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 SCHEME="Takao-All"
-APP_NAME="Chiaki KeyKey.app"
-PROCESS_NAME="Chiaki KeyKey"
+APP_NAME="千秋輸入法.app"
+PROCESS_NAME="千秋輸入法"
 
 CONFIGURATION="${CONFIGURATION:-Debug}"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${TMPDIR:-/tmp}/ChiakiKeyKeyDevInstall}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${TMPDIR:-/tmp}/ChiaKeyDevInstall}"
 INSTALL_DIR="${HOME}/Library/Input Methods"
 SKIP_BUILD=0
 DRY_RUN=0

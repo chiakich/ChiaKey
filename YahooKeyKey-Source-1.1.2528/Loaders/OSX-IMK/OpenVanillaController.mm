@@ -878,7 +878,7 @@ static id OVCActiveContextSender = nil;
   if (![[NSWorkspace sharedWorkspace] openFile:preferencePath]) {
     [[NSWorkspace sharedWorkspace]
          launchAppWithBundleIdentifier:
-             @"com.chiaki.inputmethod.ChiakiKeyKey.Preferences"
+             @"com.chiakey.inputmethod.ChiaKey.Preferences"
                                options:NSWorkspaceLaunchDefault
         additionalEventParamDescriptor:nil
                       launchIdentifier:nil];
@@ -1038,7 +1038,7 @@ static id OVCActiveContextSender = nil;
   NSMenuItem *aboutMenuItem = [[[NSMenuItem alloc] init] autorelease];
   [aboutMenuItem setTarget:self];
   [aboutMenuItem setAction:@selector(aboutAction:)];
-  [aboutMenuItem setTitle:LFLSTR(@"About Chiaki KeyKey")];
+  [aboutMenuItem setTitle:LFLSTR(@"About ChiaKey")];
   [menu addItem:aboutMenuItem];
 
   return menu;

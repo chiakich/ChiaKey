@@ -1,5 +1,5 @@
 /* Localized versions of Info.plist keys */
 
-CFBundleName = "Chiaki KeyKey偏好設定";
-CFBundleDisplayName = "Chiaki KeyKey偏好設定";
+CFBundleName = "千秋偏好設定";
+CFBundleDisplayName = "千秋偏好設定";
 NSHumanReadableCopyright = "雅虎國際資訊 版權所有 © 2008-2010, Yahoo! Taiwan All Rights Reserved.";

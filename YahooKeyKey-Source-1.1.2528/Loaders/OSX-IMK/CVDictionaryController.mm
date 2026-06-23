@@ -114,7 +114,7 @@
   NSString *basePath =
       ([paths count] > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
   return
-      [basePath stringByAppendingPathComponent:@"com.chiaki.KeyKey.Dictionary"];
+      [basePath stringByAppendingPathComponent:@"com.chiakey.ChiaKey.Dictionary"];
 }
 // Clean up some stored XML files in the cache folder
 // if they are already too old. A XML file will be expired
@@ -582,9 +582,9 @@
   [_webview setUIDelegate:(id)self];
   [_webview setFrameLoadDelegate:(id)self];
   [_webview setPolicyDelegate:(id)self];
-  [_webview setApplicationNameForUserAgent:@"Chiaki KeyKey"];
+  [_webview setApplicationNameForUserAgent:@"ChiaKey"];
 
-  [_webview setCustomUserAgent:@"ChiakiKeyKey/2026.06 (macOS)"];
+  [_webview setCustomUserAgent:@"ChiaKey/2026.06 (macOS)"];
 
   id toolbar = [[[NSToolbar alloc] initWithIdentifier:@"dictionary toolbar"]
       autorelease];

@@ -1,36 +1,36 @@
-﻿"Add" = "添加新词";
-"Delete" = "删除词汇";
-"Edit Phrase" = "编辑词汇";
-"Edit Reading" = "编辑注音";
-"Reload" = "重新载入";
-"Import Address Book" = "导入通讯录人名";
+﻿"Add" = "增加新詞";
+"Delete" = "刪除詞彙";
+"Edit Phrase" = "編輯詞彙";
+"Edit Reading" = "編輯注音";
+"Reload" = "重新載入";
+"Import Address Book" = "匯入通訊錄人名";
 
-"Chiaki KeyKey is not running." = "Chiaki KeyKey并不在执行中";
-"Since Chiaki KeyKey is not running, you cannot use the Phrase Editor to alter your phrases." = "因为您没有执行 Chiaki KeyKey，因此无法使用词汇编辑工具";
+"ChiaKey is not running." = "千秋輸入法並未執行";
+"Since ChiaKey is not running, you cannot use the Phrase Editor to alter your phrases." = "因為千秋輸入法並未執行，因此無法使用詞彙編輯器";
 
-"%d user phrase(s)" = "%d 笔使用者自定词";
-"No user phrases" = "没有使用者自定词";
-"Progressing..." = "处理中…";
+"%d user phrase(s)" = "%d 筆使用者自定詞";
+"No user phrases" = "沒有使用者自定詞";
+"Progressing..." = "處理中…";
 
-"Error" = "错误";
-"Export As:" = "导出为：";
-"Export Database" = "导出数据库";
-"Exporting your own customized phrases database." = "导出您的自订词数据库";
-"Export" = "导出";
+"Error" = "錯誤";
+"Export As:" = "匯出為：";
+"Export Database" = "匯出資料庫";
+"Exporting your own customized phrases database." = "匯出您的自訂詞資料庫";
+"Export" = "匯出";
 "Done" = "完成";
 "OK" = "好";
-"Your phrases are successfully exported." = "成功导出数据库";
-"Error" = "错误";
-"Unable to export database." = "无法导出数据库";
-"Import Database" = "导入数据库";
-"Import customized phrases to your own database." = "导入您的自订词数据库";
-"Choose" = "选用";
-"Your phrases are successfully exported." = "成功导出数据库";
-"Unable to export database." = "无法导出数据库";
-"If you are not runnung Chiaki KeyKey, you are not able to export your database." = "如果 Chiaki KeyKey不在使用中，您便无法导出自订词数据库。";
-"If you are not runnung Chiaki KeyKey, you are not able to import your database." = "如果 Chiaki KeyKey不在使用中，您便无法导入自订词数据库。";
+"Your phrases are successfully exported." = "成功匯出資料庫";
+"Error" = "錯誤";
+"Unable to export database." = "無法匯出資料庫";
+"Import Database" = "匯入資料庫";
+"Import customized phrases to your own database." = "匯入您的自訂詞資料庫";
+"Choose" = "選用";
+"Your phrases are successfully exported." = "成功匯出資料庫";
+"Unable to export database." = "無法匯出資料庫";
+"If you are not runnung ChiaKey, you are not able to export your database." = "如果千秋輸入法未執行，便無法匯出自訂詞資料庫。";
+"If you are not runnung ChiaKey, you are not able to import your database." = "如果千秋輸入法未執行，便無法匯入自訂詞資料庫。";
 
-"You must select at least one option from \"Import Last + First Name\" and \"Import Fist Name\"." = "您至少要选择“导入姓名”或“只导入名字”其中之一。";
+"You must select at least one option from \"Import Last + First Name\" and \"Import Fist Name\"." = "您至少要選擇「匯入姓名」或「只匯入名字」其中之一。";
 
-"Import customized phrases to your own database." = "导入您的自订词数据库";
-"Your phrases are successfully imported." = "成功导入数据库";
+"Your phrases are successfully imported." = "成功匯入資料庫";
+"Unable to import database." = "無法匯入資料庫";

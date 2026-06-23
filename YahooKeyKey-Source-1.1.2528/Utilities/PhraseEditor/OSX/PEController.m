@@ -30,12 +30,12 @@ typedef unsigned int NSUInteger;
     [_loader setProtocolForProxy:@protocol(TakaoPhraseEditorService)];
   } else {
     NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Chiaki KeyKey is not running.")
+        [NSAlert alertWithMessageText:LFLSTR(@"ChiaKey is not running.")
                         defaultButton:LFLSTR(@"OK")
                       alternateButton:nil
                           otherButton:nil
             informativeTextWithFormat:
-                LFLSTR(@"Since Chiaki KeyKey is not running, you cannot use "
+                LFLSTR(@"Since ChiaKey is not running, you cannot use "
                        @"the Phrase Editor to alter your phrases.")];
     [alert runModal];
     [NSApp terminate:self];
@@ -384,7 +384,7 @@ typedef unsigned int NSUInteger;
                       alternateButton:nil
                           otherButton:nil
             informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung Chiaki KeyKey, you are not "
+                LFLSTR(@"If you are not runnung ChiaKey, you are not "
                        @"able to import your database.")];
     [alert beginSheetModalForWindow:[self window]
                       modalDelegate:self
@@ -456,7 +456,7 @@ typedef unsigned int NSUInteger;
                       alternateButton:nil
                           otherButton:nil
             informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung Chiaki KeyKey, you are not "
+                LFLSTR(@"If you are not runnung ChiaKey, you are not "
                        @"able to export your database.")];
 
     [alert beginSheetModalForWindow:[self window]

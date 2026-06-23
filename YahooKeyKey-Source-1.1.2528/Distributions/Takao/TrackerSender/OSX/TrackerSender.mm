@@ -21,7 +21,7 @@ TrackerSender *SharedTrackerSender = nil;
   LFHTTPRequest *request = [[LFHTTPRequest alloc] init];
   [request setDelegate:(id)self];
 
-  [request setUserAgent:@"ChiakiKeyKey/2026.06 (macOS)"];
+  [request setUserAgent:@"ChiaKey/2026.06 (macOS)"];
   BOOL result = [request performMethod:@"GET"
                                  onURL:[NSURL URLWithString:urlString]
                               withData:nil];

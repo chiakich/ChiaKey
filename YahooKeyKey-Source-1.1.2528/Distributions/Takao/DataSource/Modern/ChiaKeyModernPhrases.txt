@@ -1,4 +1,4 @@
-# Chiaki KeyKey bootstrap phrases for a modern Traditional Chinese input method.
+# ChiaKey bootstrap phrases for a modern Traditional Chinese input method.
 # Keep this file conservative: broadly useful contemporary terms only.
 
 人工智慧

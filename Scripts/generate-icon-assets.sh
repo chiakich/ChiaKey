@@ -4,10 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 IMAGE_DIR="${REPO_ROOT}/YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/Images"
-SOURCE_SVG="${IMAGE_DIR}/ChiakiKeyKey.svg"
-OUTPUT_ICNS="${IMAGE_DIR}/ChiakiKeyKey.icns"
-OUTPUT_ICNS_16="${IMAGE_DIR}/ChiakiKeyKey16.icns"
-OUTPUT_ICNS_32="${IMAGE_DIR}/ChiakiKeyKey32.icns"
+SOURCE_SVG="${IMAGE_DIR}/ChiaKey.svg"
+OUTPUT_ICNS="${IMAGE_DIR}/ChiaKey.icns"
+OUTPUT_ICNS_16="${IMAGE_DIR}/ChiaKey16.icns"
+OUTPUT_ICNS_32="${IMAGE_DIR}/ChiaKey32.icns"
 
 require_tool() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -24,14 +24,14 @@ if [[ ! -f "${SOURCE_SVG}" ]]; then
   exit 1
 fi
 
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/chiaki-keykey-icon.XXXXXX")"
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/chiakey-icon.XXXXXX")"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
-MASTER_PNG="${WORK_DIR}/ChiakiKeyKey.png"
-SOURCE_PNG="${WORK_DIR}/ChiakiKeyKey-source.png"
-SOURCE_ALPHA="${WORK_DIR}/ChiakiKeyKey-source-alpha.png"
-INK_ALPHA="${WORK_DIR}/ChiakiKeyKey-ink-alpha.png"
-ICONSET_DIR="${WORK_DIR}/ChiakiKeyKey.iconset"
+MASTER_PNG="${WORK_DIR}/ChiaKey.png"
+SOURCE_PNG="${WORK_DIR}/ChiaKey-source.png"
+SOURCE_ALPHA="${WORK_DIR}/ChiaKey-source-alpha.png"
+INK_ALPHA="${WORK_DIR}/ChiaKey-ink-alpha.png"
+ICONSET_DIR="${WORK_DIR}/ChiaKey.iconset"
 
 magick \
   -background none \

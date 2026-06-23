@@ -11,10 +11,10 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <menu title="AMainMenu" systemMenu="main" id="29" userLabel="MainMenu">
             <items>
-                <menuItem title="Chiaki KeyKey 偏好设置" id="56">
-                    <menu key="submenu" title="Chiaki KeyKey 偏好设置" systemMenu="apple" id="57">
+                <menuItem title="NewApplication" id="56">
+                    <menu key="submenu" title="NewApplication" systemMenu="apple" id="57">
                         <items>
-                            <menuItem title="关于 Chiaki KeyKey 偏好设置" id="58">
+                            <menuItem title="About NewApplication" id="58">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="orderFrontStandardAboutPanel:" target="-2" id="142"/>
@@ -23,24 +23,24 @@
                             <menuItem isSeparatorItem="YES" id="143">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="偏好设置" id="131">
-                                <menu key="submenu" title="偏好设置" systemMenu="services" id="130"/>
+                            <menuItem title="Services" id="131">
+                                <menu key="submenu" title="Services" systemMenu="services" id="130"/>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="144">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="隐藏 Chiaki KeyKey 偏好设置" keyEquivalent="h" id="134">
+                            <menuItem title="Hide NewApplication" keyEquivalent="h" id="134">
                                 <connections>
                                     <action selector="hide:" target="-1" id="367"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="隐藏其他" keyEquivalent="h" id="145">
+                            <menuItem title="Hide Others" keyEquivalent="h" id="145">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
                                 <connections>
                                     <action selector="hideOtherApplications:" target="-1" id="368"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="显示全部" id="150">
+                            <menuItem title="Show All" id="150">
                                 <connections>
                                     <action selector="unhideAllApplications:" target="-1" id="370"/>
                                 </connections>
@@ -48,7 +48,7 @@
                             <menuItem isSeparatorItem="YES" id="149">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="退出 Chiaki KeyKey 偏好设置" keyEquivalent="q" id="136" userLabel="1111">
+                            <menuItem title="Quit NewApplication" keyEquivalent="q" id="136" userLabel="1111">
                                 <connections>
                                     <action selector="terminate:" target="-1" id="369"/>
                                 </connections>
@@ -56,10 +56,15 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="文件" id="83">
-                    <menu key="submenu" title="文件" id="81">
+                <menuItem title="File" id="83">
+                    <menu key="submenu" title="File" id="81">
                         <items>
-                            <menuItem title="关闭" keyEquivalent="w" id="73" userLabel="1">
+                            <menuItem title="New" keyEquivalent="n" id="82" userLabel="9">
+                                <connections>
+                                    <action selector="newDocument:" target="-1" id="373"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Close" keyEquivalent="w" id="73" userLabel="1">
                                 <connections>
                                     <action selector="performClose:" target="-1" id="193"/>
                                 </connections>
@@ -67,13 +72,13 @@
                             <menuItem isSeparatorItem="YES" id="74" userLabel="2">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="页面设置…" keyEquivalent="P" id="77" userLabel="5">
+                            <menuItem title="Page Setup..." keyEquivalent="P" id="77" userLabel="5">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                 <connections>
                                     <action selector="runPageLayout:" target="-1" id="87"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="打印…" keyEquivalent="p" id="78" userLabel="6">
+                            <menuItem title="Print…" keyEquivalent="p" id="78" userLabel="6">
                                 <connections>
                                     <action selector="print:" target="-1" id="86"/>
                                 </connections>
@@ -81,15 +86,15 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="编辑" id="217">
-                    <menu key="submenu" title="编辑" id="205">
+                <menuItem title="Edit" id="217">
+                    <menu key="submenu" title="Edit" id="205">
                         <items>
-                            <menuItem title="还原" keyEquivalent="z" id="207">
+                            <menuItem title="Undo" keyEquivalent="z" id="207">
                                 <connections>
                                     <action selector="undo:" target="-1" id="223"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="重作" keyEquivalent="Z" id="215">
+                            <menuItem title="Redo" keyEquivalent="Z" id="215">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                 <connections>
                                     <action selector="redo:" target="-1" id="231"/>
@@ -98,27 +103,27 @@
                             <menuItem isSeparatorItem="YES" id="206">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="剪切" keyEquivalent="x" id="199">
+                            <menuItem title="Cut" keyEquivalent="x" id="199">
                                 <connections>
                                     <action selector="cut:" target="-1" id="228"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="拷贝" keyEquivalent="c" id="197">
+                            <menuItem title="Copy" keyEquivalent="c" id="197">
                                 <connections>
                                     <action selector="copy:" target="-1" id="224"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="黏贴" keyEquivalent="v" id="203">
+                            <menuItem title="Paste" keyEquivalent="v" id="203">
                                 <connections>
                                     <action selector="paste:" target="-1" id="226"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="删除" id="202">
+                            <menuItem title="Delete" id="202">
                                 <connections>
                                     <action selector="delete:" target="-1" id="235"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="全选" keyEquivalent="a" id="198">
+                            <menuItem title="Select All" keyEquivalent="a" id="198">
                                 <connections>
                                     <action selector="selectAll:" target="-1" id="232"/>
                                 </connections>
@@ -126,20 +131,20 @@
                             <menuItem isSeparatorItem="YES" id="214">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="查找" id="218">
-                                <menu key="submenu" title="查找" id="220">
+                            <menuItem title="Find" id="218">
+                                <menu key="submenu" title="Find" id="220">
                                     <items>
-                                        <menuItem title="查找…" tag="1" keyEquivalent="f" id="209">
+                                        <menuItem title="Find…" tag="1" keyEquivalent="f" id="209">
                                             <connections>
                                                 <action selector="performFindPanelAction:" target="-1" id="241"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="查找下一个" tag="2" keyEquivalent="g" id="208"/>
-                                        <menuItem title="查找上一个" tag="3" keyEquivalent="G" id="213">
+                                        <menuItem title="Find Next" tag="2" keyEquivalent="g" id="208"/>
+                                        <menuItem title="Find Previous" tag="3" keyEquivalent="G" id="213">
                                             <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                         </menuItem>
-                                        <menuItem title="查找所选内容" tag="7" keyEquivalent="e" id="221"/>
-                                        <menuItem title="跳到所选范围" keyEquivalent="j" id="210">
+                                        <menuItem title="Use Selection for Find" tag="7" keyEquivalent="e" id="221"/>
+                                        <menuItem title="Jump to Selection" keyEquivalent="j" id="210">
                                             <connections>
                                                 <action selector="centerSelectionInVisibleArea:" target="-1" id="245"/>
                                             </connections>
@@ -147,25 +152,25 @@
                                     </items>
                                 </menu>
                             </menuItem>
-                            <menuItem title="拼写和语法" id="216">
-                                <menu key="submenu" title="拼写和语法" id="200">
+                            <menuItem title="Spelling and Grammar" id="216">
+                                <menu key="submenu" title="Spelling and Grammar" id="200">
                                     <items>
-                                        <menuItem title="显示拼写和语法" keyEquivalent=":" id="204">
+                                        <menuItem title="Show Spelling…" keyEquivalent=":" id="204">
                                             <connections>
                                                 <action selector="showGuessPanel:" target="-1" id="230"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="立即检查文稿" keyEquivalent=";" id="201">
+                                        <menuItem title="Check Spelling" keyEquivalent=";" id="201">
                                             <connections>
                                                 <action selector="checkSpelling:" target="-1" id="225"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="键入时检查拼写" id="219">
+                                        <menuItem title="Check Spelling While Typing" id="219">
                                             <connections>
                                                 <action selector="toggleContinuousSpellChecking:" target="-1" id="222"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="检查拼写和语法" id="346">
+                                        <menuItem title="Check Grammar With Spelling" id="346">
                                             <connections>
                                                 <action selector="toggleGrammarChecking:" target="-1" id="347"/>
                                             </connections>
@@ -173,20 +178,20 @@
                                     </items>
                                 </menu>
                             </menuItem>
-                            <menuItem title="替换" id="348">
-                                <menu key="submenu" title="替换" id="349">
+                            <menuItem title="Substitutions" id="348">
+                                <menu key="submenu" title="Substitutions" id="349">
                                     <items>
-                                        <menuItem title="智能拷贝/黏贴" tag="1" keyEquivalent="f" id="350">
+                                        <menuItem title="Smart Copy/Paste" tag="1" keyEquivalent="f" id="350">
                                             <connections>
                                                 <action selector="toggleSmartInsertDelete:" target="-1" id="355"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="智能引号" tag="2" keyEquivalent="g" id="351">
+                                        <menuItem title="Smart Quotes" tag="2" keyEquivalent="g" id="351">
                                             <connections>
                                                 <action selector="toggleAutomaticQuoteSubstitution:" target="-1" id="356"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="智能链接" tag="3" keyEquivalent="G" id="354">
+                                        <menuItem title="Smart Links" tag="3" keyEquivalent="G" id="354">
                                             <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                             <connections>
                                                 <action selector="toggleAutomaticLinkDetection:" target="-1" id="357"/>
@@ -195,15 +200,15 @@
                                     </items>
                                 </menu>
                             </menuItem>
-                            <menuItem title="语音" id="211">
-                                <menu key="submenu" title="语音" id="212">
+                            <menuItem title="Speech" id="211">
+                                <menu key="submenu" title="Speech" id="212">
                                     <items>
-                                        <menuItem title="开始讲话" id="196">
+                                        <menuItem title="Start Speaking" id="196">
                                             <connections>
                                                 <action selector="startSpeaking:" target="-1" id="233"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="停止讲话" id="195">
+                                        <menuItem title="Stop Speaking" id="195">
                                             <connections>
                                                 <action selector="stopSpeaking:" target="-1" id="227"/>
                                             </connections>
@@ -214,11 +219,11 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="格式" id="299">
-                    <menu key="submenu" title="格式" id="300">
+                <menuItem title="Format" id="299">
+                    <menu key="submenu" title="Format" id="300">
                         <items>
-                            <menuItem title="显示字体" keyEquivalent="t" id="344"/>
-                            <menuItem title="显示颜色" keyEquivalent="C" id="345">
+                            <menuItem title="Show Fonts" keyEquivalent="t" id="344"/>
+                            <menuItem title="Show Colors" keyEquivalent="C" id="345">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                 <connections>
                                     <action selector="orderFrontColorPanel:" target="-1" id="361"/>
@@ -227,8 +232,8 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="检视" id="295">
-                    <menu key="submenu" title="检视" id="296">
+                <menuItem title="View" id="295">
+                    <menu key="submenu" title="View" id="296">
                         <items>
                             <menuItem title="Show Toolbar" keyEquivalent="t" id="297">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
@@ -244,15 +249,15 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="窗口" id="19">
-                    <menu key="submenu" title="窗口" systemMenu="window" id="24">
+                <menuItem title="Window" id="19">
+                    <menu key="submenu" title="Window" systemMenu="window" id="24">
                         <items>
-                            <menuItem title="最小化" keyEquivalent="m" id="23">
+                            <menuItem title="Minimize" keyEquivalent="m" id="23">
                                 <connections>
                                     <action selector="performMiniaturize:" target="-1" id="37"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="缩放" id="239">
+                            <menuItem title="Zoom" id="239">
                                 <connections>
                                     <action selector="performZoom:" target="-1" id="240"/>
                                 </connections>
@@ -260,7 +265,7 @@
                             <menuItem isSeparatorItem="YES" id="92">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="前置全部窗口" id="5">
+                            <menuItem title="Bring All to Front" id="5">
                                 <connections>
                                     <action selector="arrangeInFront:" target="-1" id="39"/>
                                 </connections>
@@ -268,10 +273,10 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="帮助" id="103" userLabel="1">
-                    <menu key="submenu" title="帮助" id="106" userLabel="2">
+                <menuItem title="Help" id="103" userLabel="1">
+                    <menu key="submenu" title="Help" id="106" userLabel="2">
                         <items>
-                            <menuItem title="Chiaki KeyKey 偏好设置帮助" keyEquivalent="?" id="111">
+                            <menuItem title="NewApplication Help" keyEquivalent="?" id="111">
                                 <connections>
                                     <action selector="showHelp:" target="-1" id="360"/>
                                 </connections>
@@ -283,20 +288,20 @@
         </menu>
         <customObject id="375" customClass="TakaoPreference">
             <connections>
-                <outlet property="_cangjieView" destination="407" id="945"/>
-                <outlet property="_contentView" destination="377" id="942"/>
-                <outlet property="_generalView" destination="472" id="943"/>
-                <outlet property="_genericSettingView" destination="666" id="949"/>
-                <outlet property="_keyboardLayoutContentView" destination="936" id="950"/>
-                <outlet property="_keyboardLayoutView" destination="923" id="951"/>
-                <outlet property="_phoneticView" destination="379" id="944"/>
-                <outlet property="_phraseView" destination="445" id="947"/>
-                <outlet property="_pluginView" destination="1029" id="1041"/>
-                <outlet property="_simpexView" destination="542" id="946"/>
-                <outlet property="_takaoGenericController" destination="678" id="974"/>
-                <outlet property="_takaoGlobalController" destination="591" id="1001"/>
-                <outlet property="_takaoLoadedModuleController" destination="1028" id="1042"/>
-                <outlet property="_updateView" destination="473" id="948"/>
+                <outlet property="_cangjieView" destination="407" id="950"/>
+                <outlet property="_contentView" destination="377" id="947"/>
+                <outlet property="_generalView" destination="472" id="948"/>
+                <outlet property="_genericSettingView" destination="666" id="954"/>
+                <outlet property="_keyboardLayoutContentView" destination="939" id="955"/>
+                <outlet property="_keyboardLayoutView" destination="927" id="956"/>
+                <outlet property="_phoneticView" destination="379" id="949"/>
+                <outlet property="_phraseView" destination="445" id="952"/>
+                <outlet property="_pluginView" destination="1045" id="1058"/>
+                <outlet property="_simpexView" destination="542" id="951"/>
+                <outlet property="_takaoGenericController" destination="678" id="979"/>
+                <outlet property="_takaoGlobalController" destination="591" id="1018"/>
+                <outlet property="_takaoLoadedModuleController" destination="1044" id="1057"/>
+                <outlet property="_updateView" destination="473" id="953"/>
                 <outlet property="window" destination="371" id="376"/>
             </connections>
         </customObject>
@@ -316,25 +321,25 @@
                 </subviews>
             </view>
         </window>
-        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="892">
+        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="894">
             <windowStyleMask key="styleMask" titled="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="429" width="306" height="81"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1280" height="778"/>
-            <view key="contentView" id="893">
+            <view key="contentView" id="895">
                 <rect key="frame" x="0.0" y="0.0" width="306" height="81"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" id="895">
+                    <textField verticalHuggingPriority="750" id="897">
                         <rect key="frame" x="17" y="44" width="108" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="传输中，请稍候…" id="896">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="傳輸中，請稍候…" id="898">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <progressIndicator wantsLayer="YES" verticalHuggingPriority="750" minValue="20" maxValue="100" doubleValue="20" bezeled="NO" indeterminate="YES" style="bar" id="894">
+                    <progressIndicator wantsLayer="YES" verticalHuggingPriority="750" minValue="20" maxValue="100" doubleValue="20" bezeled="NO" indeterminate="YES" style="bar" id="896">
                         <rect key="frame" x="18" y="16" width="270" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
@@ -342,99 +347,99 @@
             </view>
         </window>
         <customView id="472" userLabel="General View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="453"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="451"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <button imageHugsTitle="YES" id="1022">
-                    <rect key="frame" x="136" y="95" width="313" height="18"/>
+                <button imageHugsTitle="YES" id="1038">
+                    <rect key="frame" x="136" y="96" width="313" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用 Ctrl + \ 切换输入法" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" imageScaling="proportionallyDown" inset="2" id="1023">
+                    <buttonCell key="cell" type="check" title="使用 Ctrl + \ 切換輸入法" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" imageScaling="proportionallyDown" inset="2" id="1039">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <action selector="writePreference:" target="591" id="1027"/>
+                        <action selector="writePreference:" target="591" id="1043"/>
                     </connections>
                 </button>
-                <matrix verticalHuggingPriority="750" allowsEmptySelection="NO" id="1010">
-                    <rect key="frame" x="138" y="171" width="236" height="18"/>
+                <matrix verticalHuggingPriority="750" allowsEmptySelection="NO" id="1027">
+                    <rect key="frame" x="138" y="174" width="236" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     <size key="cellSize" width="116" height="18"/>
                     <size key="intercellSpacing" width="4" height="2"/>
-                    <buttonCell key="prototype" type="radio" title="Radio" imagePosition="leading" alignment="left" inset="2" id="1012">
+                    <buttonCell key="prototype" type="radio" title="Radio" imagePosition="leading" alignment="left" inset="2" id="1029">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <cells>
                         <column>
-                            <buttonCell type="radio" title="垂直选字窗" imagePosition="leading" alignment="left" state="on" tag="1" inset="2" id="1011">
+                            <buttonCell type="radio" title="垂直選字窗" imagePosition="leading" alignment="left" state="on" tag="1" inset="2" id="1030">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                         </column>
                         <column>
-                            <buttonCell type="radio" title="水平选字窗" imagePosition="leading" alignment="left" inset="2" id="1013">
+                            <buttonCell type="radio" title="水平選字窗" imagePosition="leading" alignment="left" inset="2" id="1028">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                         </column>
                     </cells>
                     <connections>
-                        <action selector="writePreference:" target="591" id="1015"/>
+                        <action selector="writePreference:" target="591" id="1033"/>
                     </connections>
                 </matrix>
-                <textField verticalHuggingPriority="750" id="1009">
-                    <rect key="frame" x="17" y="172" width="108" height="17"/>
+                <textField verticalHuggingPriority="750" id="1026">
+                    <rect key="frame" x="17" y="175" width="108" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="选字窗样式：" id="1014">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="選字窗樣式：" id="1031">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" id="1002">
-                    <rect key="frame" x="17" y="346" width="108" height="17"/>
+                <textField verticalHuggingPriority="750" id="1019">
+                    <rect key="frame" x="17" y="344" width="108" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="输入法模组管理：" id="1003">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="輸入法模組管理：" id="1020">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <scrollView focusRingType="none" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" id="989">
-                    <rect key="frame" x="138" y="219" width="327" height="144"/>
+                <scrollView focusRingType="none" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" id="1006">
+                    <rect key="frame" x="138" y="223" width="322" height="138"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxY="YES"/>
-                    <clipView key="contentView" id="SQz-kg-gcY">
-                        <rect key="frame" x="1" y="0.0" width="310" height="143"/>
+                    <clipView key="contentView" id="Nwg-NY-dsX">
+                        <rect key="frame" x="1" y="0.0" width="305" height="137"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" headerView="993" id="992">
-                                <rect key="frame" x="0.0" y="0.0" width="310" height="118"/>
+                            <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" headerView="1007" id="1008">
+                                <rect key="frame" x="0.0" y="0.0" width="305" height="112"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                 <tableColumns>
-                                    <tableColumn identifier="enabled" width="55" minWidth="40" maxWidth="1000" id="994">
-                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="启用">
+                                    <tableColumn identifier="enabled" width="55" minWidth="40" maxWidth="1000" id="1012">
+                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="啟用">
                                             <font key="font" metaFont="smallSystem"/>
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
                                         </tableHeaderCell>
-                                        <buttonCell key="dataCell" type="check" bezelStyle="regularSquare" imagePosition="leading" alignment="left" controlSize="small" inset="2" id="997">
+                                        <buttonCell key="dataCell" type="check" bezelStyle="regularSquare" imagePosition="leading" alignment="left" controlSize="small" inset="2" id="1013">
                                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                             <font key="font" metaFont="smallSystem"/>
                                         </buttonCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                     </tableColumn>
-                                    <tableColumn identifier="name" editable="NO" width="249" minWidth="40" maxWidth="1000" id="995">
-                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="模组名称">
+                                    <tableColumn identifier="name" editable="NO" width="244" minWidth="40" maxWidth="1000" id="1011">
+                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="模組名稱">
                                             <font key="font" metaFont="smallSystem"/>
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
                                         </tableHeaderCell>
-                                        <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" alignment="left" title="Text Cell" id="996">
+                                        <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" alignment="left" title="Text Cell" id="1014">
                                             <font key="font" metaFont="system"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -445,49 +450,49 @@
                             </tableView>
                         </subviews>
                     </clipView>
-                    <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="991">
-                        <rect key="frame" x="-100" y="-100" width="310" height="15"/>
+                    <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="1009">
+                        <rect key="frame" x="-100" y="-100" width="305" height="15"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
-                    <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="990">
-                        <rect key="frame" x="311" y="25" width="15" height="118"/>
+                    <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="1010">
+                        <rect key="frame" x="306" y="25" width="15" height="112"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
-                    <tableHeaderView key="headerView" id="993">
-                        <rect key="frame" x="0.0" y="0.0" width="310" height="25"/>
+                    <tableHeaderView key="headerView" id="1007">
+                        <rect key="frame" x="0.0" y="0.0" width="305" height="25"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </tableHeaderView>
                 </scrollView>
-                <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="979" customClass="TakaoColorPopUpButton">
-                    <rect key="frame" x="135" y="140" width="242" height="26"/>
+                <textField verticalHuggingPriority="750" id="990">
+                    <rect key="frame" x="17" y="148" width="108" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" inset="2" id="981">
-                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="menu"/>
-                        <menu key="menu" title="OtherViews" id="982"/>
-                    </popUpButtonCell>
-                    <connections>
-                        <action selector="setHighlightColor:" target="591" id="985"/>
-                        <outlet property="_controller" destination="591" id="984"/>
-                    </connections>
-                </popUpButton>
-                <textField verticalHuggingPriority="750" id="978">
-                    <rect key="frame" x="17" y="146" width="108" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="选字窗配色：" id="983">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="選字窗配色：" id="996">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <customView id="936">
-                    <rect key="frame" x="0.0" y="371" width="480" height="82"/>
+                <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="991" customClass="TakaoColorPopUpButton">
+                    <rect key="frame" x="135" y="143" width="242" height="26"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" inset="2" id="992">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="menu"/>
+                        <menu key="menu" title="OtherViews" id="993"/>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="setHighlightColor:" target="591" id="1000"/>
+                        <outlet property="_controller" destination="591" id="997"/>
+                    </connections>
+                </popUpButton>
+                <customView id="939">
+                    <rect key="frame" x="0.0" y="369" width="480" height="82"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </customView>
                 <button imageHugsTitle="YES" id="847">
                     <rect key="frame" x="136" y="71" width="200" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <buttonCell key="cell" type="check" title="启用提示声" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="848">
+                    <buttonCell key="cell" type="check" title="啟用提示聲" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="848">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -498,7 +503,7 @@
                 <textField verticalHuggingPriority="750" id="846">
                     <rect key="frame" x="17" y="73" width="108" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="错误时发出哔声：" id="849">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="錯誤時發出嗶聲：" id="849">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -525,9 +530,9 @@
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="844">
                     <rect key="frame" x="382" y="19" width="33" height="25"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <buttonCell key="cell" type="smallSquare" title="Test" bezelStyle="smallSquare" image="playSound" imagePosition="only" alignment="center" state="on" borderStyle="border" inset="2" id="855">
+                    <buttonCell key="cell" type="smallSquare" title="Test" bezelStyle="smallSquare" image="playSound" imagePosition="only" alignment="center" controlSize="small" state="on" borderStyle="border" inset="2" id="855">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
+                        <font key="font" metaFont="smallSystem"/>
                     </buttonCell>
                     <connections>
                         <action selector="testSound:" target="591" id="862"/>
@@ -536,9 +541,9 @@
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="843">
                     <rect key="frame" x="416" y="19" width="33" height="25"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <buttonCell key="cell" type="smallSquare" title="Stop" bezelStyle="smallSquare" image="stopSound" imagePosition="only" alignment="center" enabled="NO" borderStyle="border" inset="2" id="856">
+                    <buttonCell key="cell" type="smallSquare" title="Stop" bezelStyle="smallSquare" image="stopSound" imagePosition="only" alignment="center" controlSize="small" enabled="NO" borderStyle="border" inset="2" id="856">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
+                        <font key="font" metaFont="smallSystem"/>
                     </buttonCell>
                     <connections>
                         <action selector="stopSound:" target="591" id="863"/>
@@ -547,16 +552,16 @@
                 <textField verticalHuggingPriority="750" id="842">
                     <rect key="frame" x="135" y="51" width="145" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="提示声音效文件：" id="857">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="提示聲音效檔案：" id="857">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" id="1049">
-                    <rect key="frame" x="135" y="197" width="304" height="14"/>
+                <textField verticalHuggingPriority="750" id="1065">
+                    <rect key="frame" x="135" y="201" width="304" height="14"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="您可以从输入菜单中隐藏部分输入法模组。" id="1050">
+                    <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="您可以從輸入選單中隱藏部分輸入法模組。" id="1066">
                         <font key="font" size="11" name="LiHeiPro"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -565,59 +570,50 @@
             </subviews>
         </customView>
         <customView id="379" userLabel="Phonetic View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="350"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="355"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField verticalHuggingPriority="750" id="921">
-                    <rect key="frame" x="151" y="115" width="313" height="29"/>
+                <textField verticalHuggingPriority="750" id="925">
+                    <rect key="frame" x="151" y="119" width="313" height="29"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="如果在比较旧型的麦金塔电脑上，将组字区设定得太大，输入法运作可能会显得较为缓慢。" id="922">
+                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="如果在比較舊型的麥金塔電腦上，將組字區設定得太大，輸入法運作可能會顯得較為緩慢。" id="926">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" id="917">
-                    <rect key="frame" x="148" y="152" width="28" height="17"/>
+                <textField verticalHuggingPriority="750" id="921">
+                    <rect key="frame" x="434" y="157" width="28" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="10" id="918">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="20" id="922">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" id="913">
-                    <rect key="frame" x="435" y="152" width="28" height="17"/>
+                <textField verticalHuggingPriority="750" id="919">
+                    <rect key="frame" x="149" y="156" width="28" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="20" id="914">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="10" id="920">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <slider verticalHuggingPriority="750" id="912">
-                    <rect key="frame" x="181" y="149" width="246" height="17"/>
+                <slider verticalHuggingPriority="750" id="917">
+                    <rect key="frame" x="180" y="156" width="246" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <sliderCell key="cell" controlSize="small" state="on" alignment="left" minValue="10" maxValue="20" doubleValue="10" tickMarkPosition="below" numberOfTickMarks="11" allowsTickMarkValuesOnly="YES" sliderType="linear" id="915">
+                    <sliderCell key="cell" controlSize="small" state="on" alignment="left" minValue="10" maxValue="20" doubleValue="10" tickMarkPosition="below" numberOfTickMarks="11" allowsTickMarkValuesOnly="YES" sliderType="linear" id="918">
                         <font key="font" metaFont="smallSystem"/>
                     </sliderCell>
                     <connections>
-                        <action selector="writePreference:" target="808" id="920"/>
+                        <action selector="writePreference:" target="808" id="924"/>
                     </connections>
                 </slider>
-                <textField verticalHuggingPriority="750" id="911">
-                    <rect key="frame" x="48" y="152" width="94" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="组字区长度：" id="916">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <button imageHugsTitle="YES" id="405">
                     <rect key="frame" x="150" y="18" width="219" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用全字库罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="406">
+                    <buttonCell key="cell" type="check" title="使用全字庫罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="406">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -628,16 +624,16 @@
                 <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="769" customClass="TakaoKeyboardLayoutPopUpButton">
                     <rect key="frame" x="149" y="37" width="314" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <popUpButtonCell key="cell" type="push" title="标准" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="772" id="770">
+                    <popUpButtonCell key="cell" type="push" title="標準" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="772" id="770">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" title="OtherViews" id="771">
                             <items>
-                                <menuItem title="标准" state="on" id="772"/>
+                                <menuItem title="標準" state="on" id="772"/>
                                 <menuItem title="倚天" id="773"/>
-                                <menuItem title="倚天 26 键" id="1018"/>
-                                <menuItem title="许氏键盘" id="1019"/>
-                                <menuItem title="汉语拼音" id="1000"/>
+                                <menuItem title="倚天 26 鍵" id="1036"/>
+                                <menuItem title="許氏鍵盤" id="1037"/>
+                                <menuItem title="漢語拼音" id="1017"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -646,9 +642,9 @@
                     </connections>
                 </popUpButton>
                 <button imageHugsTitle="YES" id="793">
-                    <rect key="frame" x="150" y="93" width="219" height="18"/>
+                    <rect key="frame" x="151" y="98" width="219" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用全字库罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="796">
+                    <buttonCell key="cell" type="check" title="使用全字庫罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="796">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -657,7 +653,7 @@
                     </connections>
                 </button>
                 <comboBox verticalHuggingPriority="750" textCompletion="NO" id="866">
-                    <rect key="frame" x="152" y="173" width="310" height="26"/>
+                    <rect key="frame" x="152" y="178" width="310" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" completes="NO" numberOfVisibleItems="5" id="867">
                         <font key="font" metaFont="system"/>
@@ -677,7 +673,7 @@
                     </connections>
                 </comboBox>
                 <matrix verticalHuggingPriority="750" allowsEmptySelection="NO" id="799">
-                    <rect key="frame" x="152" y="203" width="307" height="38"/>
+                    <rect key="frame" x="152" y="208" width="307" height="38"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     <size key="cellSize" width="307" height="18"/>
@@ -688,11 +684,11 @@
                     </buttonCell>
                     <cells>
                         <column>
-                            <buttonCell type="radio" title="光标在前（微软新注音输入法模式）" imagePosition="leading" alignment="left" state="on" inset="2" id="801">
+                            <buttonCell type="radio" title="游標在前（微軟新注音輸入法模式）" imagePosition="leading" alignment="left" state="on" inset="2" id="801">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
-                            <buttonCell type="radio" title="光标在后（苹果汉音输入法模式）" imagePosition="leading" alignment="left" tag="1" inset="2" id="802">
+                            <buttonCell type="radio" title="游標在後（蘋果漢音輸入法模式）" imagePosition="leading" alignment="left" tag="1" inset="2" id="802">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
@@ -703,18 +699,18 @@
                     </connections>
                 </matrix>
                 <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="776" customClass="TakaoKeyboardLayoutPopUpButton">
-                    <rect key="frame" x="149" y="286" width="314" height="26"/>
+                    <rect key="frame" x="149" y="291" width="314" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <popUpButtonCell key="cell" type="push" title="标准" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="784" id="779">
+                    <popUpButtonCell key="cell" type="push" title="標準" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="784" id="779">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" title="OtherViews" id="780">
                             <items>
-                                <menuItem title="标准" state="on" id="784"/>
+                                <menuItem title="標準" state="on" id="784"/>
                                 <menuItem title="倚天" id="783"/>
-                                <menuItem title="倚天 26 按键" id="1016"/>
-                                <menuItem title="许氏键盘" id="1017"/>
-                                <menuItem title="汉语拼音" id="999"/>
+                                <menuItem title="倚天 26 鍵" id="1034"/>
+                                <menuItem title="許氏鍵盤" id="1035"/>
+                                <menuItem title="漢語拼音" id="1016"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -723,31 +719,40 @@
                     </connections>
                 </popUpButton>
                 <textField verticalHuggingPriority="750" id="868">
-                    <rect key="frame" x="43" y="180" width="98" height="17"/>
+                    <rect key="frame" x="43" y="185" width="98" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="选字按键设定：" id="869">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="選字按鍵設定：" id="869">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField verticalHuggingPriority="750" id="915">
+                    <rect key="frame" x="48" y="157" width="94" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="組字區長度：" id="916">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" id="794">
-                    <rect key="frame" x="48" y="95" width="94" height="17"/>
+                    <rect key="frame" x="48" y="100" width="94" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="额外设定：" id="795">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="額外設定：" id="795">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
                 <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" id="807">
-                    <rect key="frame" x="120" y="68" width="341" height="5"/>
+                    <rect key="frame" x="117" y="68" width="344" height="5"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </box>
                 <textField verticalHuggingPriority="750" id="764">
                     <rect key="frame" x="17" y="70" width="214" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="传统注音输入法" id="765">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="傳統注音輸入法" id="765">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -756,7 +761,7 @@
                 <textField verticalHuggingPriority="750" id="403">
                     <rect key="frame" x="48" y="20" width="94" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="额外设定：" id="404">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="額外設定：" id="404">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -765,14 +770,14 @@
                 <textField verticalHuggingPriority="750" id="399">
                     <rect key="frame" x="28" y="43" width="114" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="键盘配置：" id="400">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="鍵盤配置：" id="400">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" id="797">
-                    <rect key="frame" x="39" y="228" width="102" height="17"/>
+                    <rect key="frame" x="39" y="233" width="102" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="選字模式：" id="798">
                         <font key="font" metaFont="system"/>
@@ -781,9 +786,9 @@
                     </textFieldCell>
                 </textField>
                 <button imageHugsTitle="YES" id="788">
-                    <rect key="frame" x="150" y="267" width="296" height="18"/>
+                    <rect key="frame" x="150" y="272" width="296" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="按下 ESC 按键后清除全部编辑区内容" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="791">
+                    <buttonCell key="cell" type="check" title="按下 ESC 按鍵後清除全部編輯區內容" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="791">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -792,9 +797,9 @@
                     </connections>
                 </button>
                 <button imageHugsTitle="YES" id="787">
-                    <rect key="frame" x="150" y="247" width="287" height="18"/>
+                    <rect key="frame" x="150" y="252" width="287" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用空白键选字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="792">
+                    <buttonCell key="cell" type="check" title="使用空白鍵選字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="792">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -803,7 +808,7 @@
                     </connections>
                 </button>
                 <textField verticalHuggingPriority="750" id="785">
-                    <rect key="frame" x="41" y="268" width="102" height="17"/>
+                    <rect key="frame" x="41" y="273" width="102" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="打字功能：" id="786">
                         <font key="font" metaFont="system"/>
@@ -812,25 +817,25 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" id="777">
-                    <rect key="frame" x="28" y="293" width="114" height="17"/>
+                    <rect key="frame" x="28" y="298" width="114" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="键盘配置：" id="778">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="鍵盤配置：" id="778">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" id="767">
-                    <rect key="frame" x="17" y="318" width="192" height="17"/>
+                    <rect key="frame" x="17" y="323" width="192" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="好打注音输入法" id="768">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="好打注音輸入法" id="768">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
                 <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" id="766">
-                    <rect key="frame" x="120" y="319" width="340" height="5"/>
+                    <rect key="frame" x="117" y="324" width="343" height="5"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </box>
             </subviews>
@@ -842,7 +847,7 @@
                 <textField verticalHuggingPriority="750" id="838">
                     <rect key="frame" x="151" y="82" width="316" height="34"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="请注意：不能够同时勾选“组字错误时清除字根”与“打字时同时组字”这两个选项。" id="839">
+                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="請注意：不能夠同時勾選「組字錯誤時清除字根」與「打字時同時組字」這兩個選項。" id="839">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -851,7 +856,7 @@
                 <button imageHugsTitle="YES" id="539">
                     <rect key="frame" x="152" y="122" width="246" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="打字时同时组字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="540">
+                    <buttonCell key="cell" type="check" title="打字時同時組字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="540">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -862,7 +867,7 @@
                 <button imageHugsTitle="YES" id="428">
                     <rect key="frame" x="152" y="142" width="287" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="组字错误时清除字根" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="431">
+                    <buttonCell key="cell" type="check" title="組字錯誤時清除字根" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="431">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -873,7 +878,7 @@
                 <button imageHugsTitle="YES" id="429">
                     <rect key="frame" x="152" y="162" width="308" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用动态字频调整（将常用字移到选字列表前方）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="430">
+                    <buttonCell key="cell" type="check" title="使用動態字頻調整（將常用字移到選字列表前方）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="430">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -884,7 +889,7 @@
                 <button imageHugsTitle="YES" id="877">
                     <rect key="frame" x="152" y="182" width="295" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="打到字根最大长度时立刻组字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="878">
+                    <buttonCell key="cell" type="check" title="打到字根最大長度時立刻組字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="878">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -895,14 +900,14 @@
                 <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="755">
                     <rect key="frame" x="151" y="52" width="320" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <popUpButtonCell key="cell" type="push" title="除了逗号与句号外，使用全角标点" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="759" id="756">
+                    <popUpButtonCell key="cell" type="push" title="全部使用全形標點" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="758" id="756">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" title="OtherViews" id="757">
                             <items>
-                                <menuItem title="全部使用全角标点" id="758"/>
-                                <menuItem title="除了逗号与句号外，使用全角标点" state="on" id="759"/>
-                                <menuItem title="全部使用半角标点" id="760"/>
+                                <menuItem title="全部使用全形標點" state="on" id="758"/>
+                                <menuItem title="除了逗號與句號外，使用半形標點" id="759"/>
+                                <menuItem title="全部使用半形標點" id="760"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -913,7 +918,7 @@
                 <textField verticalHuggingPriority="750" id="753">
                     <rect key="frame" x="25" y="59" width="117" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="标点符号样式：" id="754">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="標點符號樣式：" id="754">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -926,7 +931,7 @@
                 <button imageHugsTitle="YES" id="408">
                     <rect key="frame" x="152" y="21" width="219" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用全字库罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="425">
+                    <buttonCell key="cell" type="check" title="使用全字庫罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="425">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -937,7 +942,7 @@
                 <textField verticalHuggingPriority="750" id="409">
                     <rect key="frame" x="40" y="20" width="102" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="额外设定：" id="424">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="額外設定：" id="424">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -961,7 +966,7 @@
                 <textField verticalHuggingPriority="750" id="840">
                     <rect key="frame" x="153" y="54" width="316" height="34"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="请注意：不能够同时勾选“组字错误时清除字根”与“打字时同时组字”这两个选项。" id="841">
+                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="請注意：不能夠同時勾選「組字錯誤時清除字根」與「打字時同時組字」這兩個選項。" id="841">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -974,7 +979,7 @@
                 <button imageHugsTitle="YES" id="544">
                     <rect key="frame" x="152" y="94" width="246" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="打字时同时组字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="557">
+                    <buttonCell key="cell" type="check" title="打字時同時組字" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="557">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -994,7 +999,7 @@
                 <button imageHugsTitle="YES" id="547">
                     <rect key="frame" x="152" y="114" width="282" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="组字错误时清除字根" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="554">
+                    <buttonCell key="cell" type="check" title="組字錯誤時清除字根" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="554">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1005,7 +1010,7 @@
                 <button imageHugsTitle="YES" id="550">
                     <rect key="frame" x="152" y="18" width="219" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="使用全字库罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="551">
+                    <buttonCell key="cell" type="check" title="使用全字庫罕用字（CNS11643）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="551">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1016,7 +1021,7 @@
                 <textField verticalHuggingPriority="750" id="549">
                     <rect key="frame" x="40" y="20" width="102" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="额外设定：" id="552">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="額外設定：" id="552">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1028,26 +1033,48 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="254"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="1005">
-                    <rect key="frame" x="154" y="18" width="268" height="32"/>
+                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="1022">
+                    <rect key="frame" x="154" y="15" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="启动词汇编辑工具" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="1006">
+                    <buttonCell key="cell" type="push" title="啟動詞彙編輯工具" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="1023">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <action selector="launchEditor:" target="655" id="1008"/>
+                        <action selector="launchEditor:" target="655" id="1025"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" id="1004">
-                    <rect key="frame" x="31" y="29" width="116" height="17"/>
+                <textField verticalHuggingPriority="750" id="1021">
+                    <rect key="frame" x="31" y="23" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="编辑词库：" id="1007">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="編輯詞庫：" id="1024">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
+                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="886">
+                    <rect key="frame" x="154" y="116" width="268" height="32"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="push" title="上傳自訂詞資料庫到 iDisk" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="889">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="exportDatabaseToDotMac:" target="655" id="890"/>
+                    </connections>
+                </button>
+                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="887">
+                    <rect key="frame" x="154" y="145" width="268" height="32"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="push" title="從 iDisk 下載自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="888">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="importDatabaseFromDotMac:" target="655" id="891"/>
+                    </connections>
+                </button>
                 <textField verticalHuggingPriority="750" id="884">
                     <rect key="frame" x="31" y="156" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1057,32 +1084,10 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="883">
-                    <rect key="frame" x="154" y="116" width="268" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="导出自订词数据库到 iDisk" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="886">
-                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="exportDatabaseToDotMac:" target="655" id="889"/>
-                    </connections>
-                </button>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="882">
-                    <rect key="frame" x="154" y="145" width="268" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="从 iDisk 导入自订词数据库" bezelStyle="rounded" alignment="center" state="on" borderStyle="border" inset="2" id="887">
-                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="importDatabaseFromDotMac:" target="655" id="888"/>
-                    </connections>
-                </button>
                 <textField verticalHuggingPriority="750" id="521">
                     <rect key="frame" x="31" y="217" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="自订词数据库：" id="522">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="自訂詞資料庫：" id="522">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1091,7 +1096,7 @@
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="466">
                     <rect key="frame" x="154" y="177" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="导出自订词数据库" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="467">
+                    <buttonCell key="cell" type="push" title="匯出自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="467">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1102,7 +1107,7 @@
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="464">
                     <rect key="frame" x="154" y="206" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="导入自订词数据库" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="465">
+                    <buttonCell key="cell" type="push" title="匯入自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="465">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1117,13 +1122,13 @@
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <progressIndicator hidden="YES" wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" minValue="16" maxValue="100" doubleValue="16" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" id="726">
-                    <rect key="frame" x="375" y="134" width="16" height="16"/>
+                    <rect key="frame" x="375" y="135" width="16" height="16"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </progressIndicator>
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="537">
-                    <rect key="frame" x="22" y="126" width="102" height="28"/>
+                    <rect key="frame" x="22" y="127" width="102" height="28"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="检查并安装" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="538">
+                    <buttonCell key="cell" type="push" title="檢查並安裝" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="538">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="smallSystem"/>
                     </buttonCell>
@@ -1131,10 +1136,10 @@
                         <action selector="checkUpdateNow:" target="695" id="719"/>
                     </connections>
                 </button>
-                <box autoresizesSubviews="NO" borderType="line" title="词库版本资讯" id="659">
+                <box autoresizesSubviews="NO" borderType="line" title="詞庫版本資訊" id="659">
                     <rect key="frame" x="22" y="16" width="441" height="98"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <view key="contentView" id="D5j-Yp-9g5">
+                    <view key="contentView" id="9wr-s1-ed6">
                         <rect key="frame" x="3" y="3" width="435" height="80"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -1142,6 +1147,15 @@
                                 <rect key="frame" x="133" y="12" width="84" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="612">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" id="605">
+                                <rect key="frame" x="15" y="34" width="108" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前詞庫：" id="606">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1166,27 +1180,18 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" id="615">
-                                <rect key="frame" x="12" y="12" width="114" height="14"/>
+                                <rect key="frame" x="9" y="12" width="114" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次检查：" id="616">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <textField verticalHuggingPriority="750" id="605">
-                                <rect key="frame" x="18" y="34" width="108" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前词库：" id="606">
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次檢查：" id="616">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" id="535">
-                                <rect key="frame" x="12" y="56" width="114" height="14"/>
+                                <rect key="frame" x="9" y="56" width="114" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新词库：" id="536">
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新詞庫：" id="536">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1198,7 +1203,7 @@
                 <button hidden="YES" imageHugsTitle="YES" id="613">
                     <rect key="frame" x="151" y="132" width="139" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="开始使用时检查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="614">
+                    <buttonCell key="cell" type="check" title="開始使用時檢查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" inset="2" id="614">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1209,7 +1214,7 @@
                 <textField hidden="YES" verticalHuggingPriority="750" id="609">
                     <rect key="frame" x="22" y="133" width="118" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="软件更新功能：" id="610">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="軟體更新功能：" id="610">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1226,14 +1231,14 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </customView>
                 <scrollView focusRingType="none" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" id="667">
-                    <rect key="frame" x="0.0" y="0.0" width="136" height="360"/>
+                    <rect key="frame" x="0.0" y="0.0" width="136" height="361"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <clipView key="contentView" id="WpG-lp-LjG">
-                        <rect key="frame" x="1" y="0.0" width="119" height="359"/>
+                    <clipView key="contentView" id="il9-Av-dmV">
+                        <rect key="frame" x="1" y="0.0" width="119" height="360"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="683" id="670">
-                                <rect key="frame" x="0.0" y="0.0" width="119" height="334"/>
+                                <rect key="frame" x="0.0" y="0.0" width="119" height="335"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -1241,7 +1246,7 @@
                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                 <tableColumns>
                                     <tableColumn identifier="modules" editable="NO" width="116" minWidth="40" maxWidth="1000" id="672">
-                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="模组列表">
+                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="模組列表">
                                             <font key="font" metaFont="smallSystem"/>
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
@@ -1262,7 +1267,7 @@
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="668">
-                        <rect key="frame" x="120" y="25" width="15" height="334"/>
+                        <rect key="frame" x="120" y="25" width="15" height="335"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <tableHeaderView key="headerView" id="683">
@@ -1272,75 +1277,75 @@
                 </scrollView>
             </subviews>
         </customView>
-        <customView id="923" userLabel="Keyboard View">
+        <customView id="927" userLabel="Keyboard View">
             <rect key="frame" x="0.0" y="0.0" width="480" height="82"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="924">
+                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="944">
                     <rect key="frame" x="372" y="34" width="96" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="重设" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="935">
+                    <buttonCell key="cell" type="push" title="重設" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="945">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <action selector="resetKeyboardLayout:" target="591" id="940"/>
+                        <action selector="resetKeyboardLayout:" target="591" id="946"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" id="925">
+                <textField verticalHuggingPriority="750" id="936">
                     <rect key="frame" x="135" y="0.0" width="328" height="34"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="大多中文输入法都是使用美国键盘配置，如果您想要以非美国键盘，使用汉语拼音等拼音方式输入，请在此设定。" id="934">
+                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="大多中文輸入法都是使用美式鍵盤配置，如果您想要以非美式鍵盤，使用漢語拼音等拼音方式輸入，請在此設定。" id="937">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" id="926">
+                <textField verticalHuggingPriority="750" id="934">
                     <rect key="frame" x="17" y="45" width="108" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="键盘类型对应：" id="933">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="鍵盤類型對應：" id="935">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="927">
+                <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="928">
                     <rect key="frame" x="135" y="38" width="238" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <popUpButtonCell key="cell" type="push" title="Item 1" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="932" id="928">
+                    <popUpButtonCell key="cell" type="push" title="Item 1" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="931" id="929">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
-                        <menu key="menu" title="OtherViews" id="929">
+                        <menu key="menu" title="OtherViews" id="930">
                             <items>
-                                <menuItem title="Item 1" state="on" id="932"/>
-                                <menuItem title="Item 2" id="931"/>
-                                <menuItem title="Item 3" id="930"/>
+                                <menuItem title="Item 1" state="on" id="931"/>
+                                <menuItem title="Item 2" id="932"/>
+                                <menuItem title="Item 3" id="933"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
                     <connections>
-                        <action selector="setKeyboardLayout:" target="591" id="939"/>
+                        <action selector="setKeyboardLayout:" target="591" id="943"/>
                     </connections>
                 </popUpButton>
             </subviews>
         </customView>
-        <customView id="1029" userLabel="Plugins View">
+        <customView id="1045" userLabel="Plugins View">
             <rect key="frame" x="0.0" y="0.0" width="480" height="348"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <customView id="1046">
-                    <rect key="frame" x="20" y="20" width="440" height="101"/>
+                <customView id="1062">
+                    <rect key="frame" x="18" y="20" width="440" height="101"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </customView>
-                <scrollView focusRingType="none" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" id="1031">
+                <scrollView focusRingType="none" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" id="1047">
                     <rect key="frame" x="18" y="181" width="442" height="147"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <clipView key="contentView" id="vcx-H7-CbY">
+                    <clipView key="contentView" id="XfP-9o-XcT">
                         <rect key="frame" x="1" y="0.0" width="425" height="146"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="1035" id="1034">
+                            <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="1051" id="1050">
                                 <rect key="frame" x="0.0" y="0.0" width="425" height="121"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
@@ -1348,25 +1353,25 @@
                                 <tableViewGridLines key="gridStyleMask" horizontal="YES"/>
                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                 <tableColumns>
-                                    <tableColumn identifier="enabled" width="70" minWidth="10" maxWidth="3.4028229999999999e+38" id="1036">
-                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="激活">
+                                    <tableColumn identifier="enabled" width="70" minWidth="10" maxWidth="3.4028229999999999e+38" id="1052">
+                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="啟用">
                                             <font key="font" metaFont="smallSystem"/>
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
                                         </tableHeaderCell>
-                                        <buttonCell key="dataCell" type="check" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="1039">
+                                        <buttonCell key="dataCell" type="check" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="1055">
                                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES"/>
                                     </tableColumn>
-                                    <tableColumn identifier="name" editable="NO" width="349" minWidth="40" maxWidth="1000" id="1037">
-                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="插件名稱">
+                                    <tableColumn identifier="name" editable="NO" width="349" minWidth="40" maxWidth="1000" id="1053">
+                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="外掛模組">
                                             <font key="font" metaFont="smallSystem"/>
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
                                         </tableHeaderCell>
-                                        <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" alignment="left" title="Text Cell" id="1038">
+                                        <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" alignment="left" title="Text Cell" id="1054">
                                             <font key="font" metaFont="system"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -1377,53 +1382,54 @@
                             </tableView>
                         </subviews>
                     </clipView>
-                    <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="1033">
+                    <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="1049">
                         <rect key="frame" x="-100" y="-100" width="425" height="15"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
-                    <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="1032">
+                    <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="1048">
                         <rect key="frame" x="426" y="25" width="15" height="121"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
-                    <tableHeaderView key="headerView" id="1035">
+                    <tableHeaderView key="headerView" id="1051">
                         <rect key="frame" x="0.0" y="0.0" width="425" height="25"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </tableHeaderView>
                 </scrollView>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="1030">
+                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="1046">
                     <rect key="frame" x="277" y="133" width="189" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="刪除所選的插件" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="1040">
+                    <buttonCell key="cell" type="push" title="刪除選擇的外掛模組" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="1056">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" size="13" name="LiHeiPro"/>
                     </buttonCell>
                     <connections>
-                        <action selector="removePlugin:" target="1028" id="1044"/>
+                        <action selector="removePlugin:" target="1044" id="1060"/>
                     </connections>
                 </button>
             </subviews>
         </customView>
         <customObject id="591" customClass="TakaoGlobal">
             <connections>
-                <outlet property="_highlightColorPopUpButton" destination="979" id="986"/>
-                <outlet property="_keyboardLayoutPopUpButton" destination="927" id="969"/>
-                <outlet property="_moduleListTableView" destination="992" id="998"/>
-                <outlet property="_soundCheckBox" destination="847" id="971"/>
-                <outlet property="_soundListPopUpButton" destination="845" id="970"/>
-                <outlet property="_stopPlayiongButton" destination="843" id="973"/>
-                <outlet property="_useCtrlBackSlashToggleInputMethod" destination="1022" id="1026"/>
-                <outlet property="_useUpdateCheckBox" destination="613" id="972"/>
+                <outlet property="_candidateWindowStyleMatrix" destination="1027" id="1032"/>
+                <outlet property="_highlightColorPopUpButton" destination="991" id="999"/>
+                <outlet property="_keyboardLayoutPopUpButton" destination="928" id="974"/>
+                <outlet property="_moduleListTableView" destination="1008" id="1015"/>
+                <outlet property="_soundCheckBox" destination="847" id="976"/>
+                <outlet property="_soundListPopUpButton" destination="845" id="975"/>
+                <outlet property="_stopPlayiongButton" destination="843" id="978"/>
+                <outlet property="_useCtrlBackSlashToggleInputMethod" destination="1038" id="1042"/>
+                <outlet property="_useUpdateCheckBox" destination="613" id="977"/>
             </connections>
         </customObject>
         <customObject id="808" customClass="TakaoSmartPhonetic">
             <connections>
-                <outlet property="_candidateCursorAtEndOfTargetBlockMatrix" destination="799" id="958"/>
-                <outlet property="_clearComposingTextWithEscCheckBox" destination="788" id="956"/>
-                <outlet property="_composingTextBufferSizeSlider" destination="912" id="960"/>
-                <outlet property="_keyboardLayoutPopUpButton" destination="776" id="954"/>
-                <outlet property="_selectionKeyComboBox" destination="866" id="959"/>
-                <outlet property="_showCandidateListWithSpaceCheckBox" destination="787" id="957"/>
-                <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="793" id="955"/>
+                <outlet property="_candidateCursorAtEndOfTargetBlockMatrix" destination="799" id="963"/>
+                <outlet property="_clearComposingTextWithEscCheckBox" destination="788" id="961"/>
+                <outlet property="_composingTextBufferSizeSlider" destination="917" id="965"/>
+                <outlet property="_keyboardLayoutPopUpButton" destination="776" id="959"/>
+                <outlet property="_selectionKeyComboBox" destination="866" id="964"/>
+                <outlet property="_showCandidateListWithSpaceCheckBox" destination="787" id="962"/>
+                <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="793" id="960"/>
             </connections>
         </customObject>
         <customObject id="560" customClass="TakaoPhonetic">
@@ -1434,51 +1440,51 @@
         </customObject>
         <customObject id="569" userLabel="Takao Cangjie" customClass="TakaoCangjie">
             <connections>
-                <outlet property="_clearReadingBufferAtCompositionErrorCheckBox" destination="428" id="963"/>
-                <outlet property="_composeWhenTypingCheckBox" destination="539" id="966"/>
-                <outlet property="_shouldCommitAtMaximumRadicalLengthCheckBox" destination="877" id="962"/>
-                <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="408" id="964"/>
-                <outlet property="_useDynamicFrequencyCheckBox" destination="429" id="961"/>
-                <outlet property="_useOverrideTablePopUpButton" destination="755" id="965"/>
+                <outlet property="_clearReadingBufferAtCompositionErrorCheckBox" destination="428" id="968"/>
+                <outlet property="_composeWhenTypingCheckBox" destination="539" id="971"/>
+                <outlet property="_shouldCommitAtMaximumRadicalLengthCheckBox" destination="877" id="967"/>
+                <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="408" id="969"/>
+                <outlet property="_useDynamicFrequencyCheckBox" destination="429" id="966"/>
+                <outlet property="_useOverrideTablePopUpButton" destination="755" id="970"/>
             </connections>
         </customObject>
         <customObject id="580" customClass="TakaoSimplex">
             <connections>
-                <outlet property="_clearReadingBufferAtCompositionErrorCheckBox" destination="547" id="975"/>
-                <outlet property="_composeWhenTypingCheckBox" destination="544" id="976"/>
-                <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="550" id="977"/>
+                <outlet property="_clearReadingBufferAtCompositionErrorCheckBox" destination="547" id="980"/>
+                <outlet property="_composeWhenTypingCheckBox" destination="544" id="981"/>
+                <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="550" id="982"/>
             </connections>
         </customObject>
         <customObject id="655" customClass="TakaoPhrases">
             <connections>
-                <outlet property="_exportDotMacButton" destination="883" id="890"/>
-                <outlet property="_importDotMacButton" destination="882" id="891"/>
-                <outlet property="_progressIndicator" destination="894" id="898"/>
-                <outlet property="_progressWindow" destination="892" id="897"/>
+                <outlet property="_exportDotMacButton" destination="886" id="892"/>
+                <outlet property="_importDotMacButton" destination="887" id="893"/>
+                <outlet property="_progressIndicator" destination="896" id="900"/>
+                <outlet property="_progressWindow" destination="894" id="899"/>
                 <outlet property="window" destination="371" id="663"/>
             </connections>
         </customObject>
         <customObject id="678" customClass="TakaoGeneric">
             <connections>
-                <outlet property="_genericModuleListTableView" destination="670" id="967"/>
-                <outlet property="_genericSettingView" destination="677" id="968"/>
+                <outlet property="_genericModuleListTableView" destination="670" id="972"/>
+                <outlet property="_genericSettingView" destination="677" id="973"/>
             </connections>
         </customObject>
         <customObject id="695" customClass="TakaoUpdate">
             <connections>
-                <outlet property="_checkProgressIndicator" destination="726" id="953"/>
+                <outlet property="_checkProgressIndicator" destination="726" id="958"/>
                 <outlet property="_currentVersionTextField" destination="607" id="874"/>
                 <outlet property="_latestCheckTextField" destination="611" id="875"/>
                 <outlet property="_latestVersionTextField" destination="533" id="876"/>
                 <outlet property="_window" destination="371" id="881"/>
             </connections>
         </customObject>
-        <customObject id="1028" customClass="TakaoLoadedModule">
+        <customObject id="1044" customClass="TakaoLoadedModule">
             <connections>
-                <outlet property="_contentView" destination="1046" id="1047"/>
-                <outlet property="_pluginView" destination="1029" id="1048"/>
-                <outlet property="_tableView" destination="1034" id="1043"/>
-                <outlet property="_window" destination="371" id="1045"/>
+                <outlet property="_contentView" destination="1062" id="1063"/>
+                <outlet property="_pluginView" destination="1045" id="1064"/>
+                <outlet property="_tableView" destination="1050" id="1059"/>
+                <outlet property="_window" destination="371" id="1061"/>
             </connections>
         </customObject>
     </objects>

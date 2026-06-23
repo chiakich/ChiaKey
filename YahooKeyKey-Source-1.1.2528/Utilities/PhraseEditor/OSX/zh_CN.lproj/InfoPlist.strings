@@ -1,5 +1,5 @@
 ﻿/* Localized versions of Info.plist keys */
 
-CFBundleName = "Chiaki KeyKey 词汇编辑工具";
-CFBundleDisplayName = "Chiaki KeyKey 词汇编辑工具";
-NSHumanReadableCopyright = "雅虎国际资讯 版权所有 © 2008-2009, Yahoo! Taiwan All Rights Reserved.";
+CFBundleName = "千秋詞彙編輯器";
+CFBundleDisplayName = "千秋詞彙編輯器";
+NSHumanReadableCopyright = "雅虎國際資訊 版權所有 © 2008-2009, Yahoo! Taiwan All Rights Reserved.";

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="akira02/Chiaki-KeyKey-Lexicon"
+REPO="akira02/ChiaKey-Lexicon"
 TAG="2026.06.7"
 MANIFEST_URL=""
-INSTALL_ROOT="${HOME}/Library/Application Support/Chiaki KeyKey/Lexicons"
+INSTALL_ROOT="${HOME}/Library/Application Support/ChiaKey/Lexicons"
 DRY_RUN=0
 KEEP_DOWNLOADS=0
 
@@ -12,7 +12,7 @@ usage() {
   cat <<EOF
 Usage: Scripts/install-lexicon-release.sh [options]
 
-Download, verify, and install a Chiaki KeyKey lexicon release into:
+Download, verify, and install a ChiaKey lexicon release into:
   ${INSTALL_ROOT}
 
 Options:
@@ -84,14 +84,14 @@ if [[ -z "${MANIFEST_URL}" ]]; then
 fi
 
 case "${INSTALL_ROOT}" in
-  "${HOME}"/Library/Application\ Support/Chiaki\ KeyKey/Lexicons*) ;;
+  "${HOME}"/Library/Application\ Support/ChiaKey/Lexicons*) ;;
   *)
-    echo "Refusing to install outside Chiaki KeyKey Application Support: ${INSTALL_ROOT}" >&2
+    echo "Refusing to install outside ChiaKey Application Support: ${INSTALL_ROOT}" >&2
     exit 1
     ;;
 esac
 
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ChiakiKeyKeyLexicon.XXXXXX")"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ChiaKeyLexicon.XXXXXX")"
 if [[ "${KEEP_DOWNLOADS}" != "1" ]]; then
   trap 'rm -rf "${TMP_DIR}"' EXIT
 else
@@ -300,7 +300,7 @@ fi
 if [[ "${DRY_RUN}" == "1" ]]; then
   cat <<EOF
 
-Dry run complete for Chiaki KeyKey lexicon ${VERSION}.
+Dry run complete for ChiaKey lexicon ${VERSION}.
 
 Planned active lexicon:
   ${ACTIVE_LINK}/KeyKeySource.db
@@ -308,12 +308,12 @@ EOF
 else
   cat <<EOF
 
-Installed Chiaki KeyKey lexicon ${VERSION}.
+Installed ChiaKey lexicon ${VERSION}.
 
 Active lexicon:
   ${ACTIVE_LINK}/KeyKeySource.db
 
-Switch away from and back to Chiaki KeyKey, or reinstall/relaunch the input
+Switch away from and back to ChiaKey, or reinstall/relaunch the input
 method, so the runtime can reopen the database.
 EOF
 fi

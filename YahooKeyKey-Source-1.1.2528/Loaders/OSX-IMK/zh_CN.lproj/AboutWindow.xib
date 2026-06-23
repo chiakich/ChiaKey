@@ -14,7 +14,7 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="关于 Chiaki KeyKey" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="3" userLabel="About Window">
+        <window title="關於千秋輸入法" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="3" userLabel="About Window">
             <windowStyleMask key="styleMask" titled="YES" closable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="183" width="307" height="327"/>
@@ -25,11 +25,11 @@
                 <subviews>
                     <imageView id="8">
                         <rect key="frame" x="26" y="217" width="254" height="90"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" animates="YES" imageScaling="axesIndependently" image="About" id="9"/>
                     </imageView>
                     <textField verticalHuggingPriority="750" id="7">
-                        <rect key="frame" x="23" y="117" width="260" height="92"/>
+                        <rect key="frame" x="23" y="124" width="260" height="85"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                         <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="2008 © Yahoo! Inc. All Rights Reserved." id="10">
                             <font key="font" metaFont="smallSystem"/>
@@ -38,7 +38,7 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" id="6">
-                        <rect key="frame" x="23" y="86" width="260" height="23"/>
+                        <rect key="frame" x="23" y="93" width="260" height="23"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                         <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="Based on the OpenVanilla Project" id="11">
                             <font key="font" metaFont="smallSystem"/>
@@ -49,7 +49,7 @@
                     <button verticalHuggingPriority="750" imageHugsTitle="YES" id="5">
                         <rect key="frame" x="66" y="12" width="173" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <buttonCell key="cell" type="push" title="意见回报…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="12">
+                        <buttonCell key="cell" type="push" title="意見回報…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="12">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>

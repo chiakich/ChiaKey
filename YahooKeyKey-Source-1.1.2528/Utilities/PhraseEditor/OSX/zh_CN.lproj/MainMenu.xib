@@ -11,10 +11,10 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <menu title="AMainMenu" systemMenu="main" id="29" userLabel="MainMenu">
             <items>
-                <menuItem title="Chiaki KeyKey 词汇编辑工具" id="56">
-                    <menu key="submenu" title="Chiaki KeyKey 词汇编辑工具" systemMenu="apple" id="57">
+                <menuItem title="Phrase Editor" id="56">
+                    <menu key="submenu" title="Phrase Editor" systemMenu="apple" id="57">
                         <items>
-                            <menuItem title="关于 Chiaki KeyKey 词汇编辑工具" id="58">
+                            <menuItem title="關於千秋詞彙編輯器" id="58">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="orderFrontStandardAboutPanel:" target="-2" id="142"/>
@@ -23,24 +23,24 @@
                             <menuItem isSeparatorItem="YES" id="143">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="服务" id="131">
-                                <menu key="submenu" title="服务" systemMenu="services" id="130"/>
+                            <menuItem title="服務" id="131">
+                                <menu key="submenu" title="服務" systemMenu="services" id="130"/>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="144">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="隐藏 Chiaki KeyKey 词汇编辑工具" keyEquivalent="h" id="134">
+                            <menuItem title="隱藏千秋詞彙編輯器" keyEquivalent="h" id="134">
                                 <connections>
                                     <action selector="hide:" target="-1" id="367"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="隐藏其他" keyEquivalent="h" id="145">
+                            <menuItem title="隱藏其他" keyEquivalent="h" id="145">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
                                 <connections>
                                     <action selector="hideOtherApplications:" target="-1" id="368"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="显示全部" id="150">
+                            <menuItem title="顯示全部" id="150">
                                 <connections>
                                     <action selector="unhideAllApplications:" target="-1" id="370"/>
                                 </connections>
@@ -48,7 +48,7 @@
                             <menuItem isSeparatorItem="YES" id="149">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="退出 Chiaki KeyKey 词汇编辑工具" keyEquivalent="q" id="136" userLabel="1111">
+                            <menuItem title="結束千秋詞彙編輯器" keyEquivalent="q" id="136" userLabel="1111">
                                 <connections>
                                     <action selector="terminate:" target="-3" id="449"/>
                                 </connections>
@@ -56,28 +56,28 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="文件" id="83">
-                    <menu key="submenu" title="文件" id="81">
+                <menuItem title="檔案" id="83">
+                    <menu key="submenu" title="檔案" id="81">
                         <items>
-                            <menuItem title="添加新词" keyEquivalent="n" id="82" userLabel="9">
+                            <menuItem title="增加新詞" keyEquivalent="n" id="82" userLabel="9">
                                 <connections>
                                     <action selector="add:" target="459" id="514"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="523"/>
-                            <menuItem title="导入地址簿人名" id="524">
+                            <menuItem title="匯入通訊錄人名" id="524">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="importAddressBook:" target="459" id="527"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="导入数据库" id="526">
+                            <menuItem title="匯入自定詞資料庫" id="526">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="importAction:" target="459" id="528"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="导出数据库" id="525">
+                            <menuItem title="匯出自定詞資料庫" id="525">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="exportAction:" target="459" id="529"/>
@@ -86,7 +86,7 @@
                             <menuItem isSeparatorItem="YES" id="79" userLabel="7">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="关闭" keyEquivalent="w" id="73" userLabel="1">
+                            <menuItem title="關閉" keyEquivalent="w" id="73" userLabel="1">
                                 <connections>
                                     <action selector="performClose:" target="-1" id="193"/>
                                 </connections>
@@ -94,15 +94,15 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="编辑" id="217">
-                    <menu key="submenu" title="编辑" id="205">
+                <menuItem title="編輯" id="217">
+                    <menu key="submenu" title="編輯" id="205">
                         <items>
-                            <menuItem title="还原" keyEquivalent="z" id="207">
+                            <menuItem title="還原" keyEquivalent="z" id="207">
                                 <connections>
                                     <action selector="undo:" target="-1" id="223"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="重做" keyEquivalent="Z" id="215">
+                            <menuItem title="重作" keyEquivalent="Z" id="215">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                 <connections>
                                     <action selector="redo:" target="-1" id="231"/>
@@ -111,27 +111,27 @@
                             <menuItem isSeparatorItem="YES" id="206">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="剪切" keyEquivalent="x" id="199">
+                            <menuItem title="剪下" keyEquivalent="x" id="199">
                                 <connections>
                                     <action selector="cut:" target="-1" id="228"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="拷贝" keyEquivalent="c" id="197">
+                            <menuItem title="拷貝" keyEquivalent="c" id="197">
                                 <connections>
                                     <action selector="copy:" target="-1" id="224"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="黏贴" keyEquivalent="v" id="203">
+                            <menuItem title="貼上" keyEquivalent="v" id="203">
                                 <connections>
                                     <action selector="paste:" target="-1" id="226"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="删除" id="202">
+                            <menuItem title="刪除" id="202">
                                 <connections>
                                     <action selector="delete:" target="-1" id="235"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="全选" keyEquivalent="a" id="198">
+                            <menuItem title="全選" keyEquivalent="a" id="198">
                                 <connections>
                                     <action selector="selectAll:" target="-1" id="232"/>
                                 </connections>
@@ -139,15 +139,15 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="窗口" id="19">
-                    <menu key="submenu" title="窗口" systemMenu="window" id="24">
+                <menuItem title="視窗" id="19">
+                    <menu key="submenu" title="視窗" systemMenu="window" id="24">
                         <items>
-                            <menuItem title="最小化" keyEquivalent="m" id="23">
+                            <menuItem title="縮到最小" keyEquivalent="m" id="23">
                                 <connections>
                                     <action selector="performMiniaturize:" target="-1" id="37"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="缩放" id="239">
+                            <menuItem title="縮放" id="239">
                                 <connections>
                                     <action selector="performZoom:" target="-1" id="240"/>
                                 </connections>
@@ -155,7 +155,7 @@
                             <menuItem isSeparatorItem="YES" id="92">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="前置全部窗口" id="5">
+                            <menuItem title="將此程式所有視窗移至最前" id="5">
                                 <connections>
                                     <action selector="arrangeInFront:" target="-1" id="39"/>
                                 </connections>
@@ -163,10 +163,10 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="帮助" id="103" userLabel="1">
-                    <menu key="submenu" title="帮助" id="106" userLabel="2">
+                <menuItem title="輔助說明" id="103" userLabel="1">
+                    <menu key="submenu" title="輔助說明" id="106" userLabel="2">
                         <items>
-                            <menuItem title="Chiaki KeyKey 词汇编辑工具帮助" keyEquivalent="?" id="111">
+                            <menuItem title="千秋詞彙編輯器輔助說明" keyEquivalent="?" id="111">
                                 <connections>
                                     <action selector="launchOnlineHelp:" target="459" id="555"/>
                                 </connections>
@@ -176,7 +176,7 @@
                 </menuItem>
             </items>
         </menu>
-        <window title="词汇编辑工具" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="371" customClass="PEMainWindow">
+        <window title="詞彙編輯程式" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="371" customClass="PEMainWindow">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="335" y="157" width="632" height="593"/>
@@ -188,7 +188,7 @@
                     <scrollView horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" id="450">
                         <rect key="frame" x="-1" y="20" width="634" height="574"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <clipView key="contentView" id="6MZ-9Y-0LK">
+                        <clipView key="contentView" id="zOw-Er-R28">
                             <rect key="frame" x="1" y="0.0" width="617" height="558"/>
                             <autoresizingMask key="autoresizingMask"/>
                             <subviews>
@@ -201,7 +201,7 @@
                                     <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                     <tableColumns>
                                         <tableColumn identifier="phrase" width="101" minWidth="40" maxWidth="1000" id="455">
-                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="词汇">
+                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="詞彙">
                                                 <font key="font" metaFont="smallSystem"/>
                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
@@ -280,16 +280,16 @@
         <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="473" customClass="PEDialogWindow">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="196" y="269" width="381" height="241"/>
+            <rect key="contentRect" x="196" y="250" width="381" height="260"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1028"/>
             <view key="contentView" id="474">
-                <rect key="frame" x="0.0" y="0.0" width="381" height="241"/>
+                <rect key="frame" x="0.0" y="0.0" width="381" height="260"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <button verticalHuggingPriority="750" imageHugsTitle="YES" id="475">
                         <rect key="frame" x="271" y="12" width="96" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="push" title="确定" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="476">
+                        <buttonCell key="cell" type="push" title="好" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="476">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -309,14 +309,14 @@
                         </connections>
                     </button>
                     <scrollView focusRingType="none" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" id="487">
-                        <rect key="frame" x="20" y="55" width="341" height="166"/>
+                        <rect key="frame" x="20" y="55" width="341" height="185"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <clipView key="contentView" id="FZ5-hc-Cy5">
-                            <rect key="frame" x="1" y="0.0" width="324" height="150"/>
+                        <clipView key="contentView" id="9ew-t7-i8L">
+                            <rect key="frame" x="1" y="0.0" width="324" height="169"/>
                             <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="513" id="490" customClass="PESettingTableView">
-                                    <rect key="frame" x="0.0" y="0.0" width="324" height="125"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="324" height="144"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <size key="intercellSpacing" width="3" height="2"/>
                                     <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -357,11 +357,11 @@
                             </subviews>
                         </clipView>
                         <scroller key="horizontalScroller" verticalHuggingPriority="750" horizontal="YES" id="489">
-                            <rect key="frame" x="1" y="150" width="324" height="15"/>
+                            <rect key="frame" x="1" y="169" width="324" height="15"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
                         <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="488">
-                            <rect key="frame" x="325" y="25" width="15" height="125"/>
+                            <rect key="frame" x="325" y="25" width="15" height="144"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
                         <tableHeaderView key="headerView" id="513">
@@ -377,19 +377,19 @@
         </window>
         <menu id="505">
             <items>
-                <menuItem title="删除" id="506">
+                <menuItem title="刪除" id="506">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="delete:" target="459" id="511"/>
                     </connections>
                 </menuItem>
-                <menuItem title="编辑词汇" id="507">
+                <menuItem title="編輯詞彙" id="507">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="editPhrase:" target="459" id="510"/>
                     </connections>
                 </menuItem>
-                <menuItem title="编辑注音" id="508">
+                <menuItem title="編輯注音" id="508">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="editReading:" target="459" id="509"/>
@@ -413,7 +413,7 @@
                     <textField verticalHuggingPriority="750" id="518">
                         <rect key="frame" x="77" y="49" width="215" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="处理中，请稍候…" id="519">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="處理中，請稍候…" id="519">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -434,7 +434,7 @@
                     <button imageHugsTitle="YES" id="535">
                         <rect key="frame" x="18" y="109" width="326" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="导入联络人的完整姓名（例如：李世民）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" imageScaling="proportionallyDown" inset="2" id="536">
+                        <buttonCell key="cell" type="check" title="匯入聯絡人的完整姓名（如：李世民）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" state="on" imageScaling="proportionallyDown" inset="2" id="536">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -442,7 +442,7 @@
                     <button imageHugsTitle="YES" id="537">
                         <rect key="frame" x="18" y="89" width="326" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="导入联络人的名字（例如：世民）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" imageScaling="proportionallyDown" inset="2" id="538">
+                        <buttonCell key="cell" type="check" title="匯入聯絡人的名字（如：世民）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" imageScaling="proportionallyDown" inset="2" id="538">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -450,7 +450,7 @@
                     <button imageHugsTitle="YES" id="539">
                         <rect key="frame" x="18" y="69" width="326" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="如果数据库中已经有了这个姓名，照样导入" bezelStyle="regularSquare" imagePosition="leading" alignment="left" imageScaling="proportionallyDown" inset="2" id="540">
+                        <buttonCell key="cell" type="check" title="如果資料庫中已經有重複的姓名，還是要匯入" bezelStyle="regularSquare" imagePosition="leading" alignment="left" imageScaling="proportionallyDown" inset="2" id="540">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -458,7 +458,7 @@
                     <button verticalHuggingPriority="750" imageHugsTitle="YES" id="541">
                         <rect key="frame" x="292" y="12" width="104" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="push" title="继续" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="542">
+                        <buttonCell key="cell" type="push" title="繼續" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="542">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -480,7 +480,7 @@
                     <textField verticalHuggingPriority="750" id="545">
                         <rect key="frame" x="17" y="147" width="108" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="地址簿导入选项：" id="546">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="通訊錄匯入選項：" id="546">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -489,7 +489,7 @@
                 </subviews>
             </view>
             <connections>
-                <outlet property="_cancelButton" destination="543" id="556"/>
+                <outlet property="_cancelButton" destination="543" id="558"/>
             </connections>
         </window>
     </objects>

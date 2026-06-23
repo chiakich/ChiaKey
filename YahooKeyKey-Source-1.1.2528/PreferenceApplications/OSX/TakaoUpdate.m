@@ -9,12 +9,12 @@ file for terms.
 
 #import "TakaoHelper.h"
 
-static NSString *const ChiakiLexiconLatestURL =
-    @"https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/latest";
-static NSString *const ChiakiLatestLexiconDefaultsKey =
-    @"ChiakiLatestLexiconVersion";
-static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
-    @"ChiakiLatestLexiconCheck";
+static NSString *const ChiaKeyLexiconLatestURL =
+    @"https://github.com/akira02/ChiaKey-Lexicon/releases/latest";
+static NSString *const ChiaKeyLatestLexiconDefaultsKey =
+    @"ChiaKeyLatestLexiconVersion";
+static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
+    @"ChiaKeyLatestLexiconCheck";
 
 @implementation TakaoUpdate
 
@@ -45,7 +45,7 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
   NSString *basePath =
       ([paths count] > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
   return [basePath stringByAppendingPathComponent:
-                       @"Chiaki KeyKey/Lexicons"];
+                       @"ChiaKey/Lexicons"];
 }
 
 - (NSString *)_currentLexiconVersion {
@@ -81,9 +81,9 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   NSString *currentVersion = [self _currentLexiconVersion];
   NSString *latestVersion =
-      [defaults stringForKey:ChiakiLatestLexiconDefaultsKey];
+      [defaults stringForKey:ChiaKeyLatestLexiconDefaultsKey];
   NSString *latestCheck =
-      [defaults stringForKey:ChiakiLatestLexiconCheckDefaultsKey];
+      [defaults stringForKey:ChiaKeyLatestLexiconCheckDefaultsKey];
 
   [_currentVersionTextField
       setStringValue:[self _displayString:currentVersion
@@ -103,12 +103,12 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
 
 - (void)_latestLexiconReleaseTagWithCompletion:
     (void (^)(NSString *tag, NSError *error))completion {
-  NSURL *url = [NSURL URLWithString:ChiakiLexiconLatestURL];
+  NSURL *url = [NSURL URLWithString:ChiaKeyLexiconLatestURL];
   NSMutableURLRequest *request =
       [NSMutableURLRequest requestWithURL:url
                               cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
                           timeoutInterval:20.0];
-  [request setValue:@"Chiaki KeyKey Preferences"
+  [request setValue:@"ChiaKey Preferences"
       forHTTPHeaderField:@"User-Agent"];
   [request setHTTPMethod:@"HEAD"];
 
@@ -128,7 +128,7 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
             NSDictionary *userInfo = [NSDictionary
                 dictionaryWithObject:@"GitHub returned an error."
                               forKey:NSLocalizedDescriptionKey];
-            completionError = [NSError errorWithDomain:@"ChiakiKeyKeyLexiconUpdate"
+            completionError = [NSError errorWithDomain:@"ChiaKeyLexiconUpdate"
                                                   code:statusCode
                                               userInfo:userInfo];
           }
@@ -251,8 +251,8 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
 
   if ([latestTag length]) {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:latestTag forKey:ChiakiLatestLexiconDefaultsKey];
-    [defaults setObject:checkTime forKey:ChiakiLatestLexiconCheckDefaultsKey];
+    [defaults setObject:latestTag forKey:ChiaKeyLatestLexiconDefaultsKey];
+    [defaults setObject:checkTime forKey:ChiaKeyLatestLexiconCheckDefaultsKey];
     [defaults synchronize];
   }
 
@@ -289,12 +289,12 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
         if (reloaded) {
           message = [NSString
               stringWithFormat:
-                  LFLSTR(@"Installed lexicon %@. Chiaki KeyKey has reloaded it."),
+                  LFLSTR(@"Installed lexicon %@. ChiaKey has reloaded it."),
                   latestTag];
         } else {
           message = [NSString
               stringWithFormat:
-                  LFLSTR(@"Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it."),
+                  LFLSTR(@"Installed lexicon %@. Switch away from and back to ChiaKey to reload it."),
                   latestTag];
         }
         [self _showAlertWithTitle:LFLSTR(@"Lexicon updated")

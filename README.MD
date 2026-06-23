@@ -1,46 +1,49 @@
-# Chiaki KeyKey
+# 千秋輸入法 ChiaKey
 
-Chiaki KeyKey is a modern macOS revival experiment based on the open-sourced Yahoo! KeyKey / OpenVanilla codebase.
+千秋輸入法（ChiaKey）是一個以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 開源程式碼為基礎的現代 macOS 復興專案。
 
-The goal is to preserve the excellent Traditional Chinese input experience of KeyKey while making the project buildable, auditable, and maintainable on current Apple Silicon Macs.
+目標是保留 KeyKey 在繁體中文注音輸入上的手感，並讓專案能在現代 Apple Silicon Mac 上編譯、測試、維護與發佈。
 
-This is not an official Yahoo product. The upstream source was released under a BSD-style license; see [LICENSE.txt](LICENSE.txt). The Yahoo! name and contributor names may not be used to endorse derived products without written permission.
+這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE.txt](LICENSE.txt)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
 
-## Current Status
+## 專案狀態
 
-This fork traces its upstream lineage to the official Yahoo archive at `YahooArchive/KeyKey`, with the current modernization work starting from the `vChewing/KeyKey-Boneyard` snapshot. It is now hosted as:
+這個 fork 的上游脈絡來自官方封存的 `YahooArchive/KeyKey`，目前的現代化工作則起始於 `vChewing/KeyKey-Boneyard` snapshot。
 
-- GitHub: <https://github.com/akira02/Chiaki-KeyKey>
-- Official Yahoo archive: <https://github.com/YahooArchive/KeyKey>
-- Original GitHub fork root: <https://github.com/Yi-Kai/KeyKey>
+- GitHub: <https://github.com/akira02/ChiaKey>
+- 官方 Yahoo 封存: <https://github.com/YahooArchive/KeyKey>
+- 最早 GitHub fork root: <https://github.com/Yi-Kai/KeyKey>
 - Boneyard snapshot: <https://github.com/vChewing/KeyKey-Boneyard>
 
-The repository currently contains the original Yahoo! KeyKey source tree plus previously repaired macOS utility targets:
+目前主線定位：
 
-- Preferences app target: `Takao -> Preferences`
-- Phrase editor target: `Takao -> PhraseEditor`
+1. 產品中文名稱為「千秋輸入法」。
+2. 英文與技術名稱為 `ChiaKey`。
+3. 只維護現代 macOS InputMethodKit 版本。
+4. bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
+5. 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
+6. 詞庫由獨立 repo `ChiaKey-Lexicon` 透過 GitHub Releases 發佈。
 
-The full input method target still needs modernization before it can be treated as a current macOS product. The important work is expected to be:
+本機開發環境註記：目前開發機有 Xcode 26.5。
 
-- Replace legacy build and packaging assumptions with an Xcode 26+ friendly project.
-- Make the InputMethodKit host build cleanly for Apple Silicon.
-- Remove old x86 / PPC / 10.5-era assumptions from `Info.plist`, event handling, helper code, and packaging.
-- Rebuild the dictionary pipeline without Yahoo search-term data, private Sinica Corpus inputs, or the commercial CEROD SQLite extension.
-- Add a reproducible data pipeline so generated dictionaries can be rebuilt from documented sources.
+## 決策文件
 
-Local environment note: Xcode 26.5 is available on the current development machine.
+- [架構決策](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
+- [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
+- [現代化 roadmap](Docs/ModernizationPlan.md)：已完成基線、下一步與延後事項。
+- [OneKey 移除說明](Docs/LexiconOneKeyRemoval.md)：給詞庫 repo 的相容性說明。
 
-## Building on Modern macOS
+## 編譯
 
-The first modern build milestone is to keep the historical targets compiling with Xcode 26+ on Apple Silicon.
+目前第一個現代化里程碑是讓歷史 target 能在 Xcode 26+ / Apple Silicon 上編譯。
 
-Verified locally on 2026-06-22:
+本機曾於 2026-06-22 驗證：
 
 ```sh
 xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
   -scheme Takao-All \
   -configuration Debug \
-  -derivedDataPath /private/tmp/ChiakiKeyKeyDerivedAll \
+  -derivedDataPath /private/tmp/ChiaKeyDerivedAll \
   CODE_SIGNING_ALLOWED=NO \
   ONLY_ACTIVE_ARCH=YES \
   build
@@ -48,33 +51,23 @@ xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
 xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
   -scheme Takao-All \
   -configuration Release \
-  -derivedDataPath /private/tmp/ChiakiKeyKeyDerivedRelease \
+  -derivedDataPath /private/tmp/ChiaKeyDerivedRelease \
   CODE_SIGNING_ALLOWED=NO \
   ONLY_ACTIVE_ARCH=YES \
   build
 ```
 
-Both commands currently produce `Chiaki KeyKey.app`, `Preferences.app`, `PhraseEditor.app`, installer helper apps, and the OpenVanilla / PlainVanilla frameworks under the selected DerivedData products directory.
+目前 build 仍會出現許多舊 AppKit、WebKit `WebView`、`NSConnection`、nib loading 與 installer API 的 deprecation warning。這是預期狀態；現階段目標是可編譯與可測試，不是完成 notarized distribution。
 
-Regenerate the app and input-source `.icns` assets from the scripted vector icon drawing with:
+## 本機測試
 
-```sh
-Scripts/generate-icon-assets.sh
-```
-
-This build still emits many deprecation warnings from legacy AppKit, WebKit `WebView`, `NSConnection`, old nib loading, and installer-era file manager APIs. Those warnings are expected for now; the current milestone is successful compilation, not runtime certification or notarized distribution.
-
-### Local Input Method Testing
-
-For day-to-day development, use the local install helper instead of rebuilding a distribution installer:
+日常開發請使用 local install helper，不需要每次重跑 installer：
 
 ```sh
 Scripts/dev-install-local.sh
 ```
 
-The script builds `Takao-All`, copies `Chiaki KeyKey.app` into `~/Library/Input Methods/`, ad-hoc signs the copied app, and kills any currently running `Chiaki KeyKey` process so macOS can launch the new build.
-
-Useful variants:
+常用選項：
 
 ```sh
 Scripts/dev-install-local.sh --configuration Release
@@ -83,27 +76,43 @@ Scripts/dev-install-local.sh --dry-run
 Scripts/dev-install-local.sh --open-settings
 ```
 
-On the first local install, add the input method from System Settings > Keyboard > Text Input. After that, most edit/build/test cycles only need this helper script plus switching away from and back to the input method. If macOS keeps an old cached input source, log out and back in once.
+這個 script 會 build `Takao-All`，把 `千秋輸入法.app` 複製到 `~/Library/Input Methods/`，進行 ad-hoc signing，並結束目前執行中的千秋輸入法 process，讓 macOS 下次切回輸入法時載入新版。
 
-The development bundle uses `Chiaki KeyKey.app` and `com.chiaki.inputmethod.ChiakiKeyKey`, so it can be installed next to the historical `Yahoo! KeyKey.app` / `com.yahoo.inputmethod.KeyKey` input source.
+第一次安裝後，請到「系統設定 > 鍵盤 > 文字輸入」新增千秋輸入法。之後多數開發循環只需要跑 helper script，再切離與切回輸入法。
 
-### Lexicon Release Testing
+若 macOS 持續使用舊的 input source cache，登出再登入一次通常可以清掉。
 
-Chiaki KeyKey can load an external Smart Mandarin database from:
+## 圖示
 
-```text
-~/Library/Application Support/Chiaki KeyKey/Lexicons/active/KeyKeySource.db
+重新從 SVG 產生 app 與 input source `.icns`：
+
+```sh
+Scripts/generate-icon-assets.sh
 ```
 
-If that database is missing or invalid, the input method falls back to the bundled `KeyKeySource.db` inside the app.
+目前圖示來源是：
 
-Install the current seed lexicon release with:
+```text
+YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/Images/ChiaKey.svg
+```
+
+## 詞庫更新測試
+
+千秋輸入法可以從下列路徑載入外部 Smart Mandarin DB：
+
+```text
+~/Library/Application Support/ChiaKey/Lexicons/active/KeyKeySource.db
+```
+
+若外部 DB 缺失或不合法，runtime 會 fallback 到 app bundle 內建的 `KeyKeySource.db`。
+
+安裝目前預設詞庫 release：
 
 ```sh
 Scripts/install-lexicon-release.sh
 ```
 
-Useful variants:
+常用選項：
 
 ```sh
 Scripts/install-lexicon-release.sh --tag 2026.06.7
@@ -111,79 +120,49 @@ Scripts/install-lexicon-release.sh --dry-run
 Scripts/install-lexicon-release.sh --keep-downloads
 ```
 
-The installer reads `lexicon-manifest.json` from the GitHub Release, downloads the declared DB and metadata artifacts, verifies their SHA-256 checksums, validates the required SQLite tables, installs into a versioned directory, and atomically updates the `active` symlink.
+installer 會下載 `lexicon-manifest.json`，下載 manifest 宣告的 DB 與 metadata，驗證 SHA-256、SQLite table、符號表、全型標點與必要 metadata，通過後安裝到 versioned directory，最後以 atomic symlink swap 更新 `active`。
 
-After installing a lexicon, switch away from and back to Chiaki KeyKey, or rerun `Scripts/dev-install-local.sh`, so the input method process reopens the database.
+詞庫安裝後，切離再切回千秋輸入法，或重新執行 `Scripts/dev-install-local.sh`，讓 runtime 重新開啟 DB。
 
-The Preferences app also exposes a Lexicon update page. It checks the latest `Chiaki-KeyKey-Lexicon` GitHub Release and runs the bundled installer script, so the same checksum and SQLite schema validation path is used by both the UI and CLI.
+偏好設定 app 也提供詞庫更新頁面。UI 與 CLI 使用同一條 installer / validation 路徑，避免兩邊驗證邏輯分歧。
 
-OneKey service data is no longer part of the lexicon contract. See [LexiconOneKeyRemoval.md](Docs/LexiconOneKeyRemoval.md) before updating lexicon release checks.
+## 目錄概覽
 
-## Source Layout
+- `YahooKeyKey-Source-1.1.2528/`：原 Yahoo KeyKey source package。
+- `YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/`：目前主要 macOS InputMethodKit runtime。
+- `YahooKeyKey-Source-1.1.2528/Frameworks/OpenVanilla/`：OpenVanilla framework source。
+- `YahooKeyKey-Source-1.1.2528/Frameworks/PlainVanilla/`：PlainVanilla bridge / loader policy。
+- `YahooKeyKey-Source-1.1.2528/Distributions/Takao/DataSource/`：歷史資料來源與目前 seed data。
+- `Scripts/`：本機 build、install、icon、lexicon helper。
+- `Docs/`：現代化決策文件。
 
-- `YahooKeyKey-Source-1.1.2528/` - original Yahoo! KeyKey source package.
-- `YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/` - legacy macOS InputMethodKit loader.
-- `YahooKeyKey-Source-1.1.2528/Frameworks/OpenVanilla/` - OpenVanilla framework sources.
-- `YahooKeyKey-Source-1.1.2528/Distributions/Takao/DatabaseCooker/` - original dictionary cooking scripts.
+## 詞庫來源方向
 
-## Dictionary Replacement Survey
+原始 Yahoo KeyKey 詞庫建置依賴已不適合現代 redistributable fork 的資料：
 
-Last reviewed: 2026-06-22.
+1. Sinica Corpus 需要另外取得授權。
+2. Yahoo search terms 不是穩定或可重散佈的開放資料來源。
+3. `sqlite-cerod-see` / CEROD 是商業 SQLite read-only compression extension。
 
-The original dictionary build expected data that is no longer a good fit for a redistributable modern fork:
+千秋輸入法的詞庫應拆成四層：
 
-- Sinica Corpus files require a separate license.
-- Yahoo search terms are not a stable or redistributable open data source.
-- `sqlite-cerod-see` / CEROD was a commercial SQLite read-only compression extension.
+1. 讀音 mapping。
+2. 詞彙與短語。
+3. 頻率 / language model。
+4. 繁簡與區域用字轉換。
 
-For Chiaki KeyKey, dictionary data should be split into four layers: pronunciation mappings, phrase vocabulary, frequency / language model data, and Traditional / Simplified / regional conversion data.
+目前較適合研究的公開來源：
 
-| Source | Useful For | License / Access Notes | Fit |
-| --- | --- | --- | --- |
-| [libchewing](https://github.com/chewing/libchewing) | Bopomofo behavior, keyboard layouts, engine comparison, possible data reference | GitHub mirror lists LGPL-2.1; the project has moved to Codeberg. Audit before vendoring data or code. | Strong reference implementation for Traditional Chinese phonetic input. Best used first as a behavior benchmark. |
-| [Rime bopomofo](https://github.com/rime/rime-bopomofo), [terra-pinyin](https://github.com/rime/rime-terra-pinyin), [essay](https://github.com/rime/rime-essay) | Bopomofo schemas, pinyin mappings, shared vocabulary / language model | Repositories list LGPL-3.0. Bundling converted data may impose license obligations. | Very useful seed material, but should be kept behind a license audit before shipping. |
-| [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cedict) | Traditional / Simplified word entries and pinyin | CC BY-SA 4.0. MDBG listed 125,045 entries in the 2026-06-21 release. | Good base word dictionary. It has readings, not usage frequency. |
-| [moedict-data](https://github.com/g0v/moedict-data) | Taiwan Ministry of Education dictionary data, readings, definitions | README says original text remains MOE copyright under CC BY-ND 3.0 Taiwan, while the JSON conversion work is CC0. | Useful as a reference source. Be cautious about distributing modified derived dictionary text. |
-| [Wikimedia dumps](https://dumps.wikimedia.org/zhwiki/latest/) and [Chinese Wiktionary dumps](https://dumps.wikimedia.org/zhwiktionary/latest/) | Corpus text, article titles, term frequency, Wiktionary lexical hints | Wikimedia text is generally CC BY-SA 4.0 / GFDL under the Terms of Use. Dumps are updated regularly. | Good for frequency and phrase mining after cleanup. Attribution/share-alike implications must be documented. |
-| [Tatoeba downloads](https://tatoeba.org/en/downloads) | Mandarin sentences, sentence-level examples, small corpus supplement | Downloads page says files are CC BY 2.0 FR, with some sentences also available as CC0. | Useful supplemental corpus, not enough as the primary language model. |
-| [Unicode Unihan](https://www.unicode.org/reports/tr38/) | Per-character readings, variants, radical/stroke metadata | Unicode License v3 permits use, copy, modification, publication, distribution, and sale with notice. | Excellent low-level character metadata; not a phrase dictionary. |
-| [CNS11643 全字庫](https://data.gov.tw/dataset/5961) | Taiwan character metadata: Zhuyin, Cangjie, strokes, radicals, pinyin, components, stroke order | Government Open Data License v1 and OFL-1.1 for font assets. Dataset updated 2026-05-05. | Strong Taiwan-specific character metadata source. |
-| [OpenCC](https://github.com/BYVoid/OpenCC) | Traditional / Simplified conversion, Taiwan / Hong Kong regional variants | Apache-2.0. | Useful conversion layer; not a ranking dictionary. |
+| 來源 | 用途 | 注意事項 |
+| --- | --- | --- |
+| libchewing | 注音行為、鍵盤配置、測試對照 | 適合作為行為 benchmark；直接引用資料前需審授權。 |
+| Rime bopomofo / terra-pinyin / essay | 注音 schema、拼音 mapping、語料參考 | 多為 LGPL；shipping 前需確認相容性。 |
+| CC-CEDICT | 詞條與拼音 | CC BY-SA 4.0；有讀音但缺使用頻率。 |
+| moedict-data | 教育部辭典資料、讀音、釋義 | 原文字授權較敏感，適合先當參考。 |
+| Wikimedia / Wiktionary dumps | 語料、標題、詞頻 | CC BY-SA / GFDL 相關義務需文件化。 |
+| Tatoeba | 句子語料補充 | 規模較小，不適合單獨當主 language model。 |
+| Unicode Unihan | 字級讀音、異體、部首筆畫 | 很適合做字級 metadata。 |
+| CNS11643 全字庫 | 台灣字級資料、注音、倉頡、筆畫 | 台灣資料很有價值。 |
+| OpenCC | 繁簡與區域用字轉換 | Apache-2.0；不是 ranking dictionary。 |
 
-### Recommended Data Direction
-
-The safest first build should avoid private or hard-to-redistribute data. A practical starting combination is:
-
-1. Use CC-CEDICT for base words and pinyin readings.
-2. Use Unicode Unihan and CNS11643 for character-level readings and metadata.
-3. Use Wikimedia and Tatoeba as opt-in corpus inputs for phrase frequency and language model training.
-4. Use OpenCC for conversion and regional variant normalization.
-5. Compare behavior against libchewing and Rime before deciding whether to reuse any LGPL-covered data directly.
-
-This gives us a reproducible, public-data path without depending on the original Yahoo search terms, Sinica Corpus files, or CEROD.
-
-## Modernization Roadmap
-
-The likely path is not a full rewrite of the Chinese input algorithm on day one. A more realistic sequence is:
-
-1. Keep the OpenVanilla / KeyKey core readable and buildable.
-2. Modernize the macOS InputMethodKit shell for Apple Silicon.
-3. Replace deprecated or removed macOS APIs only where they block building, signing, packaging, or runtime behavior.
-4. Build a new dictionary cooker with explicit source licenses and deterministic outputs.
-5. Add smoke tests for composition, candidate selection, punctuation, preference loading, and user phrase editing.
-6. Package as a signed modern `.app` / input method bundle once the loader is stable.
-
-## Original Upstream Notes
-
-The original README described Yahoo! KeyKey as a customized Chinese input method based on OpenVanilla, released as open source under a New BSD license.
-
-It also listed the historical external dependencies:
-
-1. Sinica Corpus - separate license from Academia Sinica.
-2. BPMF mappings created from Sinica Corpus.
-3. Yahoo search terms from `tw.yahoo.com`.
-4. Commercial SQLite CEROD extension.
-5. Apple development kit tools such as DotMacKit.framework and PackageMaker.app.
-6. CTGradient under Creative Commons BY 2.5.
-
-Those notes are preserved here for provenance, but they should not be treated as the data plan for Chiaki KeyKey.
+預設方向是：先避開私有或授權不明資料，以 CC-CEDICT、Unicode Unihan、CNS11643、Wikimedia/Tatoeba opt-in corpus、OpenCC 與本專案人工補詞建立可重現 pipeline。

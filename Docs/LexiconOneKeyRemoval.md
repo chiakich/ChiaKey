@@ -1,40 +1,33 @@
-# Lexicon release note: remove OneKey service data
+# 詞庫 release note：移除 OneKey service data
 
-Chiaki KeyKey has removed the legacy Yahoo KeyKey OneKey feature from the
-modern macOS app.
+千秋輸入法已從現代 macOS app 移除 Yahoo KeyKey 時代的 OneKey 功能。
 
-OneKey was not part of the input lexicon. It was a Yahoo-era URL launcher:
-the app loaded a plist of web services such as Yahoo Search, Taiwan stock
-lookup, Wretch search, Yahoo Auction, and Yahoo Maps, then opened URLs with
-the user's query. The database key for that service list was:
+OneKey 不是輸入詞庫。它是一個 Yahoo-era URL launcher：app 會載入 Yahoo Search、台股查詢、無名搜尋、Yahoo Auction、Yahoo Maps 等 web service plist，然後用使用者輸入開啟 URL。
+
+歷史 DB key：
 
 - `prepopulated_service_data.key = 'onekey_services'`
-- historical builds may also mention `onekey_services_timestamp`
+- 歷史 build 也可能提到 `onekey_services_timestamp`
 
-Modern Chiaki KeyKey no longer loads the OneKey module, no longer fetches or
-merges OneKey plist data, no longer exposes OneKey preferences, and no longer
-uses the backtick key (`) as a OneKey shortcut.
+現代千秋輸入法不再載入 OneKey module，不再 fetch 或 merge OneKey plist data，不再顯示 OneKey 偏好設定，也不再使用 backtick key (`) 作為 OneKey shortcut。
 
-## What the lexicon repo should do
+## 詞庫 repo 應做的事
 
-Future `Chiaki-KeyKey-Lexicon` releases should omit OneKey data.
+未來 `ChiaKey-Lexicon` release 應省略 OneKey data。
 
-Required action:
+必要動作：
 
-1. Do not generate or ship `onekey_services`.
-2. Do not generate or ship `onekey_services_timestamp`.
-3. Remove any CI assertion that requires those keys.
-4. Keep the existing `prepopulated_service_data` table.
-5. Keep `canned_messages` and `canned_messages_timestamp`; those are still used.
-6. Keep the punctuation tables and symbol data validations unchanged.
+1. 不產生、不發佈 `onekey_services`。
+2. 不產生、不發佈 `onekey_services_timestamp`。
+3. 移除任何要求這些 keys 存在的 CI assertion。
+4. 保留既有 `prepopulated_service_data` table。
+5. 保留 `canned_messages` 與 `canned_messages_timestamp`；它們仍被符號表使用。
+6. 保留 punctuation tables 與 symbol data validations。
 
-Optional cleanup:
+可選 cleanup：
 
-CI may fail a release if `onekey_services` is present, so new releases do not
-accidentally keep obsolete Yahoo web-service data.
+CI 可以在 release 含有 `onekey_services` 時失敗，避免新的詞庫不小心保留過時 Yahoo web-service data。
 
-Compatibility note:
+相容性註記：
 
-Older lexicon releases that still contain `onekey_services` are harmless in
-newer Chiaki KeyKey builds. The app ignores the key. New releases should omit
-it to keep the database contract focused on input data.
+舊詞庫 release 若仍包含 `onekey_services`，新版千秋輸入法會忽略這個 key。新的 release 應移除它，讓 DB contract 聚焦在輸入資料。

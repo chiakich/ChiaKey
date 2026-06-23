@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
 	<key>CFBundleIconFile</key>
-	<string>ChiakiKeyKey</string>
+	<string>ChiaKey</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -17,22 +17,22 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
-	<string>CKYK</string>
+	<string>CKEY</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>Chiaki KeyKey</string>
+			<string>ChiaKey</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>chiakikeykey</string>
+				<string>chiakey</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1.1.2528</string>
 	<key>InputMethodConnectionName</key>
-	<string>ChiakiKeyKey_1_Connection</string>
+	<string>ChiaKey_1_Connection</string>
 	<key>InputMethodServerControllerClass</key>
 	<string>OpenVanillaController</string>
 	<key>InputMethodServerDelegateClass</key>
@@ -61,7 +61,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>TISInputSourceID</key>
-	<string>com.chiaki.inputmethod.ChiakiKeyKey</string>
+	<string>com.chiakey.inputmethod.ChiaKey</string>
 	<key>TISIntendedLanguage</key>
 	<string>zh-Hant</string>
 	<key>TISIconIsTemplate</key>
@@ -79,6 +79,6 @@
 		<string>Hans</string>
 	</array>
 	<key>tsInputMethodIconFileKey</key>
-	<string>ChiakiKeyKey16.icns</string>
+	<string>ChiaKey16.icns</string>
 </dict>
 </plist>
