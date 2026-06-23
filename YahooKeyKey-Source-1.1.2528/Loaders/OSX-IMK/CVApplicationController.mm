@@ -22,6 +22,14 @@ extern char VendorMotcle[];
 extern size_t VendorMotcleSize;
 };
 
+static NSString *const ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey =
+    @"ChiaKeyLexiconAutoUpdateLastCheck";
+static NSString *const ChiaKeyLexiconAutoUpdateLastResultDefaultsKey =
+    @"ChiaKeyLexiconAutoUpdateLastResult";
+static const NSTimeInterval kChiaKeyLexiconAutoUpdateCheckInterval =
+    24.0 * 60.0 * 60.0;
+static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
+
 @implementation CVApplicationController
 
 - (void)dealloc {
@@ -667,12 +675,109 @@ extern size_t VendorMotcleSize;
   }
 }
 
+- (NSString *)_bundledLexiconInstallerPath {
+  NSString *resourcesPath = [[NSBundle mainBundle] resourcePath];
+  NSString *scriptPath = [resourcesPath
+      stringByAppendingPathComponent:@"Scripts/install-lexicon-release.sh"];
+  if ([[NSFileManager defaultManager] fileExistsAtPath:scriptPath])
+    return scriptPath;
+
+  scriptPath =
+      [resourcesPath stringByAppendingPathComponent:@"install-lexicon-release.sh"];
+  if ([[NSFileManager defaultManager] fileExistsAtPath:scriptPath])
+    return scriptPath;
+
+  return nil;
+}
+
+- (BOOL)_shouldRunSilentLexiconUpdate {
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSDate *lastCheck =
+      [defaults objectForKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];
+  if ([lastCheck isKindOfClass:[NSDate class]] &&
+      [[NSDate date] timeIntervalSinceDate:lastCheck] <
+          kChiaKeyLexiconAutoUpdateCheckInterval) {
+    return NO;
+  }
+
+  [defaults setObject:[NSDate date]
+               forKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];
+  [defaults synchronize];
+  return YES;
+}
+
+- (void)_runSilentLexiconUpdateIfNeeded {
+  if (![self _shouldRunSilentLexiconUpdate]) return;
+
+  NSString *scriptPath = [self _bundledLexiconInstallerPath];
+  if (![scriptPath length]) {
+    NSLog(@"ChiaKey lexicon auto-update skipped: installer not found.");
+    return;
+  }
+
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSAutoreleasePool *pool = [NSAutoreleasePool new];
+    NSTask *task = [[NSTask alloc] init];
+    NSPipe *pipe = [NSPipe pipe];
+    NSString *minimumAge =
+        [NSString stringWithFormat:@"%ld",
+                                   (long)kChiaKeyLexiconAutoUpdateMinimumAgeDays];
+
+    [task setLaunchPath:@"/bin/bash"];
+    [task setArguments:[NSArray arrayWithObjects:scriptPath,
+                                                 @"--skip-current",
+                                                 @"--min-release-age-days",
+                                                 minimumAge,
+                                                 nil]];
+    [task setStandardOutput:pipe];
+    [task setStandardError:pipe];
+
+    BOOL launched = NO;
+    @try {
+      [task launch];
+      launched = YES;
+    } @catch (NSException *exception) {
+      NSLog(@"ChiaKey lexicon auto-update launch failed: %@", exception);
+    }
+
+    if (launched) {
+      [task waitUntilExit];
+      NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
+      NSString *output =
+          [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
+              autorelease];
+      int status = [task terminationStatus];
+      NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+      NSString *result = [NSString stringWithFormat:@"status=%d\n%@",
+                                                    status,
+                                                    output ? output : @""];
+      [defaults setObject:result
+                   forKey:ChiaKeyLexiconAutoUpdateLastResultDefaultsKey];
+      [defaults synchronize];
+
+      if (status == 0) {
+        NSLog(@"ChiaKey lexicon auto-update finished: %@", output);
+        [self performSelectorOnMainThread:@selector(reloadOpenVanilla)
+                               withObject:nil
+                            waitUntilDone:NO];
+      } else {
+        NSLog(@"ChiaKey lexicon auto-update failed: %@", output);
+      }
+    }
+
+    [task release];
+    [pool drain];
+  });
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self
           andSelector:@selector(handleIncomingURL:withReplyEvent:)
         forEventClass:kInternetEventClass
            andEventID:kAEGetURL];
+
+  [self _runSilentLexiconUpdateIfNeeded];
 }
 
 @end

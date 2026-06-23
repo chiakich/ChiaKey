@@ -20,6 +20,7 @@ INSTALL_DIR="${HOME}/Library/Input Methods"
 SKIP_BUILD=0
 DRY_RUN=0
 OPEN_SETTINGS=0
+UPDATE_LEXICON=0
 
 usage() {
   cat <<EOF
@@ -32,6 +33,7 @@ Options:
   --configuration Debug|Release  Build configuration. Default: ${CONFIGURATION}
   --derived-data-path PATH       DerivedData path. Default: ${DERIVED_DATA_PATH}
   --skip-build                   Reinstall the existing build product.
+  --update-lexicon               Install the latest lexicon release after app install.
   --dry-run                      Print commands without changing the system.
   --open-settings                Open Keyboard settings after install.
   -h, --help                     Show this help.
@@ -72,6 +74,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-build)
       SKIP_BUILD=1
+      shift
+      ;;
+    --update-lexicon)
+      UPDATE_LEXICON=1
       shift
       ;;
     --dry-run)
@@ -164,6 +170,10 @@ fi
 
 run /usr/bin/ditto "${BUILT_APP}" "${INSTALL_APP}"
 run /usr/bin/codesign --force --deep --sign - "${INSTALL_APP}"
+
+if [[ "${UPDATE_LEXICON}" == "1" ]]; then
+  run "${LEXICON_INSTALL_SCRIPT}" --skip-current
+fi
 
 run_allow_fail /usr/bin/pkill -x "${PROCESS_NAME}"
 run_allow_fail /usr/bin/pkill -f "${APP_NAME}/Contents/MacOS/${PROCESS_NAME}"

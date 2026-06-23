@@ -57,7 +57,7 @@ xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
   build
 ```
 
-目前 build 仍會出現許多舊 AppKit、WebKit `WebView`、`NSConnection`、nib loading 與 installer API 的 deprecation warning。這是預期狀態；現階段目標是可編譯與可測試，不是完成 notarized distribution。
+目前 Release build 已可在現代 Xcode 完成。先前的 `LSMinimumSystemVersion`、legacy library search path 與 shell script phase output 警告已整理；這些調整屬於 build hygiene，不改輸入法 runtime 行為。乾淨 rebuild 仍會看到部分舊 API / nib 警告，例如 Carbon/CommonPanels、舊 WebKit `WebView`、`NSConnection` 與舊 AppKit 常數；這些要分批評估，尤其 IPC 與組字視窗相關程式不應一次大換。
 
 ## 本機測試
 
@@ -72,11 +72,14 @@ Scripts/dev-install-local.sh
 ```sh
 Scripts/dev-install-local.sh --configuration Release
 Scripts/dev-install-local.sh --skip-build
+Scripts/dev-install-local.sh --update-lexicon
 Scripts/dev-install-local.sh --dry-run
 Scripts/dev-install-local.sh --open-settings
 ```
 
 這個 script 會 build `Takao-All`，把 `ChiaKey.app` 複製到 `~/Library/Input Methods/`，進行 ad-hoc signing，並結束目前執行中的 `ChiaKey` process，讓 macOS 下次切回輸入法時載入新版。
+
+`--update-lexicon` 會在本機安裝後額外執行 `Scripts/install-lexicon-release.sh --skip-current`，只在外部詞庫落後時下載並安裝最新 release。預設 build / install 不會連網。
 
 第一次安裝後，請到「系統設定 > 鍵盤 > 文字輸入」新增千秋輸入法。之後多數開發循環只需要跑 helper script，再切離與切回輸入法。
 
@@ -116,6 +119,8 @@ Scripts/install-lexicon-release.sh
 
 ```sh
 Scripts/install-lexicon-release.sh --tag 2026.06.7
+Scripts/install-lexicon-release.sh --skip-current
+Scripts/install-lexicon-release.sh --min-release-age-days 7 --skip-current
 Scripts/install-lexicon-release.sh --dry-run
 Scripts/install-lexicon-release.sh --keep-downloads
 ```
@@ -124,7 +129,14 @@ installer 會下載 `lexicon-manifest.json`，下載 manifest 宣告的 DB 與 m
 
 詞庫安裝後，切離再切回千秋輸入法，或重新執行 `Scripts/dev-install-local.sh`，讓 runtime 重新開啟 DB。
 
-偏好設定 app 也提供詞庫更新頁面。UI 與 CLI 使用同一條 installer / validation 路徑，避免兩邊驗證邏輯分歧。
+偏好設定 app 也提供詞庫更新頁面。輸入法 runtime 啟動後會每天最多檢查一次詞庫；若 GitHub latest release 比目前安裝版本新，且 release 已發佈超過 7 天，會在背景靜默安裝並 reload runtime。失敗時會保留既有 active lexicon。
+
+不下載、不安裝，只跑本機詞庫 smoke test：
+
+```sh
+Scripts/test-lexicon-smoke.sh
+Scripts/test-lexicon-smoke.sh path/to/ChiaKeySource.db
+```
 
 ## 目錄概覽
 
