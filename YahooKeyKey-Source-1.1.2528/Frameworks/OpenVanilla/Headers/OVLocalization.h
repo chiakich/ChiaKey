@@ -43,19 +43,22 @@ class OVLocale {
     string n = OVStringHelper::StringByReplacingOccurrencesOfStringWithString(
         locale, "-", "_");
 
-    if (OVWildcard::Match(n, "zh_Hant")) {
+    if (OVWildcard::Match(n, "zh_Hant*")) {
       return "zh_TW";
     }
 
-    if (OVWildcard::Match(n, "zh_Hans")) {
+    if (OVWildcard::Match(n, "zh_Hans*")) {
       return "zh_CN";
     }
 
-    if (OVWildcard::Match(n, "zh_HK")) {
+    if (OVWildcard::Match(n, "zh_TW*") ||
+        OVWildcard::Match(n, "zh_HK*") ||
+        OVWildcard::Match(n, "zh_MO*")) {
       return "zh_TW";
     }
 
-    if (OVWildcard::Match(n, "zh_SG")) {
+    if (OVWildcard::Match(n, "zh_CN*") ||
+        OVWildcard::Match(n, "zh_SG*")) {
       return "zh_CN";
     }
 

@@ -563,19 +563,8 @@ using namespace OpenVanilla;
 
   _encodingService = new CVEncodingService;
 
-  // since we don't know when Tiger has changed the locale tags, and it's a
-  // disaster...
   string naturalLocale = [[OpenVanillaLoader locale] UTF8String];
-
-  if (OVWildcard::Match(naturalLocale, "zh_Hant") ||
-      OVWildcard::Match(naturalLocale, "zh-Hant") ||
-      OVWildcard::Match(naturalLocale, "zh-TW"))
-    naturalLocale = "zh_TW";
-
-  if (OVWildcard::Match(naturalLocale, "zh_Hans") ||
-      OVWildcard::Match(naturalLocale, "zh-Hans") ||
-      OVWildcard::Match(naturalLocale, "zh-CN"))
-    naturalLocale = "zh_CN";
+  naturalLocale = OVLocale::POSIXLocaleID(naturalLocale);
 
   _loaderService = new PVLoaderService(
       naturalLocale, _CINDatabaseService, _SQLiteDatabaseService,
