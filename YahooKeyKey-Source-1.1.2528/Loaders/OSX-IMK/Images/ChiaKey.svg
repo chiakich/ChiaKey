@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
   <title>ChiaKey template icon</title>
   <desc>A native-style template input method icon with a white 千 glyph cut-out source.</desc>
   <rect
     id="template-field"
-    x="64"
-    y="192"
-    width="896"
-    height="640"
-    rx="180"
+    width="1024"
+    height="1024"
+    rx="200"
     fill="#000" />
   <path
     id="glyph-chi-cutout-source"
-    transform="translate(284 284) scale(0.5)"
+    transform="translate(164 164) scale(0.76)"
     d="M 454 909 C 485 909 499 891 499 852 L 499 463 L 856 463 C 892 463 910 450 910 420 C 910 391 891 377 856 377 L 499 377 L 499 135 C 650 120 738 105 766 96 C 807 82 816 47 795 21 C 778 0 743 8 711 17 C 596 49 316 76 119 77 C 84 77 57 91 57 120 C 57 149 74 163 108 163 C 154 163 254 158 408 145 L 408 377 L 53 377 C 17 377 0 390 0 419 C 0 449 18 463 53 463 L 408 463 L 408 852 C 408 891 423 909 454 909 Z"
     fill="#fff" />
 </svg>

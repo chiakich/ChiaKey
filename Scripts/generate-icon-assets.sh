@@ -32,6 +32,8 @@ SOURCE_PNG="${WORK_DIR}/ChiaKey-source.png"
 SOURCE_ALPHA="${WORK_DIR}/ChiaKey-source-alpha.png"
 INK_ALPHA="${WORK_DIR}/ChiaKey-ink-alpha.png"
 ICONSET_DIR="${WORK_DIR}/ChiaKey.iconset"
+LEGACY_16_RGBA="${WORK_DIR}/icon_16x16.rgba"
+LEGACY_32_RGBA="${WORK_DIR}/icon_32x32.rgba"
 
 magick \
   -background none \
@@ -102,27 +104,48 @@ for size in 16 32 128 256 512; do
     "PNG32:${ICONSET_DIR}/icon_${size}x${size}@2x.png"
 done
 
-# Write a modern PNG-backed ICNS directly. This keeps the Retina @2x layers in
-# the asset even on systems where iconutil rejects generated iconsets.
-ruby - "${ICONSET_DIR}" "${OUTPUT_ICNS}" <<'RUBY'
-iconset_dir, output_path = ARGV
-chunks = [
-  ["icp4", "icon_16x16.png"],
-  ["ic11", "icon_16x16@2x.png"],
-  ["icp5", "icon_32x32.png"],
-  ["ic12", "icon_32x32@2x.png"],
-  ["ic07", "icon_128x128.png"],
-  ["ic13", "icon_128x128@2x.png"],
-  ["ic08", "icon_256x256.png"],
-  ["ic14", "icon_256x256@2x.png"],
-  ["ic09", "icon_512x512.png"],
-  ["ic10", "icon_512x512@2x.png"]
-]
+magick "${ICONSET_DIR}/icon_16x16.png" -depth 8 "rgba:${LEGACY_16_RGBA}"
+magick "${ICONSET_DIR}/icon_32x32.png" -depth 8 "rgba:${LEGACY_32_RGBA}"
 
-payload = chunks.map do |type, file_name|
-  png_data = File.binread(File.join(iconset_dir, file_name))
-  type.b + [png_data.bytesize + 8].pack("N") + png_data
-end.join
+# Write ICNS directly. Legacy 16/32 chunks use RGB data plus alpha masks;
+# Retina and larger sizes use PNG chunks.
+ruby - "${ICONSET_DIR}" "${OUTPUT_ICNS}" "${LEGACY_16_RGBA}" "${LEGACY_32_RGBA}" <<'RUBY'
+iconset_dir, output_path, legacy_16_rgba, legacy_32_rgba = ARGV
+chunks = []
+
+add_chunk = lambda do |type, data|
+  chunks << type.b + [data.bytesize + 8].pack("N") + data
+end
+
+add_legacy_icon = lambda do |rgb_type, mask_type, rgba_path|
+  rgb_data = String.new.b
+  mask_data = String.new.b
+
+  File.binread(rgba_path).bytes.each_slice(4) do |red, green, blue, alpha|
+    rgb_data << red << green << blue
+    mask_data << alpha
+  end
+
+  add_chunk.call(rgb_type, rgb_data)
+  add_chunk.call(mask_type, mask_data)
+end
+
+add_png_icon = lambda do |type, file_name|
+  add_chunk.call(type, File.binread(File.join(iconset_dir, file_name)))
+end
+
+add_legacy_icon.call("is32", "s8mk", legacy_16_rgba)
+add_legacy_icon.call("il32", "l8mk", legacy_32_rgba)
+add_png_icon.call("ic11", "icon_16x16@2x.png")
+add_png_icon.call("ic12", "icon_32x32@2x.png")
+add_png_icon.call("ic07", "icon_128x128.png")
+add_png_icon.call("ic13", "icon_128x128@2x.png")
+add_png_icon.call("ic08", "icon_256x256.png")
+add_png_icon.call("ic14", "icon_256x256@2x.png")
+add_png_icon.call("ic09", "icon_512x512.png")
+add_png_icon.call("ic10", "icon_512x512@2x.png")
+
+payload = chunks.join
 
 File.binwrite(output_path, "icns".b + [payload.bytesize + 8].pack("N") + payload)
 RUBY
