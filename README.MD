@@ -8,10 +8,11 @@ This is not an official Yahoo product. The upstream source was released under a 
 
 ## Current Status
 
-This fork traces its upstream lineage to `Yi-Kai/KeyKey`, with the current modernization work starting from the `vChewing/KeyKey-Boneyard` snapshot. It is now hosted as:
+This fork traces its upstream lineage to the official Yahoo archive at `YahooArchive/KeyKey`, with the current modernization work starting from the `vChewing/KeyKey-Boneyard` snapshot. It is now hosted as:
 
 - GitHub: <https://github.com/akira02/Chiaki-KeyKey>
-- Original upstream: <https://github.com/Yi-Kai/KeyKey>
+- Official Yahoo archive: <https://github.com/YahooArchive/KeyKey>
+- Original GitHub fork root: <https://github.com/Yi-Kai/KeyKey>
 - Boneyard snapshot: <https://github.com/vChewing/KeyKey-Boneyard>
 
 The repository currently contains the original Yahoo! KeyKey source tree plus previously repaired macOS utility targets:
