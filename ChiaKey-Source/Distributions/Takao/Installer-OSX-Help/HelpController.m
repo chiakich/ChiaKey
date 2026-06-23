@@ -9,17 +9,35 @@
   [[self window] setLevel:NSFloatingWindowLevel];
   [[self window] center];
 
-  [_webview setUIDelegate:(id)self];
-  [_webview setFrameLoadDelegate:(id)self];
+  WKUserContentController *userContentController =
+      [[[WKUserContentController alloc] init] autorelease];
+  [userContentController addScriptMessageHandler:self name:@"HelpController"];
+
+  WKWebViewConfiguration *configuration =
+      [[[WKWebViewConfiguration alloc] init] autorelease];
+  [configuration setUserContentController:userContentController];
+
+  _webView = [[WKWebView alloc] initWithFrame:[_webViewContainer bounds]
+                                configuration:configuration];
+  [_webView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [_webView unregisterDraggedTypes];
+  [_webViewContainer addSubview:_webView];
 
   NSString *htmlPath = [[NSBundle mainBundle] pathForResource:@"install"
                                                        ofType:@"html"];
   // Load the html file of the help document.
   if ([htmlPath length]) {
     NSURL *url = [NSURL fileURLWithPath:htmlPath];
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
-    [[_webview mainFrame] loadRequest:request];
+    NSURL *directoryURL = [url URLByDeletingLastPathComponent];
+    [_webView loadFileURL:url allowingReadAccessToURL:directoryURL];
   }
+}
+
+- (void)dealloc {
+  [[[_webView configuration] userContentController]
+      removeScriptMessageHandlerForName:@"HelpController"];
+  [_webView release];
+  [super dealloc];
 }
 
 - (void)openInternationPref {
@@ -47,67 +65,22 @@
   [[NSApplication sharedApplication] terminate:self];
 }
 
-#pragma mark WebView delegate
+#pragma mark WKScriptMessageHandler
 
-// Ignores all drag and drop into the web view.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
-- (NSUInteger)webView:(WebView *)sender
-    dragDestinationActionMaskForDraggingInfo:(id<NSDraggingInfo>)draggingInfo
-#else
-- (int)webView:(WebView *)sender
-    dragDestinationActionMaskForDraggingInfo:(id<NSDraggingInfo>)draggingInfo
-#endif
-{
-  return WebDragDestinationActionNone;
-}
-// Disables dragging links, allows only dragging images and selected text.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
-- (NSUInteger)webView:(WebView *)sender
-    dragSourceActionMaskForPoint:(NSPoint)point
-#else
-- (int)webView:(WebView *)sender
-    dragSourceActionMaskForPoint:(NSPoint)point
-#endif
-{
-  return WebDragSourceActionNone;
-}
-
-- (void)webView:(WebView *)sender
-    windowScriptObjectAvailable:(WebScriptObject *)windowScriptObject {
-  id scriptObject = windowScriptObject;
-  [scriptObject setValue:self forKey:@"HelpController"];
-}
-
-- (NSArray *)webView:(WebView *)sender
-    contextMenuItemsForElement:(NSDictionary *)element
-              defaultMenuItems:(NSArray *)defaultMenuItems {
-  NSMutableArray *menuItems = [NSMutableArray array];
-  NSEnumerator *enumerator = [defaultMenuItems objectEnumerator];
-  NSMenuItem *aMenuItem;
-
-  while (aMenuItem = [enumerator nextObject]) {
-    int tag = [aMenuItem tag];
-    if (tag != WebMenuItemTagReload &&
-        tag != WebMenuItemTagOpenLinkInNewWindow &&
-        tag != WebMenuItemTagDownloadLinkToDisk &&
-        tag != WebMenuItemTagCopyLinkToClipboard &&
-        tag != WebMenuItemTagOpenFrameInNewWindow &&
-        tag != WebMenuItemTagGoBack && tag != WebMenuItemTagGoForward &&
-        tag != WebMenuItemTagStop) {
-      [menuItems addObject:aMenuItem];
-    }
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+  if (![[message name] isEqualToString:@"HelpController"]) {
+    return;
   }
-  return menuItems;
-}
 
-+ (BOOL)isSelectorExcludedFromWebScript:(SEL)selector {
-  if (selector == @selector(logout)) {
-    return NO;
+  if ([[message body] isEqual:@"openInternationPref"]) {
+    [self openInternationPref];
+    return;
   }
-  if (selector == @selector(openInternationPref)) {
-    return NO;
+
+  if ([[message body] isEqual:@"logout"]) {
+    [self logout];
   }
-  return YES;
 }
 
 @end

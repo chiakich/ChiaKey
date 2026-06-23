@@ -3,8 +3,9 @@
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 
-@interface HelpController : NSWindowController {
-  IBOutlet WebView *_webview;
+@interface HelpController : NSWindowController <WKScriptMessageHandler> {
+  IBOutlet NSView *_webViewContainer;
+  WKWebView *_webView;
 }
 - (void)openInternationPref;
 - (void)logout;

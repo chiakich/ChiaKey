@@ -27,6 +27,10 @@
 	</style>
 	<script type="text/javascript" charset="utf-8">
 		function openInternationPref() {
+			if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.HelpController) {
+				window.webkit.messageHandlers.HelpController.postMessage("openInternationPref");
+				return false;
+			}
 			var c = window.HelpController;
 			if (c) {
 				c.openInternationPref();

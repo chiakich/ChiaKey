@@ -3,7 +3,6 @@
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14460.31"/>
-        <plugIn identifier="com.apple.WebKitIBPlugin" version="14460.31"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -251,20 +250,17 @@
                 <rect key="frame" x="0.0" y="0.0" width="546" height="595"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <webView id="449">
+                    <customView id="449">
                         <rect key="frame" x="0.0" y="0.0" width="546" height="595"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <webPreferences key="preferences" defaultFontSize="12" defaultFixedFontSize="12">
-                            <nil key="identifier"/>
-                        </webPreferences>
-                    </webView>
+                    </customView>
                 </subviews>
             </view>
         </window>
         <customObject id="420" customClass="NSFontManager"/>
         <customObject id="452" customClass="HelpController">
             <connections>
-                <outlet property="_webview" destination="449" id="459"/>
+                <outlet property="_webViewContainer" destination="449" id="459"/>
                 <outlet property="window" destination="371" id="454"/>
             </connections>
         </customObject>

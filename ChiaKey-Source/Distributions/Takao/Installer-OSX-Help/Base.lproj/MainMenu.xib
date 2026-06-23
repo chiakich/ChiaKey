@@ -2,7 +2,6 @@
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21507" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21507"/>
-        <plugIn identifier="com.apple.WebKitIBPlugin" version="21507"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -251,13 +250,10 @@
                 <rect key="frame" x="0.0" y="0.0" width="546" height="595"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <webView fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="449">
+                    <customView fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="449">
                         <rect key="frame" x="0.0" y="0.0" width="546" height="595"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <webPreferences key="preferences" defaultFontSize="12" defaultFixedFontSize="12" javaEnabled="NO">
-                            <nil key="identifier"/>
-                        </webPreferences>
-                    </webView>
+                    </customView>
                 </subviews>
             </view>
             <point key="canvasLocation" x="139" y="-241"/>
@@ -265,7 +261,7 @@
         <customObject id="420" customClass="NSFontManager"/>
         <customObject id="452" customClass="HelpController">
             <connections>
-                <outlet property="_webview" destination="449" id="459"/>
+                <outlet property="_webViewContainer" destination="449" id="459"/>
                 <outlet property="window" destination="371" id="454"/>
             </connections>
         </customObject>
