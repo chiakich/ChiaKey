@@ -40,7 +40,7 @@
 本機曾於 2026-06-22 驗證：
 
 ```sh
-xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
+xcodebuild -project ChiaKey-Source/Takao.xcodeproj \
   -scheme Takao-All \
   -configuration Debug \
   -derivedDataPath /private/tmp/ChiaKeyDerivedAll \
@@ -48,7 +48,7 @@ xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
   ONLY_ACTIVE_ARCH=YES \
   build
 
-xcodebuild -project YahooKeyKey-Source-1.1.2528/Takao.xcodeproj \
+xcodebuild -project ChiaKey-Source/Takao.xcodeproj \
   -scheme Takao-All \
   -configuration Release \
   -derivedDataPath /private/tmp/ChiaKeyDerivedRelease \
@@ -96,7 +96,7 @@ Scripts/generate-icon-assets.sh
 目前圖示來源是：
 
 ```text
-YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/Images/ChiaKey.svg
+ChiaKey-Source/Loaders/OSX-IMK/Images/ChiaKey.svg
 ```
 
 ## 詞庫更新測試
@@ -140,11 +140,11 @@ Scripts/test-lexicon-smoke.sh path/to/ChiaKeySource.db
 
 ## 目錄概覽
 
-- `YahooKeyKey-Source-1.1.2528/`：原 Yahoo KeyKey source package。
-- `YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/`：目前主要 macOS InputMethodKit runtime。
-- `YahooKeyKey-Source-1.1.2528/Frameworks/OpenVanilla/`：OpenVanilla framework source。
-- `YahooKeyKey-Source-1.1.2528/Frameworks/PlainVanilla/`：PlainVanilla bridge / loader policy。
-- `YahooKeyKey-Source-1.1.2528/Distributions/Takao/DataSource/`：歷史資料來源與目前 seed data。
+- `ChiaKey-Source/`：原 Yahoo KeyKey source package。
+- `ChiaKey-Source/Loaders/OSX-IMK/`：目前主要 macOS InputMethodKit runtime。
+- `ChiaKey-Source/Frameworks/OpenVanilla/`：OpenVanilla framework source。
+- `ChiaKey-Source/Frameworks/PlainVanilla/`：PlainVanilla bridge / loader policy。
+- `ChiaKey-Source/Distributions/Takao/DataSource/`：歷史資料來源與目前 seed data。
 - `Scripts/`：本機 build、install、icon、lexicon helper。
 - `Docs/`：現代化決策文件。
 

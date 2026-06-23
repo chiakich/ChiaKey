@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROJECT="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Takao.xcodeproj"
-DATA_TABLES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/DataTables"
-DATABASES_DIR="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Distributions/Takao/CookedDatabase"
+PROJECT="${ROOT_DIR}/ChiaKey-Source/Takao.xcodeproj"
+DATA_TABLES_DIR="${ROOT_DIR}/ChiaKey-Source/DataTables"
+DATABASES_DIR="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase"
 SMART_MANDARIN_DB="${DATABASES_DIR}/ChiaKeySource.db"
 SMART_MANDARIN_DB_SCRIPT="${ROOT_DIR}/Scripts/build-dev-smart-mandarin-db.rb"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"

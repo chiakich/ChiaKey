@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-IMAGE_DIR="${REPO_ROOT}/YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/Images"
+IMAGE_DIR="${REPO_ROOT}/ChiaKey-Source/Loaders/OSX-IMK/Images"
 SOURCE_SVG="${IMAGE_DIR}/ChiaKey.svg"
 OUTPUT_ICNS="${IMAGE_DIR}/ChiaKey.icns"
 OUTPUT_ICNS_16="${IMAGE_DIR}/ChiaKey16.icns"

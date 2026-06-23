@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VALIDATOR="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
-BUNDLED_DB="${ROOT_DIR}/YahooKeyKey-Source-1.1.2528/Distributions/Takao/CookedDatabase/ChiaKeySource.db"
+BUNDLED_DB="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db"
 ACTIVE_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
 
 usage() {

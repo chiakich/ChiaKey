@@ -7,17 +7,17 @@ require "open3"
 require "set"
 
 ROOT = File.expand_path("..", __dir__)
-SOURCE_CIN = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "DataTables", "bpmf.cin")
-PUNCTUATION_CIN = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "DataTables", "bpmf-punctuations.cin")
-DATA_SOURCE = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "Distributions", "Takao", "DataSource")
-ONLINE_DATA = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "Distributions", "Takao", "OnlineData")
+SOURCE_CIN = File.join(ROOT, "ChiaKey-Source", "DataTables", "bpmf.cin")
+PUNCTUATION_CIN = File.join(ROOT, "ChiaKey-Source", "DataTables", "bpmf-punctuations.cin")
+DATA_SOURCE = File.join(ROOT, "ChiaKey-Source", "Distributions", "Takao", "DataSource")
+ONLINE_DATA = File.join(ROOT, "ChiaKey-Source", "Distributions", "Takao", "OnlineData")
 CANNED_MESSAGES = File.join(ONLINE_DATA, "CannedMessages.plist")
 ADDENDUM_DIR = File.join(DATA_SOURCE, "Addendum")
 OVERRIDES_DIR = File.join(DATA_SOURCE, "Overrides")
 MODERN_DIR = File.join(DATA_SOURCE, "Modern")
 OUTPUT_DB = File.join(
   ROOT,
-  "YahooKeyKey-Source-1.1.2528",
+  "ChiaKey-Source",
   "Distributions",
   "Takao",
   "CookedDatabase",
