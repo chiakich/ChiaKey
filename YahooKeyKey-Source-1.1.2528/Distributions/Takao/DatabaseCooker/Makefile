@@ -6,8 +6,6 @@ SQLITE3 = /opt/local/bin/sqlite3
 
 INSERTER = ./insert-file-into-db.rb
 PREPOPULATE_TABLE_NAME = prepopulated_service_data
-ONEKEY_SERVICE_KEY = onekey_services
-ONEKEY_DATA_SOURCE = ../OnlineData/OneKey.plist
 CMSG_SERVICE_KEY = canned_messages
 CMSG_DATA_SOURCE = ../OnlineData/CannedMessages.plist
 
@@ -50,7 +48,6 @@ $(DB): $(SRC)
 	$(TOOL) $(SOURCEDIR)/cj-punctuations-halfwidth.cin Punctuations-cj-halfwidth-cin | $(SQLITE3) $(DB)
 	$(TOOL) $(SOURCEDIR)/cj-punctuations-mixedwidth.cin Punctuations-cj-mixedwidth-cin | $(SQLITE3) $(DB)
 	$(TOOL) $(SOURCEDIR)/bopomofo-correction.cin BopomofoCorrection-bopomofo-correction-cin | $(SQLITE3) $(DB)
-	$(INSERTER) $(DB) $(PREPOPULATE_TABLE_NAME) $(ONEKEY_SERVICE_KEY) $(ONEKEY_DATA_SOURCE)
 	$(INSERTER) $(DB) $(PREPOPULATE_TABLE_NAME) $(CMSG_SERVICE_KEY) $(CMSG_DATA_SOURCE)	
 
 $(TMPDIR)/bpmf-ext-absorder.cin: createdir $(SOURCEDIR)/bpmf-ext.cin $(CONVERT_TOOL) $(NATIVE_BOPOMOFO_BUNDLE)
@@ -65,4 +62,3 @@ $(NATIVE_BOPOMOFO_MAKEFILE): $(NATIVE_BOPOMOFO_EXTCONF)
 clean:
 	rm $(DB)
 	rm -rf $(TMPDIR)
-

@@ -345,15 +345,6 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="453"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField hidden="YES" verticalHuggingPriority="750" id="1024">
-                    <rect key="frame" x="282" y="119" width="69" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="启用一点通" id="1025">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <button imageHugsTitle="YES" id="1022">
                     <rect key="frame" x="136" y="95" width="313" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -493,32 +484,6 @@
                     <rect key="frame" x="0.0" y="371" width="480" height="82"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </customView>
-                <popUpButton hidden="YES" verticalHuggingPriority="750" imageHugsTitle="YES" id="902">
-                    <rect key="frame" x="135" y="114" width="145" height="26"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <popUpButtonCell key="cell" type="push" title="使用 ~ 键" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="906" id="903">
-                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="menu"/>
-                        <menu key="menu" title="OtherViews" id="904">
-                            <items>
-                                <menuItem title="使用 ` 键" id="905"/>
-                                <menuItem title="使用 ~ 键" state="on" id="906"/>
-                            </items>
-                        </menu>
-                    </popUpButtonCell>
-                    <connections>
-                        <action selector="writePreference:" target="908" id="910"/>
-                    </connections>
-                </popUpButton>
-                <textField hidden="YES" verticalHuggingPriority="750" id="901">
-                    <rect key="frame" x="17" y="121" width="108" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="一点通：" id="907">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <button imageHugsTitle="YES" id="847">
                     <rect key="frame" x="136" y="71" width="200" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -1506,11 +1471,6 @@
                 <outlet property="_latestCheckTextField" destination="611" id="875"/>
                 <outlet property="_latestVersionTextField" destination="533" id="876"/>
                 <outlet property="_window" destination="371" id="881"/>
-            </connections>
-        </customObject>
-        <customObject id="908" customClass="TakaoSearch">
-            <connections>
-                <outlet property="u_shortcutKey" destination="902" id="909"/>
             </connections>
         </customObject>
         <customObject id="1028" customClass="TakaoLoadedModule">

@@ -41,7 +41,6 @@ file for terms.
         Simplex Phonetic Input Method.
 */
 #define PLIST_SIMPLEX_FILENAME @"com.chiaki.KeyKey.Generic-simplex-cin.plist"
-#define PLIST_SEARCH_FILENAME @"com.chiaki.KeyKey.OneKey.plist"
 #define PLIST_GENERIC_FILENAME(x) \
   [NSString stringWithFormat:@"com.chiaki.KeyKey.%@.plist", x]
 #define PLIST_WORDCOUNT_FILENAME @"com.chiaki.KeyKey.YKAFWordCount.plist"

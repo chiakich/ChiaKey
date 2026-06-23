@@ -347,9 +347,6 @@
 		6AE561A80EF3CD7E002460F0 /* OVDistributionConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AE561A50EF3CD7E002460F0 /* OVDistributionConfig.h */; };
 		6AE561AA0EF3CD7E002460F0 /* OVLoaderUserPersistence.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AE561A70EF3CD7E002460F0 /* OVLoaderUserPersistence.h */; };
 		6AE561D90EF3D194002460F0 /* OVLoaderUserPersistence.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6AE561D80EF3D194002460F0 /* OVLoaderUserPersistence.mm */; };
-		6AE562310EF3DF7A002460F0 /* YKAFOneKey.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AE5622E0EF3DF7A002460F0 /* YKAFOneKey.cpp */; };
-		6AE562320EF3DF7A002460F0 /* YKAFOneKey.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AE5622F0EF3DF7A002460F0 /* YKAFOneKey.h */; };
-		6AE562330EF3DF7A002460F0 /* YKAFOneKeyPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AE562300EF3DF7A002460F0 /* YKAFOneKeyPackage.h */; };
 		6AE950D20D998B54003FC2F3 /* OpenVanilla.h in Copy Files (trompe-l'oeil) */ = {isa = PBXBuildFile; fileRef = 6AE950A10D998B06003FC2F3 /* OpenVanilla.h */; };
 		6AE950D30D998B54003FC2F3 /* OVLibrary.h in Copy Files (trompe-l'oeil) */ = {isa = PBXBuildFile; fileRef = 6AE950A20D998B06003FC2F3 /* OVLibrary.h */; };
 		6AE950D40D998B54003FC2F3 /* OVUtility.h in Copy Files (trompe-l'oeil) */ = {isa = PBXBuildFile; fileRef = 6AE950A30D998B06003FC2F3 /* OVUtility.h */; };
@@ -502,7 +499,6 @@
 		D4FC91720EC89A470087648C /* CVHorizontalCandidateControl.m in Sources */ = {isa = PBXBuildFile; fileRef = D4FC91700EC89A470087648C /* CVHorizontalCandidateControl.m */; };
 		D4FC917B0EC89A830087648C /* CVHorizontalCandidateCell.h in Headers */ = {isa = PBXBuildFile; fileRef = D4FC91770EC89A830087648C /* CVHorizontalCandidateCell.h */; };
 		D4FC917C0EC89A830087648C /* CVHorizontalCandidateCell.m in Sources */ = {isa = PBXBuildFile; fileRef = D4FC91780EC89A830087648C /* CVHorizontalCandidateCell.m */; };
-		D4FF285D0DE7330E00E28C51 /* TakaoSearch.m in Sources */ = {isa = PBXBuildFile; fileRef = D4FF285B0DE7330E00E28C51 /* TakaoSearch.m */; };
 		D4FF7E610F45DB8C006F4025 /* CVInputMethodToggleWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = D4FF7E5F0F45DB8C006F4025 /* CVInputMethodToggleWindowController.h */; };
 		D4FF7E620F45DB8C006F4025 /* CVInputMethodToggleWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D4FF7E600F45DB8C006F4025 /* CVInputMethodToggleWindowController.mm */; };
 		D4FF7EF50F45FB4D006F4025 /* CVInputMethodToggleControl.h in Headers */ = {isa = PBXBuildFile; fileRef = D4FF7EF30F45FB4D006F4025 /* CVInputMethodToggleControl.h */; };
@@ -1154,9 +1150,6 @@
 		6AE561A50EF3CD7E002460F0 /* OVDistributionConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVDistributionConfig.h; path = Loaders/CrossPlatform/OVDistributionConfig.h; sourceTree = "<group>"; };
 		6AE561A70EF3CD7E002460F0 /* OVLoaderUserPersistence.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVLoaderUserPersistence.h; path = Loaders/CrossPlatform/OVLoaderUserPersistence.h; sourceTree = "<group>"; };
 		6AE561D80EF3D194002460F0 /* OVLoaderUserPersistence.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OVLoaderUserPersistence.mm; path = Loaders/CrossPlatform/OVLoaderUserPersistence.mm; sourceTree = "<group>"; };
-		6AE5622E0EF3DF7A002460F0 /* YKAFOneKey.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = YKAFOneKey.cpp; path = ModulePackages/YKAFOneKey/YKAFOneKey.cpp; sourceTree = "<group>"; };
-		6AE5622F0EF3DF7A002460F0 /* YKAFOneKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = YKAFOneKey.h; path = ModulePackages/YKAFOneKey/YKAFOneKey.h; sourceTree = "<group>"; };
-		6AE562300EF3DF7A002460F0 /* YKAFOneKeyPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = YKAFOneKeyPackage.h; path = ModulePackages/YKAFOneKey/YKAFOneKeyPackage.h; sourceTree = "<group>"; };
 		6AE950A10D998B06003FC2F3 /* OpenVanilla.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OpenVanilla.h; path = "Loaders/OSX-IMK/TrompeLoeil/OpenVanilla.h"; sourceTree = SOURCE_ROOT; };
 		6AE950A20D998B06003FC2F3 /* OVLibrary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVLibrary.h; path = "Loaders/OSX-IMK/TrompeLoeil/OVLibrary.h"; sourceTree = SOURCE_ROOT; };
 		6AE950A30D998B06003FC2F3 /* OVUtility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVUtility.h; path = "Loaders/OSX-IMK/TrompeLoeil/OVUtility.h"; sourceTree = SOURCE_ROOT; };
@@ -1362,8 +1355,6 @@
 		D4FC91700EC89A470087648C /* CVHorizontalCandidateControl.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVHorizontalCandidateControl.m; path = "Loaders/OSX-IMK/CVHorizontalCandidateControl.m"; sourceTree = "<group>"; wrapsLines = 1; };
 		D4FC91770EC89A830087648C /* CVHorizontalCandidateCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVHorizontalCandidateCell.h; path = "Loaders/OSX-IMK/CVHorizontalCandidateCell.h"; sourceTree = "<group>"; };
 		D4FC91780EC89A830087648C /* CVHorizontalCandidateCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVHorizontalCandidateCell.m; path = "Loaders/OSX-IMK/CVHorizontalCandidateCell.m"; sourceTree = "<group>"; wrapsLines = 1; };
-		D4FF285A0DE7330E00E28C51 /* TakaoSearch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoSearch.h; path = PreferenceApplications/OSX/TakaoSearch.h; sourceTree = "<group>"; };
-		D4FF285B0DE7330E00E28C51 /* TakaoSearch.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoSearch.m; path = PreferenceApplications/OSX/TakaoSearch.m; sourceTree = "<group>"; };
 		D4FF7E5F0F45DB8C006F4025 /* CVInputMethodToggleWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVInputMethodToggleWindowController.h; path = "Loaders/OSX-IMK/CVInputMethodToggleWindowController.h"; sourceTree = "<group>"; };
 		D4FF7E600F45DB8C006F4025 /* CVInputMethodToggleWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVInputMethodToggleWindowController.mm; path = "Loaders/OSX-IMK/CVInputMethodToggleWindowController.mm"; sourceTree = "<group>"; };
 		D4FF7EF30F45FB4D006F4025 /* CVInputMethodToggleControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVInputMethodToggleControl.h; path = "Loaders/OSX-IMK/CVInputMethodToggleControl.h"; sourceTree = "<group>"; };
@@ -2194,7 +2185,6 @@
 			isa = PBXGroup;
 			children = (
 				6A428A370D74068800ABCDA1 /* EvalPackage */,
-				D479FD5E0D604BF400B33AA2 /* OneKeyPackage */,
 				6AEBCFE20D5D7CBE00ABF19D /* BopomofoCorrectionPackage */,
 				6AB5B32C0D5C8EE10040CD26 /* FullWidthCharacterPackage */,
 				6AB5B3210D5C8EB20040CD26 /* HanConvertPackage */,
@@ -2557,16 +2547,6 @@
 			name = Images;
 			sourceTree = "<group>";
 		};
-		D479FD5E0D604BF400B33AA2 /* OneKeyPackage */ = {
-			isa = PBXGroup;
-			children = (
-				6AE5622E0EF3DF7A002460F0 /* YKAFOneKey.cpp */,
-				6AE5622F0EF3DF7A002460F0 /* YKAFOneKey.h */,
-				6AE562300EF3DF7A002460F0 /* YKAFOneKeyPackage.h */,
-			);
-			name = OneKeyPackage;
-			sourceTree = "<group>";
-		};
 		D479FD9E0D604E5700B33AA2 /* WebUI */ = {
 			isa = PBXGroup;
 			children = (
@@ -2617,8 +2597,6 @@
 				D47D5E520D5EDDC40093524C /* TakaoPreference.h */,
 				D47D5E530D5EDDC40093524C /* TakaoPreference.m */,
 				D47D5E640D5EDDDD0093524C /* TakaoPreference_Toolbar.m */,
-				D4FF285A0DE7330E00E28C51 /* TakaoSearch.h */,
-				D4FF285B0DE7330E00E28C51 /* TakaoSearch.m */,
 				D4041FEF0F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.h */,
 				D4041FF00F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.m */,
 				D4C2FFB410623345005DB6AF /* TakaoLoadedModule.h */,
@@ -3111,8 +3089,6 @@
 				6A7FF87F0D71F89F001EA93C /* Evalgelion.h in Headers */,
 				6A7FF8810D71F89F001EA93C /* OVAFEval.h in Headers */,
 				6A7FF8820D71F89F001EA93C /* OVAFEvalPackage.h in Headers */,
-				6AE562320EF3DF7A002460F0 /* YKAFOneKey.h in Headers */,
-				6AE562330EF3DF7A002460F0 /* YKAFOneKeyPackage.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4137,7 +4113,6 @@
 				6A2D562C0D5D891700E710D6 /* OVIMSmartMandarin.cpp in Sources */,
 				D427E5860D63A7B700A9E73A /* OVAFAssociatedPhrase.cpp in Sources */,
 				6A7FF8800D71F89F001EA93C /* OVAFEval.cpp in Sources */,
-				6AE562310EF3DF7A002460F0 /* YKAFOneKey.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4247,7 +4222,6 @@
 				D47D5E700D5EDDDD0093524C /* TakaoSmartPhonetic.m in Sources */,
 				D47D5E710D5EDDDD0093524C /* TakaoUpdate.m in Sources */,
 				D47D5E720D5EDDDD0093524C /* TakaoWindow.m in Sources */,
-				D4FF285D0DE7330E00E28C51 /* TakaoSearch.m in Sources */,
 				D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */,
 				D4041FF10F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.m in Sources */,
 				D4C2FFB710623345005DB6AF /* TakaoLoadedModule.m in Sources */,

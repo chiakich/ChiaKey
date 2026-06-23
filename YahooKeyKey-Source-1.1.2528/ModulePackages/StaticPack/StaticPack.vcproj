@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Frameworks\OpenVanilla\Headers;..\..\Frameworks\Minotaur\Headers;..\..\Frameworks\Formosa\Headers;..\..\Frameworks\Manjusri\Headers;..\..\Frameworks\PlainVanilla\Headers;..\..\ExternalLibraries\sqlite;..\OVAFBopomofoCorrection;..\OVAFEval;..\OVOFHanConvert;..\OVOFFullWidthCharacter;..\OVIMMandarin;..\OVIMGeneric;..\YKAFOneKey"
+				AdditionalIncludeDirectories="..\..\Frameworks\OpenVanilla\Headers;..\..\Frameworks\Minotaur\Headers;..\..\Frameworks\Formosa\Headers;..\..\Frameworks\Manjusri\Headers;..\..\Frameworks\PlainVanilla\Headers;..\..\ExternalLibraries\sqlite;..\OVAFBopomofoCorrection;..\OVAFEval;..\OVOFHanConvert;..\OVOFFullWidthCharacter;..\OVIMMandarin;..\OVIMGeneric"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;OVAFASSOCIATEDPHRASE_IDENTIFIER=\&quot;AssociatedPhrase\&quot;;OVAFBOPOMOFOCORRECTION_IDENTIFIER=\&quot;BopomofoCorrection\&quot;;OVAFEVAL_IDENTIFIER=\&quot;Evaluator\&quot;;OVIMGENERIC_IDENTIFIER_PREFIX=\&quot;Generic\&quot;;OVIMMANDARIN_IDENTIFIER=\&quot;Mandarin\&quot;;OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX=\&quot;Punctuations\&quot;;OVIMSMARTMANDARIN_IDENTIFIER=\&quot;SmartMandarin\&quot;;OVIMTRADITIONALMANDARIN_IDENTIFIER=\&quot;TraditionalMandarin\&quot;;OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING;OVOFFULLWIDTHCHARACTER_IDENTIFIER=\&quot;FullWidthCharacter\&quot;;OVOFHANCONVERT_IDENTIFIER_PREFIX=\&quot;ChineseCharacterConvertor\&quot;;OVOFHANCONVERT_USE_TC2SCONLY;OVIMSMARTMANDARIN_USE_SQLITE_CRYPTO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -170,7 +170,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\..\Frameworks\OpenVanilla\Headers;..\..\Frameworks\Minotaur\Headers;..\..\Frameworks\Formosa\Headers;..\..\Frameworks\Manjusri\Headers;..\..\Frameworks\PlainVanilla\Headers;&quot;..\..\ExternalLibraries\sqlite-crypto&quot;;..\OVAFBopomofoCorrection;..\OVAFEval;..\OVOFHanConvert;..\OVOFFullWidthCharacter;..\OVIMMandarin;..\OVIMGeneric;..\YKAFOneKey"
+				AdditionalIncludeDirectories="..\..\Frameworks\OpenVanilla\Headers;..\..\Frameworks\Minotaur\Headers;..\..\Frameworks\Formosa\Headers;..\..\Frameworks\Manjusri\Headers;..\..\Frameworks\PlainVanilla\Headers;&quot;..\..\ExternalLibraries\sqlite-crypto&quot;;..\OVAFBopomofoCorrection;..\OVAFEval;..\OVOFHanConvert;..\OVOFFullWidthCharacter;..\OVIMMandarin;..\OVIMGeneric"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;OVAFASSOCIATEDPHRASE_IDENTIFIER=\&quot;AssociatedPhrase\&quot;;OVAFBOPOMOFOCORRECTION_IDENTIFIER=\&quot;BopomofoCorrection\&quot;;OVAFEVAL_IDENTIFIER=\&quot;Evaluator\&quot;;OVIMGENERIC_IDENTIFIER_PREFIX=\&quot;Generic\&quot;;OVIMMANDARIN_IDENTIFIER=\&quot;Mandarin\&quot;;OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX=\&quot;Punctuations\&quot;;OVIMSMARTMANDARIN_IDENTIFIER=\&quot;SmartMandarin\&quot;;OVIMTRADITIONALMANDARIN_IDENTIFIER=\&quot;TraditionalMandarin\&quot;;OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING;OVOFFULLWIDTHCHARACTER_IDENTIFIER=\&quot;FullWidthCharacter\&quot;;OVOFHANCONVERT_IDENTIFIER_PREFIX=\&quot;ChineseCharacterConvertor\&quot;;OVOFHANCONVERT_USE_TC2SCONLY;OVIMSMARTMANDARIN_USE_SQLITE_CRYPTO"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -485,22 +485,6 @@
 			</File>
 			<File
 				RelativePath="..\OVAFEval\OVAFEvalPackage.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="YKAFOneKey"
-			>
-			<File
-				RelativePath="..\YKAFOneKey\YKAFOneKey.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\YKAFOneKey\YKAFOneKey.h"
-				>
-			</File>
-			<File
-				RelativePath="..\YKAFOneKey\YKAFOneKeyPackage.h"
 				>
 			</File>
 		</Filter>

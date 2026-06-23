@@ -115,6 +115,8 @@ After installing a lexicon, switch away from and back to Chiaki KeyKey, or rerun
 
 The Preferences app also exposes a Lexicon update page. It checks the latest `Chiaki-KeyKey-Lexicon` GitHub Release and runs the bundled installer script, so the same checksum and SQLite schema validation path is used by both the UI and CLI.
 
+OneKey service data is no longer part of the lexicon contract. See [LexiconOneKeyRemoval.md](Docs/LexiconOneKeyRemoval.md) before updating lexicon release checks.
+
 ## Source Layout
 
 - `YahooKeyKey-Source-1.1.2528/` - original Yahoo! KeyKey source package.

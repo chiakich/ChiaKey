@@ -81,23 +81,6 @@ static OVSQLiteDatabaseService *CreateValidatedKeyKeySourceDatabaseService(
   return service;
 }
 
-class CVLoaderHookedServiceDelegate : public PVLoaderHookedServiceDelegate {
- public:
-  virtual void *loaderSpecificDataObjectForName(const string &name) {
-    if (name == "OneKeyDataCopy") {
-      void *copy = 0;
-
-      @synchronized([OpenVanillaLoader sharedInstance]) {
-        copy = [[OpenVanillaLoader sharedInstance] mergedOneKeyData]->copy();
-      }
-
-      return copy;
-    }
-
-    return 0;
-  }
-};
-
 @interface NSData (LFHTTPFormExtensions)
 + (id)dataAsWWWURLEncodedFormFromDictionary:(NSDictionary *)formDictionary;
 @end
@@ -223,18 +206,11 @@ using namespace OpenVanilla;
     [_autoUpdateSignatureHTTPRequest
         setContentType:LFHTTPRequestWWWFormURLEncodedContentType];
 
-    _oneKeyDataHTTPRequest = [LFHTTPRequest new];
-    [_oneKeyDataHTTPRequest setDelegate:(id)self];
-
     _cannedMessagesDataHTTPRequest = [LFHTTPRequest new];
     [_cannedMessagesDataHTTPRequest setDelegate:(id)self];
 
     _mergedCannedMessagesArray = [NSMutableArray new];
-    _mergedOneKeyData = new PVPlistValue(PVPlistValue::Dictionary);
 
-    _loaderServiceDelegate = new CVLoaderHookedServiceDelegate;
-
-    _userOneKeyPlist = 0;
     _userCannedMessagePlist = 0;
     _userFreeCannedMessageFileTimestamp = new OVFileTimestamp;
 
@@ -254,15 +230,9 @@ using namespace OpenVanilla;
 
   [_autoUpdateHTTPRequest release];
   [_autoUpdateSignatureHTTPRequest release];
-  [_oneKeyDataHTTPRequest release];
   [_cannedMessagesDataHTTPRequest release];
 
   [_mergedCannedMessagesArray release];
-  delete _mergedOneKeyData;
-
-  if (_userOneKeyPlist) {
-    delete _userOneKeyPlist;
-  }
 
   if (_userCannedMessagePlist) {
     delete _userCannedMessagePlist;
@@ -454,15 +424,9 @@ using namespace OpenVanilla;
     _userCannedMessagePlist = new PVPropertyList(
         OVPathHelper::PathCat(userDataPath, "UserCannedMessages.plist"));
   }
-
-  if (!_userOneKeyPlist) {
-    _userOneKeyPlist = new PVPropertyList(
-        OVPathHelper::PathCat(userDataPath, "UserOneKey.plist"));
-  }
 }
 
 - (void)_firstTimeUpdateUserData {
-  [self mergeOneKeyData];
   [self mergeCannedMessagesData];
   [[NSNotificationCenter defaultCenter]
       postNotificationName:CVLoaderUpdateCannedMessagesNotification
@@ -616,7 +580,6 @@ using namespace OpenVanilla;
   _loaderService = new PVLoaderService(
       naturalLocale, _CINDatabaseService, _SQLiteDatabaseService,
       0 /* uses default log emitter */, _encodingService);
-  _loaderService->setHookedServiceDelegate(_loaderServiceDelegate);
   _bundleLoadingSystem = new PVBundleLoadingSystem(_loaderPolicy);
 
   OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
@@ -1130,26 +1093,6 @@ using namespace OpenVanilla;
   [[TrackerSender sharedTrackerSender] sendTrackerWithURLString:startURL];
 }
 
-- (void)_handleOneKeyTimer:(NSTimer *)timer {
-  if (![self _tellIfLastCheckTimeElapsedAndUpdateWithKeyName:
-                 @"OneKeyLastCheckedTime"]) {
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleOneKeyTimer:)
-                              userInfo:nil
-                               repeats:NO];
-    return;
-  }
-
-  NSURL *reqURL =
-      [self serverEndpointWithDefaultURLString:TAKAO_ONEKEY_URL
-                             overrideConfigKey:@"OneKeyDataEndpointURL"];
-  [_oneKeyDataHTTPRequest performMethod:LFHTTPRequestGETMethod
-                                  onURL:reqURL
-                               withData:nil];
-}
-
 - (void)_handleCannedMessagesTimer:(NSTimer *)timer {
   if (![self _tellIfLastCheckTimeElapsedAndUpdateWithKeyName:
                  @"CannedMessagesLastCheckedTime"]) {
@@ -1298,25 +1241,6 @@ using namespace OpenVanilla;
                               selector:@selector(_handleAutoUpdateTimer:)
                               userInfo:nil
                                repeats:NO];
-  } else if (request == _oneKeyDataHTTPRequest) {
-    char buf[1];
-    memset(buf, 0, 1);
-    NSMutableData *nullTerminatedData = [receivedData mutableCopy];
-    [nullTerminatedData appendBytes:buf length:1];
-
-    if ([self _validateServerData:nullTerminatedData]) {
-      string rcvStr = (const char *)[nullTerminatedData bytes];
-      _userPersistence->populateIfValueDifferentUserDB("onekey_services",
-                                                       rcvStr);
-      [self mergeOneKeyData];
-    }
-
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleOneKeyTimer:)
-                              userInfo:nil
-                               repeats:NO];
   } else if (request == _cannedMessagesDataHTTPRequest) {
     char buf[1];
     memset(buf, 0, 1);
@@ -1349,13 +1273,6 @@ using namespace OpenVanilla;
         scheduledTimerWithTimeInterval:OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL
                                 target:self
                               selector:@selector(_handleAutoUpdateTimer:)
-                              userInfo:nil
-                               repeats:NO];
-  } else if (request == _oneKeyDataHTTPRequest) {
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleOneKeyTimer:)
                               userInfo:nil
                                repeats:NO];
   } else if (request == _cannedMessagesDataHTTPRequest) {
@@ -1526,68 +1443,6 @@ using namespace OpenVanilla;
       _loaderPolicy->loaderName());
   OVDirectoryHelper::CheckDirectory(appDataDir);
   return OVPathHelper::PathCat(appDataDir, "UserCannedMessages.txt");
-}
-
-- (void)mergeOneKeyData {
-  @synchronized(self) {
-    string oneKeyRawData =
-        _userPersistence->fetchLatestValueByKeyAndPopulateUserDB(
-            "onekey_services");
-
-    PVPlistValue *parsed =
-        PVPropertyList::ParsePlistFromString(oneKeyRawData.c_str());
-    PVPlistValue emptyDictionary(PVPlistValue::Dictionary);
-    if (!parsed) parsed = &emptyDictionary;
-    vector<string> keys = parsed->dictionaryKeys();
-
-    _mergedOneKeyData->removeAllKeysAndValues();
-    for (vector<string>::iterator ki = keys.begin(); ki != keys.end(); ++ki) {
-      _mergedOneKeyData->setKeyValue(*ki, parsed->valueForKey(*ki));
-    }
-
-    // ensure existence of features
-    PVPlistValue farray(PVPlistValue::Array);
-    PVPlistValue *features = _mergedOneKeyData->valueForKey("Features");
-    if (!features) {
-      _mergedOneKeyData->setKeyValue("Features", &farray);
-    } else {
-      if (features->type() != PVPlistValue::Array) {
-        _mergedOneKeyData->setKeyValue("Features", &farray);
-      }
-    }
-
-    // put vendor features in
-    features = _mergedOneKeyData->valueForKey("Features");
-    size_t fc = features->arraySize();
-    for (size_t i = 0; i < fc; i++) {
-      PVPlistValue *vf = features->arrayElementAtIndex(i);
-      if (vf) {
-        vf->setKeyValue("IsVendorFeature", "true");
-      }
-    }
-
-    PVPlistValue *userDict = _userOneKeyPlist->rootDictionary();
-    PVPlistValue *userFeatures = userDict ? userDict->valueForKey("Features") : 0;
-    if (userFeatures) {
-      if (userFeatures->type() == PVPlistValue::Array) {
-        size_t as = userFeatures->arraySize();
-        for (size_t ai = 0; ai < as; ai++) {
-          features->addArrayElement(userFeatures->arrayElementAtIndex(ai));
-        }
-      }
-    }
-  }
-}
-
-- (PVPlistValue *)mergedOneKeyData {
-  return _mergedOneKeyData;
-}
-
-- (void)syncUserOneKeyData {
-  if (_userOneKeyPlist->shouldReadSync()) {
-    _userOneKeyPlist->readSync();
-    [self mergeOneKeyData];
-  }
 }
 
 - (NSArray *)dynamicallyLoadedModulePackageInfo {

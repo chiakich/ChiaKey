@@ -780,7 +780,7 @@
 
 + (NSString *)webScriptNameForSelector:(SEL)selector {
   if (selector == @selector(search:))
-    return @"OneKey";
+    return @"search";
   else if (selector == @selector(sendString:))
     return @"sendString";
   else if (selector == @selector(speak:))

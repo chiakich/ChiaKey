@@ -14,8 +14,6 @@
 using namespace OpenVanilla;
 using namespace CareService;
 
-class CVLoaderHookedServiceDelegate;
-
 @interface OpenVanillaLoader : NSObject {
   OVCINDatabaseService *_CINDatabaseService;
   OVSQLiteDatabaseService *_SQLiteDatabaseService;
@@ -35,21 +33,14 @@ class CVLoaderHookedServiceDelegate;
 
   id _autoUpdateHTTPRequest;
   id _autoUpdateSignatureHTTPRequest;
-  id _oneKeyDataHTTPRequest;
   id _cannedMessagesDataHTTPRequest;
 
   OVLoaderUserPersistence *_userPersistence;
   NSMutableArray *_mergedCannedMessagesArray;
-  PVPlistValue *_mergedOneKeyData;
 
   // user canned messages support
   PVPropertyList *_userCannedMessagePlist;
   OVFileTimestamp *_userFreeCannedMessageFileTimestamp;
-
-  // user onekey support
-  PVPropertyList *_userOneKeyPlist;
-
-  CVLoaderHookedServiceDelegate *_loaderServiceDelegate;
 
   NSTask *_downloadTask;
 }
@@ -95,10 +86,6 @@ class CVLoaderHookedServiceDelegate;
 - (NSArray *)mergedCannedMessagesArray;
 - (void)syncUserCannedMessages;
 - (const string)userFreeCannedMessagePath;
-
-- (void)mergeOneKeyData;
-- (PVPlistValue *)mergedOneKeyData;
-- (void)syncUserOneKeyData;
 
 - (NSArray *)dynamicallyLoadedModulePackageInfo;
 - (void)setBlackListOfPackageIdentifers:(NSArray *)inIdentifiers;

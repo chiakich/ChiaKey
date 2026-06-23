@@ -850,25 +850,6 @@ static id OVCActiveContextSender = nil;
   }
   [CVNotifyController notify:msg];
 }
-- (void)onekeyAction:(id)sender {
-  PVPlistValue *dict =
-      [OpenVanillaLoader sharedLoader]->configDictionaryForModule("OneKey");
-  if (dict) {
-    PVPlistValue *shortcut = dict->valueForKey("ShortcutKey");
-    if (shortcut) {
-      string sv = shortcut->stringValue();
-
-      if (sv.size()) {
-        [[CVSendKey sharedSendKey]
-            typeString:[NSString
-                           stringWithUTF8String:string(1, sv[0]).c_str()]];
-      }
-    }
-  } else {
-    // if the config doesn't exist, we send the default
-    [[CVSendKey sharedSendKey] typeString:@"`"];
-  }
-}
 - (void)symbolAction:(id)sender {
   if ([[[[NSApp delegate] symbolController] window] isVisible]) {
     [[[NSApp delegate] symbolController] hide:self];

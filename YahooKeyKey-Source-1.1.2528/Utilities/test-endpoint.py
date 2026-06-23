@@ -19,7 +19,6 @@ beacon_start = "http://tw.rd.yahoo.com/referurl/keykey/client/installer/start/%(
 
 version_info = "http://tw.widget.yahoo.com/ykk/VersionInfo.php"
 version_info_sig = "http://tw.widget.yahoo.com/ykk/VersionInfo.sig"
-one_key_plist = "http://tw.widget.yahoo.com/ykk/OneKey.plist"
 canned_message = "http://tw.widget.yahoo.com/ykk/CannedMessages.plist"
 dict_gen = "http://tw.widget.yahoo.com/keykey/dict_gen_xmls.php?p=Test"
 
@@ -36,7 +35,6 @@ class TestAPI(unittest.TestCase):
 		self.doTestURL(phrase_editor_help)
 		self.doTestURL(version_info)
 		self.doTestURL(version_info_sig)
-		self.doTestURL(one_key_plist)
 		self.doTestURL(canned_message)
 		self.doTestURL(dict_gen)
 		self.doTestURL(beacon_start % {"VERSION_FOR_INSTALLER": VERSION_FOR_INSTALLER, "OS": "M105"})
@@ -52,4 +50,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-

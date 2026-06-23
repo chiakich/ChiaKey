@@ -483,45 +483,10 @@
                         <outlet property="_controller" destination="591" id="987"/>
                     </connections>
                 </popUpButton>
-                <textField hidden="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="990">
-                    <rect key="frame" x="215" y="120" width="187" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title=" to activate One-Key feature." id="991">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <customView fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="939">
                     <rect key="frame" x="0.0" y="366" width="480" height="106"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </customView>
-                <popUpButton hidden="YES" imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="905">
-                    <rect key="frame" x="129" y="114" width="84" height="26"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <popUpButtonCell key="cell" type="push" title="Use ~" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="909" id="906">
-                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="menu"/>
-                        <menu key="menu" title="OtherViews" id="907">
-                            <items>
-                                <menuItem title="Use`" id="908"/>
-                                <menuItem title="Use ~" state="on" id="909"/>
-                            </items>
-                        </menu>
-                    </popUpButtonCell>
-                    <connections>
-                        <action selector="writePreference:" target="911" id="913"/>
-                    </connections>
-                </popUpButton>
-                <textField hidden="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="901">
-                    <rect key="frame" x="17" y="120" width="102" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Shortcut Key:" id="902">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="847">
                     <rect key="frame" x="130" y="71" width="200" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -1522,11 +1487,6 @@
                 <outlet property="_latestCheckTextField" destination="611" id="875"/>
                 <outlet property="_latestVersionTextField" destination="533" id="876"/>
                 <outlet property="_window" destination="371" id="881"/>
-            </connections>
-        </customObject>
-        <customObject id="911" customClass="TakaoSearch">
-            <connections>
-                <outlet property="u_shortcutKey" destination="905" id="912"/>
             </connections>
         </customObject>
         <customObject id="1051" customClass="TakaoLoadedModule">

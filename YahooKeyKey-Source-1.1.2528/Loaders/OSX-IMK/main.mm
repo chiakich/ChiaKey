@@ -117,24 +117,6 @@ int main(int argc, char *argv[]) {
       [resourcePath stringByAppendingPathComponent:@"Modules"];
   NSArray *loadPaths = [NSArray arrayWithObjects:modulePath, nil];
 
-  // migrates Search.plist -> OneKey.plist
-  NSString *libPath = [NSSearchPathForDirectoriesInDomains(
-      NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-  NSString *prefPath = [libPath stringByAppendingPathComponent:@"Preferences"];
-  NSFileManager *mgr = [NSFileManager defaultManager];
-  NSString *oldSearchPlist = [prefPath
-      stringByAppendingPathComponent:@"com.chiaki.KeyKey.Search.plist"];
-  NSString *oneKeyPlist = [prefPath
-      stringByAppendingPathComponent:@"com.chiaki.KeyKey.OneKey.plist"];
-
-  if ([mgr fileExistsAtPath:oldSearchPlist]) {
-    if (![mgr fileExistsAtPath:oneKeyPlist]) {
-      [mgr movePath:oldSearchPlist toPath:oneKeyPlist handler:nil];
-    } else {
-      [mgr removeFileAtPath:oldSearchPlist handler:nil];
-    }
-  }
-
   OpenVanillaLoader *ovl = [OpenVanillaLoader sharedInstance];
   [[NSApp delegate] setLoader:ovl];
   [NSThread detachNewThreadSelector:@selector(start:)

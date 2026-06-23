@@ -29,12 +29,6 @@
   @"http://tw.media.yahoo.com/ykk/VersionInfo.sig"
 #endif
 
-#ifndef TAKAO_ONEKEY_URL
-//	#define TAKAO_ONEKEY_URL
-//@"http://w1.keykey.vip.tpc.yahoo.com/ykk/OneKey.plist"
-#define TAKAO_ONEKEY_URL @"http://tw.media.yahoo.com/ykk/OneKey.plist"
-#endif
-
 #ifndef TAKAO_CANNED_MESSAGES_URL
 //	#define TAKAO_CANNED_MESSAGES_URL
 //@"http://w1.keykey.vip.tpc.yahoo.com/ykk/CannedMessages.plist"

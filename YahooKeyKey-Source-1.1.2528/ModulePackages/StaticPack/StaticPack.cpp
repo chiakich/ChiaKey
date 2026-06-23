@@ -11,7 +11,6 @@
 #include <OVIMMandarinPackage.h>
 #include <OVOFFullWidthCharacterPackage.h>
 #include <OVOFHanConvertPackage.h>
-#include <YKAFOneKeyPackage.h>
 
 namespace OpenVanilla {
 
@@ -35,7 +34,6 @@ StaticPack::InitializedModulePackages(OVPathInfo* pathInfo,
   ADD(OVOFFullWidthCharacterPackage, "OVOFFullWidthCharacterPackage");
   ADD(OVOFHanConvertPackage, "OVOFHanConvertPackage");
 
-  ADD(YKAFOneKeyPackage, "YKAFOneKeyPackage");
 #undef ADD
 
   return results;
