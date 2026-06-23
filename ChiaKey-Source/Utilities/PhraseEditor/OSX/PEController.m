@@ -14,6 +14,17 @@
 typedef unsigned int NSUInteger;
 #endif
 
+static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
+                                NSString *informativeText,
+                                NSAlertStyle alertStyle) {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:messageText];
+  [alert setInformativeText:informativeText];
+  [alert addButtonWithTitle:LFLSTR(@"OK")];
+  [alert setAlertStyle:alertStyle];
+  [alert beginSheetModalForWindow:window completionHandler:nil];
+}
+
 @implementation PEController
 
 - (void)dealloc {
@@ -29,14 +40,12 @@ typedef unsigned int NSUInteger;
   if (_loader) {
     [_loader setProtocolForProxy:@protocol(TakaoPhraseEditorService)];
   } else {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"ChiaKey is not running.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"Since ChiaKey is not running, you cannot use "
-                       @"the Phrase Editor to alter your phrases.")];
+    NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+    [alert setMessageText:LFLSTR(@"ChiaKey is not running.")];
+    [alert setInformativeText:
+               LFLSTR(@"Since ChiaKey is not running, you cannot use "
+                      @"the Phrase Editor to alter your phrases.")];
+    [alert addButtonWithTitle:LFLSTR(@"OK")];
     [alert runModal];
     [NSApp terminate:self];
   }
@@ -200,11 +209,7 @@ typedef unsigned int NSUInteger;
   }
   [_phraseTableView setArray:a];
 
-  [NSApp beginSheet:_phraseWindow
-      modalForWindow:[self window]
-       modalDelegate:self
-      didEndSelector:nil
-         contextInfo:nil];
+  [[self window] beginSheet:_phraseWindow completionHandler:nil];
 }
 - (void)fixReadingForAddressBookImportFromIndex:(int)index {
   int i = index;
@@ -231,11 +236,7 @@ typedef unsigned int NSUInteger;
 
   int currentRows = [_loader userPhraseDBNumberOfRow];
 
-  [NSApp beginSheet:_progressWindow
-      modalForWindow:[self window]
-       modalDelegate:self
-      didEndSelector:nil
-         contextInfo:nil];
+  [[self window] beginSheet:_progressWindow completionHandler:nil];
 
   NSMutableArray *dictArray = [NSMutableArray array];
   if (![_importAlreadyExistCheckBox intValue]) {
@@ -291,7 +292,7 @@ typedef unsigned int NSUInteger;
     [self fixReadingForAddressBookImportFromIndex:currentRows];
   }
 
-  [NSApp endSheet:_progressWindow];
+  [[self window] endSheet:_progressWindow];
   [_progressIndicator stopAnimation:self];
   [_progressWindow orderOut:self];
 
@@ -301,97 +302,56 @@ typedef unsigned int NSUInteger;
 - (IBAction)continueImportAction:(id)sender {
   if (![_importLastAndFirstNameCheckBox intValue] &&
       ![_importFirstNameCheckBox intValue]) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Error")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"You must select at least one option from \"Import "
-                       @"Last + First Name\" and \"Import Fist Name\".")];
-    [alert beginSheetModalForWindow:_importOptionWindow
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    PEPresentSheetAlert(_importOptionWindow, LFLSTR(@"Error"),
+                        LFLSTR(@"You must select at least one option from "
+                               @"\"Import Last + First Name\" and \"Import "
+                               @"Fist Name\"."),
+                        NSAlertStyleWarning);
     return;
   }
 
-  [NSApp endSheet:[[self window] attachedSheet]];
+  [[self window] endSheet:[[self window] attachedSheet]];
   [[[self window] attachedSheet] orderOut:self];
   [self importAddressBook];
 }
 - (IBAction)cancelImportAction:(id)sender {
-  [NSApp endSheet:[[self window] attachedSheet]];
+  [[self window] endSheet:[[self window] attachedSheet]];
   [[[self window] attachedSheet] orderOut:self];
 }
 - (IBAction)importAddressBook:(id)sender {
   if ([[self window] attachedSheet]) {
-    [NSApp endSheet:[[self window] attachedSheet]];
+    [[self window] endSheet:[[self window] attachedSheet]];
     [[[self window] attachedSheet] orderOut:self];
   }
   [_importOptionWindow setDefaultButtonCell:[_continueImportButton cell]];
-  [NSApp beginSheet:_importOptionWindow
-      modalForWindow:[self window]
-       modalDelegate:self
-      didEndSelector:nil
-         contextInfo:nil];
+  [[self window] beginSheet:_importOptionWindow completionHandler:nil];
 }
-- (void)openPanelDidEnd:(NSOpenPanel *)panel
-             returnCode:(int)returnCode
-            contextInfo:(void *)contextInfo {
-  if (returnCode == NSFileHandlingPanelOKButton) {
-    NSString *path = [[panel filenames] objectAtIndex:0];
-    [panel orderOut:self];
-    if (_loader) {
-      bool rtn = [_loader importUserPhraseDBFromFile:path];
-      if (rtn) {
-        NSAlert *alert =
-            [NSAlert alertWithMessageText:LFLSTR(@"Done")
-                            defaultButton:LFLSTR(@"OK")
-                          alternateButton:nil
-                              otherButton:nil
-                informativeTextWithFormat:
-                    LFLSTR(@"Your phrases are successfully imported.")];
-        [alert setAlertStyle:NSInformationalAlertStyle];
-        [alert beginSheetModalForWindow:[self window]
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
-      } else {
-        NSAlert *alert = [NSAlert
-                 alertWithMessageText:LFLSTR(@"Error")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:LFLSTR(@"Unable to import database.")];
-        [alert setAlertStyle:NSWarningAlertStyle];
-        [alert beginSheetModalForWindow:[self window]
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
-      }
-    }
+- (void)importUserPhraseDatabaseFromURL:(NSURL *)url {
+  if (!url || !_loader) return;
+
+  bool rtn = [_loader importUserPhraseDBFromFile:[url path]];
+  if (rtn) {
+    PEPresentSheetAlert([self window], LFLSTR(@"Done"),
+                        LFLSTR(@"Your phrases are successfully imported."),
+                        NSAlertStyleInformational);
   } else {
-    // NSLog(@"Cancel");
+    PEPresentSheetAlert([self window], LFLSTR(@"Error"),
+                        LFLSTR(@"Unable to import database."),
+                        NSAlertStyleWarning);
   }
 }
+
 - (IBAction)importAction:(id)sender;
 {
   if (!_loader) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Unable to import database.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung ChiaKey, you are not "
-                       @"able to import your database.")];
-    [alert beginSheetModalForWindow:[self window]
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    PEPresentSheetAlert([self window],
+                        LFLSTR(@"Unable to import database."),
+                        LFLSTR(@"If you are not runnung ChiaKey, you are not "
+                               @"able to import your database."),
+                        NSAlertStyleWarning);
     return;
   }
+
   NSOpenPanel *panel = [NSOpenPanel openPanel];
   [panel setAllowedFileTypes:[NSArray arrayWithObjects:@"txt", nil]];
   [panel setExtensionHidden:NO];
@@ -400,71 +360,39 @@ typedef unsigned int NSUInteger;
   [panel setMessage:LFLSTR(@"Import customized phrases to your own database.")];
   [panel setPrompt:LFLSTR(@"Choose")];
 
-  [panel beginSheetForDirectory:nil
-                           file:nil
-                 modalForWindow:[self window]
-                  modalDelegate:self
-                 didEndSelector:@selector(openPanelDidEnd:
-                                               returnCode:contextInfo:)
-                    contextInfo:nil];
+  [panel beginSheetModalForWindow:[self window]
+                completionHandler:^(NSModalResponse result) {
+                  if (result != NSModalResponseOK) return;
+                  [self importUserPhraseDatabaseFromURL:
+                            [[panel URLs] objectAtIndex:0]];
+                }];
 }
 
-- (void)savePanelDidEnd:(NSSavePanel *)panel
-             returnCode:(int)returnCode
-            contextInfo:(void *)contextInfo {
-  if (returnCode == NSFileHandlingPanelOKButton) {
-    NSString *path = [panel filename];
-    [panel orderOut:self];
-    if (_loader) {
-      bool rtn = [_loader exportUserPhraseDBToFile:path];
-      if (rtn) {
-        NSAlert *alert =
-            [NSAlert alertWithMessageText:LFLSTR(@"Done")
-                            defaultButton:LFLSTR(@"OK")
-                          alternateButton:nil
-                              otherButton:nil
-                informativeTextWithFormat:
-                    LFLSTR(@"Your phrases are successfully exported.")];
-        [alert setAlertStyle:NSInformationalAlertStyle];
-        [alert beginSheetModalForWindow:[self window]
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
-      } else {
-        NSAlert *alert = [NSAlert
-                 alertWithMessageText:LFLSTR(@"Error")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:LFLSTR(@"Unable to export database.")];
-        [alert setAlertStyle:NSWarningAlertStyle];
-        [alert beginSheetModalForWindow:[self window]
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
-      }
-    }
+- (void)exportUserPhraseDatabaseToURL:(NSURL *)url {
+  if (!url || !_loader) return;
+
+  bool rtn = [_loader exportUserPhraseDBToFile:[url path]];
+  if (rtn) {
+    PEPresentSheetAlert([self window], LFLSTR(@"Done"),
+                        LFLSTR(@"Your phrases are successfully exported."),
+                        NSAlertStyleInformational);
   } else {
-    // NSLog(@"Cancel");
+    PEPresentSheetAlert([self window], LFLSTR(@"Error"),
+                        LFLSTR(@"Unable to export database."),
+                        NSAlertStyleWarning);
   }
 }
+
 - (IBAction)exportAction:(id)sender {
   if (!_loader) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Unable to export database.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung ChiaKey, you are not "
-                       @"able to export your database.")];
-
-    [alert beginSheetModalForWindow:[self window]
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    PEPresentSheetAlert([self window],
+                        LFLSTR(@"Unable to export database."),
+                        LFLSTR(@"If you are not runnung ChiaKey, you are not "
+                               @"able to export your database."),
+                        NSAlertStyleWarning);
     return;
   }
+
   NSSavePanel *panel = [NSSavePanel savePanel];
   [panel setAllowedFileTypes:[NSArray arrayWithObjects:@"txt", nil]];
   [panel setExtensionHidden:NO];
@@ -474,13 +402,11 @@ typedef unsigned int NSUInteger;
   [panel setTitle:LFLSTR(@"Export Database")];
   [panel setMessage:LFLSTR(@"Exporting your own customized phrases database.")];
   [panel setPrompt:LFLSTR(@"Export")];
-  [panel beginSheetForDirectory:nil
-                           file:nil
-                 modalForWindow:[self window]
-                  modalDelegate:self
-                 didEndSelector:@selector(savePanelDidEnd:
-                                               returnCode:contextInfo:)
-                    contextInfo:nil];
+  [panel beginSheetModalForWindow:[self window]
+                completionHandler:^(NSModalResponse result) {
+                  if (result != NSModalResponseOK) return;
+                  [self exportUserPhraseDatabaseToURL:[panel URL]];
+                }];
 }
 - (IBAction)okAction:(id)sender {
   NSString *s = [_phraseTableView currentReading];
@@ -488,14 +414,12 @@ typedef unsigned int NSUInteger;
   [_tableView reloadData];
   [self updateStatus];
 
-  [NSApp endSheet:_phraseWindow];
+  [[self window] endSheet:_phraseWindow];
   [_phraseWindow orderOut:self];
-  [NSApp abortModal];
 }
 - (IBAction)cancelAction:(id)sender {
-  [NSApp endSheet:_phraseWindow];
+  [[self window] endSheet:_phraseWindow];
   [_phraseWindow orderOut:self];
-  [NSApp abortModal];
 }
 - (IBAction)launchOnlineHelp:(id)sender {
   NSURL *url = [NSURL URLWithString:HELP_URL];
