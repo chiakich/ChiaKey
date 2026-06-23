@@ -26,6 +26,9 @@
 NSString *CVLoaderUpdateCannedMessagesNotification =
     @"CVLoaderUpdateCannedMessagesNotification";
 
+static const char *kChiaKeySourceDatabaseFile = "ChiaKeySource.db";
+static const char *kLegacyKeyKeySourceDatabaseFile = "KeyKeySource.db";
+
 string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
                                 const string &dbAndTableName) {
   string result;
@@ -45,7 +48,7 @@ string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
   return result;
 }
 
-static bool ValidateKeyKeySourceDatabase(OVSQLiteConnection *connection,
+static bool ValidateChiaKeySourceDatabase(OVSQLiteConnection *connection,
                                          const string &databaseFile) {
   if (!connection) return false;
 
@@ -59,7 +62,7 @@ static bool ValidateKeyKeySourceDatabase(OVSQLiteConnection *connection,
   for (size_t index = 0;
        index < sizeof(requiredTables) / sizeof(requiredTables[0]); index++) {
     if (!connection->hasTable(requiredTables[index])) {
-      NSLog(@"Rejected KeyKeySource database %s: missing table %s",
+      NSLog(@"Rejected ChiaKeySource database %s: missing table %s",
             databaseFile.c_str(), requiredTables[index]);
       return false;
     }
@@ -68,12 +71,12 @@ static bool ValidateKeyKeySourceDatabase(OVSQLiteConnection *connection,
   return true;
 }
 
-static OVSQLiteDatabaseService *CreateValidatedKeyKeySourceDatabaseService(
+static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
     const string &databaseFile) {
   if (!OVPathHelper::PathExists(databaseFile)) return 0;
 
   OVSQLiteDatabaseService *service = OVSQLiteDatabaseService::Create(databaseFile);
-  if (!service || !ValidateKeyKeySourceDatabase(service->connection(), databaseFile)) {
+  if (!service || !ValidateChiaKeySourceDatabase(service->connection(), databaseFile)) {
     if (service) delete service;
     return 0;
   }
@@ -261,8 +264,10 @@ using namespace OpenVanilla;
   string userTablePath = OVPathHelper::PathCat(userDataPath, "DataTables");
   string userLexiconPath = OVPathHelper::PathCat(
       OVPathHelper::PathCat(userDataPath, "Lexicons"), "active");
-  string userKeyKeySourceDBFile =
-      OVPathHelper::PathCat(userLexiconPath, "KeyKeySource.db");
+  string userChiaKeySourceDBFile =
+      OVPathHelper::PathCat(userLexiconPath, kChiaKeySourceDatabaseFile);
+  string legacyUserKeyKeySourceDBFile =
+      OVPathHelper::PathCat(userLexiconPath, kLegacyKeyKeySourceDatabaseFile);
 
   NSString *libAppSupportPath = [NSSearchPathForDirectoriesInDomains(
       NSApplicationSupportDirectory, NSLocalDomainMask, YES) objectAtIndex:0];
@@ -278,7 +283,10 @@ using namespace OpenVanilla;
 
   string supplementDBVersion;
   string mainDBVersion;
-  string plainDBFile = OVPathHelper::PathCat(dbPath, "KeyKeySource.db");
+  string bundledChiaKeyDBFile =
+      OVPathHelper::PathCat(dbPath, kChiaKeySourceDatabaseFile);
+  string legacyBundledKeyKeyDBFile =
+      OVPathHelper::PathCat(dbPath, kLegacyKeyKeySourceDatabaseFile);
 
 #ifdef OPENVANILLA_CEROD_DATABASE_FILE
   string dbFile = OVPathHelper::PathCat(
@@ -305,28 +313,52 @@ using namespace OpenVanilla;
   string selectedDBFile;
 
   _SQLiteDatabaseService =
-      CreateValidatedKeyKeySourceDatabaseService(userKeyKeySourceDBFile);
+      CreateValidatedChiaKeySourceDatabaseService(userChiaKeySourceDBFile);
   if (_SQLiteDatabaseService) {
-    selectedDBFile = userKeyKeySourceDBFile;
+    selectedDBFile = userChiaKeySourceDBFile;
     NSLog(@"Using external ChiaKey lexicon database: %s",
           selectedDBFile.c_str());
-  } else if (OVPathHelper::PathExists(userKeyKeySourceDBFile)) {
+  } else if (OVPathHelper::PathExists(userChiaKeySourceDBFile)) {
     NSLog(@"Falling back from invalid external ChiaKey lexicon database: %s",
-          userKeyKeySourceDBFile.c_str());
+          userChiaKeySourceDBFile.c_str());
   }
 
   if (!_SQLiteDatabaseService) {
-    _SQLiteDatabaseService = CreateValidatedKeyKeySourceDatabaseService(plainDBFile);
+    _SQLiteDatabaseService =
+        CreateValidatedChiaKeySourceDatabaseService(legacyUserKeyKeySourceDBFile);
     if (_SQLiteDatabaseService) {
-      selectedDBFile = plainDBFile;
+      selectedDBFile = legacyUserKeyKeySourceDBFile;
+      NSLog(@"Using legacy external ChiaKey lexicon database: %s",
+            selectedDBFile.c_str());
+    } else if (OVPathHelper::PathExists(legacyUserKeyKeySourceDBFile)) {
+      NSLog(@"Falling back from invalid legacy external ChiaKey lexicon database: %s",
+            legacyUserKeyKeySourceDBFile.c_str());
+    }
+  }
+
+  if (!_SQLiteDatabaseService) {
+    _SQLiteDatabaseService =
+        CreateValidatedChiaKeySourceDatabaseService(bundledChiaKeyDBFile);
+    if (_SQLiteDatabaseService) {
+      selectedDBFile = bundledChiaKeyDBFile;
       NSLog(@"Using bundled ChiaKey lexicon database: %s",
+            selectedDBFile.c_str());
+    }
+  }
+
+  if (!_SQLiteDatabaseService) {
+    _SQLiteDatabaseService =
+        CreateValidatedChiaKeySourceDatabaseService(legacyBundledKeyKeyDBFile);
+    if (_SQLiteDatabaseService) {
+      selectedDBFile = legacyBundledKeyKeyDBFile;
+      NSLog(@"Using legacy bundled ChiaKey lexicon database: %s",
             selectedDBFile.c_str());
     }
   }
 
   if (!_SQLiteDatabaseService && OVPathHelper::PathExists(dbFile)) {
 #ifndef OVLOADER_USE_SQLITE_CRYPTO
-    _SQLiteDatabaseService = CreateValidatedKeyKeySourceDatabaseService(dbFile);
+    _SQLiteDatabaseService = CreateValidatedChiaKeySourceDatabaseService(dbFile);
     if (_SQLiteDatabaseService) selectedDBFile = dbFile;
 #else
 #ifdef OPENVANILLA_CEROD_DATABASE_FILE
@@ -355,7 +387,7 @@ using namespace OpenVanilla;
     if (dbc) InitSQLiteCrypto(dbc->connection());
 #endif
 
-    if (dbc && ValidateKeyKeySourceDatabase(dbc, dbFile)) {
+    if (dbc && ValidateChiaKeySourceDatabase(dbc, dbFile)) {
       _SQLiteDatabaseService =
           OVSQLiteDatabaseService::ServiceWithExistingConnection(dbc, true);
       selectedDBFile = dbFile;
@@ -414,7 +446,7 @@ using namespace OpenVanilla;
   if (!_SQLiteDatabaseService) {
     NSLog(
         @"Cannot open database file %s, use in-memory SQLite database instead",
-        userKeyKeySourceDBFile.c_str());
+        userChiaKeySourceDBFile.c_str());
     _SQLiteDatabaseService = OVSQLiteDatabaseService::Create();
   }
   _userPersistence->setDefaultDatabaseConnection(

@@ -101,10 +101,10 @@ YahooKeyKey-Source-1.1.2528/Loaders/OSX-IMK/Images/ChiaKey.svg
 千秋輸入法可以從下列路徑載入外部 Smart Mandarin DB：
 
 ```text
-~/Library/Application Support/ChiaKey/Lexicons/active/KeyKeySource.db
+~/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db
 ```
 
-若外部 DB 缺失或不合法，runtime 會 fallback 到 app bundle 內建的 `KeyKeySource.db`。
+若外部 DB 缺失或不合法，runtime 會 fallback 到 app bundle 內建的 `ChiaKeySource.db`。
 
 安裝目前預設詞庫 release：
 

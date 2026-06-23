@@ -10,7 +10,7 @@ CMSG_SERVICE_KEY = canned_messages
 CMSG_DATA_SOURCE = ../OnlineData/CannedMessages.plist
 
 # DB = ../CookedDatabase/Yahoo!\ KeyKey.db
-DB = ../CookedDatabase/KeyKeySource.db
+DB = ../CookedDatabase/ChiaKeySource.db
 
 TMPDIR = ./Intermediates
 

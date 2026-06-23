@@ -19,7 +19,7 @@
   -> OpenVanilla / PlainVanilla modules
   -> OVIMMandarin
   -> Manjusri language model
-  -> versioned KeyKeySource.db
+  -> versioned ChiaKeySource.db
 ```
 
 短期內不把專案重新擴張成跨平台輸入法 framework。Windows、Carbon TSM、Yahoo web integrations 與 installer-era helpers 都視為歷史資料，除非它仍是現代 macOS build 的必要部分。
@@ -108,7 +108,7 @@ App repo 不應累積每一版 generated lexicon release。
 5. generated DB 的 GitHub Release assets。
 6. lexicon CI checks。
 
-Generated `KeyKeySource.db` 應放在 GitHub Release assets，不應進入一般 git history。
+Generated `ChiaKeySource.db` 應放在 GitHub Release assets，不應進入一般 git history。
 
 ## Runtime 資料權責
 
@@ -123,13 +123,13 @@ Generated `KeyKeySource.db` 應放在 GitHub Release assets，不應進入一般
 外部詞庫路徑：
 
 ```text
-~/Library/Application Support/ChiaKey/Lexicons/active/KeyKeySource.db
+~/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db
 ```
 
 Fallback DB 路徑：
 
 ```text
-千秋輸入法.app/Contents/Resources/Databases/KeyKeySource.db
+千秋輸入法.app/Contents/Resources/Databases/ChiaKeySource.db
 ```
 
 如果外部 DB 缺失、損壞或不相容，runtime 必須 fallback 到 app 內建 DB。

@@ -2,9 +2,10 @@
 set -euo pipefail
 
 REPO="akira02/ChiaKey-Lexicon"
-TAG="2026.06.7"
+TAG=""
 MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/ChiaKey/Lexicons"
+DB_INSTALL_FILENAME="ChiaKeySource.db"
 DRY_RUN=0
 KEEP_DOWNLOADS=0
 
@@ -17,7 +18,7 @@ Download, verify, and install a ChiaKey lexicon release into:
 
 Options:
   --repo OWNER/REPO        GitHub repository. Default: ${REPO}
-  --tag TAG               Release tag. Default: ${TAG}
+  --tag TAG               Release tag. Default: latest release.
   --manifest-url URL      Manifest URL. Overrides --repo/--tag URL composition.
   --install-root PATH     Install root. Default: ${INSTALL_ROOT}
   --dry-run               Print install actions without writing Application Support.
@@ -80,7 +81,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "${MANIFEST_URL}" ]]; then
-  MANIFEST_URL="https://github.com/${REPO}/releases/download/${TAG}/lexicon-manifest.json"
+  if [[ -n "${TAG}" ]]; then
+    MANIFEST_URL="https://github.com/${REPO}/releases/download/${TAG}/lexicon-manifest.json"
+  else
+    MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/lexicon-manifest.json"
+  fi
 fi
 
 case "${INSTALL_ROOT}" in
@@ -109,10 +114,11 @@ ARTIFACT_INFO="$(
 manifest_path = ARGV.fetch(0)
 manifest = JSON.parse(File.read(manifest_path))
 
-db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "keykey-source-db" }
+db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" } ||
+     manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "keykey-source-db" }
 metadata = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "metadata" }
 
-abort "manifest does not contain a keykey-source-db artifact" unless db
+abort "manifest does not contain a chiakey-source-db or keykey-source-db artifact" unless db
 
 fields = [
   manifest.fetch("version"),
@@ -280,7 +286,7 @@ ACTIVE_LINK="${INSTALL_ROOT}/active"
 TMP_LINK="${INSTALL_ROOT}/active.tmp.$$"
 
 run /bin/mkdir -p "${VERSION_DIR}"
-run /bin/cp "${DB_DOWNLOAD}" "${VERSION_DIR}/KeyKeySource.db"
+run /bin/cp "${DB_DOWNLOAD}" "${VERSION_DIR}/${DB_INSTALL_FILENAME}"
 run /bin/cp "${MANIFEST_FILE}" "${VERSION_DIR}/lexicon-manifest.json"
 if [[ -n "${METADATA_DOWNLOAD}" ]]; then
   run /bin/cp "${METADATA_DOWNLOAD}" "${VERSION_DIR}/metadata.json"
@@ -303,7 +309,7 @@ if [[ "${DRY_RUN}" == "1" ]]; then
 Dry run complete for ChiaKey lexicon ${VERSION}.
 
 Planned active lexicon:
-  ${ACTIVE_LINK}/KeyKeySource.db
+  ${ACTIVE_LINK}/${DB_INSTALL_FILENAME}
 EOF
 else
   cat <<EOF
@@ -311,7 +317,7 @@ else
 Installed ChiaKey lexicon ${VERSION}.
 
 Active lexicon:
-  ${ACTIVE_LINK}/KeyKeySource.db
+  ${ACTIVE_LINK}/${DB_INSTALL_FILENAME}
 
 Switch away from and back to ChiaKey, or reinstall/relaunch the input
 method, so the runtime can reopen the database.

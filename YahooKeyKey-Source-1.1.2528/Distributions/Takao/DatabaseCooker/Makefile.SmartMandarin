@@ -15,7 +15,7 @@ ADDENDUMBPMF = ../DataSource/AddendumBPMF
 REMOVALS = ../DataSource/Removals
 OVERRIDES = ../DataSource/Overrides
 TMPDIR = ./Intermediates
-OUTPUT = ../CookedDatabase/KeyKeySource.db
+OUTPUT = ../CookedDatabase/ChiaKeySource.db
 
 OUTPUT_CEROD = ../CookedDatabase/KeyKey.db
 

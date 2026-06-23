@@ -21,7 +21,7 @@ OUTPUT_DB = File.join(
   "Distributions",
   "Takao",
   "CookedDatabase",
-  "KeyKeySource.db"
+  "ChiaKeySource.db"
 )
 
 VERSION = "chiakey-modern-2026.06-dev1"

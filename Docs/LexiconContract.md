@@ -19,7 +19,7 @@ https://github.com/akira02/ChiaKey-Lexicon/releases
 每個 release 必須提供：
 
 1. `lexicon-manifest.json`
-2. 一個 `KeyKeySource.db` artifact
+2. 一個 `ChiaKeySource.db` artifact
 3. optional `metadata.json`
 
 Generated DB 應上傳為 GitHub Release asset，不應 commit 到 app repo。
@@ -44,10 +44,12 @@ Scripts/install-lexicon-release.sh
 
 必要 database artifact fields：
 
-1. `kind`: 必須是 `keykey-source-db`
+1. `kind`: 必須是 `chiakey-source-db`
 2. `url`
 3. `filename`
 4. `sha256`
+
+過渡期相容：installer 會接受舊版 manifest 的 `keykey-source-db` kind，但新的 release 應全部改用 `chiakey-source-db`。
 
 Optional metadata artifact fields：
 
@@ -78,7 +80,7 @@ Versioned layout：
 Lexicons/
   versions/
     2026.06.7/
-      KeyKeySource.db
+      ChiaKeySource.db
       lexicon-manifest.json
       metadata.json
   active -> versions/2026.06.7
@@ -87,7 +89,7 @@ Lexicons/
 Active DB 路徑：
 
 ```text
-~/Library/Application Support/ChiaKey/Lexicons/active/KeyKeySource.db
+~/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db
 ```
 
 更新必須使用 atomic symlink swap。下載失敗、checksum mismatch、SQLite validation failure 或 install failure 都必須保留既有 active lexicon。
@@ -97,11 +99,20 @@ Active DB 路徑：
 Startup 或 reload 時 runtime 嘗試順序：
 
 1. external active lexicon
-2. app 內建 fallback lexicon
+2. legacy external active lexicon
+3. app 內建 fallback lexicon
+4. legacy app 內建 fallback lexicon
 
 Bundled fallback DB 必須足以離線使用與救援。它不需要永遠最新，但必須符合 runtime-critical schema。
 
 如果外部 DB 存在但驗證失敗，app 應記錄 rejection，並繼續使用 bundled DB。
+
+Legacy 路徑只為遷移期保留：
+
+```text
+~/Library/Application Support/ChiaKey/Lexicons/active/KeyKeySource.db
+千秋輸入法.app/Contents/Resources/Databases/KeyKeySource.db
+```
 
 ## 必要 SQLite tables
 
@@ -259,7 +270,7 @@ App 可以支援多個 schema versions，但不得默默接受未知 schema。
 4. per-user keyboard layout choices
 5. local opt-in personal corpus data
 
-未來若要做個人學習，應實作為 release lexicon 上方的 overlay，不要直接修改下載來的 `KeyKeySource.db`。
+未來若要做個人學習，應實作為 release lexicon 上方的 overlay，不要直接修改下載來的 `ChiaKeySource.db`。
 
 ## Smoke test checklist
 
