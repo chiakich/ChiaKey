@@ -743,15 +743,9 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/Carbon.framework/Headers/Carbon.h";
 				INFOPLIST_FILE = "ModulePackages/OVOFEscape/OVOFEscapePackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.openvanilla.OVOFEscapePackage;
 				PRODUCT_NAME = OVOFEscapePackage;
 				WRAPPER_EXTENSION = bundle;
@@ -767,15 +761,9 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/Carbon.framework/Headers/Carbon.h";
 				INFOPLIST_FILE = "ModulePackages/OVOFEscape/OVOFEscapePackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.openvanilla.OVOFEscapePackage;
 				PRODUCT_NAME = OVOFEscapePackage;
 				WRAPPER_EXTENSION = bundle;
@@ -793,15 +781,9 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/Carbon.framework/Headers/Carbon.h";
 				INFOPLIST_FILE = "ModulePackages/YKAFWordCount/YKAFWordCountPackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_NAME = YKAFWordCountPackage;
 				WRAPPER_EXTENSION = bundle;
 			};
@@ -816,15 +798,9 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/Carbon.framework/Headers/Carbon.h";
 				INFOPLIST_FILE = "ModulePackages/YKAFWordCount/YKAFWordCountPackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_NAME = YKAFWordCountPackage;
 				WRAPPER_EXTENSION = bundle;
 				ZERO_LINK = NO;

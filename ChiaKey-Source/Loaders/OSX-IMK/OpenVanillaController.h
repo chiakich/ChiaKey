@@ -1,11 +1,7 @@
 //  OpenVanillaController.h
 
 #import <Cocoa/Cocoa.h>
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
 #import <InputMethodKit/InputMethodKit.h>
-#else
-#import "InputMethodKitTiger.h"
-#endif
 
 #import "OpenVanillaConfig.h"
 #import "OpenVanillaLoader.h"

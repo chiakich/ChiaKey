@@ -57,7 +57,7 @@ xcodebuild -project ChiaKey-Source/Takao.xcodeproj \
   build
 ```
 
-目前 Release build 已可在現代 Xcode 完成。先前的 `LSMinimumSystemVersion`、legacy library search path、shell script phase output 與舊 WebView 警告已整理；這些調整多屬於 build hygiene 或維護性清理。乾淨 rebuild 仍會看到部分舊 API / nib 警告，例如 Carbon/CommonPanels、`NSConnection` 與舊 AppKit 常數；這些要分批評估，尤其 IPC 與組字視窗相關程式不應一次大換。
+目前 Release build 已可在現代 Xcode 完成。先前的 `LSMinimumSystemVersion`、legacy library search path、shell script phase output、舊 WebView、舊 TSM fallback 與 CommonPanels sheet API 警告已整理；這些調整多屬於 build hygiene 或維護性清理。乾淨 rebuild 仍會看到部分舊 API / nib 警告，例如 `NSConnection`、舊 AppKit 常數與既有 XIB layout notices；這些要分批評估，尤其 IPC 與組字視窗相關程式不應一次大換。
 
 ## 本機測試
 

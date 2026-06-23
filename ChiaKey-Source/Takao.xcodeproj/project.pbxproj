@@ -397,8 +397,8 @@
 		D42B09F40EBDD36900AB5B7A /* PESettingTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09EC0EBDD36900AB5B7A /* PESettingTableView.m */; };
 		D42B09FD0EBDD37B00AB5B7A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F70EBDD37B00AB5B7A /* InfoPlist.strings */; };
 		D42B09FE0EBDD37B00AB5B7A /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F90EBDD37B00AB5B7A /* MainMenu.xib */; };
-		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
+		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
@@ -1083,7 +1083,6 @@
 		6AB5B32D0D5C8EFE0040CD26 /* OVOFFullWidthCharacter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OVOFFullWidthCharacter.cpp; path = ModulePackages/OVOFFullWidthCharacter/OVOFFullWidthCharacter.cpp; sourceTree = "<group>"; };
 		6AB5B32E0D5C8EFE0040CD26 /* OVOFFullWidthCharacter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVOFFullWidthCharacter.h; path = ModulePackages/OVOFFullWidthCharacter/OVOFFullWidthCharacter.h; sourceTree = "<group>"; };
 		6AB5B32F0D5C8EFE0040CD26 /* OVOFFullWidthCharacterPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVOFFullWidthCharacterPackage.h; path = ModulePackages/OVOFFullWidthCharacter/OVOFFullWidthCharacterPackage.h; sourceTree = "<group>"; };
-		6AB89EE90D8A25A700D087E3 /* TakaoServer-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "TakaoServer-Info.plist"; path = "Loaders/OSX-TSM/TakaoServer-Info.plist"; sourceTree = "<group>"; };
 		6AB931660EA42CE2005CD336 /* YKReverseLookup.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YKReverseLookup.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		6AB932770EA43BB4005CD336 /* OVAFReverseLookup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OVAFReverseLookup.cpp; path = ModulePackages/OVAFReverseLookup/OVAFReverseLookup.cpp; sourceTree = "<group>"; };
 		6AB932780EA43BB4005CD336 /* OVAFReverseLookup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVAFReverseLookup.h; path = ModulePackages/OVAFReverseLookup/OVAFReverseLookup.h; sourceTree = "<group>"; };
@@ -1108,9 +1107,6 @@
 		6ACA0C530D5C881400514BC7 /* OVIMGeneric.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVIMGeneric.h; path = ModulePackages/OVIMGeneric/OVIMGeneric.h; sourceTree = "<group>"; };
 		6ACA0C540D5C881400514BC7 /* OVIMGenericConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVIMGenericConfig.h; path = ModulePackages/OVIMGeneric/OVIMGenericConfig.h; sourceTree = "<group>"; };
 		6ACA0C550D5C881400514BC7 /* OVIMGenericPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVIMGenericPackage.h; path = ModulePackages/OVIMGeneric/OVIMGenericPackage.h; sourceTree = "<group>"; };
-		6ACC87DB0D8A6287008D5924 /* CTGradient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CTGradient.h; path = "Loaders/OSX-TSM/CTGradient/CTGradient.h"; sourceTree = "<group>"; };
-		6ACC87DC0D8A6287008D5924 /* CTGradient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CTGradient.m; path = "Loaders/OSX-TSM/CTGradient/CTGradient.m"; sourceTree = "<group>"; };
-		6ACC87E20D8A6373008D5924 /* InputMethodKitTiger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = InputMethodKitTiger.h; path = "Loaders/OSX-TSM/InputMethodKitTiger.h"; sourceTree = "<group>"; };
 		6AD3221F0D76D77C005083D4 /* Minotaur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Minotaur.h; path = Frameworks/Minotaur/Headers/Minotaur.h; sourceTree = "<group>"; };
 		6AD322220D76D793005083D4 /* Minotaur.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Minotaur.cpp; path = Frameworks/Minotaur/Source/Minotaur.cpp; sourceTree = "<group>"; };
 		6AD322280D76D7C2005083D4 /* DevPublicKey.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = DevPublicKey.c; path = Distributions/Takao/Keyring/DevPublicKey.c; sourceTree = "<group>"; };
@@ -1120,7 +1116,6 @@
 		6AE3FA7D0D76771300C7D18D /* VersionInfoMaker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = VersionInfoMaker; sourceTree = BUILT_PRODUCTS_DIR; };
 		6AE3FA870D76773700C7D18D /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = Utilities/VersionInfoMaker/Main.cpp; sourceTree = "<group>"; };
 		6AE3FA950D76776200C7D18D /* libPlainVanilla.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPlainVanilla.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		6AE46A580D8AC06800B7DD36 /* InputMethodKitTiger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = InputMethodKitTiger.mm; path = "Loaders/OSX-TSM/InputMethodKitTiger.mm"; sourceTree = "<group>"; };
 		6AE560A90EF3B37B002460F0 /* LFCrossDevelopmentTools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LFCrossDevelopmentTools.h; path = Frameworks/LFExtensions/LFCrossDevelopmentTools.h; sourceTree = "<group>"; };
 		6AE560AA0EF3B37B002460F0 /* LFCrossDevelopmentTools.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LFCrossDevelopmentTools.m; path = Frameworks/LFExtensions/LFCrossDevelopmentTools.m; sourceTree = "<group>"; };
 		6AE561A50EF3CD7E002460F0 /* OVDistributionConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVDistributionConfig.h; path = Loaders/CrossPlatform/OVDistributionConfig.h; sourceTree = "<group>"; };
@@ -1151,14 +1146,6 @@
 		6AED2FB40D8BCF4300E6D3F8 /* Version.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Version.cpp; path = Frameworks/CareService/Source/Version.cpp; sourceTree = "<group>"; };
 		6AED2FB60D8BCF5600E6D3F8 /* SystemInfo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = SystemInfo.mm; path = Frameworks/CareService/Source/OSX/SystemInfo.mm; sourceTree = "<group>"; };
 		6AED2FB70D8BCF5600E6D3F8 /* UUIDHelper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = UUIDHelper.mm; path = Frameworks/CareService/Source/OSX/UUIDHelper.mm; sourceTree = "<group>"; };
-		6AF261410D9F969E00F499FB /* TakaoComponent-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "TakaoComponent-Info.plist"; path = "Loaders/OSX-TSM/TakaoComponent-Info.plist"; sourceTree = "<group>"; };
-		6AF261450D9F96FC00F499FB /* Component.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Component.h; path = "Loaders/OSX-TSM/Component.h"; sourceTree = "<group>"; };
-		6AF261460D9F96FC00F499FB /* Component.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Component.icns; path = "Loaders/OSX-TSM/Component.icns"; sourceTree = "<group>"; };
-		6AF261470D9F96FC00F499FB /* Component.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Component.m; path = "Loaders/OSX-TSM/Component.m"; sourceTree = "<group>"; };
-		6AF261480D9F96FC00F499FB /* Component.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; name = Component.r; path = "Loaders/OSX-TSM/Component.r"; sourceTree = "<group>"; };
-		6AF261490D9F96FC00F499FB /* ComponentConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ComponentConfig.h; path = "Loaders/OSX-TSM/ComponentConfig.h"; sourceTree = "<group>"; };
-		6AF2614A0D9F96FC00F499FB /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Context.h; path = "Loaders/OSX-TSM/Context.h"; sourceTree = "<group>"; };
-		6AF2614B0D9F96FC00F499FB /* Context.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Context.m; path = "Loaders/OSX-TSM/Context.m"; sourceTree = "<group>"; };
 		6AF6B7890DD08DE400A0C8FD /* libz.1.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.tbd; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libz.1.tbd; sourceTree = "<absolute>"; };
 		6AFC445010623A6A000CECB4 /* LFUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LFUtilities.h; path = Frameworks/LFExtensions/LFUtilities.h; sourceTree = "<group>"; };
 		D4041FEF0F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoKeyboardLayoutPopUpButton.h; path = PreferenceApplications/OSX/TakaoKeyboardLayoutPopUpButton.h; sourceTree = "<group>"; };
@@ -1314,7 +1301,6 @@
 		D4F7A56B0D82E699004AFC38 /* CVSearchController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVSearchController.m; path = "Loaders/OSX-IMK/CVSearchController.m"; sourceTree = "<group>"; wrapsLines = 1; };
 		D4F7DB030D9B8D6500AA67B9 /* CVSendKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVSendKey.h; path = "Loaders/OSX-IMK/CVSendKey.h"; sourceTree = "<group>"; };
 		D4F7DB040D9B8D6500AA67B9 /* CVSendKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVSendKey.m; path = "Loaders/OSX-IMK/CVSendKey.m"; sourceTree = "<group>"; };
-		D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		D4FC914A0EC896210087648C /* CVHorizontalCandidateController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVHorizontalCandidateController.h; path = "Loaders/OSX-IMK/CVHorizontalCandidateController.h"; sourceTree = "<group>"; };
 		D4FC914B0EC896210087648C /* CVHorizontalCandidateController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVHorizontalCandidateController.mm; path = "Loaders/OSX-IMK/CVHorizontalCandidateController.mm"; sourceTree = "<group>"; wrapsLines = 1; };
 		D4FC916F0EC89A470087648C /* CVHorizontalCandidateControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVHorizontalCandidateControl.h; path = "Loaders/OSX-IMK/CVHorizontalCandidateControl.h"; sourceTree = "<group>"; };
@@ -1330,6 +1316,7 @@
 		D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSColor+LFColorExtensions.h"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.h"; sourceTree = "<group>"; };
 		D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "NSColor+LFColorExtensions.mm"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.mm"; sourceTree = "<group>"; };
 		D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = InputMethodToggleWindowController.xib; path = "Loaders/OSX-IMK/Interface/InputMethodToggleWindowController.xib"; sourceTree = "<group>"; };
+		D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1675,8 +1662,6 @@
 				6AB9315C0EA42CA6005CD336 /* Dynamic Module Packages */,
 				6A859F5D0E41A673002C3544 /* Takao-Specific */,
 				6A4771520D5C5D7600C6C744 /* Loader (OSX-IMK) */,
-				6ACC87D40D8A625C008D5924 /* Loader (OSX-TSM) */,
-				6AF2612E0D9F963A00F499FB /* Text Service Component */,
 				6A476F790D5C4D0300C6C744 /* Frameworks */,
 				6ACA0C430D5C87AB00514BC7 /* Statically Linked Module Packages */,
 				D47D5E3C0D5EDD7F0093524C /* Preferences */,
@@ -2055,7 +2040,6 @@
 				D4112E780D631726001475CB /* Images */,
 				D479FD9E0D604E5700B33AA2 /* WebUI */,
 				6A4772970D5C5FCE00C6C744 /* Takao-Info.plist */,
-				6AB89EE90D8A25A700D087E3 /* TakaoServer-Info.plist */,
 				D47D5F280D5EEB0A0093524C /* Localizable.strings */,
 				6AB5B3020D5C8D350040CD26 /* InfoPlist.strings */,
 			);
@@ -2160,33 +2144,6 @@
 				6ACA0C550D5C881400514BC7 /* OVIMGenericPackage.h */,
 			);
 			name = GenericPackage;
-			sourceTree = "<group>";
-		};
-		6ACC87D40D8A625C008D5924 /* Loader (OSX-TSM) */ = {
-			isa = PBXGroup;
-			children = (
-				6ACC87E10D8A6359008D5924 /* InputMethodKitTiger */,
-				6ACC87D50D8A6262008D5924 /* CTGradient */,
-			);
-			name = "Loader (OSX-TSM)";
-			sourceTree = "<group>";
-		};
-		6ACC87D50D8A6262008D5924 /* CTGradient */ = {
-			isa = PBXGroup;
-			children = (
-				6ACC87DB0D8A6287008D5924 /* CTGradient.h */,
-				6ACC87DC0D8A6287008D5924 /* CTGradient.m */,
-			);
-			name = CTGradient;
-			sourceTree = "<group>";
-		};
-		6ACC87E10D8A6359008D5924 /* InputMethodKitTiger */ = {
-			isa = PBXGroup;
-			children = (
-				6AE46A580D8AC06800B7DD36 /* InputMethodKitTiger.mm */,
-				6ACC87E20D8A6373008D5924 /* InputMethodKitTiger.h */,
-			);
-			name = InputMethodKitTiger;
 			sourceTree = "<group>";
 		};
 		6AD322060D76D741005083D4 /* Minotaur */ = {
@@ -2327,21 +2284,6 @@
 				6AED2FAF0D8BCF3200E6D3F8 /* Version.h */,
 			);
 			name = "CareService (Library)";
-			sourceTree = "<group>";
-		};
-		6AF2612E0D9F963A00F499FB /* Text Service Component */ = {
-			isa = PBXGroup;
-			children = (
-				6AF261410D9F969E00F499FB /* TakaoComponent-Info.plist */,
-				6AF261450D9F96FC00F499FB /* Component.h */,
-				6AF261460D9F96FC00F499FB /* Component.icns */,
-				6AF261470D9F96FC00F499FB /* Component.m */,
-				6AF261480D9F96FC00F499FB /* Component.r */,
-				6AF261490D9F96FC00F499FB /* ComponentConfig.h */,
-				6AF2614A0D9F96FC00F499FB /* Context.h */,
-				6AF2614B0D9F96FC00F499FB /* Context.m */,
-			);
-			name = "Text Service Component";
 			sourceTree = "<group>";
 		};
 		D4112E780D631726001475CB /* Images */ = {
@@ -4544,10 +4486,6 @@
 				INFOPLIST_FILE = "ModulePackages/YKAFWordCount/YKAFWordCountPackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFWordCountPackage;
 				PRODUCT_NAME = YKAFWordCount;
 				SDKROOT = macosx;
@@ -4569,10 +4507,6 @@
 				INFOPLIST_FILE = "ModulePackages/YKAFWordCount/YKAFWordCountPackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFWordCountPackage;
 				PRODUCT_NAME = YKAFWordCount;
 				SDKROOT = macosx;
@@ -5253,10 +5187,6 @@
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.Keykey.ReverseLookup;
 				PRODUCT_NAME = YKReverseLookup;
 				SDKROOT = macosx;
@@ -5283,10 +5213,6 @@
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.Keykey.ReverseLookup;
 				PRODUCT_NAME = YKReverseLookup;
 				SDKROOT = macosx;
@@ -5348,10 +5274,6 @@
 				INFOPLIST_FILE = "ModulePackages/YKAFPhraseAware/YKAFPhraseAwarePackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFPhraseAwarePackage;
 				PRODUCT_NAME = YKAFPhraseAware;
 				SDKROOT = macosx;
@@ -5373,10 +5295,6 @@
 				INFOPLIST_FILE = "ModulePackages/YKAFPhraseAware/YKAFPhraseAwarePackage-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.YKAFPhraseAwarePackage;
 				PRODUCT_NAME = YKAFPhraseAware;
 				SDKROOT = macosx;
@@ -5596,10 +5514,6 @@
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.AFPhraseConverter;
 				PRODUCT_NAME = YKAFPhraseConverter;
 				SDKROOT = macosx;
@@ -5623,10 +5537,6 @@
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Carbon,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.AFPhraseConverter;
 				PRODUCT_NAME = YKAFPhraseConverter;
 				SDKROOT = macosx;

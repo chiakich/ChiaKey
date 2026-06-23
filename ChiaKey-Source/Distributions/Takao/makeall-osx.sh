@@ -7,10 +7,6 @@ cd ./Installer-OSX-IMK
 perl makedmg.pl
 
 cd $WORKDIR
-cd ./Installer-OSX-TSM
-perl makedmg.pl
-
-cd $WORKDIR
 cd ./Installer-OSX-DB
 ./makedmg.py
 
@@ -24,4 +20,3 @@ mv ../../build/Release64/*.dmg Staging-OSX/
 mv ../../build/Release/*.dmg Staging-OSX/
 mv ./Installer-OSX-DB/*.dmg Staging-OSX/
 mv ./Installer-OSX-ExtraModules/*.dmg Staging-OSX/
-

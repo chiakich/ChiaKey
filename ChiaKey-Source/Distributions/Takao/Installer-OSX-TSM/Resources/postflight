@@ -1,9 +1,0 @@
-#!/bin/bash
-echo "Start postflight script"
-VERSION_FOR_INSTALLER="2528";
-URL="http://tw.rd.yahoo.com/referurl/keykey/client/installer/end/${VERSION_FOR_INSTALLER}M104/*http://tw.yimg.com/i/tw/download/ykkimg/blank.gif"
-/usr/bin/curl -L -A "ChiaKey/2026.06 (macOS)" $URL  > /dev/null
-echo $SCRIPT_NAME: launching html help
-open "/Library/Components/Yahoo! KeyKey.bundle/Contents/SharedSupport/KeyKeyServer.app/Contents/SharedSupport/InstallerHelp.app"
-echo "End postflight script"
-exit 0

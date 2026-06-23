@@ -104,7 +104,6 @@ Cleanup 應用小 commit 進行，且保持 `Takao-All` 可編譯。
 2. dead Yahoo update/feed paths
 3. historical studies 與 internal documents
 4. 產品沒有 exposes 的 unused extra modules
-5. 確認 active targets 沒有引用後的 `Loaders/OSX-TSM`
 
 Active input method path、倉頡、簡易不應只因為老就移除。
 
