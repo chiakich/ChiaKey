@@ -1,5 +1,5 @@
 ﻿/* Localized versions of Info.plist keys */
 
 CFBundleName = "DownloadUpdate";
-CFBundleDisplayName = "Yahoo! KeyKey DownloadUpdate";
-NSHumanReadableCopyright = "Copyright © 2008-2010, Yahoo! Taiwan All Rights Reserved.";
+CFBundleDisplayName = "ChiaKey Download Update";
+NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";

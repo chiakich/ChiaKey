@@ -8,7 +8,7 @@
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>Not Found</h2><p>Unable to find anything that matches '%@'.";
 "<h2>Loading...</h2><p>Please wait</p></body></html>" = "<h2>Loading...</h2><p>Please wait</p></body></html>";
-"<p class=\"credit\">2008-2010 Yahoo! Taiwan All Rights Reserved.</p>" = "<p class=\"credit\">2008-2010 Yahoo! Taiwan. All Rights Reserved.</p>";
+"<p class=\"credit\">2008-2010 Yahoo! Taiwan All Rights Reserved.</p>" = "<p class=\"credit\">Copyright © 2026 涼風千秋 Chiaki.C</p>";
 "Dictionary" = "Dictionary";
 "Dictionary: %@" = "Dictionary: %@";
 "Speak" = "Speak";

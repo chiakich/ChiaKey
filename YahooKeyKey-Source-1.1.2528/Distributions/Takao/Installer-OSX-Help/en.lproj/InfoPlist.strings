@@ -1,5 +1,5 @@
-﻿/* Localized versions of Info.plist keys */
+/* Localized versions of Info.plist keys */
 
-CFBundleName = "Yahoo! KeyKey Activation Help";
-CFBundleDisplayName = "Yahoo! KeyKey Activation Help";
-NSHumanReadableCopyright = "Copyright © 2008-2009, Yahoo! Taiwan All Rights Reserved.";
+CFBundleName = "ChiaKey Activation Help";
+CFBundleDisplayName = "ChiaKey Activation Help";
+NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";

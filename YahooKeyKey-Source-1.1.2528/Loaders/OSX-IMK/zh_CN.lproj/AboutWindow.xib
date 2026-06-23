@@ -31,7 +31,7 @@
                     <textField verticalHuggingPriority="750" id="7">
                         <rect key="frame" x="23" y="124" width="260" height="85"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="2008 © Yahoo! Inc. All Rights Reserved." id="10">
+                        <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="Copyright © 2026 涼風千秋 Chiaki.C" id="10">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
