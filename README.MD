@@ -73,13 +73,17 @@ Scripts/dev-install-local.sh
 Scripts/dev-install-local.sh --configuration Release
 Scripts/dev-install-local.sh --skip-build
 Scripts/dev-install-local.sh --update-lexicon
+Scripts/dev-install-local.sh --bundle-local-lexicon
+Scripts/dev-install-local.sh --local-lexicon "/path/to/ChiaKeySource.db"
 Scripts/dev-install-local.sh --dry-run
 Scripts/dev-install-local.sh --open-settings
 ```
 
 這個 script 會 build `Takao-All`，把 `ChiaKey.app` 複製到 `~/Library/Input Methods/`，進行 ad-hoc signing，並結束目前執行中的 `ChiaKey` process，讓 macOS 下次切回輸入法時載入新版。
 
-`--update-lexicon` 會在本機安裝後額外執行 `Scripts/install-lexicon-release.sh --skip-current`，只在外部詞庫落後時下載並安裝最新 release。預設 build / install 不會連網。
+`--update-lexicon` 會額外執行 `Scripts/install-lexicon-release.sh --skip-current`，只在外部詞庫落後時下載並安裝最新 release。若搭配 `--bundle-local-lexicon`，會先更新 active 詞庫再包進 app；其他情境會在本機安裝後更新外部詞庫。預設 build / install 不會連網。
+
+`--bundle-local-lexicon` 會先驗證目前 active 的本機詞庫，再把 `~/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db` 複製進 dev build 的 `ChiaKey.app/Contents/Resources/Databases/ChiaKeySource.db`。若要測另一份本機 DB，使用 `--local-lexicon` 指定路徑。這適合在詞庫 repo 本機產出 DB 後，直接測 bundled DB fallback；正式執行時外部 active 詞庫仍會優先於 app 內建詞庫。
 
 第一次安裝後，請到「系統設定 > 鍵盤 > 文字輸入」新增千秋輸入法。之後多數開發循環只需要跑 helper script，再切離與切回輸入法。
 
