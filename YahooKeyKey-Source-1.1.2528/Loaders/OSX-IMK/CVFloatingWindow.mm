@@ -6,11 +6,11 @@
 
 @implementation CVFloatingWindow
 - (id)initWithContentRect:(NSRect)contentRect
-                styleMask:(unsigned int)aStyle
+                styleMask:(NSWindowStyleMask)aStyle
                   backing:(NSBackingStoreType)bufferingType
                     defer:(BOOL)flag {
   if (self = [super initWithContentRect:contentRect
-                              styleMask:NSBorderlessWindowMask
+                              styleMask:NSWindowStyleMaskBorderless
                                 backing:NSBackingStoreBuffered
                                   defer:NO]) {
     [self setBackgroundColor:[NSColor clearColor]];

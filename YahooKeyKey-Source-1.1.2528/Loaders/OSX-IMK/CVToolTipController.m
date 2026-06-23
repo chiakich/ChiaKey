@@ -9,7 +9,7 @@
 - (id)init {
   self = [super init];
   if (self != nil) {
-    BOOL loaded = [NSBundle loadNibNamed:@"TooltipWindow" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"TooltipWindow" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
   }
   return self;

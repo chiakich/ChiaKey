@@ -43,7 +43,7 @@
   NSBezierPath *b = [NSBezierPath bezelPathWithRect:rect radius:12];
 #endif
   [b setFlatness:0.1];
-  [b setLineCapStyle:NSButtLineCapStyle];
+  [b setLineCapStyle:NSLineCapStyleButt];
   [_backgroundFillColor setFill];
   [_borderColor setStroke];
   [b setLineWidth:2.0];

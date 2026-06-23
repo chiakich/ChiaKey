@@ -17,6 +17,16 @@ file for terms.
 #define DMiDiskSession NSObject
 #endif
 
+static void CKBeginAlertSheet(NSWindow *window, NSString *message,
+                              NSString *informativeText, NSAlertStyle style) {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:message];
+  [alert setInformativeText:informativeText ? informativeText : @""];
+  [alert addButtonWithTitle:LFLSTR(@"OK")];
+  [alert setAlertStyle:style];
+  [alert beginSheetModalForWindow:window completionHandler:nil];
+}
+
 @implementation TakaoPhrases
 
 - (void)dealloc {
@@ -39,32 +49,18 @@ file for terms.
                                             host:nil];
   } @catch (NSException *e) {
     // NSLog(@"Exceptions raise on retreiving version info");
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Unable to export database.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:LFLSTR(@"Uknow errors happend.")];
-    [alert beginSheetModalForWindow:window
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    CKBeginAlertSheet(window, LFLSTR(@"Unable to export database."),
+                      LFLSTR(@"Uknow errors happend."),
+                      NSAlertStyleWarning);
     return;
   }
 
   if (!ovService) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Unable to export database.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung ChiaKey, you are not "
-                       @"able to export your database.")];
-    [alert beginSheetModalForWindow:window
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    CKBeginAlertSheet(
+        window, LFLSTR(@"Unable to export database."),
+        LFLSTR(@"If you are not runnung ChiaKey, you are not "
+               @"able to export your database."),
+        NSAlertStyleWarning);
     return;
   }
   NSSavePanel *panel = [NSSavePanel savePanel];
@@ -72,40 +68,22 @@ file for terms.
   [panel setExtensionHidden:NO];
   [panel setCanCreateDirectories:NO];
   [panel setNameFieldLabel:LFLSTR(@"Export As:")];
-  [panel setRequiredFileType:@"txt"];
   [panel setTitle:LFLSTR(@"Export Database")];
   [panel setMessage:LFLSTR(@"Exporting your own customized phrases database.")];
   [panel setPrompt:LFLSTR(@"Export")];
-  if ([panel runModal] == NSFileHandlingPanelOKButton) {
-    NSString *path = [panel filename];
+  if ([panel runModal] == NSModalResponseOK) {
+    NSString *path = [[panel URL] path];
     if (ovService) {
       [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
       bool rtn = [ovService exportUserPhraseDBToFile:path];
       if (rtn) {
-        NSAlert *alert =
-            [NSAlert alertWithMessageText:LFLSTR(@"Done!")
-                            defaultButton:LFLSTR(@"OK")
-                          alternateButton:nil
-                              otherButton:nil
-                informativeTextWithFormat:
-                    LFLSTR(@"Your phrases are successfully exported.")];
-        [alert setAlertStyle:NSInformationalAlertStyle];
-        [alert beginSheetModalForWindow:window
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
+        CKBeginAlertSheet(window, LFLSTR(@"Done!"),
+                          LFLSTR(@"Your phrases are successfully exported."),
+                          NSAlertStyleInformational);
       } else {
-        NSAlert *alert = [NSAlert
-                 alertWithMessageText:LFLSTR(@"Error")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:LFLSTR(@"Unable to export database.")];
-        [alert setAlertStyle:NSWarningAlertStyle];
-        [alert beginSheetModalForWindow:window
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
+        CKBeginAlertSheet(window, LFLSTR(@"Error"),
+                          LFLSTR(@"Unable to export database."),
+                          NSAlertStyleWarning);
       }
     }
   } else {
@@ -121,31 +99,17 @@ file for terms.
         rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
                                             host:nil];
   } @catch (NSException *e) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Unable to import database.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:LFLSTR(@"Unknown errors happened.")];
-    [alert beginSheetModalForWindow:window
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    CKBeginAlertSheet(window, LFLSTR(@"Unable to import database."),
+                      LFLSTR(@"Unknown errors happened."),
+                      NSAlertStyleWarning);
     return;
   }
   if (!ovService) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Unable to import database.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:
-                LFLSTR(@"If you are not runnung ChiaKey, you are not "
-                       @"able to import your database.")];
-    [alert beginSheetModalForWindow:window
-                      modalDelegate:self
-                     didEndSelector:nil
-                        contextInfo:nil];
+    CKBeginAlertSheet(
+        window, LFLSTR(@"Unable to import database."),
+        LFLSTR(@"If you are not runnung ChiaKey, you are not "
+               @"able to import your database."),
+        NSAlertStyleWarning);
     return;
   }
   NSOpenPanel *panel = [NSOpenPanel openPanel];
@@ -155,37 +119,20 @@ file for terms.
   [panel setTitle:LFLSTR(@"Import Database")];
   [panel setMessage:LFLSTR(@"Import customized phrases to your own database.")];
   [panel setPrompt:LFLSTR(@"Choose")];
-  if ([panel runModal] == NSFileHandlingPanelOKButton) {
-    NSString *path = [[panel filenames] objectAtIndex:0];
+  if ([panel runModal] == NSModalResponseOK) {
+    NSString *path = [[panel URL] path];
     if (ovService) {
       [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
       bool rtn = [ovService importUserPhraseDBFromFile:path];
       if (rtn) {
-        NSAlert *alert =
-            [NSAlert alertWithMessageText:LFLSTR(@"Done!")
-                            defaultButton:LFLSTR(@"OK")
-                          alternateButton:nil
-                              otherButton:nil
-                informativeTextWithFormat:
-                    LFLSTR(@"Your phrases are successfully imported.")];
-        [alert setAlertStyle:NSInformationalAlertStyle];
-        [alert beginSheetModalForWindow:window
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
+        CKBeginAlertSheet(window, LFLSTR(@"Done!"),
+                          LFLSTR(@"Your phrases are successfully imported."),
+                          NSAlertStyleInformational);
 
       } else {
-        NSAlert *alert = [NSAlert
-                 alertWithMessageText:LFLSTR(@"Error")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:LFLSTR(@"Unable to import database.")];
-        [alert setAlertStyle:NSWarningAlertStyle];
-        [alert beginSheetModalForWindow:window
-                          modalDelegate:self
-                         didEndSelector:nil
-                            contextInfo:nil];
+        CKBeginAlertSheet(window, LFLSTR(@"Error"),
+                          LFLSTR(@"Unable to import database."),
+                          NSAlertStyleWarning);
       }
     }
   } else {
@@ -507,13 +454,19 @@ file for terms.
       stringByAppendingPathComponent:@"PhraseEditorTiger.app"];
 #endif
 
-  if (![[NSWorkspace sharedWorkspace] openFile:phraseEditorPath]) {
-    [[NSWorkspace sharedWorkspace]
-         launchAppWithBundleIdentifier:
-             @"com.chiakey.inputmethod.ChiaKey.PhraseEditor"
-                               options:NSWorkspaceLaunchDefault
-        additionalEventParamDescriptor:nil
-                      launchIdentifier:nil];
+  NSURL *phraseEditorURL = [NSURL fileURLWithPath:phraseEditorPath];
+  if (![[NSWorkspace sharedWorkspace] openURL:phraseEditorURL]) {
+    if (@available(macOS 10.15, *)) {
+      NSURL *applicationURL = [[NSWorkspace sharedWorkspace]
+          URLForApplicationWithBundleIdentifier:
+              @"com.chiakey.inputmethod.ChiaKey.PhraseEditor"];
+      if (applicationURL) {
+        [[NSWorkspace sharedWorkspace]
+            openApplicationAtURL:applicationURL
+                    configuration:[NSWorkspaceOpenConfiguration configuration]
+                completionHandler:nil];
+      }
+    }
     usleep(700);
     [NSApp terminate:self];
   } else {

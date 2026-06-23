@@ -43,7 +43,8 @@
 }
 - (NSColor *)gradientToColor {
   NSColor *fromColor =
-      [self colorUsingColorSpaceName:NSCalibratedRGBColorSpace];
+      [self colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
+  if (!fromColor) fromColor = self;
 
   float hue = [fromColor hueComponent];
   float saturation = [fromColor saturationComponent];

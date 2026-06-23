@@ -18,7 +18,7 @@ file for terms.
 
 - (id)init {
   if (self = [super init]) {
-    BOOL loaded = [NSBundle loadNibNamed:@"TakaoWordCount" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"TakaoWordCount" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
     LFRetainAssign(_preferenceFilePath,
                    [TakaoHelper plistFilePath:PLIST_WORDCOUNT_FILENAME]);
@@ -36,12 +36,12 @@ file for terms.
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *dictionary = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
 
     if ([dictionary valueForKey:@"TodayCount"])
       [_todayCount setStringValue:[dictionary valueForKey:@"TodayCount"]];
@@ -67,8 +67,8 @@ file for terms.
 
 - (IBAction)clear:(id)sender {
   if ([[NSFileManager defaultManager] fileExistsAtPath:_preferenceFilePath]) {
-    [[NSFileManager defaultManager] removeFileAtPath:_preferenceFilePath
-                                             handler:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:_preferenceFilePath
+                                               error:nil];
   }
 
   [_todayCount setStringValue:@"0"];

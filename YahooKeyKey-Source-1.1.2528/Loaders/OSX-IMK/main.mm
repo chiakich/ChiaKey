@@ -108,8 +108,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  BOOL result = [NSBundle loadNibNamed:@"MainMenu"
-                                 owner:[NSApplication sharedApplication]];
+  BOOL result = [[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:[NSApplication sharedApplication] topLevelObjects:nil];
   //	NSLog(@"nib loading result: %d", result);
 
   NSString *resourcePath = [[NSBundle mainBundle] resourcePath];

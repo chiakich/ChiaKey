@@ -6,9 +6,6 @@ file for terms.
 // [AUTO_HEADER]
 
 #import <Cocoa/Cocoa.h>
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-#import <Carbon/Carbon.h>
-#endif
 #import "NSStringExtension.h"
 #import "TakaoSettings.h"
 
@@ -21,7 +18,7 @@ file for terms.
         @abstract The class to interact with user interface and the
         global settings.
 */
-@interface TakaoGlobal : NSObject {
+@interface TakaoGlobal : NSObject <NSTableViewDataSource, NSTableViewDelegate> {
   IBOutlet NSPopUpButton *_keyboardLayoutPopUpButton;
   IBOutlet id _soundListPopUpButton;
   IBOutlet id _soundCheckBox;

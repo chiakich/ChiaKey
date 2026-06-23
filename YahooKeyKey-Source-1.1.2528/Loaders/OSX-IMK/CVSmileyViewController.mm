@@ -36,7 +36,7 @@
   self = [super init];
   if (self != nil) {
     _array = [[d valueForKey:@"Messages"] retain];
-    BOOL loaded = [NSBundle loadNibNamed:@"SmileyView" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"SmileyView" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
   }
   return self;

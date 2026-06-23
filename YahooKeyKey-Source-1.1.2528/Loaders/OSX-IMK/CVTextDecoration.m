@@ -17,7 +17,7 @@
   NSFont *font = [NSFont fontWithName:@"Helvetica" size:12];
   NSMutableParagraphStyle *paragraphStyle =
       [[NSMutableParagraphStyle new] autorelease];
-  [paragraphStyle setAlignment:NSCenterTextAlignment];
+  [paragraphStyle setAlignment:NSTextAlignmentCenter];
   NSDictionary *attributes = [NSDictionary
       dictionaryWithObjectsAndKeys:font, NSFontAttributeName, foregroundColor,
                                    NSForegroundColorAttributeName,
@@ -40,7 +40,7 @@
   NSFont *font = [NSFont fontWithName:@"Helvetica" size:12];
   NSMutableParagraphStyle *paragraphStyle =
       [[NSMutableParagraphStyle new] autorelease];
-  [paragraphStyle setAlignment:NSCenterTextAlignment];
+  [paragraphStyle setAlignment:NSTextAlignmentCenter];
   NSDictionary *attributes = [NSDictionary
       dictionaryWithObjectsAndKeys:font, NSFontAttributeName, foregroundColor,
                                    NSForegroundColorAttributeName,
@@ -73,7 +73,7 @@
   NSFont *font = [NSFont fontWithName:@"Helvetica" size:12];
   NSMutableParagraphStyle *paragraphStyle =
       [[NSMutableParagraphStyle new] autorelease];
-  [paragraphStyle setAlignment:NSCenterTextAlignment];
+  [paragraphStyle setAlignment:NSTextAlignmentCenter];
   NSDictionary *attributes = [NSDictionary
       dictionaryWithObjectsAndKeys:font, NSFontAttributeName, foregroundColor,
                                    NSForegroundColorAttributeName,

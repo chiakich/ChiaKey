@@ -11,7 +11,7 @@
 - (id)init {
   self = [super init];
   if (self != nil) {
-    BOOL loaded = [NSBundle loadNibNamed:@"SymbolWindow" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"SymbolWindow" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
     _viewArray = [NSMutableArray new];
   }

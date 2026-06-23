@@ -20,7 +20,9 @@ file for terms.
   if (![[NSFileManager defaultManager] fileExistsAtPath:tempPath
                                             isDirectory:NULL]) {
     [[NSFileManager defaultManager] createDirectoryAtPath:tempPath
-                                               attributes:nil];
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
   }
   return tempPath;
 }
@@ -33,7 +35,9 @@ file for terms.
   if (![[NSFileManager defaultManager] fileExistsAtPath:prefPath
                                             isDirectory:NULL]) {
     [[NSFileManager defaultManager] createDirectoryAtPath:prefPath
-                                               attributes:nil];
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
   }
   return [prefPath stringByAppendingPathComponent:filename];
 }

@@ -60,12 +60,12 @@ file for terms.
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *dictionary = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
     if (dictionary) [_phoneticDictionary addEntriesFromDictionary:dictionary];
   }  // end data
   [self setUI];
@@ -105,16 +105,12 @@ file for terms.
                            forKey:@"UseCharactersSupportedByEncoding"];
 }
 - (IBAction)writePreference:(id)sender {
-  NSString *errorString = nil;
   [self updateDictionary];
   NSData *data = [NSPropertyListSerialization
-      dataFromPropertyList:_phoneticDictionary
+      dataWithPropertyList:_phoneticDictionary
                     format:NSPropertyListXMLFormat_v1_0
-          errorDescription:&errorString];
-
-  if (errorString) {
-    [errorString release];
-  }
+                   options:0
+                     error:nil];
 
   if (data) {
     [data writeToFile:_preferenceFilePath atomically:YES];

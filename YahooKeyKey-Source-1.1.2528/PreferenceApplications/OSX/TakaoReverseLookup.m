@@ -20,7 +20,7 @@ file for terms.
 - (id)init {
   if (self = [super init]) {
     NSLog(@"init");
-    BOOL loaded = [NSBundle loadNibNamed:@"TakaoReverseLookup" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"TakaoReverseLookup" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
     NSLog(@"init2");
   }
@@ -40,12 +40,12 @@ file for terms.
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *d = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
     if (d) {
       NSArray *activatedAroundFilters =
           [d valueForKey:@"ActivatedAroundFilters"];
@@ -86,12 +86,12 @@ file for terms.
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *d = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
     if (d) {
       NSMutableArray *newArray = [NSMutableArray array];
       NSArray *activatedAroundFilters =
@@ -115,15 +115,11 @@ file for terms.
                        forKey:@"ActivatedAroundFilters"];
     }
   }
-  NSString *errorString = nil;
   data = [NSPropertyListSerialization
-      dataFromPropertyList:newDictionary
+      dataWithPropertyList:newDictionary
                     format:NSPropertyListXMLFormat_v1_0
-          errorDescription:&errorString];
-
-  if (errorString) {
-    [errorString release];
-  }
+                   options:0
+                     error:nil];
 
   if (data) {
     [data writeToFile:_preferenceFilePath atomically:YES];

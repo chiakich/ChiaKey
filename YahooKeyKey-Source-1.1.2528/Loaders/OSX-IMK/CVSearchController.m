@@ -121,7 +121,7 @@
 - (id)init {
   self = [super init];
   if (self != nil) {
-    BOOL loaded = [NSBundle loadNibNamed:@"SearchWindow" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"SearchWindow" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
   }
   return self;

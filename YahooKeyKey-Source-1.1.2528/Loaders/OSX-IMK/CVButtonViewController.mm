@@ -32,8 +32,8 @@
       [button autorelease];
       [button setTarget:self];
       [button setAction:@selector(sendString:)];
-      [button setButtonType:NSMomentaryLightButton];
-      [button setBezelStyle:NSTexturedSquareBezelStyle];
+      [button setButtonType:NSButtonTypeMomentaryLight];
+      [button setBezelStyle:NSBezelStyleTexturedSquare];
       [button setStringValue:symbol];
       [button setTitle:symbol];
       [_buttonArray addObject:button];

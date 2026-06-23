@@ -16,8 +16,7 @@
 - (id)init {
   self = [super init];
   if (self != nil) {
-    BOOL loaded = [NSBundle loadNibNamed:@"InputMethodToggleWindowController"
-                                   owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"InputMethodToggleWindowController" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
     [[self window] orderOut:self];
   }

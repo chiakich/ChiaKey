@@ -27,7 +27,7 @@
     _candidateAttributes = [NSMutableDictionary new];
     NSMutableParagraphStyle *candidateParagraphStyle =
         [[[NSMutableParagraphStyle alloc] init] autorelease];
-    [candidateParagraphStyle setAlignment:NSLeftTextAlignment];
+    [candidateParagraphStyle setAlignment:NSTextAlignmentLeft];
     [candidateParagraphStyle setLineBreakMode:NSLineBreakByTruncatingMiddle];
     [_candidateAttributes setValue:[NSColor whiteColor]
                             forKey:NSForegroundColorAttributeName];
@@ -79,8 +79,8 @@
       NSMinX(cellFrame) + 4.0,
       NSMinY(cellFrame) + (_fontHeight - 16.0) / 2 + 4.0, 16.0, 16.0);
   [keyImage drawInRect:imageRect
-              fromRect:NSZeroRect
-             operation:NSCompositeSourceOver
+             fromRect:NSZeroRect
+             operation:NSCompositingOperationSourceOver
               fraction:1.0];
   NSRect candidateRect =
       NSMakeRect(NSMinX(cellFrame) + 24.0, NSMinY(cellFrame),

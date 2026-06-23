@@ -12,6 +12,8 @@ file for terms.
 #import <Cocoa/Cocoa.h>
 
 #import "TakaoSettings.h"
+
+@class TakaoWindow;
 #define WINDOW_TITLE_HEIGHT 78
 
 static NSString *GeneralToolbarItemIdentifier = @"General";
@@ -44,7 +46,7 @@ static NSString *PluginToolbarItemIdentifier = @"Plugins";
   IBOutlet NSView *_keyboardLayoutContentView;
   IBOutlet NSView *_keyboardLayoutView;
 
-  IBOutlet id window;
+  IBOutlet TakaoWindow *window;
   IBOutlet id _takaoGenericController;
   IBOutlet id _takaoGlobalController;
   IBOutlet id _takaoLoadedModuleController;

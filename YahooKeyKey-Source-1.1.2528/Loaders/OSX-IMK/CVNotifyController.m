@@ -50,7 +50,7 @@ NSPoint c_lastLocation;
 }
 - (id)init {
   if (self = [super init]) {
-    BOOL loaded = [NSBundle loadNibNamed:@"NotifyWindow" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"NotifyWindow" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
   }
   return self;
@@ -79,7 +79,7 @@ NSPoint c_lastLocation;
 - (void)setMessage:(NSString *)message {
   NSMutableParagraphStyle *paragraphStyle =
       [[NSMutableParagraphStyle new] autorelease];
-  [paragraphStyle setAlignment:NSCenterTextAlignment];
+  [paragraphStyle setAlignment:NSTextAlignmentCenter];
   NSDictionary *attributes = [NSDictionary
       dictionaryWithObjectsAndKeys:[NSFont
                                        systemFontOfSize:[NSFont

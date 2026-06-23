@@ -4,7 +4,7 @@
 
 @implementation CVDictionaryWindow
 - (id)initWithContentRect:(NSRect)contentRect
-                styleMask:(unsigned int)aStyle
+                styleMask:(NSWindowStyleMask)aStyle
                   backing:(NSBackingStoreType)bufferingType
                     defer:(BOOL)flag {
   if (self = [super initWithContentRect:contentRect

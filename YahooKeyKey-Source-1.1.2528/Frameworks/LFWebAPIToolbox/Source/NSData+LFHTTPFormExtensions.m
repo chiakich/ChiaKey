@@ -28,6 +28,15 @@
 
 #import "NSData+LFHTTPFormExtensions.h"
 
+static NSString *LFPercentEscapedFormString(NSString *string) {
+  NSMutableCharacterSet *allowed =
+      [[[NSCharacterSet URLQueryAllowedCharacterSet] mutableCopy] autorelease];
+  [allowed removeCharactersInString:@"!*'();:@&=+$,/?%#[]"];
+  NSString *escaped =
+      [string stringByAddingPercentEncodingWithAllowedCharacters:allowed];
+  return escaped ? escaped : @"";
+}
+
 @implementation NSData (LFHTTPFormExtensions)
 + (id)dataAsWWWURLEncodedFormFromDictionary:(NSDictionary *)formDictionary {
   NSMutableString *combinedDataString = [NSMutableString string];
@@ -41,11 +50,8 @@
         appendString:[NSString
                          stringWithFormat:
                              @"%@=%@",
-                             [(NSString *)key
-                                 stringByAddingPercentEscapesUsingEncoding:
-                                     NSUTF8StringEncoding],
-                             [value stringByAddingPercentEscapesUsingEncoding:
-                                        NSUTF8StringEncoding]]];
+                             LFPercentEscapedFormString((NSString *)key),
+                             LFPercentEscapedFormString(value)]];
 
     while ((key = [enumerator nextObject])) {
       value = [formDictionary objectForKey:key];
@@ -53,11 +59,8 @@
           appendString:[NSString
                            stringWithFormat:
                                @"&%@=%@",
-                               [(NSString *)key
-                                   stringByAddingPercentEscapesUsingEncoding:
-                                       NSUTF8StringEncoding],
-                               [value stringByAddingPercentEscapesUsingEncoding:
-                                          NSUTF8StringEncoding]]];
+                               LFPercentEscapedFormString((NSString *)key),
+                               LFPercentEscapedFormString(value)]];
     }
   }
 

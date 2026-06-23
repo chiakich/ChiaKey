@@ -97,7 +97,7 @@ file for terms.
 
 - (void)setActiveView:(NSView *)view animate:(BOOL)flag {
   NSEvent *e = [NSApp currentEvent];
-  if ([e modifierFlags] & NSShiftKeyMask) {
+  if ([e modifierFlags] & NSEventModifierFlagShift) {
     [window useSlowMotion];
   } else {
     [window stopSlowMotion];
@@ -132,12 +132,12 @@ file for terms.
   NSRect newRect = NSMakeRect(width / 2, 0, width / 2, height / 2);
   [i lockFocus];
   [_defaultApplicationImage drawInRect:fullRect
-                              fromRect:NSZeroRect
-                             operation:NSCompositeSourceOver
+                             fromRect:NSZeroRect
+                             operation:NSCompositingOperationSourceOver
                               fraction:1.0];
   [image drawInRect:newRect
            fromRect:NSZeroRect
-          operation:NSCompositeSourceOver
+          operation:NSCompositingOperationSourceOver
            fraction:1.0];
   [i unlockFocus];
   [window setMiniwindowImage:i];

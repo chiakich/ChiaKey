@@ -9,6 +9,8 @@
 //#import "Version.h"
 #import "OpenVanillaController.h"
 
+#include <unistd.h>
+
 #if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
 #import <zlib.h>
 #endif
@@ -451,7 +453,11 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
       OVPathHelper::PathCat(OVDirectoryHelper::TempDirectory(), "XXXXXXXXXX");
   char *tmp = (char *)calloc(1, tmpDir.size() + 1);
   strncpy(tmp, tmpDir.c_str(), tmpDir.size());
-  mktemp(tmp);
+  int fd = mkstemp(tmp);
+  if (fd >= 0) {
+    close(fd);
+    unlink(tmp);
+  }
   NSString *result = [NSString stringWithUTF8String:tmp];
   free(tmp);
   return result;
@@ -575,7 +581,9 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
   if (![[NSFileManager defaultManager] fileExistsAtPath:prefPath
                                             isDirectory:NULL]) {
     [[NSFileManager defaultManager] createDirectoryAtPath:prefPath
-                                               attributes:nil];
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
   }
   return [prefPath stringByAppendingPathComponent:filename];
 }
@@ -583,13 +591,11 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
   [self _plistFilepath:@"com.chiakey.ChiaKey.UpdateCheck.plist"];
 }
 - (void)_saveVersionInfo {
-  NSString *errorString = nil;
   NSData *data = [NSPropertyListSerialization
-      dataFromPropertyList:_versionInfo
+      dataWithPropertyList:_versionInfo
                     format:NSPropertyListXMLFormat_v1_0
-          errorDescription:&errorString];
-
-  if (errorString) [errorString release];
+                   options:0
+                     error:nil];
 
   if (data) [data writeToFile:[self _versionInfoPath] atomically:YES];
 }
@@ -601,12 +607,11 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
-    NSMutableDictionary *d = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+    NSDictionary *d = [NSPropertyListSerialization
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
     if (d) {
       [_versionInfo addEntriesFromDictionary:d];
     }
@@ -638,7 +643,7 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
            withReplyEvent:(NSAppleEventDescriptor *)replyEvent {
   NSString *url =
       [[[event paramDescriptorForKeyword:keyDirectObject] stringValue]
-          stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+          stringByRemovingPercentEncoding];
   if ([url hasPrefix:@"chiakey://"]) {
     NSString *string =
         [url substringWithRange:NSMakeRange(10, [url length] - 10)];

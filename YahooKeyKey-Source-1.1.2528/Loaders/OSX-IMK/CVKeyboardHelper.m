@@ -1,6 +1,7 @@
 // [AUTO_HEADER]
 
 #import "CVKeyboardHelper.h"
+#import "../../Frameworks/ChiakiSupport/Headers/ChiakiTextInputSource.h"
 
 @implementation CVKeyboardHelper
 
@@ -32,7 +33,6 @@ static CVKeyboardHelper *_sharedHelper = nil;
     CFStringRef type =
         TISGetInputSourceProperty(source, kTISPropertyInputSourceType);
     if (CFStringCompare(type, kTISTypeKeyboardLayout, kCFCompareEqualTo)) {
-      CFRelease(type);
       continue;
     }
 
@@ -40,9 +40,6 @@ static CVKeyboardHelper *_sharedHelper = nil;
         TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
     NSString *sourceIdString = [NSString stringWithString:(NSString *)sourceId];
     [_validKeyboardLayouts addObject:sourceIdString];
-
-    CFRelease(sourceId);
-    // CFRelease(source);
   }
   CFRelease(list);
 }

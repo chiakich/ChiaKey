@@ -5,7 +5,8 @@
 @implementation NSString (SplitBySpaceWithQuote)
 + (NSString *)stringByColor:(NSColor *)c {
   NSColor *convertedColor =
-      [c colorUsingColorSpaceName:NSCalibratedRGBColorSpace];
+      [c colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
+  if (!convertedColor) convertedColor = c;
   return [NSString stringWithFormat:@"%f %f %f", [convertedColor redComponent],
                                     [convertedColor greenComponent],
                                     [convertedColor blueComponent]];
@@ -20,11 +21,11 @@
                                    alpha:1.0];
 }
 - (NSString *)stringByQuoting {
-  int l = [self length];
+  NSUInteger l = [self length];
   UniChar *s = (UniChar *)calloc(1, l * sizeof(UniChar));
   [self getCharacters:s];
   UniChar *buf = (UniChar *)calloc(1, (l * 2 + 2) * sizeof(UniChar));
-  int i, p = 0;
+  NSUInteger i, p = 0;
 
   buf[p++] = '\"';
   for (i = 0; i < l; i++) {
@@ -38,11 +39,11 @@
   return r;
 }
 - (NSString *)stringByChomping {
-  int i;
-  int l = [self length];
+  NSUInteger l = [self length];
   if (!l) return @"";
 
-  for (i = l - 1; i >= 0; i--) {
+  NSInteger i;
+  for (i = (NSInteger)l - 1; i >= 0; i--) {
     if ([self characterAtIndex:i] != '\n') break;
   }
 
@@ -53,12 +54,12 @@
 }
 - (NSArray *)splitBySpaceWithQuote {
   NSMutableArray *ma = [NSMutableArray array];
-  int p = 0, q = 0;
-  int l = [self length];
+  NSUInteger p = 0, l = [self length];
+  int q = 0;
   UniChar *s = (UniChar *)calloc(1, l * sizeof(UniChar));
   [self getCharacters:s];
   UniChar *buf = (UniChar *)calloc(1, l * sizeof(UniChar));
-  int bufp = 0;
+  NSUInteger bufp = 0;
   int emptystr = 0;
 
   while (p < l) {

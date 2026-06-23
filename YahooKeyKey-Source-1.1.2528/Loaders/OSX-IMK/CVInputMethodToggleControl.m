@@ -40,7 +40,7 @@
   [attributes setValue:font forKey:NSFontAttributeName];
   NSMutableParagraphStyle *style =
       [[[NSMutableParagraphStyle alloc] init] autorelease];
-  [style setAlignment:NSCenterTextAlignment];
+  [style setAlignment:NSTextAlignmentCenter];
   [style setLineBreakMode:NSLineBreakByTruncatingTail];
   [attributes setValue:style forKey:NSParagraphStyleAttributeName];
   [attributes setValue:[NSColor whiteColor]

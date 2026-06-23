@@ -1,6 +1,5 @@
 // [AUTO_HEADER]
 
-#import <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 
 @interface CVKeyboardHelper : NSObject {

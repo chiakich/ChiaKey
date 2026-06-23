@@ -7,6 +7,7 @@ file for terms.
 
 #import "TakaoGlobal.h"
 
+#import "../../Frameworks/ChiakiSupport/Headers/ChiakiTextInputSource.h"
 #import "TakaoHelper.h"
 
 @interface TakaoGlobal (Private)
@@ -41,7 +42,7 @@ file for terms.
   while (pname = [direnum nextObject]) {
     if ([pname hasSuffix:ext])
       [array addObject:[stdpath stringByAppendingPathComponent:pname]];
-    [direnum skipDescendents];
+    [direnum skipDescendants];
   }
   return array;
 }
@@ -50,8 +51,8 @@ file for terms.
       [[[NSImage alloc] initWithSize:NSMakeSize(16, 16)] autorelease];
   [image lockFocus];
   [sourceImage drawInRect:NSMakeRect(0, 0, 16, 16)
-                 fromRect:NSZeroRect
-                operation:NSCompositeSourceOver
+                fromRect:NSZeroRect
+                operation:NSCompositingOperationSourceOver
                  fraction:1.0];
   [image unlockFocus];
   return image;
@@ -92,14 +93,16 @@ file for terms.
     CFStringRef type =
         TISGetInputSourceProperty(source, kTISPropertyInputSourceType);
     if (CFStringCompare(type, kTISTypeKeyboardLayout, kCFCompareEqualTo)) {
-      CFRelease(type);
       continue;
     }
 
-    IconRef icon = TISGetInputSourceProperty(source, kTISPropertyIconRef);
-    NSImage *iconImage = [self
-        _smallIconForKeyboardLayout:[[[NSImage alloc] initWithIconRef:icon]
-                                        autorelease]];
+    CFURLRef iconURL = TISGetInputSourceProperty(source, kTISPropertyIconImageURL);
+    NSImage *iconImage = nil;
+    if (iconURL) {
+      NSImage *sourceImage =
+          [[[NSImage alloc] initWithContentsOfURL:(NSURL *)iconURL] autorelease];
+      if (sourceImage) iconImage = [self _smallIconForKeyboardLayout:sourceImage];
+    }
 
     CFStringRef sourceName =
         TISGetInputSourceProperty(source, kTISPropertyLocalizedName);
@@ -108,7 +111,7 @@ file for terms.
     NSMenuItem *menuItem = [[NSMenuItem alloc] initWithTitle:sourceNameString
                                                       action:nil
                                                keyEquivalent:@""];
-    [menuItem setImage:iconImage];
+    if (iconImage) [menuItem setImage:iconImage];
 
     CFStringRef sourceId =
         TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
@@ -120,12 +123,6 @@ file for terms.
 
     [_keyboardLayoutIdentifierArray addObject:sourceIdString];
     [menu addItem:menuItem];
-
-    CFRelease(type);
-    CFRelease(sourceName);
-    CFRelease(sourceId);
-    ReleaseIconRef(icon);
-    CFRelease(source);
   }
   [_keyboardLayoutPopUpButton setMenu:menu];
 
@@ -298,12 +295,12 @@ file for terms.
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *d = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
     if (d) [_takaoDictionary addEntriesFromDictionary:d];
   }
 
@@ -344,12 +341,12 @@ file for terms.
                                                  error:nil];
   if (currentData) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *d = [NSPropertyListSerialization
-        propertyListFromData:currentData
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:currentData
+                      options:0
+                       format:&format
+                        error:nil];
     if (d) {
       id ActivatedOutputFilters = [d valueForKey:@"ActivatedOutputFilters"];
       if (ActivatedOutputFilters)
@@ -368,15 +365,11 @@ file for terms.
     }
   }
 
-  NSString *errorString = nil;
   NSData *data = [NSPropertyListSerialization
-      dataFromPropertyList:_takaoDictionary
+      dataWithPropertyList:_takaoDictionary
                     format:NSPropertyListXMLFormat_v1_0
-          errorDescription:&errorString];
-
-  if (errorString) {
-    [errorString release];
-  }
+                   options:0
+                     error:nil];
 
   if (data) {
     [data writeToFile:_preferenceFilePath atomically:YES];
@@ -444,9 +437,9 @@ file for terms.
                        @"Please choose the audio clip which you want to use:")];
     [openPanel setTitle:LFLSTR(@"Choose Audio Clip...")];
     [openPanel setPrompt:LFLSTR(@"Choose")];
-    if ([openPanel runModalForDirectory:nil file:nil
-                                  types:filetypes] == NSOKButton) {
-      NSString *soundFile = [[openPanel filenames] objectAtIndex:0];
+    [openPanel setAllowedFileTypes:filetypes];
+    if ([openPanel runModal] == NSModalResponseOK) {
+      NSString *soundFile = [[openPanel URL] path];
       if (![[NSFileManager defaultManager] fileExistsAtPath:soundFile]) {
         [_soundListPopUpButton selectItemAtIndex:0];
         _customSoundFilePath = nil;
@@ -648,7 +641,6 @@ file for terms.
       strokeRect:NSMakeRect(0, 0, [image size].width, [image size].height)];
   [image unlockFocus];
 
-  [image setFlipped:NO];
   return image;
 }
 
@@ -738,7 +730,7 @@ file for terms.
   }
 }
 - (NSString *)colorString {
-  int index = [self indexOfSelectedItem];
+  NSInteger index = [self indexOfSelectedItem];
   return [_colors objectAtIndex:index];
 }
 - (void)setColorSelection:(NSString *)aString {

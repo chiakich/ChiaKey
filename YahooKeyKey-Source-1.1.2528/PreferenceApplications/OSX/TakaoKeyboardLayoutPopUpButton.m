@@ -88,11 +88,11 @@ file for terms.
 }
 - (void)changeMenu:(NSNotification *)notification {
   NSEvent *e = [NSApp currentEvent];
-  int index = [self indexOfSelectedItem];
 
   //	if ([e modifierFlags] & NSShiftKeyMask) {
-  if (([e modifierFlags] & (NSCommandKeyMask | NSShiftKeyMask)) ==
-      (NSCommandKeyMask | NSShiftKeyMask)) {
+  if (([e modifierFlags] &
+       (NSEventModifierFlagCommand | NSEventModifierFlagShift)) ==
+      (NSEventModifierFlagCommand | NSEventModifierFlagShift)) {
     [self setMenu:_realMenu];
   } else {
     [self setMenu:_standardMenu];

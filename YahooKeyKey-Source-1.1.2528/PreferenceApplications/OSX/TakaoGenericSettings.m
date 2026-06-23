@@ -21,7 +21,7 @@ file for terms.
 
 - (id)init {
   if (self = [super init]) {
-    BOOL loaded = [NSBundle loadNibNamed:@"TakaoGenericSettings" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"TakaoGenericSettings" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
   }
   return self;
@@ -118,12 +118,12 @@ file for terms.
                                           error:nil];
   if (data) {
     NSPropertyListFormat format;
-    NSString *errorString = nil;
+
     NSMutableDictionary *dictionary = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:&format
-            errorDescription:&errorString];
+        propertyListWithData:data
+                      options:0
+                       format:&format
+                        error:nil];
     if (dictionary) [_genericDictionary addEntriesFromDictionary:dictionary];
   }  // end data
   [self setUI];
@@ -214,14 +214,12 @@ file for terms.
                         forKey:@"MaximumRadicalLength"];
 }
 - (IBAction)writePreference:(id)sender {
-  NSString *errorString = nil;
   [self updateDictionary];
   NSData *data = [NSPropertyListSerialization
-      dataFromPropertyList:_genericDictionary
+      dataWithPropertyList:_genericDictionary
                     format:NSPropertyListXMLFormat_v1_0
-          errorDescription:&errorString];
-
-  if (errorString) [errorString release];
+                   options:0
+                     error:nil];
 
   if (data) [data writeToFile:_preferenceFilePath atomically:YES];
 }

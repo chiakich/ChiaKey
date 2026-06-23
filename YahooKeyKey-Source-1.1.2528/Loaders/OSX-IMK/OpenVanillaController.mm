@@ -194,10 +194,11 @@ static id OVCActiveContextSender = nil;
   // NSLog(@"updating string: %@", attrString);
 }
 
-- (unsigned int)recognizedEvents:(id)sender {
+- (NSUInteger)recognizedEvents:(id)sender {
   //	NSLog(@"recognizedEvents (client %08x)", sender);
-  return NSKeyDownMask | NSKeyUpMask | NSFlagsChangedMask | NSMouseEnteredMask |
-         NSLeftMouseDownMask | NSLeftMouseDragged;
+  return NSEventMaskKeyDown | NSEventMaskKeyUp | NSEventMaskFlagsChanged |
+         NSEventMaskMouseEntered | NSEventMaskLeftMouseDown |
+         NSEventMaskLeftMouseDragged;
 }
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
 - (NSString *)currentKeyboardLayout {
@@ -363,10 +364,10 @@ static id OVCActiveContextSender = nil;
   // NSLog(@"handleEvent (client %08x), type = %08x, modifier = %08x, event:
   // %@", sender, [event type], [event modifierFlags], event);
 
-  if ([event type] == NSFlagsChanged) {
+  if ([event type] == NSEventTypeFlagsChanged) {
     // handles caps lock and shift here
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-    if (!([event modifierFlags] & NSControlKeyMask)) {
+    if (!([event modifierFlags] & NSEventModifierFlagControl)) {
       id appDelegate = [NSApp delegate];
       NSWindow *window =
           [[appDelegate inputMethodToggleWindowController] window];
@@ -379,18 +380,21 @@ static id OVCActiveContextSender = nil;
     bool isHandled = false;
 
     NSString *chars = [event characters];
-    unsigned int cocoaModifiers = [event modifierFlags];
+    NSEventModifierFlags cocoaModifiers = [event modifierFlags];
     unsigned short virtualKeyCode = [event keyCode];
     unsigned int vanillaModifiers = 0;
 
-    if (cocoaModifiers & NSAlphaShiftKeyMask)
+    if (cocoaModifiers & NSEventModifierFlagCapsLock)
       vanillaModifiers |= OVKeyMask::CapsLock;
     // if (cocoaModifiers & NSNumericPadKeyMask) vanillaModifiers |=
     // OVKeyMask::NumLock;
-    if (cocoaModifiers & NSShiftKeyMask) vanillaModifiers |= OVKeyMask::Shift;
-    if (cocoaModifiers & NSControlKeyMask) vanillaModifiers |= OVKeyMask::Ctrl;
-    if (cocoaModifiers & NSAlternateKeyMask) vanillaModifiers |= OVKeyMask::Opt;
-    if (cocoaModifiers & NSCommandKeyMask)
+    if (cocoaModifiers & NSEventModifierFlagShift)
+      vanillaModifiers |= OVKeyMask::Shift;
+    if (cocoaModifiers & NSEventModifierFlagControl)
+      vanillaModifiers |= OVKeyMask::Ctrl;
+    if (cocoaModifiers & NSEventModifierFlagOption)
+      vanillaModifiers |= OVKeyMask::Opt;
+    if (cocoaModifiers & NSEventModifierFlagCommand)
       vanillaModifiers |= OVKeyMask::Command;
 
     UInt32 numKeys[16] = {
@@ -415,22 +419,26 @@ static id OVCActiveContextSender = nil;
       unicharCode = [chars characterAtIndex:0];
 
       // translates CTRL-[A-Z] to the correct PVKeyImpl
-      if (cocoaModifiers & NSControlKeyMask) {
+      if (cocoaModifiers & NSEventModifierFlagControl) {
         if (unicharCode < 27) {
           unicharCode += ('a' - 1);
         } else {
           switch (unicharCode) {
             case 27:
-              unicharCode = (cocoaModifiers & NSShiftKeyMask) ? '{' : '[';
+              unicharCode =
+                  (cocoaModifiers & NSEventModifierFlagShift) ? '{' : '[';
               break;
             case 28:
-              unicharCode = (cocoaModifiers & NSShiftKeyMask) ? '|' : '\\';
+              unicharCode =
+                  (cocoaModifiers & NSEventModifierFlagShift) ? '|' : '\\';
               break;
             case 29:
-              unicharCode = (cocoaModifiers & NSShiftKeyMask) ? '}' : ']';
+              unicharCode =
+                  (cocoaModifiers & NSEventModifierFlagShift) ? '}' : ']';
               break;
             case 31:
-              unicharCode = (cocoaModifiers & NSShiftKeyMask) ? '_' : '-';
+              unicharCode =
+                  (cocoaModifiers & NSEventModifierFlagShift) ? '_' : '-';
               break;
           }
         }
@@ -875,13 +883,19 @@ static id OVCActiveContextSender = nil;
       [sharedSupprtPath stringByAppendingPathComponent:@"PreferencesTiger.app"];
 #endif
 
-  if (![[NSWorkspace sharedWorkspace] openFile:preferencePath]) {
-    [[NSWorkspace sharedWorkspace]
-         launchAppWithBundleIdentifier:
-             @"com.chiakey.inputmethod.ChiaKey.Preferences"
-                               options:NSWorkspaceLaunchDefault
-        additionalEventParamDescriptor:nil
-                      launchIdentifier:nil];
+  NSURL *preferenceURL = [NSURL fileURLWithPath:preferencePath];
+  if (![[NSWorkspace sharedWorkspace] openURL:preferenceURL]) {
+    if (@available(macOS 10.15, *)) {
+      NSURL *applicationURL = [[NSWorkspace sharedWorkspace]
+          URLForApplicationWithBundleIdentifier:
+              @"com.chiakey.inputmethod.ChiaKey.Preferences"];
+      if (applicationURL) {
+        [[NSWorkspace sharedWorkspace]
+            openApplicationAtURL:applicationURL
+                    configuration:[NSWorkspaceOpenConfiguration configuration]
+                completionHandler:nil];
+      }
+    }
   }
   [self _resetUI];
 }
@@ -901,7 +915,7 @@ static id OVCActiveContextSender = nil;
     [menuItem setEnabled:NO];
   } else {
     if ([OpenVanillaLoader sharedLoader]->primaryInputMethod() == identifier)
-      [menuItem setState:NSOnState];
+      [menuItem setState:NSControlStateValueOn];
 
     [menuItem setTarget:self];
     [menuItem setAction:@selector(switchInputMethodAction:)];
@@ -912,7 +926,8 @@ static id OVCActiveContextSender = nil;
   [menuItem setTitle:localizedName];
   if (key && [key length] > 0) {
     [menuItem setKeyEquivalent:key];
-    [menuItem setKeyEquivalentModifierMask:NSCommandKeyMask | NSControlKeyMask];
+    [menuItem setKeyEquivalentModifierMask:NSEventModifierFlagCommand |
+                                           NSEventModifierFlagControl];
   }
   return menuItem;
 }
@@ -961,7 +976,7 @@ static id OVCActiveContextSender = nil;
       [menuItem setEnabled:NO];
     } else {
       if ([OpenVanillaLoader sharedLoader]->isAroundFilterActivated(identifier))
-        [menuItem setState:NSOnState];
+        [menuItem setState:NSControlStateValueOn];
 
       [menuItem setTarget:self];
       [menuItem setAction:@selector(toggleAroundFilterAction:)];
@@ -990,17 +1005,19 @@ static id OVCActiveContextSender = nil;
       [menuItem setEnabled:NO];
 
     if ([OpenVanillaLoader sharedLoader]->isOutputFilterActivated(identifier))
-      [menuItem setState:NSOnState];
+      [menuItem setState:NSControlStateValueOn];
 
     if (identifier == "OVOFFullWidthCharacter") {
       [menuItem setKeyEquivalent:@" "];
-      [menuItem setKeyEquivalentModifierMask:NSCommandKeyMask | NSShiftKeyMask];
+      [menuItem setKeyEquivalentModifierMask:NSEventModifierFlagCommand |
+                                             NSEventModifierFlagShift];
     }
 
     if (identifier == "OVOFHanConvert-TC2SC") {
       [menuItem setKeyEquivalent:@"g"];
       [menuItem
-          setKeyEquivalentModifierMask:NSCommandKeyMask | NSControlKeyMask];
+          setKeyEquivalentModifierMask:NSEventModifierFlagCommand |
+                                       NSEventModifierFlagControl];
     }
 
     [menuItem setTarget:self];
@@ -1020,7 +1037,8 @@ static id OVCActiveContextSender = nil;
   [symbolMenuItem setTitle:LFLSTR(@"Symbols")];
   [symbolMenuItem setKeyEquivalent:@"."];
   [symbolMenuItem
-      setKeyEquivalentModifierMask:NSCommandKeyMask | NSControlKeyMask];
+      setKeyEquivalentModifierMask:NSEventModifierFlagCommand |
+                                   NSEventModifierFlagControl];
   [menu addItem:symbolMenuItem];
 
   NSMenuItem *helpMenuItem = [[[NSMenuItem alloc] init] autorelease];

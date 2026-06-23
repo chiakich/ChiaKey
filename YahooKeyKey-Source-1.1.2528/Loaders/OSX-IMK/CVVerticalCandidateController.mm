@@ -45,7 +45,7 @@
 - (id)init {
   self = [super init];
   if (self != nil) {
-    BOOL loaded = [NSBundle loadNibNamed:@"VerticalCandidateWindow" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"VerticalCandidateWindow" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
 
     _candidateTextHeight = 18.0;

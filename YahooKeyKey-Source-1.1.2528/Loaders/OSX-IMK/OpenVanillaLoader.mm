@@ -88,6 +88,15 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
 + (id)dataAsWWWURLEncodedFormFromDictionary:(NSDictionary *)formDictionary;
 @end
 
+static NSString *LFPercentEscapedFormString(NSString *string) {
+  NSMutableCharacterSet *allowed =
+      [[[NSCharacterSet URLQueryAllowedCharacterSet] mutableCopy] autorelease];
+  [allowed removeCharactersInString:@"!*'();:@&=+$,/?%#[]"];
+  NSString *escaped =
+      [string stringByAddingPercentEncodingWithAllowedCharacters:allowed];
+  return escaped ? escaped : @"";
+}
+
 @implementation NSData (LFHTTPFormExtensions)
 + (id)dataAsWWWURLEncodedFormFromDictionary:(NSDictionary *)formDictionary {
   NSMutableString *combinedDataString = [NSMutableString string];
@@ -101,11 +110,8 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
         appendString:[NSString
                          stringWithFormat:
                              @"%@=%@",
-                             [(NSString *)key
-                                 stringByAddingPercentEscapesUsingEncoding:
-                                     NSUTF8StringEncoding],
-                             [value stringByAddingPercentEscapesUsingEncoding:
-                                        NSUTF8StringEncoding]]];
+                             LFPercentEscapedFormString((NSString *)key),
+                             LFPercentEscapedFormString(value)]];
 
     while ((key = [enumerator nextObject])) {
       value = [formDictionary objectForKey:key];
@@ -113,11 +119,8 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
           appendString:[NSString
                            stringWithFormat:
                                @"&%@=%@",
-                               [(NSString *)key
-                                   stringByAddingPercentEscapesUsingEncoding:
-                                       NSUTF8StringEncoding],
-                               [value stringByAddingPercentEscapesUsingEncoding:
-                                          NSUTF8StringEncoding]]];
+                               LFPercentEscapedFormString((NSString *)key),
+                               LFPercentEscapedFormString(value)]];
     }
   }
 
@@ -1171,10 +1174,10 @@ using namespace OpenVanilla;
 
 - (BOOL)_validateServerData:(NSData *)data {
   id plist =
-      [NSPropertyListSerialization propertyListFromData:data
-                                       mutabilityOption:NSPropertyListImmutable
+      [NSPropertyListSerialization propertyListWithData:data
+                                                options:0
                                                  format:NULL
-                                       errorDescription:NULL];
+                                                  error:nil];
 
   return [plist isKindOfClass:[NSDictionary class]];
 }
@@ -1396,10 +1399,10 @@ using namespace OpenVanilla;
                                           length:s.length()
                                     freeWhenDone:NO];
     id cmPlist = [NSPropertyListSerialization
-        propertyListFromData:cmData
-            mutabilityOption:NSPropertyListMutableContainersAndLeaves
-                      format:NULL
-            errorDescription:NULL];
+        propertyListWithData:cmData
+                      options:NSPropertyListMutableContainersAndLeaves
+                       format:NULL
+                        error:nil];
     if (cmPlist) {
       NSArray *a = [cmPlist objectForKey:@"CannedMessages"];
       if (a) {

@@ -99,10 +99,17 @@
 - (id)init {
   self = [super init];
   if (self != nil) {
-    BOOL loaded = [NSBundle loadNibNamed:@"DictionaryWindow" owner:self];
+    BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"DictionaryWindow" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
   }
   return self;
+}
+
+- (NSString *)_queryEscapedString:(NSString *)string {
+  NSString *escaped =
+      [string stringByAddingPercentEncodingWithAllowedCharacters:
+                  [NSCharacterSet URLQueryAllowedCharacterSet]];
+  return escaped ? escaped : @"";
 }
 
 #pragma mark Simple Cache mechanism
@@ -122,19 +129,20 @@
 - (void)_cleanCache {
   NSString *tempPath = [self _cachesDirectory];
   NSArray *files =
-      [[NSFileManager defaultManager] directoryContentsAtPath:tempPath];
+      [[NSFileManager defaultManager] contentsOfDirectoryAtPath:tempPath
+                                                          error:nil];
   if (files && [files count]) {
     NSEnumerator *enumerator = [files objectEnumerator];
     NSString *file;
     while (file = [enumerator nextObject]) {
       NSString *fullPath = [tempPath stringByAppendingPathComponent:file];
       NSDate *createDate = [[[NSFileManager defaultManager]
-          fileAttributesAtPath:fullPath
-                  traverseLink:YES] objectForKey:NSFileCreationDate];
+          attributesOfItemAtPath:fullPath
+                           error:nil] objectForKey:NSFileCreationDate];
       NSDate *expireDate =
           [NSDate dateWithTimeIntervalSinceNow:(-12 * 60 * 60)];
       if ([createDate compare:expireDate] == NSOrderedAscending) {
-        [[NSFileManager defaultManager] removeFileAtPath:fullPath handler:nil];
+        [[NSFileManager defaultManager] removeItemAtPath:fullPath error:nil];
       }
     }
   }
@@ -548,15 +556,17 @@
   if (![[NSFileManager defaultManager] fileExistsAtPath:tempPath
                                             isDirectory:NULL]) {
     [[NSFileManager defaultManager] createDirectoryAtPath:tempPath
-                                               attributes:nil];
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
   }
   if (![[NSFileManager defaultManager] fileExistsAtPath:fullPath
                                             isDirectory:NULL]) {
     [self doFetchInThread:url filePath:fullPath keyword:keyword];
   } else {
     NSDate *createDate = [[[NSFileManager defaultManager]
-        fileAttributesAtPath:fullPath
-                traverseLink:YES] objectForKey:NSFileCreationDate];
+        attributesOfItemAtPath:fullPath
+                         error:nil] objectForKey:NSFileCreationDate];
     NSDate *expireDate = [NSDate dateWithTimeIntervalSinceNow:(-2 * 60 * 60)];
     if ([createDate compare:expireDate] == NSOrderedAscending) {
       [self doFetchInThread:url filePath:fullPath keyword:keyword];
@@ -647,9 +657,7 @@
     return;
   }
   NSString *urlString = [YAHOO_DICTIONARY_API_URL
-      stringByAppendingString:
-          [keyword
-              stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+      stringByAppendingString:[self _queryEscapedString:keyword]];
   [[self window]
       setTitle:[NSString stringWithFormat:LFLSTR(@"Dictionary: %@"), keyword]];
   NSString *filename =
@@ -696,7 +704,7 @@
   _isVisible = NO;
 }
 - (IBAction)changeTextSize:(id)sender {
-  int s = [sender selectedSegment];
+  NSInteger s = [sender selectedSegment];
   switch (s) {
     case 0:
       [_webview makeTextSmaller:sender];
@@ -734,7 +742,7 @@
   NSMenuItem *aMenuItem;
 
   while (aMenuItem = [enumerator nextObject]) {
-    int tag = [aMenuItem tag];
+    NSInteger tag = [aMenuItem tag];
     if (tag != WebMenuItemTagReload &&
         tag != WebMenuItemTagOpenLinkInNewWindow &&
         tag != WebMenuItemTagDownloadLinkToDisk &&
