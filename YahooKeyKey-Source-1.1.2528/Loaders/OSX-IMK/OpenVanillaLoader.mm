@@ -21,7 +21,6 @@
 #import "OpenVanillaConfig.h"
 #import "TrackerMaker.h"
 #import "TrackerSender.h"
-#import "YKAFOneKeyPackage.h"
 #import "YKSignedModuleLoadingSystem.h"
 
 NSString *CVLoaderUpdateCannedMessagesNotification =
@@ -496,10 +495,6 @@ using namespace OpenVanilla;
   pkg->initialize(&pathInfo, _loaderService);
   _staticModuleLoadingSystem->addInitializedPackage(
       "OVAFBopomofoCorrectionPackage", pkg);
-
-  pkg = new YKAFOneKeyPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage("YKAFOneKeyPackage", pkg);
 
   pkg = new OVAFEvalPackage;
   pkg->initialize(&pathInfo, _loaderService);

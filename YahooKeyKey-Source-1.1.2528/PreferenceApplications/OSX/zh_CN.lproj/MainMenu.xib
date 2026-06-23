@@ -345,7 +345,7 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="453"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField verticalHuggingPriority="750" id="1024">
+                <textField hidden="YES" verticalHuggingPriority="750" id="1024">
                     <rect key="frame" x="282" y="119" width="69" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="启用一点通" id="1025">
@@ -493,7 +493,7 @@
                     <rect key="frame" x="0.0" y="371" width="480" height="82"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </customView>
-                <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" id="902">
+                <popUpButton hidden="YES" verticalHuggingPriority="750" imageHugsTitle="YES" id="902">
                     <rect key="frame" x="135" y="114" width="145" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <popUpButtonCell key="cell" type="push" title="使用 ~ 键" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="906" id="903">
@@ -510,7 +510,7 @@
                         <action selector="writePreference:" target="908" id="910"/>
                     </connections>
                 </popUpButton>
-                <textField verticalHuggingPriority="750" id="901">
+                <textField hidden="YES" verticalHuggingPriority="750" id="901">
                     <rect key="frame" x="17" y="121" width="108" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="一点通：" id="907">

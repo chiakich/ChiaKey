@@ -230,7 +230,6 @@ static id OVCActiveContextSender = nil;
   }
 
   [[OpenVanillaLoader sharedInstance] syncUserCannedMessages];
-  [[OpenVanillaLoader sharedInstance] syncUserOneKeyData];
 
   [OpenVanillaLoader sharedLoader]->syncLoaderConfig();
   OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
@@ -968,7 +967,7 @@ static id OVCActiveContextSender = nil;
       continue;
     }
 
-    if (identifier == "OneKey" || identifier == "Evaluator") {
+    if (identifier == "Evaluator") {
       if (![OpenVanillaLoader sharedLoader]->isAroundFilterActivated(
               identifier)) {
         [OpenVanillaLoader sharedLoader]->toggleAroundFilter(identifier);
@@ -1033,12 +1032,6 @@ static id OVCActiveContextSender = nil;
   }
 
   [menu addItem:[NSMenuItem separatorItem]];
-
-  NSMenuItem *onekeyMenuItem = [[[NSMenuItem alloc] init] autorelease];
-  [onekeyMenuItem setTarget:self];
-  [onekeyMenuItem setAction:@selector(onekeyAction:)];
-  [onekeyMenuItem setTitle:LFLSTR(@"One-Key")];
-  [menu addItem:onekeyMenuItem];
 
   NSMenuItem *symbolMenuItem = [[[NSMenuItem alloc] init] autorelease];
   [symbolMenuItem setTarget:self];

@@ -227,8 +227,6 @@ validate_db_minimum_count "punctuation list unigrams are present" "SELECT COUNT(
 validate_db_minimum_count "punctuation list candidates are present" "SELECT COUNT(*) FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_list';" 50
 validate_db_minimum_count "prepopulated canned messages are present" "SELECT COUNT(*) FROM prepopulated_service_data WHERE key = 'canned_messages' AND LENGTH(value) > 1000;" 1
 validate_db_minimum_count "prepopulated canned messages timestamp is present" "SELECT COUNT(*) FROM prepopulated_service_data WHERE key = 'canned_messages_timestamp' AND CAST(value AS INTEGER) > 0;" 1
-validate_db_minimum_count "prepopulated one-key services are present" "SELECT COUNT(*) FROM prepopulated_service_data WHERE key = 'onekey_services' AND LENGTH(value) > 1000;" 1
-validate_db_minimum_count "prepopulated one-key services timestamp is present" "SELECT COUNT(*) FROM prepopulated_service_data WHERE key = 'onekey_services_timestamp' AND CAST(value AS INTEGER) > 0;" 1
 validate_db_scalar "metadata schema_version" "SELECT value FROM chiaki_db_metadata WHERE key = 'schema_version';" "1"
 validate_db_scalar "cooked_information version" "SELECT COUNT(*) FROM cooked_information WHERE key = 'version' AND value != '';" "1"
 validate_db_scalar "Shift+, punctuation unigram" "SELECT current FROM unigrams WHERE qstring = '_punctuation_<' ORDER BY probability DESC, current LIMIT 1;" "，"
