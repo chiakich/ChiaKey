@@ -8,13 +8,14 @@
 
 ## 產品範圍
 
-千秋輸入法是 macOS-only 的繁體中文輸入法。
+千秋輸入法目前發佈主線是 macOS 繁體中文輸入法。
 
 支援的產品路徑是：
 
 ```text
 ChiaKey.app
   -> macOS InputMethodKit host
+  -> ChiaKeyCore / OpenVanilla loader boundary
   -> OpenVanilla loader bridge
   -> OpenVanilla / PlainVanilla modules
   -> OVIMMandarin
@@ -22,7 +23,12 @@ ChiaKey.app
   -> versioned ChiaKeySource.db
 ```
 
-短期內不把專案重新擴張成跨平台輸入法 framework。Windows、舊 TSM loader、Yahoo web integrations 與 installer-era helpers 都視為歷史資料，除非它仍是現代 macOS build 的必要部分。
+短期內不恢復 Windows、舊 TSM loader、Yahoo web integrations 或 installer-era
+helpers。這些都視為歷史資料，除非它仍是現代 macOS build 的必要部分。
+
+允許新增小而明確的 host-neutral core boundary，讓未來 iOS keyboard extension
+可共用智慧注音 engine。這個邊界不代表立刻擴張發佈產品範圍；它只是把 engine
+與平台 host 分離，降低未來 iOS target 的風險。
 
 ## 主要決策
 
@@ -40,6 +46,30 @@ ChiaKey.app
 這不代表永遠不能替換。它代表替換應該等行為測試與邊界穩定後逐步發生。
 
 現代 IMK runtime 與 Preferences 仍會 link `Carbon.framework`，但用途只剩 TIS keyboard layout API。舊 TSM loader 與 TSM installer 已移除，不應再恢復成發佈目標。
+
+### 建立可攜核心邊界
+
+`ChiaKeyCore` 是新增的 host-neutral facade。它目前包住 `OVIMSmartMandarin`，
+對外只暴露 key event、engine config、state snapshot 與 commit acknowledgement。
+
+這層的責任：
+
+1. 以明確 API 接受 host key event。
+2. 開啟 SQLite-backed `ChiaKeySource.db`。
+3. 回傳 reading text、composing text、candidate state、committed text segments。
+4. 保持可用 iPhoneOS SDK syntax-check。
+5. 用 smoke test 固定基本注音行為。
+
+這層不應包含：
+
+1. AppKit、InputMethodKit、UIKit 或 SwiftUI。
+2. macOS inline marked text policy。
+3. iOS `UIInputViewController`。
+4. 安裝、簽章、release packaging。
+
+iOS host 已拆到 sibling repo `../ChiaKey-iOS`，主 repo 只保留
+`ChiaKeyCore` 的公開 facade 與 minimal platform placeholder。實作細節集中在
+`Docs/iOSImplementation.md`。
 
 ### 保留老派組字策略
 

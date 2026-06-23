@@ -19,16 +19,19 @@
 
 1. 產品中文名稱為「千秋輸入法」。
 2. 英文與技術名稱為 `ChiaKey`。
-3. 只維護現代 macOS InputMethodKit 版本。
+3. 目前發佈主線維護現代 macOS InputMethodKit 版本。
 4. bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
 5. 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
 6. 詞庫由獨立 repo `ChiaKey-Lexicon` 透過 GitHub Releases 發佈。
+7. 新增實驗性的 `ChiaKeyCore` host-neutral engine facade，作為 sibling iOS repo 的共用輸入核心地基。
 
 本機開發環境註記：目前開發機有 Xcode 26.5。
 
 ## 決策文件
 
 - [架構決策](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
+- [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與 sibling iOS repo 關係。
+- [iOS 實作指南](Docs/iOSImplementation.md)：iOS keyboard extension 的 core 接法、repo 邊界與驗證入口。
 - [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
 - [現代化 roadmap](Docs/ModernizationPlan.md)：已完成基線、下一步與延後事項。
 - [OneKey 移除說明](Docs/LexiconOneKeyRemoval.md)：給詞庫 repo 的相容性說明。
@@ -142,15 +145,31 @@ Scripts/test-lexicon-smoke.sh
 Scripts/test-lexicon-smoke.sh path/to/ChiaKeySource.db
 ```
 
+驗證 host-neutral core facade 與 iOS SDK 語法相容性：
+
+```sh
+Scripts/test-core-smoke.sh
+Scripts/test-ios-core-syntax.sh
+```
+
+實際 iOS app + keyboard extension project 已拆到 sibling repo `../ChiaKey-iOS`。
+要驗證 iOS Xcode build，請在該 repo 執行 `Scripts/test-ios-xcode-build.sh`。
+
 ## 目錄概覽
 
-- `ChiaKey-Source/`：原 Yahoo KeyKey source package。
-- `ChiaKey-Source/Loaders/OSX-IMK/`：目前主要 macOS InputMethodKit runtime。
+- `ChiaKey-Source/Frameworks/ChiaKeyCore/`：host-neutral engine facade，未來 macOS / iOS 共用輸入核心邊界。
 - `ChiaKey-Source/Frameworks/OpenVanilla/`：OpenVanilla framework source。
 - `ChiaKey-Source/Frameworks/PlainVanilla/`：PlainVanilla bridge / loader policy。
-- `ChiaKey-Source/Distributions/Takao/DataSource/`：歷史資料來源與目前 seed data。
+- `ChiaKey-Source/Frameworks/Formosa/`：注音 syllable、鍵盤 layout 與 reading buffer。
+- `ChiaKey-Source/Frameworks/Manjusri/`：SQLite-backed language model。
+- `ChiaKey-Source/ModulePackages/OVIMMandarin/`：智慧注音 OpenVanilla module。
+- `ChiaKey-Source/Loaders/OSX-IMK/`：目前發佈中的 macOS InputMethodKit host。
+- `ChiaKey-Source/Loaders/iOS-Keyboard/`：iOS host placeholder；實作位於 sibling repo `../ChiaKey-iOS`。
+- `ChiaKey-Source/Distributions/Takao/CookedDatabase/`：目前 bundled fallback DB 與歷史 distribution outputs。
 - `Scripts/`：本機 build、install、icon、lexicon helper。
 - `Docs/`：現代化決策文件。
+
+更完整的分層原則請見 `Docs/ProjectStructure.md`。
 
 ## 詞庫維護邊界
 

@@ -37,6 +37,7 @@
 8. OneKey 與 legacy Windows code 已從現代 app path 移除。
 9. Locale tags 已針對現代 macOS 正規化。
 10. GitHub fork 已 credit 官方 Yahoo archive upstream。
+11. `ChiaKeyCore` host-neutral facade 已建立，並有 macOS smoke test 與 iPhoneOS syntax probe。
 
 ## 下一步
 
@@ -117,6 +118,19 @@ Active input method path、倉頡、簡易不應只因為老就移除。
 4. GitHub Release artifact
 5. install / rollback 文件
 
+### 6. iOS-ready core boundary
+
+這不是立即發佈 iOS app，而是把 engine 與平台 host 的 seam 固定住。
+實作細節集中在 [iOSImplementation.md](iOSImplementation.md)。
+
+下一步：
+
+1. 將 `ChiaKeyCore` 接成正式 Xcode library target 或 Swift Package wrapper。
+2. 加 ObjC++ / Swift bridge，讓 Swift host 不直接 include OpenVanilla internals。
+3. 以 XCTest 固定 `你好`、候選選字、退格、標點、commit acknowledgement。
+4. 在 sibling repo `../ChiaKey-iOS` 維護最小 keyboard extension shell。
+5. 保持沒有 Full Access 時仍可使用 bundled DB 與 extension writable path。
+
 ## 延後事項
 
 目前刻意不優先做：
@@ -127,5 +141,6 @@ Active input method path、倉頡、簡易不應只因為老就移除。
 4. 候選窗視覺重設計
 5. 新 language model architecture
 6. personal learning overhaul
+7. iOS UI polish 與完整上架流程
 
 這些之後可能值得做，但現在更需要測試、release hygiene 與穩定詞庫 pipeline。
