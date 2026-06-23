@@ -149,7 +149,7 @@
 }
 
 - (void)refreshContent:(NSString *)html {
-  [[_webview mainFrame] loadHTMLString:html baseURL:nil];
+  [_webView loadHTMLString:html baseURL:nil];
   [_loadingProgressIndicator stopAnimation:self];
 }
 
@@ -589,12 +589,42 @@
   [_beaconHTML retain];
 
   [self _cleanCache];
-  [_webview setUIDelegate:(id)self];
-  [_webview setFrameLoadDelegate:(id)self];
-  [_webview setPolicyDelegate:(id)self];
-  [_webview setApplicationNameForUserAgent:@"ChiaKey"];
 
-  [_webview setCustomUserAgent:@"ChiaKey/2026.06 (macOS)"];
+  WKUserContentController *userContentController =
+      [[[WKUserContentController alloc] init] autorelease];
+  NSString *bridgeSource =
+      @"window.DictionaryController = {"
+       "send: function(command, value) {"
+         "window.webkit.messageHandlers.DictionaryController.postMessage({"
+           "command: command,"
+           "value: value"
+         "});"
+       "},"
+       "search: function(value) { this.send('search', value); },"
+       "speak: function(value) { this.send('speak', value); },"
+       "sendString: function(value) { this.send('sendString', value); },"
+       "openURL: function(value) { this.send('openURL', value); }"
+      "};";
+  WKUserScript *bridgeScript =
+      [[[WKUserScript alloc]
+          initWithSource:bridgeSource
+           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+        forMainFrameOnly:NO] autorelease];
+  [userContentController addUserScript:bridgeScript];
+  [userContentController addScriptMessageHandler:self name:@"DictionaryController"];
+
+  WKWebViewConfiguration *configuration =
+      [[[WKWebViewConfiguration alloc] init] autorelease];
+  [configuration setUserContentController:userContentController];
+
+  _webView = [[WKWebView alloc] initWithFrame:[_webViewContainer bounds]
+                                configuration:configuration];
+  [_webView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [_webView unregisterDraggedTypes];
+  [_webView setNavigationDelegate:self];
+  [_webView setCustomUserAgent:@"ChiaKey/2026.06 (macOS)"];
+  [_webViewContainer addSubview:_webView];
+  _textZoom = 1.0;
 
   id toolbar = [[[NSToolbar alloc] initWithIdentifier:@"dictionary toolbar"]
       autorelease];
@@ -617,6 +647,16 @@
       setFrame:NSMakeRect(x, y, windowRect.size.width, windowRect.size.height)
        display:YES];
 }
+
+- (void)dealloc {
+  [[[_webView configuration] userContentController]
+      removeScriptMessageHandlerForName:@"DictionaryController"];
+  [_webView release];
+  [_beaconURL release];
+  [_beaconHTML release];
+  [super dealloc];
+}
+
 - (void)temporaryHide {
   [[self window] orderOut:self];
 }
@@ -707,10 +747,12 @@
   NSInteger s = [sender selectedSegment];
   switch (s) {
     case 0:
-      [_webview makeTextSmaller:sender];
+      _textZoom = MAX(0.6, _textZoom - 0.1);
+      [_webView setPageZoom:_textZoom];
       break;
     case 1:
-      [_webview makeTextLarger:sender];
+      _textZoom = MIN(1.8, _textZoom + 0.1);
+      [_webView setPageZoom:_textZoom];
       break;
     default:
       break;
@@ -726,81 +768,52 @@
   return NO;
 }
 
-#pragma mark WebView delegate methods
+#pragma mark WKNavigationDelegate
 
-- (void)webView:(WebView *)sender
-    windowScriptObjectAvailable:(WebScriptObject *)windowScriptObject {
-  id scriptObject = windowScriptObject;
-  [scriptObject setValue:self forKey:@"DictionaryController"];
-}
-
-- (NSArray *)webView:(WebView *)sender
-    contextMenuItemsForElement:(NSDictionary *)element
-              defaultMenuItems:(NSArray *)defaultMenuItems {
-  NSMutableArray *menuItems = [NSMutableArray array];
-  NSEnumerator *enumerator = [defaultMenuItems objectEnumerator];
-  NSMenuItem *aMenuItem;
-
-  while (aMenuItem = [enumerator nextObject]) {
-    NSInteger tag = [aMenuItem tag];
-    if (tag != WebMenuItemTagReload &&
-        tag != WebMenuItemTagOpenLinkInNewWindow &&
-        tag != WebMenuItemTagDownloadLinkToDisk &&
-        tag != WebMenuItemTagCopyLinkToClipboard &&
-        tag != WebMenuItemTagOpenFrameInNewWindow &&
-        tag != WebMenuItemTagGoBack && tag != WebMenuItemTagGoForward &&
-        tag != WebMenuItemTagStop) {
-      [menuItems addObject:aMenuItem];
+- (void)webView:(WKWebView *)webView
+    decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
+                    decisionHandler:
+                        (void (^)(WKNavigationActionPolicy))decisionHandler {
+  if ([navigationAction navigationType] == WKNavigationTypeLinkActivated) {
+    NSURL *url = [[navigationAction request] URL];
+    if (url) {
+      [[NSWorkspace sharedWorkspace] openURL:url];
     }
+    decisionHandler(WKNavigationActionPolicyCancel);
+    return;
   }
-  return menuItems;
+
+  decisionHandler(WKNavigationActionPolicyAllow);
 }
 
-- (unsigned)webView:(WebView *)sender
-    dragDestinationActionMaskForDraggingInfo:(id<NSDraggingInfo>)draggingInfo {
-  return WebDragDestinationActionNone;
-}
-- (int)webView:(WebView *)sender dragSourceActionMaskForPoint:(NSPoint)point {
-  return WebDragSourceActionNone;
-}
-- (void)webView:(WebView *)sender
-    decidePolicyForNavigationAction:(NSDictionary *)actionInformation
-                            request:(NSURLRequest *)request
-                              frame:(WebFrame *)frame
-                   decisionListener:(id<WebPolicyDecisionListener>)listener {
-  int type =
-      [[actionInformation valueForKey:WebActionNavigationTypeKey] intValue];
-  NSURL *url = [request URL];
-  if (type == WebNavigationTypeLinkClicked) {
-    // If users are clicking on a link in webview in the first login
-    // window, we open the link in the external web browser.
-    [[NSWorkspace sharedWorkspace] openURL:url];
-    [listener ignore];
-  } else {
-    [listener use];
+#pragma mark WKScriptMessageHandler
+
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+  if (![[message name] isEqualToString:@"DictionaryController"]) {
+    return;
   }
-}
 
-#pragma mark WebView scriprting object methods.
+  NSDictionary *body = [message body];
+  if (![body isKindOfClass:[NSDictionary class]]) {
+    return;
+  }
 
-+ (NSString *)webScriptNameForSelector:(SEL)selector {
-  if (selector == @selector(search:))
-    return @"search";
-  else if (selector == @selector(sendString:))
-    return @"sendString";
-  else if (selector == @selector(speak:))
-    return @"speak";
-  else if (selector == @selector(openURL:))
-    return @"openURL";
-  return nil;
-}
+  NSString *command = [body objectForKey:@"command"];
+  NSString *value = [body objectForKey:@"value"];
+  if (![value isKindOfClass:[NSString class]]) {
+    value = @"";
+  }
 
-+ (BOOL)isSelectorExcludedFromWebScript:(SEL)selector {
-  if (selector == @selector(search:)) return NO;
-  if (selector == @selector(sendString:)) return NO;
-  if (selector == @selector(speak:)) return NO;
-  if (selector == @selector(openURL:)) return NO;
-  return YES;
+  if ([command isEqualToString:@"search"]) {
+    [self search:value];
+  } else if ([command isEqualToString:@"sendString"]) {
+    [self sendString:value];
+  } else if ([command isEqualToString:@"speak"]) {
+    [self speak:value];
+  } else if ([command isEqualToString:@"openURL"]) {
+    [self openURL:value];
+  }
 }
 
 @end

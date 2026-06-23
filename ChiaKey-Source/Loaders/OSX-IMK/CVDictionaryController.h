@@ -47,11 +47,14 @@
       [NSString stringWithUTF8String:"<p class=\"credit\">2008-2010 Yahoo! " \
                                      "Taiwan All Rights Reserved.</p>"])
 
-@interface CVDictionaryController : NSWindowController {
-  IBOutlet id _webview;
+@interface CVDictionaryController
+    : NSWindowController <WKNavigationDelegate, WKScriptMessageHandler> {
+  IBOutlet NSView *_webViewContainer;
+  WKWebView *_webView;
   IBOutlet id _loadingProgressIndicator;
   IBOutlet id _changeSizeSegmentedControl;
   BOOL _isVisible;
+  CGFloat _textZoom;
 
   NSString *_beaconURL;
   NSString *_beaconHTML;

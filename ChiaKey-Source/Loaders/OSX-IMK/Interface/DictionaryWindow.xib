@@ -3,7 +3,6 @@
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14460.31"/>
-        <plugIn identifier="com.apple.WebKitIBPlugin" version="14460.31"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -11,7 +10,7 @@
             <connections>
                 <outlet property="_changeSizeSegmentedControl" destination="5" id="12"/>
                 <outlet property="_loadingProgressIndicator" destination="4" id="11"/>
-                <outlet property="_webview" destination="8" id="10"/>
+                <outlet property="_webViewContainer" destination="8" id="10"/>
                 <outlet property="window" destination="3" id="9"/>
             </connections>
         </customObject>
@@ -28,13 +27,10 @@
                 <rect key="frame" x="0.0" y="0.0" width="253" height="347"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <webView id="8">
+                    <customView id="8">
                         <rect key="frame" x="0.0" y="0.0" width="253" height="347"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <webPreferences key="preferences" defaultFontSize="12" defaultFixedFontSize="12">
-                            <nil key="identifier"/>
-                        </webPreferences>
-                    </webView>
+                    </customView>
                 </subviews>
             </view>
         </window>
