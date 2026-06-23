@@ -8,7 +8,6 @@
 #include <sstream>
 
 #import "BPMFUserPhraseHelper.h"
-#import "CVApplicationController.h"
 #import "LFCrossDevelopmentTools.h"
 #import "LFHTTPRequest.h"
 #import "LFUtilities.h"
@@ -19,8 +18,7 @@
 #import "OVOFFullWidthCharacterPackage.h"
 #import "OVOFHanConvertPackage.h"
 #import "OpenVanillaConfig.h"
-#import "TrackerMaker.h"
-#import "TrackerSender.h"
+#import "OpenVanillaService.h"
 #import "YKSignedModuleLoadingSystem.h"
 
 NSString *CVLoaderUpdateCannedMessagesNotification =
@@ -83,51 +81,6 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
 
   return service;
 }
-
-@interface NSData (LFHTTPFormExtensions)
-+ (id)dataAsWWWURLEncodedFormFromDictionary:(NSDictionary *)formDictionary;
-@end
-
-static NSString *LFPercentEscapedFormString(NSString *string) {
-  NSMutableCharacterSet *allowed =
-      [[[NSCharacterSet URLQueryAllowedCharacterSet] mutableCopy] autorelease];
-  [allowed removeCharactersInString:@"!*'();:@&=+$,/?%#[]"];
-  NSString *escaped =
-      [string stringByAddingPercentEncodingWithAllowedCharacters:allowed];
-  return escaped ? escaped : @"";
-}
-
-@implementation NSData (LFHTTPFormExtensions)
-+ (id)dataAsWWWURLEncodedFormFromDictionary:(NSDictionary *)formDictionary {
-  NSMutableString *combinedDataString = [NSMutableString string];
-  NSEnumerator *enumerator = [formDictionary keyEnumerator];
-  id key;
-  id value;
-
-  if (key = [enumerator nextObject]) {
-    value = [formDictionary objectForKey:key];
-    [combinedDataString
-        appendString:[NSString
-                         stringWithFormat:
-                             @"%@=%@",
-                             LFPercentEscapedFormString((NSString *)key),
-                             LFPercentEscapedFormString(value)]];
-
-    while ((key = [enumerator nextObject])) {
-      value = [formDictionary objectForKey:key];
-      [combinedDataString
-          appendString:[NSString
-                           stringWithFormat:
-                               @"&%@=%@",
-                               LFPercentEscapedFormString((NSString *)key),
-                               LFPercentEscapedFormString(value)]];
-    }
-  }
-
-  return [combinedDataString dataUsingEncoding:NSUTF8StringEncoding
-                          allowLossyConversion:NO];
-}
-@end
 
 #define OVLOADER_HTTP_FIRST_FETCH_DELAY (5.0)
 #define OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL (5.0 * 60.0)  /* 5 min */
@@ -202,16 +155,6 @@ using namespace OpenVanilla;
     _SQLiteDatabaseService = 0;
     _versionChecker = 0;
 
-    _autoUpdateHTTPRequest = [LFHTTPRequest new];
-    [_autoUpdateHTTPRequest setDelegate:(id)self];
-    [_autoUpdateHTTPRequest
-        setContentType:LFHTTPRequestWWWFormURLEncodedContentType];
-
-    _autoUpdateSignatureHTTPRequest = [LFHTTPRequest new];
-    [_autoUpdateSignatureHTTPRequest setDelegate:(id)self];
-    [_autoUpdateSignatureHTTPRequest
-        setContentType:LFHTTPRequestWWWFormURLEncodedContentType];
-
     _cannedMessagesDataHTTPRequest = [LFHTTPRequest new];
     [_cannedMessagesDataHTTPRequest setDelegate:(id)self];
 
@@ -226,16 +169,8 @@ using namespace OpenVanilla;
   return self;
 }
 - (void)dealloc {
-  if ([_downloadTask isRunning]) {
-    [_downloadTask terminate];
-  }
-
-  [_downloadTask release];
-
   [self shutDown];
 
-  [_autoUpdateHTTPRequest release];
-  [_autoUpdateSignatureHTTPRequest release];
   [_cannedMessagesDataHTTPRequest release];
 
   [_mergedCannedMessagesArray release];
@@ -1075,48 +1010,6 @@ using namespace OpenVanilla;
   return NO;
 }
 
-- (void)_handleAutoUpdateTimer:(NSTimer *)timer {
-  // NSLog(@"%s", __PRETTY_FUNCTION__);
-
-  if (![self _tellIfLastCheckTimeElapsedAndUpdateWithKeyName:
-                 @"AutoUpdateLastCheckedTime"]) {
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleAutoUpdateTimer:)
-                              userInfo:nil
-                               repeats:NO];
-    return;
-  }
-
-  NSURL *reqURL = [self serverEndpointWithDefaultURLString:VERSION_INFO_URL
-                                         overrideConfigKey:@"VersionInfoURL"];
-
-  stringstream sst;
-  sst << *(_loader->configRootDictionary()) << endl;
-
-  // this time we remember to POST the entire plist to the server...
-  NSDictionary *userInfo = [NSDictionary
-      dictionaryWithObjectsAndKeys:[NSString
-                                       stringWithUTF8String:sst.str().c_str()],
-                                   @"userinfo", nil];
-  NSData *postData = [NSData dataAsWWWURLEncodedFormFromDictionary:userInfo];
-
-  // NSLog(@"Posting POST on URL: %@", reqURL);
-  [_autoUpdateHTTPRequest performMethod:LFHTTPRequestPOSTMethod
-                                  onURL:reqURL
-                               withData:postData];
-
-  // we also send the tracker beacon; hateful, but that's life
-  Takao::TrackerMaker tm;
-  NSString *startURL =
-      [NSString stringWithUTF8String:tm.loaderStartURLString().c_str()];
-
-  // remember we must do this on the main thread because the HTTP request will
-  // be autoreleased later when it's done (or when it fails)
-  [[TrackerSender sharedTrackerSender] sendTrackerWithURLString:startURL];
-}
-
 - (void)_handleCannedMessagesTimer:(NSTimer *)timer {
   if (![self _tellIfLastCheckTimeElapsedAndUpdateWithKeyName:
                  @"CannedMessagesLastCheckedTime"]) {
@@ -1137,41 +1030,6 @@ using namespace OpenVanilla;
                                        withData:nil];
 }
 
-- (void)_launchDownload:(NSString *)actionURL
-           signatureURL:(NSString *)signatureURL
-           changeLogURL:(NSString *)changeLogURL {
-  // NSLog(@"launch download");
-
-  if (_downloadTask) {
-    if ([_downloadTask isRunning]) {
-      return;
-    }
-
-    [_downloadTask release];
-    _downloadTask = nil;
-  }
-
-  NSString *supportPath = [[[NSBundle mainBundle] bundlePath]
-      stringByAppendingString:@"/Contents/SharedSupport"];
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-  NSString *commandPath =
-      [supportPath stringByAppendingString:
-                       @"/DownloadUpdate.app/Contents/MacOS/DownloadUpdate"];
-#else
-  NSString *commandPath = [supportPath
-      stringByAppendingString:
-          @"/DownloadUpdateTiger.app/Contents/MacOS/DownloadUpdateTiger"];
-#endif
-
-  NSArray *arguments = [NSArray
-      arrayWithObjects:actionURL, signatureURL,
-                       ((changeLogURL && [changeLogURL length]) ? changeLogURL
-                                                                : @"(null)"),
-                       nil];
-  _downloadTask = [[NSTask launchedTaskWithLaunchPath:commandPath
-                                            arguments:arguments] retain];
-}
-
 - (BOOL)_validateServerData:(NSData *)data {
   id plist =
       [NSPropertyListSerialization propertyListWithData:data
@@ -1184,8 +1042,7 @@ using namespace OpenVanilla;
 - (void)httpRequestDidComplete:(LFHTTPRequest *)request {
   NSData *receivedData = [request receivedData];
 
-  if (request != _autoUpdateSignatureHTTPRequest &&
-      LFIsRunningUnderOSX10_4Only()) {
+  if (LFIsRunningUnderOSX10_4Only()) {
     // we need to see if it's gzipped data, especially if we run under OS X 10.4
     unsigned char *byteData = (unsigned char *)[receivedData bytes];
     if ([receivedData length] > 2) {
@@ -1233,39 +1090,7 @@ using namespace OpenVanilla;
 
   // NSLog(@"Received data, HTTP req obj %p", request);
 
-  if (request == _autoUpdateHTTPRequest) {
-    // got the auto update data, send the signature request
-    NSURL *reqURL =
-        [self serverEndpointWithDefaultURLString:VERSION_INFO_SIGNATURE_URL
-                               overrideConfigKey:@"VersionInfoSignatureURL"];
-
-    [_autoUpdateSignatureHTTPRequest setSessionInfo:receivedData];
-    [_autoUpdateSignatureHTTPRequest performMethod:LFHTTPRequestGETMethod
-                                             onURL:reqURL
-                                          withData:nil];
-  } else if (request == _autoUpdateSignatureHTTPRequest) {
-    // now we have complete signature data
-    NSDictionary *updateDictionary =
-        [(CVApplicationController *)[NSApp delegate]
-            shouldUpdateWithVersionInfoData:[request sessionInfo]
-                   versionInfoSignatureData:receivedData];
-    NSString *status = [updateDictionary valueForKey:@"Status"];
-    if ([status isEqualToString:@"Yes"]) {
-      NSString *actionURL = [updateDictionary objectForKey:@"ActionURL"];
-      NSString *signatureURL = [updateDictionary objectForKey:@"SignatureURL"];
-      NSString *changeLogURL = [updateDictionary objectForKey:@"ChangeLogURL"];
-      [self _launchDownload:actionURL
-               signatureURL:signatureURL
-               changeLogURL:changeLogURL];
-    }
-
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleAutoUpdateTimer:)
-                              userInfo:nil
-                               repeats:NO];
-  } else if (request == _cannedMessagesDataHTTPRequest) {
+  if (request == _cannedMessagesDataHTTPRequest) {
     char buf[1];
     memset(buf, 0, 1);
     NSMutableData *nullTerminatedData = [receivedData mutableCopy];
@@ -1291,15 +1116,7 @@ using namespace OpenVanilla;
   // NSLog(@"HTTP request failed, request object: %p, now rescheduling",
   // request);
 
-  if (request == _autoUpdateHTTPRequest ||
-      request == _autoUpdateSignatureHTTPRequest) {
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleAutoUpdateTimer:)
-                              userInfo:nil
-                               repeats:NO];
-  } else if (request == _cannedMessagesDataHTTPRequest) {
+  if (request == _cannedMessagesDataHTTPRequest) {
     [NSTimer
         scheduledTimerWithTimeInterval:OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL
                                 target:self

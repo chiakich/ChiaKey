@@ -1,5 +1,0 @@
-﻿/* Localized versions of Info.plist keys */
-
-CFBundleName = "DownloadUpdate";
-CFBundleDisplayName = "ChiaKey Download Update";
-NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";

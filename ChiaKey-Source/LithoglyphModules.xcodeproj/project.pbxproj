@@ -212,13 +212,6 @@
 			remoteGlobalIDString = 6A47702A0D5C521600C6C744;
 			remoteInfo = "OpenVanilla (Library)";
 		};
-		D4FF19510D9635A700C22A86 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6AE06AE80D8A1E9100941AF6 /* Takao.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = D4466C470D916B9200A530D4;
-			remoteInfo = DownloadUpdate;
-		};
 		D4FF19590D9635A700C22A86 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6AE06AE80D8A1E9100941AF6 /* Takao.xcodeproj */;
@@ -321,7 +314,6 @@
 				6AE06B170D8A1E9100941AF6 /* ManjusriBuilder */,
 				6A67C17A0DC47006007349E9 /* PhraseTool */,
 				6AE06B150D8A1E9100941AF6 /* Preferences.app */,
-				D4FF19520D9635A700C22A86 /* DownloadUpdate.app */,
 				D43E2C610EBEEF7200557B95 /* PhraseEditor.app */,
 				6AE06B1D0D8A1E9100941AF6 /* libKeyring.a */,
 				6ABC3E810DBF615C00146A8B /* Installer.app */,
@@ -588,13 +580,6 @@
 			fileType = archive.ar;
 			path = libLFWebAPIToolbox.a;
 			remoteRef = D495914C0E4603DC000FFED5 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D4FF19520D9635A700C22A86 /* DownloadUpdate.app */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = DownloadUpdate.app;
-			remoteRef = D4FF19510D9635A700C22A86 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		D4FF195A0D9635A700C22A86 /* libCareService.a */ = {

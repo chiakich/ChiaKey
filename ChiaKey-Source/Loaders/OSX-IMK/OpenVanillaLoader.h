@@ -31,8 +31,6 @@ using namespace CareService;
 
   OVSQLiteConnection *_userPhraseDB;
 
-  id _autoUpdateHTTPRequest;
-  id _autoUpdateSignatureHTTPRequest;
   id _cannedMessagesDataHTTPRequest;
 
   OVLoaderUserPersistence *_userPersistence;
@@ -42,7 +40,6 @@ using namespace CareService;
   PVPropertyList *_userCannedMessagePlist;
   OVFileTimestamp *_userFreeCannedMessageFileTimestamp;
 
-  NSTask *_downloadTask;
 }
 
 #pragma mark Class methods

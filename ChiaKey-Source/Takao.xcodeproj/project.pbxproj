@@ -400,7 +400,6 @@
 		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
 		D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
-		D42EEFA90D924F2200C6053C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D42EEFA80D924F2200C6053C /* Localizable.strings */; };
 		D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
 		D43E2DED0EBF312A00557B95 /* PhraseEditor.icns in Resources */ = {isa = PBXBuildFile; fileRef = D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */; };
@@ -408,11 +407,6 @@
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
 		D4447D630E346C5D00BE7D9E /* playSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D610E346C5D00BE7D9E /* playSound.tiff */; };
 		D4466AAE0D912A6800A530D4 /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
-		D4466C600D916C2400A530D4 /* DownloadUpdate.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D4466C470D916B9200A530D4 /* DownloadUpdate.app */; };
-		D4466C7B0D916D4500A530D4 /* DownloadController.m in Sources */ = {isa = PBXBuildFile; fileRef = D4466C780D916D4500A530D4 /* DownloadController.m */; };
-		D4466C7C0D916D4500A530D4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D4466C7A0D916D4500A530D4 /* main.m */; };
-		D4466C830D916D5800A530D4 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D4466C7F0D916D5800A530D4 /* InfoPlist.strings */; };
-		D4466C840D916D5900A530D4 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = D4466C810D916D5800A530D4 /* MainMenu.nib */; };
 		C1A1F0010F00000100000002 /* install-lexicon-release.sh in Resources */ = {isa = PBXBuildFile; fileRef = C1A1F0010F00000100000001 /* install-lexicon-release.sh */; };
 		D44DB8D5106F0A3C001308F8 /* reload.png in Resources */ = {isa = PBXBuildFile; fileRef = D44DB8D4106F0A3C001308F8 /* reload.png */; };
 		D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
@@ -602,13 +596,6 @@
 			remoteGlobalIDString = 6A4772920D5C5FCE00C6C744;
 			remoteInfo = "Takao (Loader OSX-IMK)";
 		};
-		6A8366130DA27DBB00848277 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D4466C460D916B9200A530D4;
-			remoteInfo = DownloadUpdate;
-		};
 		6A859F820E41AAB5002C3544 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
@@ -756,13 +743,6 @@
 			remoteGlobalIDString = D42B09D20EBDD31C00AB5B7A;
 			remoteInfo = PhraseEditor;
 		};
-		D4466C5E0D916C1200A530D4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D4466C460D916B9200A530D4;
-			remoteInfo = DownloadUpdate;
-		};
 		D46B36680DA94FC8007A738E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
@@ -851,7 +831,6 @@
 			files = (
 				D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */,
 				D4B3E8140DC7A917000980D8 /* InstallerHelp.app in Copy Files (support) */,
-				D4466C600D916C2400A530D4 /* DownloadUpdate.app in Copy Files (support) */,
 				D47D5EC20D5EE09C0093524C /* Preferences.app in Copy Files (support) */,
 			);
 			name = "Copy Files (support)";
@@ -872,8 +851,6 @@
 /* Begin PBXFileReference section */
 		5B3CE69229914F3900641F53 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		5B3CE69529914FB900641F53 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
-		5B3CE6D02991588100641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = PreferenceApplications/DownloadUpdateOSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		5B3CE6D12991588100641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = PreferenceApplications/DownloadUpdateOSX/en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5B3CE6D32991588100641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ModulePackages/OVAFPhraseConverter/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5B3CE6D42991588200641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ModulePackages/OVAFReverseLookup/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5B3CE6D52991588200641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ModulePackages/YKAFWordCount/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -893,7 +870,6 @@
 		5BE8931929915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoReverseLookup.xib; sourceTree = "<group>"; };
 		5BE8931A29915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoWordCount.xib; sourceTree = "<group>"; };
 		5BE8931B29915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoGenericSettings.xib; sourceTree = "<group>"; };
-		5BE8931C29915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Base; path = PreferenceApplications/DownloadUpdateOSX/Base.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		5BE8931D29915D2700A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = "Distributions/Takao/Installer-OSX-Help/Base.lproj/MainMenu.xib"; sourceTree = "<group>"; };
 		5BE8931E29915D2700A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Utilities/PhraseEditor/OSX/Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		6A0138EB0ED1D44200715577 /* YKAFWordCount.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YKAFWordCount.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1217,21 +1193,11 @@
 		D42B0A090EBDD3BE00AB5B7A /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D42C002D0E1912CD002CD18F /* NSStringExtension.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NSStringExtension.h; path = "Loaders/OSX-IMK/NSStringExtension.h"; sourceTree = "<group>"; };
 		D42C002E0E1912CD002CD18F /* NSStringExtension.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = NSStringExtension.mm; path = "Loaders/OSX-IMK/NSStringExtension.mm"; sourceTree = "<group>"; };
-		D42EEFB00D9251CD00C6053C /* zh_TW */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = zh_TW; path = PreferenceApplications/DownloadUpdateOSX/zh_TW.lproj/Localizable.strings; sourceTree = "<group>"; };
-		D42EEFB20D92522F00C6053C /* zh_CN */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = zh_CN; path = PreferenceApplications/DownloadUpdateOSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
-		D42EEFB80D92528E00C6053C /* zh_TW */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = zh_TW; path = PreferenceApplications/DownloadUpdateOSX/zh_TW.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		D42EEFBA0D9252B300C6053C /* zh_CN */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = zh_CN; path = PreferenceApplications/DownloadUpdateOSX/zh_CN.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		D42EEFBF0D9252E800C6053C /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = zh_TW; path = PreferenceApplications/DownloadUpdateOSX/zh_TW.lproj/MainMenu.nib; sourceTree = "<group>"; };
-		D42EEFC20D9253A400C6053C /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = zh_CN; path = PreferenceApplications/DownloadUpdateOSX/zh_CN.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBook.framework; path = /System/Library/Frameworks/AddressBook.framework; sourceTree = "<absolute>"; };
 		D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = PhraseEditor.icns; path = Utilities/PhraseEditor/OSX/Images/PhraseEditor.icns; sourceTree = "<group>"; };
 		D440D5A10D630FA7000A483C /* CVDictionaryController+Toolbar.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "CVDictionaryController+Toolbar.m"; path = "Loaders/OSX-IMK/CVDictionaryController+Toolbar.m"; sourceTree = "<group>"; };
 		D4447D600E346C5D00BE7D9E /* stopSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = stopSound.tiff; path = PreferenceApplications/OSX/Images/stopSound.tiff; sourceTree = "<group>"; };
 		D4447D610E346C5D00BE7D9E /* playSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = playSound.tiff; path = PreferenceApplications/OSX/Images/playSound.tiff; sourceTree = "<group>"; };
-		D4466C470D916B9200A530D4 /* DownloadUpdate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DownloadUpdate.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D4466C770D916D4500A530D4 /* DownloadController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DownloadController.h; path = PreferenceApplications/DownloadUpdateOSX/DownloadController.h; sourceTree = "<group>"; wrapsLines = 1; };
-		D4466C780D916D4500A530D4 /* DownloadController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = DownloadController.m; path = PreferenceApplications/DownloadUpdateOSX/DownloadController.m; sourceTree = "<group>"; wrapsLines = 1; };
-		D4466C7A0D916D4500A530D4 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = PreferenceApplications/DownloadUpdateOSX/main.m; sourceTree = "<group>"; };
 		C1A1F0010F00000100000001 /* install-lexicon-release.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = "install-lexicon-release.sh"; path = "../Scripts/install-lexicon-release.sh"; sourceTree = SOURCE_ROOT; };
 		D44DB8D4106F0A3C001308F8 /* reload.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = reload.png; path = Utilities/PhraseEditor/OSX/Images/reload.png; sourceTree = "<group>"; };
 		D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey.icns; path = "Loaders/OSX-IMK/Images/ChiaKey.icns"; sourceTree = "<group>"; };
@@ -1577,14 +1543,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D4466C450D916B9200A530D4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D48695E70DE44CFC0078C221 /* WebKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D46B36440DA94EBC007A738E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1722,7 +1680,6 @@
 				6A476F790D5C4D0300C6C744 /* Frameworks */,
 				6ACA0C430D5C87AB00514BC7 /* Statically Linked Module Packages */,
 				D47D5E3C0D5EDD7F0093524C /* Preferences */,
-				D4466C740D916D1F00A530D4 /* DownloadUpdate */,
 				C1A1F0010F00000100000001 /* install-lexicon-release.sh */,
 				D4B3E7120DC7A616000980D8 /* Installer Help */,
 				D46B363D0DA94EA1007A738E /* Installer UI */,
@@ -1756,7 +1713,6 @@
 				6AE3FA950D76776200C7D18D /* libPlainVanilla.a */,
 				6AD322590D76DA3E005083D4 /* libKeyring.a */,
 				6AED2FA10D8BCEF600E6D3F8 /* libCareService.a */,
-				D4466C470D916B9200A530D4 /* DownloadUpdate.app */,
 				D46B36460DA94EBC007A738E /* Installer.app */,
 				6ABC3E8D0DBF625C00146A8B /* PhraseTool */,
 				D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */,
@@ -2460,27 +2416,6 @@
 				D42B09F70EBDD37B00AB5B7A /* InfoPlist.strings */,
 				D42B09F90EBDD37B00AB5B7A /* MainMenu.xib */,
 				D42064250ECC51C600538EFC /* Localizable.strings */,
-			);
-			name = Resource;
-			sourceTree = "<group>";
-		};
-		D4466C740D916D1F00A530D4 /* DownloadUpdate */ = {
-			isa = PBXGroup;
-			children = (
-				D4466C850D916D5D00A530D4 /* Resource */,
-				D4466C770D916D4500A530D4 /* DownloadController.h */,
-				D4466C780D916D4500A530D4 /* DownloadController.m */,
-				D4466C7A0D916D4500A530D4 /* main.m */,
-			);
-			name = DownloadUpdate;
-			sourceTree = "<group>";
-		};
-		D4466C850D916D5D00A530D4 /* Resource */ = {
-			isa = PBXGroup;
-			children = (
-				D42EEFA80D924F2200C6053C /* Localizable.strings */,
-				D4466C7F0D916D5800A530D4 /* InfoPlist.strings */,
-				D4466C810D916D5800A530D4 /* MainMenu.nib */,
 			);
 			name = Resource;
 			sourceTree = "<group>";
@@ -3370,7 +3305,6 @@
 			dependencies = (
 				6AFC7FF10D98F198007588D8 /* PBXTargetDependency */,
 				D47D5EB40D5EE01F0093524C /* PBXTargetDependency */,
-				D4466C5F0D916C1200A530D4 /* PBXTargetDependency */,
 				6A4772A90D5C603E00C6C744 /* PBXTargetDependency */,
 				6A4772A70D5C603E00C6C744 /* PBXTargetDependency */,
 				6A4772A50D5C603E00C6C744 /* PBXTargetDependency */,
@@ -3605,23 +3539,6 @@
 			productReference = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */;
 			productType = "com.apple.product-type.application";
 		};
-		D4466C460D916B9200A530D4 /* DownloadUpdate */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D4466C4C0D916B9300A530D4 /* Build configuration list for PBXNativeTarget "DownloadUpdate" */;
-			buildPhases = (
-				D4466C430D916B9200A530D4 /* Resources */,
-				D4466C440D916B9200A530D4 /* Sources */,
-				D4466C450D916B9200A530D4 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = DownloadUpdate;
-			productName = DownloadUpdate;
-			productReference = D4466C470D916B9200A530D4 /* DownloadUpdate.app */;
-			productType = "com.apple.product-type.application";
-		};
 		D46B36450DA94EBC007A738E /* InstallerUI */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D46B364B0DA94EBD007A738E /* Build configuration list for PBXNativeTarget "InstallerUI" */;
@@ -3651,7 +3568,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				6A8366140DA27DBB00848277 /* PBXTargetDependency */,
 			);
 			name = Preferences;
 			productName = Preferences;
@@ -3715,7 +3631,6 @@
 				6A428A2C0D74066D00ABCDA1 /* ManjusriBuilder */,
 				6ABC3E8C0DBF625C00146A8B /* PhraseTool */,
 				D47D5E2F0D5EDD640093524C /* Preferences */,
-				D4466C460D916B9200A530D4 /* DownloadUpdate */,
 				D42B09D20EBDD31C00AB5B7A /* PhraseEditor */,
 				6AD322580D76DA3E005083D4 /* Keyring */,
 				D46B36450DA94EBC007A738E /* InstallerUI */,
@@ -3827,17 +3742,6 @@
 				D407A1B70EC4B9D4004F434D /* addressBook.png in Resources */,
 				D42064270ECC51C600538EFC /* Localizable.strings in Resources */,
 				D44DB8D5106F0A3C001308F8 /* reload.png in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D4466C430D916B9200A530D4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */,
-				D4466C830D916D5800A530D4 /* InfoPlist.strings in Resources */,
-				D4466C840D916D5900A530D4 /* MainMenu.nib in Resources */,
-				D42EEFA90D924F2200C6053C /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4188,15 +4092,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D4466C440D916B9200A530D4 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D4466C7B0D916D4500A530D4 /* DownloadController.m in Sources */,
-				D4466C7C0D916D4500A530D4 /* main.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D46B36430DA94EBC007A738E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4308,11 +4203,6 @@
 			target = 6A4772920D5C5FCE00C6C744 /* Takao (Loader OSX-IMK) */;
 			targetProxy = 6A514CE40DA268E000464D51 /* PBXContainerItemProxy */;
 		};
-		6A8366140DA27DBB00848277 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D4466C460D916B9200A530D4 /* DownloadUpdate */;
-			targetProxy = 6A8366130DA27DBB00848277 /* PBXContainerItemProxy */;
-		};
 		6A859F830E41AAB5002C3544 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 6A859F350E41A495002C3544 /* LFWebAPIToolbox */;
@@ -4418,11 +4308,6 @@
 			target = D42B09D20EBDD31C00AB5B7A /* PhraseEditor */;
 			targetProxy = D43CC14B0EE413750032096E /* PBXContainerItemProxy */;
 		};
-		D4466C5F0D916C1200A530D4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D4466C460D916B9200A530D4 /* DownloadUpdate */;
-			targetProxy = D4466C5E0D916C1200A530D4 /* PBXContainerItemProxy */;
-		};
 		D46B36690DA94FC8007A738E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D46B36450DA94EBC007A738E /* InstallerUI */;
@@ -4519,36 +4404,6 @@
 				5BE8931E29915D2700A3F6CC /* Base */,
 			);
 			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-		D42EEFA80D924F2200C6053C /* Localizable.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D42EEFB00D9251CD00C6053C /* zh_TW */,
-				D42EEFB20D92522F00C6053C /* zh_CN */,
-				5B3CE6D12991588100641F53 /* en */,
-			);
-			name = Localizable.strings;
-			sourceTree = "<group>";
-		};
-		D4466C7F0D916D5800A530D4 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D42EEFB80D92528E00C6053C /* zh_TW */,
-				D42EEFBA0D9252B300C6053C /* zh_CN */,
-				5B3CE6D02991588100641F53 /* en */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		D4466C810D916D5800A530D4 /* MainMenu.nib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D42EEFBF0D9252E800C6053C /* zh_TW */,
-				D42EEFC20D9253A400C6053C /* zh_CN */,
-				5BE8931C29915D2600A3F6CC /* Base */,
-			);
-			name = MainMenu.nib;
 			sourceTree = "<group>";
 		};
 		D46B36570DA94EFD007A738E /* InfoPlist.strings */ = {
@@ -5925,68 +5780,6 @@
 			};
 			name = Release;
 		};
-		D4466C4A0D916B9300A530D4 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = PreferenceApplications/DownloadUpdateOSX/Info.plist;
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.DownloadUpdate;
-				PRODUCT_NAME = DownloadUpdate;
-				SDKROOT = macosx;
-			};
-			name = Debug;
-		};
-		D4466C4B0D916B9300A530D4 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = PreferenceApplications/DownloadUpdateOSX/Info.plist;
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.DownloadUpdate;
-				PRODUCT_NAME = DownloadUpdate;
-				SDKROOT = macosx;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		D46B36490DA94EBD007A738E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -6401,15 +6194,6 @@
 			buildConfigurations = (
 				D42B09D60EBDD31D00AB5B7A /* Debug */,
 				D42B09D70EBDD31D00AB5B7A /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		D4466C4C0D916B9300A530D4 /* Build configuration list for PBXNativeTarget "DownloadUpdate" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D4466C4A0D916B9300A530D4 /* Debug */,
-				D4466C4B0D916B9300A530D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,5 +1,0 @@
-/* Localized versions of Info.plist keys */
-
-CFBundleName = "下載更新";
-CFBundleDisplayName = "千秋輸入法下載更新程式";
-NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";
