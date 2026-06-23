@@ -28,7 +28,7 @@
 目前已有可用的現代化基線：
 
 1. `Takao-All` scheme 的 Debug / Release build 可在現代 Xcode 編譯。
-2. Local install helper 會將 `千秋輸入法.app` 安裝到 `~/Library/Input Methods`。
+2. Local install helper 會將 `ChiaKey.app` 安裝到 `~/Library/Input Methods`。
 3. Bundle id 與 input source identity 已獨立於歷史 Yahoo KeyKey。
 4. App 與 input-source icons 由 scripted vector assets 產生。
 5. External lexicon release 可安裝到 Application Support。

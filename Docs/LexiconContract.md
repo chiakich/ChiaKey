@@ -111,7 +111,7 @@ Legacy 路徑只為遷移期保留：
 
 ```text
 ~/Library/Application Support/ChiaKey/Lexicons/active/KeyKeySource.db
-千秋輸入法.app/Contents/Resources/Databases/KeyKeySource.db
+ChiaKey.app/Contents/Resources/Databases/KeyKeySource.db
 ```
 
 ## 必要 SQLite tables

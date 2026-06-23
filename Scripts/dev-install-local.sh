@@ -9,8 +9,10 @@ SMART_MANDARIN_DB="${DATABASES_DIR}/ChiaKeySource.db"
 SMART_MANDARIN_DB_SCRIPT="${ROOT_DIR}/Scripts/build-dev-smart-mandarin-db.rb"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 SCHEME="Takao-All"
-APP_NAME="千秋輸入法.app"
-PROCESS_NAME="千秋輸入法"
+APP_NAME="ChiaKey.app"
+PROCESS_NAME="ChiaKey"
+LEGACY_APP_NAME="千秋輸入法.app"
+LEGACY_PROCESS_NAME="千秋輸入法"
 
 CONFIGURATION="${CONFIGURATION:-Debug}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${TMPDIR:-/tmp}/ChiaKeyDevInstall}"
@@ -103,6 +105,7 @@ esac
 BUILT_APP="${DERIVED_DATA_PATH}/Build/Products/${CONFIGURATION}/${APP_NAME}"
 BUILT_RESOURCES="${BUILT_APP}/Contents/Resources"
 INSTALL_APP="${INSTALL_DIR}/${APP_NAME}"
+LEGACY_INSTALL_APP="${INSTALL_DIR}/${LEGACY_APP_NAME}"
 
 case "${INSTALL_APP}" in
   "${HOME}"/Library/Input\ Methods/*.app) ;;
@@ -152,11 +155,17 @@ if [[ "${DRY_RUN}" == "1" || -d "${INSTALL_APP}" ]]; then
   run /bin/rm -rf "${INSTALL_APP}"
 fi
 
+if [[ "${DRY_RUN}" == "1" || -d "${LEGACY_INSTALL_APP}" ]]; then
+  run /bin/rm -rf "${LEGACY_INSTALL_APP}"
+fi
+
 run /usr/bin/ditto "${BUILT_APP}" "${INSTALL_APP}"
 run /usr/bin/codesign --force --deep --sign - "${INSTALL_APP}"
 
 run_allow_fail /usr/bin/pkill -x "${PROCESS_NAME}"
 run_allow_fail /usr/bin/pkill -f "${APP_NAME}/Contents/MacOS/${PROCESS_NAME}"
+run_allow_fail /usr/bin/pkill -x "${LEGACY_PROCESS_NAME}"
+run_allow_fail /usr/bin/pkill -f "${LEGACY_APP_NAME}/Contents/MacOS/${LEGACY_PROCESS_NAME}"
 
 if [[ "${OPEN_SETTINGS}" == "1" ]]; then
   run /usr/bin/open "x-apple.systempreferences:com.apple.Keyboard-Settings.extension"

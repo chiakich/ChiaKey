@@ -76,7 +76,7 @@ Scripts/dev-install-local.sh --dry-run
 Scripts/dev-install-local.sh --open-settings
 ```
 
-這個 script 會 build `Takao-All`，把 `千秋輸入法.app` 複製到 `~/Library/Input Methods/`，進行 ad-hoc signing，並結束目前執行中的千秋輸入法 process，讓 macOS 下次切回輸入法時載入新版。
+這個 script 會 build `Takao-All`，把 `ChiaKey.app` 複製到 `~/Library/Input Methods/`，進行 ad-hoc signing，並結束目前執行中的 `ChiaKey` process，讓 macOS 下次切回輸入法時載入新版。
 
 第一次安裝後，請到「系統設定 > 鍵盤 > 文字輸入」新增千秋輸入法。之後多數開發循環只需要跑 helper script，再切離與切回輸入法。
 

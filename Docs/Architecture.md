@@ -13,7 +13,7 @@
 支援的產品路徑是：
 
 ```text
-千秋輸入法.app
+ChiaKey.app
   -> macOS InputMethodKit host
   -> OpenVanilla loader bridge
   -> OpenVanilla / PlainVanilla modules
@@ -129,7 +129,7 @@ Generated `ChiaKeySource.db` 應放在 GitHub Release assets，不應進入一�
 Fallback DB 路徑：
 
 ```text
-千秋輸入法.app/Contents/Resources/Databases/ChiaKeySource.db
+ChiaKey.app/Contents/Resources/Databases/ChiaKeySource.db
 ```
 
 如果外部 DB 缺失、損壞或不相容，runtime 必須 fallback 到 app 內建 DB。

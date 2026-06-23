@@ -1033,7 +1033,7 @@
 		6A4771640D5C5E3900C6C744 /* LFExtensions-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "LFExtensions-Info.plist"; path = "Frameworks/LFExtensions/LFExtensions-Info.plist"; sourceTree = "<group>"; };
 		6A47716F0D5C5E5500C6C744 /* PlainVanilla.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PlainVanilla.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4771700D5C5E5500C6C744 /* PlainVanilla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PlainVanilla-Info.plist"; path = "Frameworks/PlainVanilla/PlainVanilla-Info.plist"; sourceTree = "<group>"; };
-		6A4772930D5C5FCE00C6C744 /* 千秋輸入法.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "千秋輸入法.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A4772930D5C5FCE00C6C744 /* ChiaKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChiaKey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4772970D5C5FCE00C6C744 /* Takao-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Takao-Info.plist"; path = "Loaders/OSX-IMK/Takao-Info.plist"; sourceTree = "<group>"; };
 		6A4772DC0D5C607200C6C744 /* CVApplicationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVApplicationController.h; path = "Loaders/OSX-IMK/CVApplicationController.h"; sourceTree = "<group>"; };
 		6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVApplicationController.mm; path = "Loaders/OSX-IMK/CVApplicationController.mm"; sourceTree = "<group>"; wrapsLines = 1; };
@@ -1746,7 +1746,7 @@
 				6A4770540D5C529400C6C744 /* TestOpenVanilla */,
 				6A4771630D5C5E3900C6C744 /* LFExtensions.framework */,
 				6A47716F0D5C5E5500C6C744 /* PlainVanilla.framework */,
-				6A4772930D5C5FCE00C6C744 /* 千秋輸入法.app */,
+				6A4772930D5C5FCE00C6C744 /* ChiaKey.app */,
 				6ACA0C4F0D5C87FB00514BC7 /* libTakaoModulePackages.a */,
 				6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */,
 				6A2D56120D5D889400E710D6 /* libManjusri.a */,
@@ -3388,7 +3388,7 @@
 			);
 			name = "Takao (Loader OSX-IMK)";
 			productName = Takao;
-			productReference = 6A4772930D5C5FCE00C6C744 /* 千秋輸入法.app */;
+			productReference = 6A4772930D5C5FCE00C6C744 /* ChiaKey.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6A859F350E41A495002C3544 /* LFWebAPIToolbox */ = {
@@ -5244,7 +5244,7 @@
 					AppKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey;
-				PRODUCT_NAME = "千秋輸入法";
+				PRODUCT_NAME = ChiaKey;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
@@ -5292,7 +5292,7 @@
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey;
-				PRODUCT_NAME = "千秋輸入法";
+				PRODUCT_NAME = ChiaKey;
 				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
