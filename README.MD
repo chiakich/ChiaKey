@@ -154,7 +154,7 @@ Scripts/test-lexicon-smoke.sh path/to/ChiaKeySource.db
 
 ## 詞庫來源方向
 
-原始 Yahoo KeyKey 詞庫建置依賴已不適合現代 redistributable fork 的資料：
+原始 Yahoo KeyKey 詞庫建置依賴已不適合現代 redistributable fork 的資料。舊開源包曾附 `DataSource-1.1.2528` 作為外部來源說明，但該資料夾只有 README，沒有真正語料；千秋輸入法保留這段歷史脈絡於文件，不再於 app repo 保存該占位資料夾。
 
 1. Sinica Corpus 需要另外取得授權。
 2. Yahoo search terms 不是穩定或可重散佈的開放資料來源。
