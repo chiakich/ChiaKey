@@ -106,7 +106,7 @@ Scripts/install-lexicon-release.sh
 Useful variants:
 
 ```sh
-Scripts/install-lexicon-release.sh --tag 2026.06.5
+Scripts/install-lexicon-release.sh --tag 2026.06.7
 Scripts/install-lexicon-release.sh --dry-run
 Scripts/install-lexicon-release.sh --keep-downloads
 ```

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="akira02/Chiaki-KeyKey-Lexicon"
-TAG="2026.06.5"
+TAG="2026.06.7"
 MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/Chiaki KeyKey/Lexicons"
 DRY_RUN=0
@@ -210,6 +210,45 @@ validate_db_minimum_count() {
   fi
 }
 
+validate_canned_messages_plist() {
+  local plist_path="${TMP_DIR}/canned_messages.plist"
+  /usr/bin/sqlite3 "${DB_DOWNLOAD}" \
+    "SELECT value FROM prepopulated_service_data WHERE key = 'canned_messages' LIMIT 1;" \
+    > "${plist_path}"
+
+  if ! /usr/bin/plutil -lint "${plist_path}" >/dev/null; then
+    echo "Validation failed: canned_messages is not a valid plist" >&2
+    exit 1
+  fi
+
+  local category_count
+  category_count="$(/usr/bin/ruby - "${plist_path}" <<'RUBY'
+require "rexml/document"
+
+document = REXML::Document.new(File.read(ARGV.fetch(0)))
+root_dictionary = document.root&.elements&.[]("dict")
+abort "missing plist root dictionary" unless root_dictionary
+
+children = root_dictionary.elements.to_a
+canned_messages = nil
+children.each_with_index do |element, index|
+  next unless element.name == "key" && element.text == "CannedMessages"
+  canned_messages = children[(index + 1)..]&.find { |candidate| candidate.name == "array" }
+  break
+end
+
+abort "missing CannedMessages array" unless canned_messages
+puts canned_messages.elements.to_a.count { |element| element.name == "dict" }
+RUBY
+)"
+
+  echo "  - canned messages categories: ${category_count}"
+  if (( category_count < 1 )); then
+    echo "Validation failed: canned_messages has no categories" >&2
+    exit 1
+  fi
+}
+
 echo "Validating database health:"
 validate_db_scalar "SQLite integrity check" "PRAGMA integrity_check;" "ok"
 
@@ -227,6 +266,7 @@ validate_db_minimum_count "punctuation list unigrams are present" "SELECT COUNT(
 validate_db_minimum_count "punctuation list candidates are present" "SELECT COUNT(*) FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_list';" 50
 validate_db_minimum_count "prepopulated canned messages are present" "SELECT COUNT(*) FROM prepopulated_service_data WHERE key = 'canned_messages' AND LENGTH(value) > 1000;" 1
 validate_db_minimum_count "prepopulated canned messages timestamp is present" "SELECT COUNT(*) FROM prepopulated_service_data WHERE key = 'canned_messages_timestamp' AND CAST(value AS INTEGER) > 0;" 1
+validate_canned_messages_plist
 validate_db_scalar "metadata schema_version" "SELECT value FROM chiaki_db_metadata WHERE key = 'schema_version';" "1"
 validate_db_scalar "cooked_information version" "SELECT COUNT(*) FROM cooked_information WHERE key = 'version' AND value != '';" "1"
 validate_db_scalar "Shift+, punctuation unigram" "SELECT current FROM unigrams WHERE qstring = '_punctuation_<' ORDER BY probability DESC, current LIMIT 1;" "，"

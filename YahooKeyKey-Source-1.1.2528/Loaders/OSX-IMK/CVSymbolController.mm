@@ -102,6 +102,8 @@
     NSView *lastView = [[_symbolContentView subviews] objectAtIndex:0];
     [lastView removeFromSuperview];
   }
+  if (!view) return;
+
   NSRect viewRect = [view bounds];
   NSRect symbolFrame = [_symbolContentView frame];
   symbolFrame.size = viewRect.size;
@@ -158,6 +160,7 @@
   _isVisible = NO;
 }
 - (IBAction)show:(id)sender {
+  [[OpenVanillaLoader sharedInstance] mergeCannedMessagesData];
   [self showWindow:sender];
   _isVisible = YES;
 }

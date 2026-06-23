@@ -43,6 +43,7 @@
 "Lexicon updated" = "词库已更新";
 "Lexicon update failed" = "词库更新失败";
 "Lexicon installer was not found." = "找不到词库安装工具。";
+"Installed lexicon %@. Chiaki KeyKey has reloaded it." = "已安装词库 %@。Chiaki KeyKey 已重新载入词库。";
 "Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it." = "已安装词库 %@。请切换离开再切回 Chiaki KeyKey，让输入法重新载入词库。";
 "A newer version is available." = "已经有新版软件可供下载";
 "Do you want to download it right now?" = "请问您现在就要下载么？";

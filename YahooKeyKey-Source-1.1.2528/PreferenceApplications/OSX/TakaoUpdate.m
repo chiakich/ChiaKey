@@ -216,6 +216,23 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
   return [_task terminationStatus] == 0;
 }
 
+- (BOOL)_reloadOpenVanillaServer {
+  id ovService = nil;
+  @try {
+    ovService = [NSConnection
+        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
+                                            host:nil];
+    if (ovService) {
+      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+      [ovService reloadOpenVanilla];
+      return YES;
+    }
+  } @catch (NSException *e) {
+    return NO;
+  }
+  return NO;
+}
+
 - (void)_showAlertWithTitle:(NSString *)title message:(NSString *)message {
   NSAlert *alert = [[[NSAlert alloc] init] autorelease];
   [alert setMessageText:title ? title : @""];
@@ -267,11 +284,21 @@ static NSString *const ChiakiLatestLexiconCheckDefaultsKey =
       [self _stopChecking];
 
       if (installed) {
+        BOOL reloaded = [self _reloadOpenVanillaServer];
+        NSString *message = nil;
+        if (reloaded) {
+          message = [NSString
+              stringWithFormat:
+                  LFLSTR(@"Installed lexicon %@. Chiaki KeyKey has reloaded it."),
+                  latestTag];
+        } else {
+          message = [NSString
+              stringWithFormat:
+                  LFLSTR(@"Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it."),
+                  latestTag];
+        }
         [self _showAlertWithTitle:LFLSTR(@"Lexicon updated")
-                          message:[NSString
-                                      stringWithFormat:
-                                          LFLSTR(@"Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it."),
-                                          latestTag]];
+                          message:message];
       } else {
         [self _showAlertWithTitle:LFLSTR(@"Lexicon update failed")
                           message:[self _displayString:installOutput

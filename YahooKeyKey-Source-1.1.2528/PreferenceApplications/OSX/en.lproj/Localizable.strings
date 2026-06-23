@@ -43,6 +43,7 @@
 "Lexicon updated" = "Lexicon updated";
 "Lexicon update failed" = "Lexicon update failed";
 "Lexicon installer was not found." = "The lexicon installer was not found.";
+"Installed lexicon %@. Chiaki KeyKey has reloaded it." = "Installed lexicon %@. Chiaki KeyKey has reloaded it.";
 "Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it." = "Installed lexicon %@. Switch away from and back to Chiaki KeyKey to reload it.";
 "A newer version is available." = "A new version is available.";
 "Do you want to download it right now?" = "Do you want to download it now?";
