@@ -1,9 +1,0 @@
-[
-uuid(6876e464-0a80-4684-9fa6-bd8386c15060),
-version(1.0),
-implicit_handle (handle_t BIClientRPCInterfaceHandle)
-]
-interface BIClientRPCInterface
-{
-    void BICRequestSendFakeKey();
-}

@@ -1,5 +1,0 @@
-#include "resource.h"
-
-IDB_BITMAP_HEAD           BITMAP                  "..\\BaseIMEUI\\Resources\\barhead.bmp"
-IDB_BITMAP_BG             BITMAP                  "..\\BaseIMEUI\\Resources\\barbg.bmp"
-IDB_BITMAP_TAIL           BITMAP                  "..\\BaseIMEUI\\Resources\\bartail.bmp"

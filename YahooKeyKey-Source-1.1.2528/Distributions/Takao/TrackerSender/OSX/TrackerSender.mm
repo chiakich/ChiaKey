@@ -21,10 +21,7 @@ TrackerSender *SharedTrackerSender = nil;
   LFHTTPRequest *request = [[LFHTTPRequest alloc] init];
   [request setDelegate:(id)self];
 
-  // Must use IE6
-  [request setUserAgent:
-               @"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; SV1; .NET "
-               @"CLR 1.1.4322; .NET CLR 2.0.50727)"];
+  [request setUserAgent:@"ChiakiKeyKey/2026.06 (macOS)"];
   BOOL result = [request performMethod:@"GET"
                                  onURL:[NSURL URLWithString:urlString]
                               withData:nil];

@@ -62,26 +62,5 @@
 			<string>http://dev.lithoglyph.com/TakaoDev/releases/YahooKeyKey-OSX-Tiger-1.0.1161.sig</string>
 		</dict>
 	</dict>
-	<key>Takao-Windows</key>
-	<dict>
-		<key>1.0.1278</key>
-		<dict>
-			<key>URL</key>
-			<string>http://dev.lithoglyph.com/TakaoDev/releases/YahooKeyKey-Windows-1.0.1278-zh-TW.exe</string>
-			<key>action</key>
-			<string>upgrade</string>
-			<key>signature</key>
-			<string>http://dev.lithoglyph.com/TakaoDev/releases/YahooKeyKey-Windows-1.0.1278-zh-TW.sig</string>
-		</dict>	
-		<key>1.0.1137</key>
-		<dict>
-			<key>URL</key>
-			<string>http://dev.lithoglyph.com/TakaoDev/releases/YahooKeyKey-Windows-1.0.1137-zh-TW.exe</string>
-			<key>action</key>
-			<string>upgrade</string>
-			<key>signature</key>
-			<string>http://dev.lithoglyph.com/TakaoDev/releases/YahooKeyKey-Windows-1.0.1137-zh-TW.sig</string>
-		</dict>
-	</dict>
 </dict>
 </plist>

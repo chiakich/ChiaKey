@@ -23,11 +23,11 @@ Chiaki KeyKey 的短中期目標是：
 
 ## 目前專案定位
 
-原始 Yahoo KeyKey 不是純 mac 專案，repo 內仍保留：
+原始 Yahoo KeyKey 不是純 mac 專案；Chiaki KeyKey fork 已開始把 active path 收斂到 macOS：
 
 - `Loaders/OSX-IMK`：目前 Chiaki KeyKey 的主要 macOS runtime。
 - `Loaders/OSX-TSM`：舊式 Carbon/TSM 路線，現代 macOS 不應再投入。
-- `Loaders/Windows-IMM`：舊 Windows IMM loader，與 Chiaki KeyKey 目前目標無關。
+- 舊 Windows IMM loader、Windows installer、Windows preference app 與 Visual Studio 專案已移除。
 - `Frameworks/*`、`ModulePackages/*`：跨平台 C++ core 與輸入法模組。
 - `Distributions/Takao/DataSource`：目前 mac 版本實際使用的資料。
 
@@ -41,7 +41,7 @@ macOS IMK host
   -> versioned lexicon databases
 ```
 
-Windows、OSX-TSM、舊 installer 與研究性資料可以先視為歷史資料，不納入現代化主線。
+OSX-TSM、舊 installer 與研究性資料可以先視為歷史資料，不納入現代化主線；Windows 相關實作不再放在主 repo。
 
 ## Repo 邊界
 

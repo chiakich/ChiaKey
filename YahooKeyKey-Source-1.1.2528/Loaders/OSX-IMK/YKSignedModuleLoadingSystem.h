@@ -6,16 +6,11 @@
 #ifndef YKSignedModuleLoadingSystem_h
 #define YKSignedModuleLoadingSystem_h
 
+#import <Foundation/Foundation.h>
+
 #include "Minotaur.h"
 #include "ModuleDigestSharedSecret.h"
 #include "PlainVanilla.h"
-
-#if !defined(__APPLE__)
-#include "LFPlatform.h"
-#include "PVDLLLoadingSystem.h"
-#else
-#include <CoreFoundation/CoreFoundation.h>
-#endif
 
 extern "C" {
 extern char ModulePublicKey[];
@@ -24,11 +19,6 @@ extern size_t ModulePublicKeySize;
 
 namespace OpenVanilla {
 using namespace std;
-
-#if !defined(__APPLE__)
-using namespace LFPlatform;
-#endif
-
 using namespace Minotaur;
 
 class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
@@ -36,11 +26,7 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
   YKSignedModuleLoadingSystem(PVLoaderPolicy* policy)
       : PVCommonPackageLoadingSystem(policy) {}
 
-  virtual ~YKSignedModuleLoadingSystem() {
-#if defined(__APPLE__)
-    unloadAllUnloadables();
-#endif
-  }
+  virtual ~YKSignedModuleLoadingSystem() { unloadAllUnloadables(); }
 
   virtual void reset() {
     m_localizedNameMap.clear();
@@ -54,69 +40,21 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
     if (iter == m_modulePackages.end()) return name;
 
     map<string, string>::iterator mi = m_localizedNameMap.find(name);
-    if (mi != m_localizedNameMap.end()) {
-      return (*mi).second;
-    }
+    if (mi != m_localizedNameMap.end()) return (*mi).second;
 
-#if defined(__APPLE__)
     PackageMetadata& pkgdata = (*iter).second;
-    if (!pkgdata.library) {
-      return name;
-    }
+    if (!pkgdata.library) return name;
 
     NSDictionary* dict = (NSDictionary*)CFBundleGetLocalInfoDictionary(
         (CFBundleRef)pkgdata.library);
     NSString* displayName = [dict objectForKey:@"CFBundleDisplayName"];
 
-    // NSLog(@"Obtained display name for package: %@, dict: %@", displayName,
-    // dict);
-
-    if (!displayName) {
-      return name;
-    }
+    if (!displayName) return name;
 
     string ln = [displayName UTF8String];
     m_localizedNameMap[name] = ln;
 
     return ln;
-
-#else
-
-    string plistPath =
-        OVPathHelper::PathCat(contentPathFromPackageRoot((*iter).second.path),
-                              kMinotaurModulePackagePlistName);
-    if (!OVPathHelper::PathExists(plistPath)) {
-      return name;
-    }
-
-    PVPropertyList plist(plistPath);
-    PVPlistValue* dict = plist.rootDictionary();
-    PVPlistValue* lnd = dict->valueForKey("MPLocalizedName");
-    string ln;
-
-    if (!lnd) {
-      m_localizedNameMap[name] = name;
-      return name;
-    }
-
-    if (lnd->type() != PVPlistValue::Dictionary) {
-      m_localizedNameMap[name] = name;
-      return name;
-    }
-
-    ln = lnd->stringValueForKey(loaderService->locale());
-    if (!ln.length()) {
-      ln = lnd->stringValueForKey("en");
-    }
-
-    if (!ln.length()) {
-      m_localizedNameMap[name] = name;
-    } else {
-      m_localizedNameMap[name] = ln;
-    }
-
-    return ln;
-#endif
   }
 
   const map<string, string> identifiableVersionMap() const {
@@ -128,46 +66,18 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
   map<string, string> m_versionMap;
 
   virtual const string contentPathFromPackageRoot(const string& path) const {
-#if defined(__APPLE__)
     return OVPathHelper::PathCat(path, "Contents");
-#else
-    return path;
-#endif
   }
 
   virtual const string binaryPathFromPackageRoot(const string& path) const {
-#if defined(__APPLE__)
     return OVPathHelper::PathCat(contentPathFromPackageRoot(path), "MacOS");
-#else
-    return path;
-#endif
   }
 
   virtual void* loadLibrary(const string& path) {
-#if !defined(__APPLE__)
-    Logger logger("YKSignedModuleLoadingSystem");
-    logger.debug("Attempting to load: %s", path.c_str());
-#else
-// NSLog(@"Attempting to load: %s", path.c_str());
-#endif
-
     string plistPath = OVPathHelper::PathCat(contentPathFromPackageRoot(path),
                                              kMinotaurModulePackagePlistName);
 
-#if !defined(__APPLE__)
-    logger.debug("Loading plist: %s", plistPath.c_str());
-#else
-// NSLog(@"Loading plist: %s", plistPath.c_str());
-#endif
-
-    if (!OVPathHelper::PathExists(plistPath)) {
-#if !defined(__APPLE__)
-      logger.debug("Plist doesn't exist");
-#else
-      // NSLog(@"Plist doesn't exist");
-#endif
-      return 0;
-    }
+    if (!OVPathHelper::PathExists(plistPath)) return 0;
 
     PVPropertyList plist(plistPath);
     PVPlistValue* dict = plist.rootDictionary();
@@ -175,29 +85,19 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
         dict->stringValueForKey(kMinotaurModulePackagePrimaryBinary);
 
     if (!primaryBinaryPath.length()) {
-#if !defined(__APPLE__)
-      logger.debug("Invalid module: %s", path.c_str());
-#else
       NSLog(@"Invalid module: %s", path.c_str());
-#endif
       return 0;
     }
 
     string mpId = dict->stringValueForKey(kMinotaurModulePackageIdentifier);
-    if (!mpId.length()) {
-      return 0;
-    }
+    if (!mpId.length()) return 0;
 
     primaryBinaryPath = OVPathHelper::PathCat(binaryPathFromPackageRoot(path),
                                               primaryBinaryPath);
 
     pair<char*, size_t> binData = OVFileHelper::SlurpFile(primaryBinaryPath);
     if (!binData.first || !binData.second) {
-#if !defined(__APPLE__)
-      logger.debug("Cannot load binary: %s", primaryBinaryPath.c_str());
-#else
       NSLog(@"Cannot load binary: %s", primaryBinaryPath.c_str());
-#endif
       return 0;
     }
 
@@ -216,13 +116,6 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
     bool valid = false;
 
     string sig = dict->stringValueForKey(kMinotaurModulePackageSignature);
-
-#if !defined(__APPLE__)
-    logger.debug("Module signature: %s", sig.c_str());
-#else
-// NSLog(@"Module signature: %s", sig.c_str());
-#endif
-
     pair<char*, size_t> binSig = Minos::BinaryFromHexString(sig);
     if (binSig.first && binSig.second) {
       pair<char*, size_t> decryptedDigest = Minos::GetBack(binSig, keyData);
@@ -240,73 +133,33 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
 
     free(digest);
 
-    if (!valid) {
-      return 0;
-    }
+    if (!valid) return 0;
 
-    // -- register the version info
     string mpver = dict->stringValueForKey(kMinotaurModulePackageVersion);
+    if (mpId.length() && mpver.length()) m_versionMap[mpId] = mpver;
 
-    if (mpId.length() && mpver.length()) {
-      m_versionMap[mpId] = mpver;
-    }
-
-#if !defined(__APPLE__)
-    logger.debug("Registering package id %s, version %s", mpId.c_str(),
-                 mpver.c_str());
-#else
-// NSLog(@"Registering package id %s, version %s", mpId.c_str(), mpver.c_str());
-#endif
-
-    // ---
-#if !defined(__APPLE__)
-    logger.debug("Primary binary: %s", primaryBinaryPath.c_str());
-    return internalLoadLibrary(primaryBinaryPath);
-#else
-    // NSLog(@"Primary binary: %s", primaryBinaryPath.c_str());
     return internalLoadLibrary(path);
-#endif
   }
-
-#if !defined(__APPLE__)
-  virtual void* internalLoadLibrary(const string& primaryBinaryPath) {
-    return (void*)LoadLibraryW(OVUTF16::FromUTF8(primaryBinaryPath).c_str());
-  }
-
-  virtual bool unloadLibrary(void* library) {
-    return FreeLibrary((HMODULE)library) == TRUE;
-  }
-
-  virtual void* getFunctionNamed(void* library, const string& name) {
-    return (void*)GetProcAddress((HMODULE)library, name.c_str());
-  }
-#else
-
-#if defined(__APPLE__)
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-#define NSMakeCollectable(x) ((id)(x))
-#endif
-#endif
 
   virtual void* internalLoadLibrary(const string& path) {
     CFStringRef pathString =
         CFStringCreateWithCString(NULL, path.c_str(), kCFStringEncodingUTF8);
+    if (!pathString) return 0;
+
     CFURLRef url = CFURLCreateWithFileSystemPath(NULL, pathString,
                                                  kCFURLPOSIXPathStyle, false);
-
-    [NSMakeCollectable(pathString) autorelease];
-    [NSMakeCollectable(url) autorelease];
+    CFRelease(pathString);
+    if (!url) return 0;
 
     CFBundleRef bundle = CFBundleCreate(NULL, url);
+    CFRelease(url);
 
-    if (bundle) {
-      if (CFBundleLoadExecutable(bundle)) {
-        return (void*)bundle;
-      } else {
-        CFRelease(bundle);
-        return 0;
-      }
-    }
+    if (!bundle) return 0;
+
+    if (CFBundleLoadExecutable(bundle)) return (void*)bundle;
+
+    CFRelease(bundle);
+    return 0;
   }
 
   virtual bool unloadLibrary(void* library) {
@@ -323,13 +176,13 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
 
     CFStringRef funcString =
         CFStringCreateWithCString(NULL, name.c_str(), kCFStringEncodingUTF8);
-    [NSMakeCollectable(funcString) autorelease];
+    if (!funcString) return 0;
+
     CFBundleRef bundle = (CFBundleRef)library;
-
-    return CFBundleGetFunctionPointerForName(bundle, funcString);
+    void* function = CFBundleGetFunctionPointerForName(bundle, funcString);
+    CFRelease(funcString);
+    return function;
   }
-
-#endif
 };
 };
 #endif

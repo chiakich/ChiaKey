@@ -23,15 +23,10 @@ using namespace std;
 using namespace OpenVanilla;
 using namespace Minotaur;
 
-int WindowsModulePackageTool(bool signFunction, const string& inPackageRoot,
-                             const string& key) {
-#if defined(__APPLE__)
+int ModulePackageTool(bool signFunction, const string& inPackageRoot,
+                      const string& key) {
   string packageRoot = OVPathHelper::PathCat(inPackageRoot, "Contents");
   string binaryRoot = OVPathHelper::PathCat(packageRoot, "MacOS");
-#else
-  string packageRoot = inPackageRoot;
-  string binaryRoot = inPackageRoot;
-#endif
 
   string plistPath =
       OVPathHelper::PathCat(packageRoot, kMinotaurModulePackagePlistName);
@@ -162,8 +157,8 @@ int main(int argc, char* argv[]) {
 
   if (argc < 2) {
     cerr << "usage: " << endl;
-    cerr << "    verifymp <Windows Module Package Root> <Public Key>" << endl;
-    cerr << "    signmp <Windows Moudle Package Root> <Private Key>" << endl;
+    cerr << "    verifymp <macOS Module Package Root> <Public Key>" << endl;
+    cerr << "    signmp <macOS Module Package Root> <Private Key>" << endl;
 
     return 1;
   }
@@ -175,8 +170,8 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    return WindowsModulePackageTool((command == "signmp" ? true : false),
-                                    (const char*)argv[2], (const char*)argv[3]);
+    return ModulePackageTool((command == "signmp" ? true : false),
+                             (const char*)argv[2], (const char*)argv[3]);
   }
 
   /*
