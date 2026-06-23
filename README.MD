@@ -152,33 +152,8 @@ Scripts/test-lexicon-smoke.sh path/to/ChiaKeySource.db
 - `Scripts/`：本機 build、install、icon、lexicon helper。
 - `Docs/`：現代化決策文件。
 
-## 詞庫來源方向
+## 詞庫維護邊界
 
-原始 Yahoo KeyKey 詞庫建置依賴已不適合現代 redistributable fork 的資料。舊開源包曾附 `DataSource-1.1.2528` 作為外部來源說明，但該資料夾只有 README，沒有真正語料；千秋輸入法保留這段歷史脈絡於文件，不再於 app repo 保存該占位資料夾。
+千秋輸入法 app repo 不維護語料來源，也不決定詞庫產製策略；這些工作由 ChiaKey-Lexicon repo 負責。app repo 只負責定義 runtime 需要的 DB contract、驗證 release artifact、安裝 / 更新 active lexicon，以及提供 bundled DB fallback。
 
-1. Sinica Corpus 需要另外取得授權。
-2. Yahoo search terms 不是穩定或可重散佈的開放資料來源。
-3. `sqlite-cerod-see` / CEROD 是商業 SQLite read-only compression extension。
-
-千秋輸入法的詞庫應拆成四層：
-
-1. 讀音 mapping。
-2. 詞彙與短語。
-3. 頻率 / language model。
-4. 繁簡與區域用字轉換。
-
-目前較適合研究的公開來源：
-
-| 來源 | 用途 | 注意事項 |
-| --- | --- | --- |
-| libchewing | 注音行為、鍵盤配置、測試對照 | 適合作為行為 benchmark；直接引用資料前需審授權。 |
-| Rime bopomofo / terra-pinyin / essay | 注音 schema、拼音 mapping、語料參考 | 多為 LGPL；shipping 前需確認相容性。 |
-| CC-CEDICT | 詞條與拼音 | CC BY-SA 4.0；有讀音但缺使用頻率。 |
-| moedict-data | 教育部辭典資料、讀音、釋義 | 原文字授權較敏感，適合先當參考。 |
-| Wikimedia / Wiktionary dumps | 語料、標題、詞頻 | CC BY-SA / GFDL 相關義務需文件化。 |
-| Tatoeba | 句子語料補充 | 規模較小，不適合單獨當主 language model。 |
-| Unicode Unihan | 字級讀音、異體、部首筆畫 | 很適合做字級 metadata。 |
-| CNS11643 全字庫 | 台灣字級資料、注音、倉頡、筆畫 | 台灣資料很有價值。 |
-| OpenCC | 繁簡與區域用字轉換 | Apache-2.0；不是 ranking dictionary。 |
-
-預設方向是：先避開私有或授權不明資料，以 CC-CEDICT、Unicode Unihan、CNS11643、Wikimedia/Tatoeba opt-in corpus、OpenCC 與本專案人工補詞建立可重現 pipeline。
+舊開源包曾附 `DataSource-1.1.2528` 作為外部來源說明，但該資料夾只有 README，沒有真正語料；千秋輸入法不再保存該占位資料夾。詞庫格式與更新契約請見 `Docs/LexiconContract.md`。
