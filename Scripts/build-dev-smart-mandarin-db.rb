@@ -10,6 +10,9 @@ ROOT = File.expand_path("..", __dir__)
 SOURCE_CIN = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "DataTables", "bpmf.cin")
 PUNCTUATION_CIN = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "DataTables", "bpmf-punctuations.cin")
 DATA_SOURCE = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "Distributions", "Takao", "DataSource")
+ONLINE_DATA = File.join(ROOT, "YahooKeyKey-Source-1.1.2528", "Distributions", "Takao", "OnlineData")
+CANNED_MESSAGES = File.join(ONLINE_DATA, "CannedMessages.plist")
+ONEKEY_SERVICES = File.join(ONLINE_DATA, "OneKey.plist")
 ADDENDUM_DIR = File.join(DATA_SOURCE, "Addendum")
 OVERRIDES_DIR = File.join(DATA_SOURCE, "Overrides")
 MODERN_DIR = File.join(DATA_SOURCE, "Modern")
@@ -264,6 +267,13 @@ unless File.exist?(PUNCTUATION_CIN)
   exit 1
 end
 
+[CANNED_MESSAGES, ONEKEY_SERVICES].each do |path|
+  unless File.exist?(path)
+    warn "Missing prepopulated service data: #{path}"
+    exit 1
+  end
+end
+
 FileUtils.mkdir_p(File.dirname(OUTPUT_DB))
 FileUtils.rm_f(OUTPUT_DB)
 
@@ -415,6 +425,10 @@ sql_lines << "CREATE INDEX 'Mandarin-bpmf-cin-index-on-value' ON 'Mandarin-bpmf-
 sql_lines << "CREATE INDEX chiaki_db_metadata_index ON chiaki_db_metadata (key);"
 sql_lines << "BEGIN;"
 sql_lines << "INSERT INTO cooked_information VALUES('version', #{sql(VERSION)});"
+sql_lines << "INSERT INTO prepopulated_service_data VALUES('canned_messages', #{sql(File.read(CANNED_MESSAGES))});"
+sql_lines << "INSERT INTO prepopulated_service_data VALUES('canned_messages_timestamp', '1');"
+sql_lines << "INSERT INTO prepopulated_service_data VALUES('onekey_services', #{sql(File.read(ONEKEY_SERVICES))});"
+sql_lines << "INSERT INTO prepopulated_service_data VALUES('onekey_services_timestamp', '1');"
 sql_lines << "INSERT INTO chiaki_db_metadata VALUES('schema_version', '1');"
 sql_lines << "INSERT INTO chiaki_db_metadata VALUES('version', #{sql(VERSION)});"
 sql_lines << "INSERT INTO chiaki_db_metadata VALUES('generator', 'Scripts/build-dev-smart-mandarin-db.rb');"
