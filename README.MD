@@ -6,6 +6,25 @@
 
 這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE.txt](LICENSE.txt)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
 
+## 專案定位
+
+千秋輸入法不是為了和所有現代注音輸入法競爭功能完整度而建立。這個專案的主要動機是紀念並延續 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 這條歷史脈絡，盡可能保留 KeyKey 在 macOS 上的輸入手感，同時讓它能被現代工具鏈編譯、測試與維護。
+
+如果你只是想找一套日常可用的現代注音輸入法，也可以先參考這些選擇：
+
+1. macOS 內建注音輸入方式：不需要額外安裝，和系統整合度最高，適合需求單純、希望維持最少維護成本的使用者。
+2. [小麥注音輸入法](https://github.com/openvanilla/McBopomofo)：長期維護的開源注音輸入法，架構較現代、專案焦點清楚，適合想要穩定第三方開源注音、但不特別追求 KeyKey 懷舊手感的使用者。
+3. [vChewing 唯音輸入法](https://vchewing.github.io/) 與其 [macOS repo](https://github.com/vChewing/vChewing-macOS)：功能面非常完整，支援原生簡體與繁體注音、多種注音鍵盤與拼音輸入、Sandbox、安全防護、全字庫支援、繁簡分離詞庫、輸出轉換與許多進階偏好設定；適合希望有大量現代功能可用的 macOS 使用者。
+
+千秋輸入法比較適合下列使用者：
+
+1. 懷念 Yahoo! 奇摩輸入法 / KeyKey 的候選窗、組字與輸入節奏。
+2. 想保存、研究或延續 KeyKey / OpenVanilla / Manjusri 這條開源輸入法 lineage。
+3. 偏好保守、小步維護的復興專案，而不是功能面非常寬的現代輸入法。
+4. 希望詞庫 release、SQLite schema、fallback 與驗證規則圍繞 KeyKey 原有語言模型逐步整理。
+
+不同輸入法專案也會有不同的詞庫路線。千秋輸入法目前優先讓資料來源、授權邊界與 Yahoo KeyKey 相容性保持可追蹤，因此不直接把其他現代輸入法的詞庫當作 KeyKey 復刻的預設基準。
+
 ## 專案狀態
 
 這個 fork 的上游脈絡來自官方封存的 `YahooArchive/KeyKey`，目前的現代化工作則起始於 `vChewing/KeyKey-Boneyard` snapshot。
@@ -15,17 +34,17 @@
 - 最早 GitHub fork root: <https://github.com/Yi-Kai/KeyKey>
 - Boneyard snapshot: <https://github.com/vChewing/KeyKey-Boneyard>
 
-目前主線定位：
+目前主線設定：
 
-1. 產品中文名稱為「千秋輸入法」。
-2. 英文與技術名稱為 `ChiaKey`。
+1. 專案中文名稱暫定為「千秋輸入法」。
+2. `ChiaKey` 是 `Chiaki` 與 `KeyKey` 結合的諧音名稱。
 3. 目前發佈主線維護現代 macOS InputMethodKit 版本。
 4. bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
 5. 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
 6. 詞庫由獨立 repo `ChiaKey-Lexicon` 透過 GitHub Releases 發佈。
 7. 新增實驗性的 `ChiaKeyCore` host-neutral engine facade，作為 sibling iOS repo 的共用輸入核心地基。
 
-本機開發環境註記：目前開發機有 Xcode 26.5。
+本機開發環境使用 Xcode 26.5。
 
 ## 決策文件
 
