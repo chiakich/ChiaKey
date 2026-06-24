@@ -2,7 +2,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface CVDictionaryWindow : NSPanel {
+@interface CVFloatingPanelWindow : NSPanel {
 }
 
 @end

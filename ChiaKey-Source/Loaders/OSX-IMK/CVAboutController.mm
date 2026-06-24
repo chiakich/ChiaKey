@@ -129,7 +129,7 @@
 - (IBAction)launchCustomerCare:(id)sender {
   [[NSWorkspace sharedWorkspace]
       openURL:[NSURL URLWithString:
-                         @"http://tw.help.cc.yahoo.com/feedback.html?id=3430"]];
+                         @"https://github.com/akira02/ChiaKey/issues"]];
   [[self window] orderOut:self];
 }
 

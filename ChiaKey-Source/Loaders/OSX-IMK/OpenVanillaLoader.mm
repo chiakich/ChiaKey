@@ -2,14 +2,11 @@
 
 #import "OpenVanillaLoader.h"
 
-#import <zlib.h>
-
 #include <set>
 #include <sstream>
 
 #import "BPMFUserPhraseHelper.h"
 #import "LFCrossDevelopmentTools.h"
-#import "LFHTTPRequest.h"
 #import "LFUtilities.h"
 #import "OVAFBopomofoCorrectionPackage.h"
 #import "OVAFEvalPackage.h"
@@ -19,6 +16,7 @@
 #import "OVOFHanConvertPackage.h"
 #import "OpenVanillaConfig.h"
 #import "OpenVanillaService.h"
+#import "Version.h"
 #import "YKSignedModuleLoadingSystem.h"
 
 NSString *CVLoaderUpdateCannedMessagesNotification =
@@ -82,11 +80,6 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
   return service;
 }
 
-#define OVLOADER_HTTP_FIRST_FETCH_DELAY (5.0)
-#define OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL (5.0 * 60.0)  /* 5 min */
-#define OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL (30.0 * 60.0) /* 30 min */
-#define OVLOADER_HTTP_CHECK_UPDATE_TIMEINTERVAL (86400.0)   /* 86400.0 */
-
 #ifdef OVLOADER_USE_SQLITE_CRYPTO
 void InitSQLiteCrypto(sqlite3 *db);
 string FetchSQLiteCERODKey(const string &filename);
@@ -113,9 +106,6 @@ using namespace OpenVanilla;
 }
 + (PVLoaderService *)sharedLoaderService {
   return [[OpenVanillaLoader sharedInstance] loaderService];
-}
-+ (VersionChecker *)sharedVersionChecker {
-  return [[OpenVanillaLoader sharedInstance] versionChecker];
 }
 + (NSLock *)sharedLock {
   if (!OVLSharedLock) {
@@ -153,10 +143,6 @@ using namespace OpenVanilla;
     _loader = 0;
     _CINDatabaseService = 0;
     _SQLiteDatabaseService = 0;
-    _versionChecker = 0;
-
-    _cannedMessagesDataHTTPRequest = [LFHTTPRequest new];
-    [_cannedMessagesDataHTTPRequest setDelegate:(id)self];
 
     _mergedCannedMessagesArray = [NSMutableArray new];
 
@@ -170,8 +156,6 @@ using namespace OpenVanilla;
 }
 - (void)dealloc {
   [self shutDown];
-
-  [_cannedMessagesDataHTTPRequest release];
 
   [_mergedCannedMessagesArray release];
 
@@ -349,10 +333,8 @@ using namespace OpenVanilla;
   }
 
   if (supplementDBVersion.size()) {
-    _versionChecker->registerComponentVersion(
-        OPENVANILLA_DATABASE_COMPONENT_NAME, supplementDBVersion, true);
-    NSLog(@"Registered supplement DB '%s' version '%s'",
-          OPENVANILLA_DATABASE_COMPONENT_NAME, supplementDBVersion.c_str());
+    NSLog(@"Registered supplement DB version '%s'",
+          supplementDBVersion.c_str());
 
     [_databaseVersion autorelease];
     _databaseVersion =
@@ -363,18 +345,14 @@ using namespace OpenVanilla;
       if (VersionNumber(mainDBVersion) >= VersionNumber(supplementDBVersion)) {
         NSLog(@"Detaching supplement DB because it's older");
         if (dbc) dbc->execute("DETACH supplement");
-        _versionChecker->registerComponentVersion(
-            OPENVANILLA_DATABASE_COMPONENT_NAME, mainDBVersion, true);
         [_databaseVersion autorelease];
         _databaseVersion =
             [[NSString alloc] initWithUTF8String:mainDBVersion.c_str()];
       }
     }
   } else if (mainDBVersion.size()) {
-    _versionChecker->registerComponentVersion(
-        OPENVANILLA_DATABASE_COMPONENT_NAME, mainDBVersion, true);
-    NSLog(@"Registered main DB '%s' version '%s'",
-          OPENVANILLA_DATABASE_COMPONENT_NAME, mainDBVersion.c_str());
+    NSLog(@"Registered main DB version '%s'",
+          mainDBVersion.c_str());
 
     [_databaseVersion autorelease];
     _databaseVersion =
@@ -488,14 +466,6 @@ using namespace OpenVanilla;
   NSDictionary *infoDictionary = [bundle infoDictionary];
   NSString *bundleVersion = [infoDictionary objectForKey:@"CFBundleVersion"];
 
-  _versionChecker = new VersionChecker;
-  if (bundleVersion) {
-    // NSLog(@"%s version %@", OPENVANILLA_LOADER_COMPONENT_NAME,
-    // bundleVersion);
-    _versionChecker->registerComponentVersion(OPENVANILLA_LOADER_COMPONENT_NAME,
-                                              [bundleVersion UTF8String]);
-  }
-
   _loaderPolicy = new PVLoaderPolicy(cppLoadPaths);
   string loaderUserDataPath =
       OVDirectoryHelper::UserApplicationSupportDataDirectory(
@@ -592,9 +562,6 @@ using namespace OpenVanilla;
   [self performSelectorOnMainThread:@selector(_firstTimeUpdateUserData)
                          withObject:nil
                       waitUntilDone:NO];
-  [self performSelectorOnMainThread:@selector(scheduleDataProvisionServices)
-                         withObject:nil
-                      waitUntilDone:NO];
 
   sleep(1);
 
@@ -656,11 +623,6 @@ using namespace OpenVanilla;
     _loaderPolicy = 0;
   }
 
-  if (_versionChecker) {
-    delete _versionChecker;
-    _versionChecker = 0;
-  }
-
   [[OpenVanillaLoader sharedLock] unlock];
 }
 - (PVLoader *)loader {
@@ -712,10 +674,6 @@ using namespace OpenVanilla;
   // flush the config, thus flush its LM cache
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
   return result;
-}
-
-- (VersionChecker *)versionChecker {
-  return _versionChecker;
 }
 
 - (NSString *)databaseVersion {
@@ -965,169 +923,6 @@ using namespace OpenVanilla;
       "UPDATE user_unigrams SET qstring = %Q, current = %Q WHERE rowid = %d",
       [self _qstringFromReading:reading].c_str(), [phrase UTF8String], row + 1);
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
-}
-
-- (NSURL *)serverEndpointWithDefaultURLString:(NSString *)str
-                            overrideConfigKey:(NSString *)overrideKey {
-  OVKeyValueMap kvm = _loader->configKeyValueMap();
-  NSString *urlStr = str;
-
-  if (kvm.hasKey([overrideKey UTF8String])) {
-    urlStr = [NSString
-        stringWithUTF8String:kvm.stringValueForKey([overrideKey UTF8String])
-                                 .c_str()];
-  }
-
-  return [NSURL URLWithString:urlStr];
-}
-
-- (BOOL)_tellIfLastCheckTimeElapsedAndUpdateWithKeyName:(NSString *)key {
-  // NSLog(@"_tellIfLastCheckTimeElapsedAndUpdateWithKeyName:%@", key);
-
-  OVKeyValueMap kvm = _loader->configKeyValueMap();
-
-  NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-  NSString *timeStr = [NSString stringWithFormat:@"%f", now];
-  if (!kvm.hasKey([key UTF8String])) {
-    kvm.setKeyStringValue([key UTF8String], [timeStr UTF8String]);
-    _loader->syncLoaderConfig(true);
-    return YES;
-  }
-
-  NSString *lastChecked = [NSString
-      stringWithUTF8String:kvm.stringValueForKey([key UTF8String]).c_str()];
-
-  // NSLog(@"last checked: %@, now: %@, diff: %f", lastChecked, timeStr, now -
-  // [lastChecked doubleValue]);
-
-  if (now - [lastChecked doubleValue] >=
-      OVLOADER_HTTP_CHECK_UPDATE_TIMEINTERVAL) {
-    kvm.setKeyStringValue([key UTF8String], [timeStr UTF8String]);
-    _loader->syncLoaderConfig(true);
-    return YES;
-  }
-
-  return NO;
-}
-
-- (void)_handleCannedMessagesTimer:(NSTimer *)timer {
-  if (![self _tellIfLastCheckTimeElapsedAndUpdateWithKeyName:
-                 @"CannedMessagesLastCheckedTime"]) {
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleCannedMessagesTimer:)
-                              userInfo:nil
-                               repeats:NO];
-    return;
-  }
-
-  NSURL *reqURL =
-      [self serverEndpointWithDefaultURLString:TAKAO_CANNED_MESSAGES_URL
-                             overrideConfigKey:@"CannedMessagesEndpointURL"];
-  [_cannedMessagesDataHTTPRequest performMethod:LFHTTPRequestGETMethod
-                                          onURL:reqURL
-                                       withData:nil];
-}
-
-- (BOOL)_validateServerData:(NSData *)data {
-  id plist =
-      [NSPropertyListSerialization propertyListWithData:data
-                                                options:0
-                                                 format:NULL
-                                                  error:nil];
-
-  return [plist isKindOfClass:[NSDictionary class]];
-}
-- (void)httpRequestDidComplete:(LFHTTPRequest *)request {
-  NSData *receivedData = [request receivedData];
-
-  if (LFIsRunningUnderOSX10_4Only()) {
-    // we need to see if it's gzipped data, especially if we run under OS X 10.4
-    unsigned char *byteData = (unsigned char *)[receivedData bytes];
-    if ([receivedData length] > 2) {
-      if (byteData[0] == 0x1f && byteData[1] == 0x8b) {
-        // int uncompress (Bytef *dest, uLongf *destLen, const Bytef *source,
-        // uLong sourceLen); we assume a deflate rate of x50 (2%)
-        uLongf destSize = (uLongf)([receivedData length] * 50);
-        NSMutableData *decompressedData =
-            [NSMutableData dataWithLength:destSize];
-        z_stream zst;
-        bzero(&zst, sizeof(zst));
-        zst.next_in = byteData;
-        zst.avail_in = [receivedData length];
-        zst.total_in = 0;
-        zst.next_out = (Bytef *)[decompressedData mutableBytes];
-        zst.avail_out = destSize;
-        zst.total_out = 0;
-        zst.zalloc = Z_NULL;
-        zst.zfree = Z_NULL;
-        zst.opaque = Z_NULL;
-
-        // 47 guesses the format
-        int result = inflateInit2(&zst, 47);
-        if (result != Z_OK) {
-          NSLog(@"inflateInit2 error");
-        } else {
-          result = inflate(&zst, Z_NO_FLUSH);
-          NSLog(@"zlib result code: %d, returned dest size: %d", result,
-                zst.total_out);
-          if (result != Z_STREAM_END) {
-            NSLog(@"decompress error");
-          } else {
-            [decompressedData setLength:zst.total_out];
-            // NSLog(@"real data size: %d (check: %d)", zst.total_out,
-            // [decompressedData length]);
-            receivedData = decompressedData;
-          }
-        }
-
-      } else {
-        // NSLog(@"normal data");
-      }
-    }
-  }
-
-  // NSLog(@"Received data, HTTP req obj %p", request);
-
-  if (request == _cannedMessagesDataHTTPRequest) {
-    char buf[1];
-    memset(buf, 0, 1);
-    NSMutableData *nullTerminatedData = [receivedData mutableCopy];
-    [nullTerminatedData appendBytes:buf length:1];
-
-    if ([self _validateServerData:nullTerminatedData]) {
-      string rcvStr = (const char *)[nullTerminatedData bytes];
-      _userPersistence->populateIfValueDifferentUserDB("canned_messages",
-                                                       rcvStr);
-      [self mergeCannedMessagesData];
-    }
-
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_NEXT_FETCH_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleCannedMessagesTimer:)
-                              userInfo:nil
-                               repeats:NO];
-  }
-}
-- (void)httpRequest:(LFHTTPRequest *)request
-    didFailWithError:(NSString *)error {
-  // NSLog(@"HTTP request failed, request object: %p, now rescheduling",
-  // request);
-
-  if (request == _cannedMessagesDataHTTPRequest) {
-    [NSTimer
-        scheduledTimerWithTimeInterval:OVLOADER_HTTP_FAIL_RETRY_TIMEINTERVAL
-                                target:self
-                              selector:@selector(_handleCannedMessagesTimer:)
-                              userInfo:nil
-                               repeats:NO];
-  }
-}
-
-- (void)scheduleDataProvisionServices {
-  NSLog(@"Skipping legacy online update and data provision services");
 }
 
 - (void)mergeCannedMessagesData {

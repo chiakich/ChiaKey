@@ -232,8 +232,7 @@
 		6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */; };
 		6A4773070D5C607200C6C744 /* CVBubbleTextView.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772DF0D5C607200C6C744 /* CVBubbleTextView.m */; };
 		6A4773080D5C607200C6C744 /* CVBubbleTextWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772E10D5C607200C6C744 /* CVBubbleTextWindow.m */; };
-		6A4773090D5C607200C6C744 /* CVDictionaryController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772E30D5C607200C6C744 /* CVDictionaryController.mm */; };
-		6A47730A0D5C607200C6C744 /* CVDictionaryWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772E50D5C607200C6C744 /* CVDictionaryWindow.m */; };
+		6A47730A0D5C607200C6C744 /* CVFloatingPanelWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772E50D5C607200C6C744 /* CVFloatingPanelWindow.m */; };
 		6A47730B0D5C607200C6C744 /* CVEncodingService.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772E70D5C607200C6C744 /* CVEncodingService.mm */; };
 		6A47730C0D5C607200C6C744 /* CVFloatingBackground.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772E90D5C607200C6C744 /* CVFloatingBackground.m */; };
 		6A47730D0D5C607200C6C744 /* CVFloatingTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772EB0D5C607200C6C744 /* CVFloatingTableView.m */; };
@@ -275,13 +274,9 @@
 		6A859F490E41A4C0002C3544 /* LFHTTPRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A859F430E41A4C0002C3544 /* LFHTTPRequest.m */; };
 		6A859F4A0E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F440E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch */; };
 		6A859F4B0E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A859F450E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m */; };
-		6A859F600E41A6A8002C3544 /* TrackerMaker.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F5E0E41A6A8002C3544 /* TrackerMaker.h */; };
-		6A859F650E41A6DF002C3544 /* TrackerSender.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F610E41A6DF002C3544 /* TrackerSender.h */; };
-		6A859F660E41A6DF002C3544 /* TrackerSender.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A859F620E41A6DF002C3544 /* TrackerSender.mm */; };
 		6A859F880E41AAC9002C3544 /* libLFWebAPIToolbox.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A859F360E41A495002C3544 /* libLFWebAPIToolbox.a */; };
 		6A85A1F70E41ADF9002C3544 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A85A1F50E41ADF9002C3544 /* SystemConfiguration.framework */; };
 		6AB5B3080D5C8D350040CD26 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6AB5B3020D5C8D350040CD26 /* InfoPlist.strings */; };
-		6AB5B30E0D5C8DBA0040CD26 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */; };
 		6AB5B31D0D5C8E920040CD26 /* OVIMMandarinPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B31A0D5C8E920040CD26 /* OVIMMandarinPackage.h */; };
 		6AB5B31E0D5C8E920040CD26 /* OVIMTraditionalMandarin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AB5B31B0D5C8E920040CD26 /* OVIMTraditionalMandarin.cpp */; };
 		6AB5B31F0D5C8E920040CD26 /* OVIMTraditionalMandarin.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B31C0D5C8E920040CD26 /* OVIMTraditionalMandarin.h */; };
@@ -403,7 +398,6 @@
 		D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
 		D43E2DED0EBF312A00557B95 /* PhraseEditor.icns in Resources */ = {isa = PBXBuildFile; fileRef = D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */; };
-		D440D5A20D630FA7000A483C /* CVDictionaryController+Toolbar.m in Sources */ = {isa = PBXBuildFile; fileRef = D440D5A10D630FA7000A483C /* CVDictionaryController+Toolbar.m */; };
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
 		D4447D630E346C5D00BE7D9E /* playSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D610E346C5D00BE7D9E /* playSound.tiff */; };
 		D4466AAE0D912A6800A530D4 /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
@@ -456,18 +450,14 @@
 		D482C3AE0ECB41D8005E8D68 /* SymbolWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39C0ECB41D8005E8D68 /* SymbolWindow.xib */; };
 		D482C3AF0ECB41D8005E8D68 /* TooltipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39D0ECB41D8005E8D68 /* TooltipWindow.xib */; };
 		D482C3B00ECB41D8005E8D68 /* VerticalCandidateWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39E0ECB41D8005E8D68 /* VerticalCandidateWindow.xib */; };
-		D482C3B10ECB41D8005E8D68 /* DictionaryWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39F0ECB41D8005E8D68 /* DictionaryWindow.xib */; };
 		D484CF5D0EC226850051B6CA /* CVAboutController.h in Headers */ = {isa = PBXBuildFile; fileRef = D484CF590EC226850051B6CA /* CVAboutController.h */; };
 		D484CF5E0EC226850051B6CA /* CVAboutController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D484CF5A0EC226850051B6CA /* CVAboutController.mm */; };
 		D484CF660EC2277E0051B6CA /* AboutWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D484CF640EC2277E0051B6CA /* AboutWindow.xib */; };
-		D48695E70DE44CFC0078C221 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */; };
 		D493E9D7167775BE00BA9368 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = D493E9D6167775BE00BA9368 /* libsqlite3.tbd */; };
 		D4987D130E17FA5A001D4197 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
 		D4987D1F0E17FB37001D4197 /* CVKeyboardHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */; };
 		D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */; };
 		D49CAECD0D8ECE3500738634 /* About.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D49CAECC0D8ECE3500738634 /* About.jpg */; };
-		D4A1F1D40EE313470064FF77 /* CVDictionaryController+Orz.h in Headers */ = {isa = PBXBuildFile; fileRef = D4A1F1D20EE313470064FF77 /* CVDictionaryController+Orz.h */; };
-		D4A1F1D50EE313470064FF77 /* CVDictionaryController+Orz.m in Sources */ = {isa = PBXBuildFile; fileRef = D4A1F1D30EE313470064FF77 /* CVDictionaryController+Orz.m */; };
 		D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D4B3E72D0DC7A68E000980D8 /* HelpController.m in Sources */ = {isa = PBXBuildFile; fileRef = D4B3E72A0DC7A68E000980D8 /* HelpController.m */; };
 		D4B3E72E0DC7A68E000980D8 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D4B3E72C0DC7A68E000980D8 /* main.m */; };
@@ -1017,10 +1007,8 @@
 		6A4772DF0D5C607200C6C744 /* CVBubbleTextView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVBubbleTextView.m; path = "Loaders/OSX-IMK/CVBubbleTextView.m"; sourceTree = "<group>"; };
 		6A4772E00D5C607200C6C744 /* CVBubbleTextWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVBubbleTextWindow.h; path = "Loaders/OSX-IMK/CVBubbleTextWindow.h"; sourceTree = "<group>"; };
 		6A4772E10D5C607200C6C744 /* CVBubbleTextWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVBubbleTextWindow.m; path = "Loaders/OSX-IMK/CVBubbleTextWindow.m"; sourceTree = "<group>"; };
-		6A4772E20D5C607200C6C744 /* CVDictionaryController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVDictionaryController.h; path = "Loaders/OSX-IMK/CVDictionaryController.h"; sourceTree = "<group>"; };
-		6A4772E30D5C607200C6C744 /* CVDictionaryController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVDictionaryController.mm; path = "Loaders/OSX-IMK/CVDictionaryController.mm"; sourceTree = "<group>"; wrapsLines = 1; };
-		6A4772E40D5C607200C6C744 /* CVDictionaryWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVDictionaryWindow.h; path = "Loaders/OSX-IMK/CVDictionaryWindow.h"; sourceTree = "<group>"; };
-		6A4772E50D5C607200C6C744 /* CVDictionaryWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVDictionaryWindow.m; path = "Loaders/OSX-IMK/CVDictionaryWindow.m"; sourceTree = "<group>"; };
+		6A4772E40D5C607200C6C744 /* CVFloatingPanelWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVFloatingPanelWindow.h; path = "Loaders/OSX-IMK/CVFloatingPanelWindow.h"; sourceTree = "<group>"; };
+		6A4772E50D5C607200C6C744 /* CVFloatingPanelWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVFloatingPanelWindow.m; path = "Loaders/OSX-IMK/CVFloatingPanelWindow.m"; sourceTree = "<group>"; };
 		6A4772E60D5C607200C6C744 /* CVEncodingService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVEncodingService.h; path = "Loaders/OSX-IMK/CVEncodingService.h"; sourceTree = "<group>"; };
 		6A4772E70D5C607200C6C744 /* CVEncodingService.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVEncodingService.mm; path = "Loaders/OSX-IMK/CVEncodingService.mm"; sourceTree = "<group>"; };
 		6A4772E80D5C607200C6C744 /* CVFloatingBackground.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVFloatingBackground.h; path = "Loaders/OSX-IMK/CVFloatingBackground.h"; sourceTree = "<group>"; };
@@ -1182,7 +1170,6 @@
 		D42C002E0E1912CD002CD18F /* NSStringExtension.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = NSStringExtension.mm; path = "Loaders/OSX-IMK/NSStringExtension.mm"; sourceTree = "<group>"; };
 		D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBook.framework; path = /System/Library/Frameworks/AddressBook.framework; sourceTree = "<absolute>"; };
 		D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = PhraseEditor.icns; path = Utilities/PhraseEditor/OSX/Images/PhraseEditor.icns; sourceTree = "<group>"; };
-		D440D5A10D630FA7000A483C /* CVDictionaryController+Toolbar.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "CVDictionaryController+Toolbar.m"; path = "Loaders/OSX-IMK/CVDictionaryController+Toolbar.m"; sourceTree = "<group>"; };
 		D4447D600E346C5D00BE7D9E /* stopSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = stopSound.tiff; path = PreferenceApplications/OSX/Images/stopSound.tiff; sourceTree = "<group>"; };
 		D4447D610E346C5D00BE7D9E /* playSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = playSound.tiff; path = PreferenceApplications/OSX/Images/playSound.tiff; sourceTree = "<group>"; };
 		C1A1F0010F00000100000001 /* install-lexicon-release.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = "install-lexicon-release.sh"; path = "../Scripts/install-lexicon-release.sh"; sourceTree = SOURCE_ROOT; };
@@ -1258,7 +1245,6 @@
 		D482C39C0ECB41D8005E8D68 /* SymbolWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = SymbolWindow.xib; path = "Loaders/OSX-IMK/Interface/SymbolWindow.xib"; sourceTree = "<group>"; };
 		D482C39D0ECB41D8005E8D68 /* TooltipWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = TooltipWindow.xib; path = "Loaders/OSX-IMK/Interface/TooltipWindow.xib"; sourceTree = "<group>"; };
 		D482C39E0ECB41D8005E8D68 /* VerticalCandidateWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = VerticalCandidateWindow.xib; path = "Loaders/OSX-IMK/Interface/VerticalCandidateWindow.xib"; sourceTree = "<group>"; };
-		D482C39F0ECB41D8005E8D68 /* DictionaryWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = DictionaryWindow.xib; path = "Loaders/OSX-IMK/Interface/DictionaryWindow.xib"; sourceTree = "<group>"; };
 		D484CF590EC226850051B6CA /* CVAboutController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVAboutController.h; path = "Loaders/OSX-IMK/CVAboutController.h"; sourceTree = "<group>"; };
 		D484CF5A0EC226850051B6CA /* CVAboutController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVAboutController.mm; path = "Loaders/OSX-IMK/CVAboutController.mm"; sourceTree = "<group>"; };
 		D484CFA80EC22C1C0051B6CA /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_TW; path = "Loaders/OSX-IMK/zh_TW.lproj/AboutWindow.xib"; sourceTree = "<group>"; };
@@ -1269,8 +1255,6 @@
 		D49CAECC0D8ECE3500738634 /* About.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = About.jpg; path = "Loaders/OSX-IMK/Images/About.jpg"; sourceTree = "<group>"; };
 		D4A1F1A90EE30AF20064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D4A1F1B00EE30DB60064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
-		D4A1F1D20EE313470064FF77 /* CVDictionaryController+Orz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "CVDictionaryController+Orz.h"; path = "Loaders/OSX-IMK/CVDictionaryController+Orz.h"; sourceTree = "<group>"; };
-		D4A1F1D30EE313470064FF77 /* CVDictionaryController+Orz.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "CVDictionaryController+Orz.m"; path = "Loaders/OSX-IMK/CVDictionaryController+Orz.m"; sourceTree = "<group>"; wrapsLines = 1; };
 		D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InstallerHelp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4B3E7290DC7A68E000980D8 /* HelpController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HelpController.h; path = "Distributions/Takao/Installer-OSX-Help/HelpController.h"; sourceTree = "<group>"; };
 		D4B3E72A0DC7A68E000980D8 /* HelpController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HelpController.m; path = "Distributions/Takao/Installer-OSX-Help/HelpController.m"; sourceTree = "<group>"; };
@@ -1413,7 +1397,6 @@
 				6A4772DA0D5C604E00C6C744 /* LFExtensions.framework in Frameworks */,
 				6AED2FC90D8BCF9600E6D3F8 /* libCareService.a in Frameworks */,
 				6AD3236C0D76DAE3005083D4 /* libKeyring.a in Frameworks */,
-				6A859F880E41AAC9002C3544 /* libLFWebAPIToolbox.a in Frameworks */,
 				6AFC800D0D98F1C8007588D8 /* libPlainVanilla.a in Frameworks */,
 				6ACA0C660D5C88AB00514BC7 /* libTakaoModulePackages.a in Frameworks */,
 				5B3CE69629914FC100641F53 /* libz.tbd in Frameworks */,
@@ -1421,7 +1404,6 @@
 				6A4773840D5C622A00C6C744 /* AudioToolbox.framework in Frameworks */,
 				D4987D130E17FA5A001D4197 /* Carbon.framework in Frameworks */,
 				6A47737B0D5C621400C6C744 /* InputMethodKit.framework in Frameworks */,
-				6AB5B30E0D5C8DBA0040CD26 /* WebKit.framework in Frameworks */,
 				6A7E65870E1BB3600071ED92 /* libSystem.B.tbd in Frameworks */,
 				5B3CE69429914F7800641F53 /* libsqlite3.tbd in Frameworks */,
 				6A85A1F70E41ADF9002C3544 /* SystemConfiguration.framework in Frameworks */,
@@ -2388,11 +2370,13 @@
 		};
 		D459B7960D925BD300CBDE76 /* UI Components */ = {
 			isa = PBXGroup;
-			children = (
-				D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */,
-				D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */,
-				6A4772EC0D5C607200C6C744 /* CVFloatingWindow.h */,
-				6A4772ED0D5C607200C6C744 /* CVFloatingWindow.mm */,
+				children = (
+					D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */,
+					D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */,
+					6A4772E40D5C607200C6C744 /* CVFloatingPanelWindow.h */,
+					6A4772E50D5C607200C6C744 /* CVFloatingPanelWindow.m */,
+					6A4772EC0D5C607200C6C744 /* CVFloatingWindow.h */,
+					6A4772ED0D5C607200C6C744 /* CVFloatingWindow.mm */,
 				6A4772F40D5C607200C6C744 /* CVTextDecoration.h */,
 				6A4772F50D5C607200C6C744 /* CVTextDecoration.m */,
 				6A4772E80D5C607200C6C744 /* CVFloatingBackground.h */,
@@ -2521,7 +2505,6 @@
 				D482C39C0ECB41D8005E8D68 /* SymbolWindow.xib */,
 				D482C39D0ECB41D8005E8D68 /* TooltipWindow.xib */,
 				D482C39E0ECB41D8005E8D68 /* VerticalCandidateWindow.xib */,
-				D482C39F0ECB41D8005E8D68 /* DictionaryWindow.xib */,
 				D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */,
 			);
 			name = Interface;
@@ -2533,7 +2516,6 @@
 				D4FF7E5B0F45DB76006F4025 /* Input Method Toggle */,
 				D484CF6D0EC2288C0051B6CA /* AboutWindow */,
 				D484CF4E0EC2245C0051B6CA /* Symbol */,
-				D484CEF80EC21EFB0051B6CA /* Dictionary */,
 				D484CEEB0EC21AEF0051B6CA /* Search */,
 				D484CEEA0EC21AE20051B6CA /* Tooltip */,
 				D484CEDE0EC218D90051B6CA /* Notify */,
@@ -2610,28 +2592,6 @@
 				D4F7A56B0D82E699004AFC38 /* CVSearchController.m */,
 			);
 			name = Search;
-			sourceTree = "<group>";
-		};
-		D484CEF80EC21EFB0051B6CA /* Dictionary */ = {
-			isa = PBXGroup;
-			children = (
-				D484CEF90EC21F600051B6CA /* View */,
-				6A4772E20D5C607200C6C744 /* CVDictionaryController.h */,
-				6A4772E30D5C607200C6C744 /* CVDictionaryController.mm */,
-				D440D5A10D630FA7000A483C /* CVDictionaryController+Toolbar.m */,
-				D4A1F1D20EE313470064FF77 /* CVDictionaryController+Orz.h */,
-				D4A1F1D30EE313470064FF77 /* CVDictionaryController+Orz.m */,
-			);
-			name = Dictionary;
-			sourceTree = "<group>";
-		};
-		D484CEF90EC21F600051B6CA /* View */ = {
-			isa = PBXGroup;
-			children = (
-				6A4772E40D5C607200C6C744 /* CVDictionaryWindow.h */,
-				6A4772E50D5C607200C6C744 /* CVDictionaryWindow.m */,
-			);
-			name = View;
 			sourceTree = "<group>";
 		};
 		D484CF390EC2221A0051B6CA /* View */ = {
@@ -3012,13 +2972,10 @@
 			files = (
 				D45A178C0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */,
 				D4987D1F0E17FB37001D4197 /* CVKeyboardHelper.h in Headers */,
-				6A859F600E41A6A8002C3544 /* TrackerMaker.h in Headers */,
-				6A859F650E41A6DF002C3544 /* TrackerSender.h in Headers */,
 				D484CF5D0EC226850051B6CA /* CVAboutController.h in Headers */,
 				D4FC914E0EC896210087648C /* CVHorizontalCandidateController.h in Headers */,
 				D4FC91710EC89A470087648C /* CVHorizontalCandidateControl.h in Headers */,
 				D4FC917B0EC89A830087648C /* CVHorizontalCandidateCell.h in Headers */,
-				D4A1F1D40EE313470064FF77 /* CVDictionaryController+Orz.h in Headers */,
 				6AE561A80EF3CD7E002460F0 /* OVDistributionConfig.h in Headers */,
 				6AE561AA0EF3CD7E002460F0 /* OVLoaderUserPersistence.h in Headers */,
 				D41C8F5F0EF3DF6D00BA9742 /* CVButtonViewController.h in Headers */,
@@ -3256,7 +3213,6 @@
 				D46B36690DA94FC8007A738E /* PBXTargetDependency */,
 				D4B3E80F0DC7A90C000980D8 /* PBXTargetDependency */,
 				D43CC14C0EE413750032096E /* PBXTargetDependency */,
-				6A859F830E41AAB5002C3544 /* PBXTargetDependency */,
 				6AB931930EA42E60005CD336 /* PBXTargetDependency */,
 				6AEB82700EADC46C005F82AB /* PBXTargetDependency */,
 				6AC8990C0EB5FAE2009217C5 /* PBXTargetDependency */,
@@ -3638,7 +3594,6 @@
 				D482C3AE0ECB41D8005E8D68 /* SymbolWindow.xib in Resources */,
 				D482C3AF0ECB41D8005E8D68 /* TooltipWindow.xib in Resources */,
 				D482C3B00ECB41D8005E8D68 /* VerticalCandidateWindow.xib in Resources */,
-				D482C3B10ECB41D8005E8D68 /* DictionaryWindow.xib in Resources */,
 				C1A1F0010F00000100000002 /* install-lexicon-release.sh in Resources */,
 				D41C8F8E0EF3E0C600BA9742 /* SmileyView.xib in Resources */,
 				D4FF804F0F462074006F4025 /* InputMethodToggleWindowController.xib in Resources */,
@@ -3870,8 +3825,7 @@
 				6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
 				6A4773070D5C607200C6C744 /* CVBubbleTextView.m in Sources */,
 				6A4773080D5C607200C6C744 /* CVBubbleTextWindow.m in Sources */,
-				6A4773090D5C607200C6C744 /* CVDictionaryController.mm in Sources */,
-				6A47730A0D5C607200C6C744 /* CVDictionaryWindow.m in Sources */,
+				6A47730A0D5C607200C6C744 /* CVFloatingPanelWindow.m in Sources */,
 				6A47730B0D5C607200C6C744 /* CVEncodingService.mm in Sources */,
 				6A47730C0D5C607200C6C744 /* CVFloatingBackground.m in Sources */,
 				6A47730D0D5C607200C6C744 /* CVFloatingTableView.m in Sources */,
@@ -3885,17 +3839,14 @@
 				6A4773170D5C607200C6C744 /* OpenVanillaController.mm in Sources */,
 				6A4773180D5C607200C6C744 /* OpenVanillaLoader.mm in Sources */,
 				D479FDB40D60506200B33AA2 /* CVToolTipController.m in Sources */,
-				D440D5A20D630FA7000A483C /* CVDictionaryController+Toolbar.m in Sources */,
 				D4F7A56D0D82E699004AFC38 /* CVSearchController.m in Sources */,
 				D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */,
 				D4F7DB080D9B8E8000AA67B9 /* CVSendKey.m in Sources */,
 				D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */,
-				6A859F660E41A6DF002C3544 /* TrackerSender.mm in Sources */,
 				D484CF5E0EC226850051B6CA /* CVAboutController.mm in Sources */,
 				D4FC914F0EC896210087648C /* CVHorizontalCandidateController.mm in Sources */,
 				D4FC91720EC89A470087648C /* CVHorizontalCandidateControl.m in Sources */,
 				D4FC917C0EC89A830087648C /* CVHorizontalCandidateCell.m in Sources */,
-				D4A1F1D50EE313470064FF77 /* CVDictionaryController+Orz.m in Sources */,
 				6AE561D90EF3D194002460F0 /* OVLoaderUserPersistence.mm in Sources */,
 				D41C8F600EF3DF6D00BA9742 /* CVButtonViewController.mm in Sources */,
 				D41C8F690EF3DFCF00BA9742 /* CVSmileyViewController.mm in Sources */,
@@ -5001,17 +4952,15 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
-					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
-					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
-					OVLOADER_USE_SQLITE_CRYPTO,
-					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
-					"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
-					"SQLITE_HAS_CODEC=1",
-					OV_USE_SQLITE,
-					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
-				);
+					GCC_PREPROCESSOR_DEFINITIONS = (
+						"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
+						"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
+						OVLOADER_USE_SQLITE_CRYPTO,
+						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
+						"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
+						"SQLITE_HAS_CODEC=1",
+						OV_USE_SQLITE,
+					);
 				GCC_VERSION = "";
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5047,17 +4996,15 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
-					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
-					"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
-					OVLOADER_USE_SQLITE_CRYPTO,
-					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
-					"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
-					"SQLITE_HAS_CODEC=1",
-					OV_USE_SQLITE,
-					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
-				);
+					GCC_PREPROCESSOR_DEFINITIONS = (
+						"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
+						"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
+						OVLOADER_USE_SQLITE_CRYPTO,
+						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
+						"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
+						"SQLITE_HAS_CODEC=1",
+						OV_USE_SQLITE,
+					);
 				GCC_VERSION = "";
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";

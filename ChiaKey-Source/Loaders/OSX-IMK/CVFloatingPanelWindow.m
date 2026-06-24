@@ -1,8 +1,8 @@
 // [AUTO_HEADER]
 
-#import "CVDictionaryWindow.h"
+#import "CVFloatingPanelWindow.h"
 
-@implementation CVDictionaryWindow
+@implementation CVFloatingPanelWindow
 - (id)initWithContentRect:(NSRect)contentRect
                 styleMask:(NSWindowStyleMask)aStyle
                   backing:(NSBackingStoreType)bufferingType

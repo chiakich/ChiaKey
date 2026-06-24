@@ -7,8 +7,6 @@
 #import "CVApplicationController.h"
 #import "CVNotifyController.h"
 #import "NSStringExtension.h"
-#import "TrackerMaker.h"
-#import "TrackerSender.h"
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
 #import "CVKeyboardHelper.h"
@@ -265,7 +263,6 @@ static id OVCActiveContextSender = nil;
 
   _context->activate();
 
-  [[[NSApp delegate] dictionaryController] restoreWindowStatus];
   [[[NSApp delegate] symbolController] restoreWindowStatus];
   [OpenVanillaController setActiveContext:self sender:sender];
 }
@@ -297,7 +294,6 @@ static id OVCActiveContextSender = nil;
 
   // NSLog(@"deactivateServer (client %08x)", sender);
 
-  [[[NSApp delegate] dictionaryController] temporaryHide];
   [[[NSApp delegate] symbolController] temporaryHide];
   [[[NSApp delegate] tooltipController] hide];
   [[[NSApp delegate] searchController] hide];
@@ -751,29 +747,11 @@ static id OVCActiveContextSender = nil;
         [CVNotifyController notify:messgae];
       }
     }
-    if (loaderService->dicitonaryKeyword().size()) {
-      NSString *keyword = [NSString
-          stringWithUTF8String:loaderService->dicitonaryKeyword().c_str()];
-      [[appDelegate dictionaryController] search:keyword];
-      // NSLog(@"Search Dictionary");
-    }
-
     if (loaderService->loaderFeatureKey().length()) {
       string key = loaderService->loaderFeatureKey();
       string value = loaderService->loaderFeatureValue();
 
-      if (key == "SendTrackerRequest") {
-        Takao::TrackerMaker tm;
-        NSString *trackerURLString =
-            [NSString stringWithUTF8String:tm.trackerURLString(value).c_str()];
-
-        // remember we must do this on the main thread because the HTTP request
-        // will be autoreleased later when it's done (or when it fails)
-        [[TrackerSender sharedTrackerSender]
-            performSelectorOnMainThread:@selector(sendTrackerWithURLString:)
-                             withObject:trackerURLString
-                          waitUntilDone:NO];
-      } else if (key == "LaunchApp") {
+      if (key == "LaunchApp") {
         value = string("open ") + value;
         system(value.c_str());
       }
@@ -866,7 +844,7 @@ static id OVCActiveContextSender = nil;
   }
 }
 - (void)helpAction:(id)sender {
-  NSString *urlString = @"http://tw.media.yahoo.com/keykey/help/";
+  NSString *urlString = @"https://github.com/akira02/ChiaKey";
   NSURL *url = [NSURL URLWithString:urlString];
   [[NSWorkspace sharedWorkspace] openURL:url];
   [self _resetUI];

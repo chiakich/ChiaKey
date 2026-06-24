@@ -9,7 +9,6 @@
 #include "OVLoaderUserPersistence.h"
 #include "SystemInfo.h"
 #include "UUIDHelper.h"
-#include "Version.h"
 
 using namespace OpenVanilla;
 using namespace CareService;
@@ -25,13 +24,10 @@ using namespace CareService;
   PVStaticModulePackageLoadingSystem *_staticModuleLoadingSystem;
   PVCommonPackageLoadingSystem *_signedModuleLoadingSystem;
   PVLoader *_loader;
-  VersionChecker *_versionChecker;
 
   NSString *_databaseVersion;
 
   OVSQLiteConnection *_userPhraseDB;
-
-  id _cannedMessagesDataHTTPRequest;
 
   OVLoaderUserPersistence *_userPersistence;
   NSMutableArray *_mergedCannedMessagesArray;
@@ -46,7 +42,6 @@ using namespace CareService;
 + (OpenVanillaLoader *)sharedInstance;
 + (PVLoader *)sharedLoader;
 + (PVLoaderService *)sharedLoaderService;
-+ (VersionChecker *)sharedVersionChecker;
 + (NSLock *)sharedLock;
 + (void)releaseSharedObjects;
 
@@ -61,7 +56,6 @@ using namespace CareService;
 - (NSArray *)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern;
 - (bool)exportUserPhraseDBToFile:(NSString *)path;
 - (bool)importUserPhraseDBFromFile:(NSString *)path;
-- (VersionChecker *)versionChecker;
 - (NSString *)databaseVersion;
 
 #pragma mark User Phrase DO methods
@@ -75,9 +69,6 @@ using namespace CareService;
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;
 - (void)userPhraseDBAddNewRows:(NSArray *)array;
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row;
-
-#pragma mark Auto-update and server-side data provision
-- (void)scheduleDataProvisionServices;
 
 - (void)mergeCannedMessagesData;
 - (NSArray *)mergedCannedMessagesArray;

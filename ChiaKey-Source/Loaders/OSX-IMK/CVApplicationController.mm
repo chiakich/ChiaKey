@@ -4,25 +4,8 @@
 
 #import "CVNotifyController.h"
 #import "CVSendKey.h"
-#import "Minotaur.h"
 #import "OpenVanillaLoader.h"
-//#import "Version.h"
 #import "OpenVanillaController.h"
-
-#include <unistd.h>
-
-#if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
-#import <zlib.h>
-#endif
-
-using namespace CareService;
-using namespace Minotaur;
-
-// @todo in deployment, make this better
-extern "C" {
-extern char VendorMotcle[];
-extern size_t VendorMotcleSize;
-};
 
 static NSString *const ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey =
     @"ChiaKeyLexiconAutoUpdateLastCheck";
@@ -39,12 +22,10 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
   [_horizontalCandidateController release];
   [_plainTextCandidateController release];
   [_searchController release];
-  [_dictionaryController release];
   [_symbolController release];
   [_tooltipController release];
   [_aboutController release];
   [_inputMethodToggleWindowController release];
-  [_versionInfo release];
   [super dealloc];
 }
 - (void)setLoader:(OpenVanillaLoader *)aLoader {
@@ -77,9 +58,6 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
 - (CVPlainTextCandidateController *)plainTextCandidateController {
   return _plainTextCandidateController;
 }
-- (CVDictionaryController *)dictionaryController {
-  return _dictionaryController;
-}
 - (CVSymbolController *)symbolController {
   return _symbolController;
 }
@@ -105,7 +83,6 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
   _horizontalCandidateController = [CVHorizontalCandidateController new];
   _verticalCandidateController = [CVVerticalCandidateController new];
   _searchController = [CVSearchController new];
-  _dictionaryController = [CVDictionaryController new];
   _symbolController = [CVSymbolController new];
   _tooltipController = [CVToolTipController new];
   _aboutController = [CVAboutController new];
@@ -240,271 +217,6 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
   return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
 }
 
-- (NSString *)latestVersion {
-  if (_versionInfo == nil) [self _loadVersionInfo];
-  NSString *latestVersion = [_versionInfo valueForKey:@"latestVersion"];
-  if (latestVersion)
-    return latestVersion;
-  else
-    return @"";
-}
-- (NSString *)latestCheck {
-  if (_versionInfo == nil) [self _loadVersionInfo];
-  NSDate *date = [_versionInfo valueForKey:@"latestCheck"];
-  if (!date) return @"";
-  NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
-  [dateFormatter setDateStyle:NSDateFormatterMediumStyle];
-  [dateFormatter setTimeStyle:NSDateFormatterNoStyle];
-  return [dateFormatter stringFromDate:date];
-}
-
-- (NSData *)_updateDataUsingBlockingFetch {
-  NSString *versionInfoURLString = VERSION_INFO_URL;
-
-  OVKeyValueMap kvm = [_loader loader]->configKeyValueMap();
-  if (kvm.hasKey("VersionInfoURL"))
-    versionInfoURLString = [NSString
-        stringWithUTF8String:kvm.stringValueForKey("VersionInfoURL").c_str()];
-
-  NSURL *versionInfoURL = [NSURL URLWithString:versionInfoURLString];
-
-  NSData *versionInfoData = [NSData dataWithContentsOfURL:versionInfoURL];
-  if (![versionInfoData length]) {
-    return nil;
-  }
-
-// TIGER-SPECIFIC GZIP'ED SERVER DATA DECOMPRESSION...
-#if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
-  NSData *fetchedData = versionInfoData;
-  // NSLog(@"data length: %d", [fetchedData length]);
-  unsigned char *byteData = (unsigned char *)[fetchedData bytes];
-  if ([fetchedData length] > 2) {
-    // NSLog(@"first byte: 0x%02x ('%c') and 0x%02x ('%c')", byteData[0],
-    // byteData[0], byteData[1], byteData[1]);
-    if (byteData[0] == 0x1f && byteData[1] == 0x8b) {
-      // NSLog(@"is gziped data!");
-
-      // int uncompress (Bytef *dest, uLongf *destLen, const Bytef *source,
-      // uLong sourceLen); we assume a deflate rate of x50 (2%)
-      uLongf destSize = (uLongf)([fetchedData length] * 50);
-      NSMutableData *decompressedData = [NSMutableData dataWithLength:destSize];
-      // NSLog(@"capacity: %d", destSize);
-
-      z_stream zst;
-      bzero(&zst, sizeof(zst));
-      zst.next_in = byteData;
-      zst.avail_in = [fetchedData length];
-      zst.total_in = 0;
-      zst.next_out = (Bytef *)[decompressedData mutableBytes];
-      zst.avail_out = destSize;
-      zst.total_out = 0;
-      zst.zalloc = Z_NULL;
-      zst.zfree = Z_NULL;
-      zst.opaque = Z_NULL;
-
-      // 47 guesses the format
-      int result = inflateInit2(&zst, 47);
-      if (result != Z_OK) {
-        NSLog(@"inflateInit2 error");
-      } else {
-        result = inflate(&zst, Z_NO_FLUSH);
-        // NSLog(@"zlib result code: %d, returned dest size: %d", result,
-        // zst.total_out);
-        if (result != Z_STREAM_END) {
-          NSLog(@"decompress error");
-        } else {
-          [decompressedData setLength:zst.total_out];
-          // NSLog(@"real data size: %d (check: %d)", zst.total_out,
-          // [decompressedData length]);
-          fetchedData = decompressedData;
-        }
-      }
-
-    } else {
-      // NSLog(@"normal data");
-    }
-  }
-
-  versionInfoData = fetchedData;
-#endif
-
-  return versionInfoData;
-}
-
-- (NSDictionary *)shouldUpdate {
-  return [self shouldUpdateWithVersionInfoData:nil
-                      versionInfoSignatureData:nil];
-}
-
-- (NSDictionary *)shouldUpdateWithVersionInfoData:(NSData *)infoData
-                         versionInfoSignatureData:(NSData *)sigData {
-  // NSLog(@"%s, %p, %p", __PRETTY_FUNCTION__, infoData, sigData);
-  NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-
-  NSData *versionInfoData = infoData;
-  if (!versionInfoData) {
-    versionInfoData = [self _updateDataUsingBlockingFetch];
-  }
-
-  if (!versionInfoData) {
-    [dictionary setValue:@"Error" forKey:@"Status"];
-    [dictionary setValue:@"No version info data" forKey:@"Error"];
-    return dictionary;
-  }
-
-  NSString *versionInfoFilePath = [self randomTemporaryFilenameWithFullpath];
-  [versionInfoData writeToFile:versionInfoFilePath atomically:YES];
-
-  NSData *versionInfoSignatureData = sigData;
-  if (!versionInfoSignatureData) {
-    NSString *versionInfoSignatureURLString = VERSION_INFO_SIGNATURE_URL;
-
-    OVKeyValueMap kvm = [_loader loader]->configKeyValueMap();
-    if (kvm.hasKey("VersionInfoSignatureURL")) {
-      versionInfoSignatureURLString = [NSString
-          stringWithUTF8String:kvm.stringValueForKey("VersionInfoSignatureURL")
-                                   .c_str()];
-    }
-
-    versionInfoSignatureData = [NSData
-        dataWithContentsOfURL:[NSURL
-                                  URLWithString:versionInfoSignatureURLString]];
-  }
-
-  if (![versionInfoSignatureData length]) {
-    [dictionary setValue:@"Error" forKey:@"Status"];
-    [dictionary setValue:@"No signature data" forKey:@"Error"];
-    return dictionary;
-  }
-
-  NSString *versionInfoSignatureFilePath =
-      [self randomTemporaryFilenameWithFullpath];
-  [versionInfoSignatureData writeToFile:versionInfoSignatureFilePath
-                             atomically:YES];
-  if (![self validateFile:versionInfoFilePath
-          againstSignature:versionInfoSignatureFilePath]) {
-    [dictionary setValue:@"Error" forKey:@"Status"];
-    [dictionary setValue:@"Bad signature" forKey:@"Error"];
-    return dictionary;
-  }
-
-  // NSLog(@"checking component for update, name: %s",
-  // OPENVANILLA_LOADER_COMPONENT_NAME);
-  NSDictionary *actionDictionary = [self
-      shouldComponentNamed:
-          [NSString stringWithUTF8String:OPENVANILLA_LOADER_COMPONENT_NAME]
-        versionInfoXMLFile:versionInfoFilePath];
-
-  NSDate *now = [NSDate date];
-  NSString *latestVersion = [actionDictionary valueForKey:@"latestVersion"];
-
-  NSString *action = [actionDictionary valueForKey:@"UpdateAction"];
-  if (action == nil || ![action length]) {
-    // NSLog(@"loader doesn't need update, now checking: %d",
-    // OPENVANILLA_DATABASE_COMPONENT_NAME);
-    actionDictionary = [self
-        shouldComponentNamed:
-            [NSString stringWithUTF8String:OPENVANILLA_DATABASE_COMPONENT_NAME]
-          versionInfoXMLFile:versionInfoFilePath];
-  }
-
-  if (_versionInfo) [_versionInfo release];
-
-  _versionInfo = [[NSMutableDictionary dictionary] retain];
-  [_versionInfo setValue:now forKey:@"latestCheck"];
-  [_versionInfo setValue:latestVersion forKey:@"latestVersion"];
-  [self _saveVersionInfo];
-
-  if (![actionDictionary count]) {
-    [dictionary setValue:@"No" forKey:@"Status"];
-    return dictionary;
-  }
-
-  action = [actionDictionary valueForKey:@"UpdateAction"];
-  if (action == nil || ![action length]) {
-    [dictionary setValue:@"No" forKey:@"Status"];
-    return dictionary;
-  }
-  [dictionary setValue:@"Yes" forKey:@"Status"];
-  [dictionary addEntriesFromDictionary:actionDictionary];
-  return dictionary;
-}
-
-- (bool)validateFile:(NSString *)filename
-    againstSignature:(NSString *)signatureFilename {
-  string upf = [filename UTF8String];
-  string usf = [signatureFilename UTF8String];
-
-  pair<char *, size_t> sigfile = OVFileHelper::SlurpFile(usf);
-
-  if (!sigfile.first) return NO;
-
-  bool valid = NO;
-
-  if (Minos::ValidateFile(upf, sigfile,
-                          pair<char *, size_t>(VendorMotcle, VendorMotcleSize)))
-    valid = YES;
-
-  free(sigfile.first);
-  return valid;
-}
-- (NSString *)randomTemporaryFilenameWithFullpath {
-  string tmpDir =
-      OVPathHelper::PathCat(OVDirectoryHelper::TempDirectory(), "XXXXXXXXXX");
-  char *tmp = (char *)calloc(1, tmpDir.size() + 1);
-  strncpy(tmp, tmpDir.c_str(), tmpDir.size());
-  int fd = mkstemp(tmp);
-  if (fd >= 0) {
-    close(fd);
-    unlink(tmp);
-  }
-  NSString *result = [NSString stringWithUTF8String:tmp];
-  free(tmp);
-  return result;
-}
-
-- (NSDictionary *)shouldComponentNamed:(NSString *)component
-                    versionInfoXMLFile:(NSString *)filename {
-  [_loader versionChecker]->loadVersionInfoXMLFile([filename UTF8String]);
-
-  if (![_loader versionChecker]->componentNeedsUpdating(
-          [component UTF8String])) {
-    NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-    [dictionary setValue:[NSString stringWithUTF8String:[_loader versionChecker]
-                                                            ->latestVersion()
-                                                            .c_str()]
-                  forKey:@"latestVersion"];
-    return dictionary;
-  }
-
-  NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-  [dictionary setValue:[NSString stringWithUTF8String:[_loader versionChecker]
-                                                          ->updateAction()
-                                                          .c_str()]
-                forKey:@"UpdateAction"];
-  [dictionary setValue:[NSString stringWithUTF8String:[_loader versionChecker]
-                                                          ->actionURL()
-                                                          .c_str()]
-                forKey:@"ActionURL"];
-  [dictionary setValue:[NSString stringWithUTF8String:[_loader versionChecker]
-                                                          ->signatureURL()
-                                                          .c_str()]
-                forKey:@"SignatureURL"];
-  [dictionary setValue:[NSString stringWithUTF8String:[_loader versionChecker]
-                                                          ->latestVersion()
-                                                          .c_str()]
-                forKey:@"latestVersion"];
-
-  string changeLogBaseURL = [_loader versionChecker]->changeLogBaseURL();
-  string localeTag = [_loader versionChecker]->changeLogLocaleTagURL();
-  string changeLogURL =
-      OVStringHelper::StringByReplacingOccurrencesOfStringWithString(
-          changeLogBaseURL, localeTag, [_loader loaderService]->locale());
-
-  [dictionary setValue:[NSString stringWithUTF8String:changeLogURL.c_str()]
-                forKey:@"ChangeLogURL"];
-  return dictionary;
-}
 - (NSString *)userInformationForCareService {
   stringstream sst;
   PVPlistValue *allPlists =
@@ -519,9 +231,6 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
 }
 - (oneway void)sendKey:(NSString *)key {
   [[CVSendKey sharedSendKey] typeString:key];
-}
-- (oneway void)searchDictionary:(NSString *)keyword {
-  [_dictionaryController search:keyword];
 }
 
 - (BOOL)userPhraseDBCanProvideService {
@@ -571,54 +280,6 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
 @end
 
 #pragma mark -
-
-@implementation CVApplicationController (versionInfo)
-- (NSString *)_plistFilepath:(NSString *)filename {
-  NSString *libPath = [NSSearchPathForDirectoriesInDomains(
-      NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-  NSString *prefPath = [libPath stringByAppendingPathComponent:@"Preferences"];
-
-  if (![[NSFileManager defaultManager] fileExistsAtPath:prefPath
-                                            isDirectory:NULL]) {
-    [[NSFileManager defaultManager] createDirectoryAtPath:prefPath
-                              withIntermediateDirectories:YES
-                                               attributes:nil
-                                                    error:nil];
-  }
-  return [prefPath stringByAppendingPathComponent:filename];
-}
-- (NSString *)_versionInfoPath {
-  [self _plistFilepath:@"com.chiakey.ChiaKey.UpdateCheck.plist"];
-}
-- (void)_saveVersionInfo {
-  NSData *data = [NSPropertyListSerialization
-      dataWithPropertyList:_versionInfo
-                    format:NSPropertyListXMLFormat_v1_0
-                   options:0
-                     error:nil];
-
-  if (data) [data writeToFile:[self _versionInfoPath] atomically:YES];
-}
-- (void)_loadVersionInfo {
-  [_versionInfo release];
-  _versionInfo = [[NSMutableDictionary dictionary] retain];
-  NSData *data = [NSData dataWithContentsOfFile:[self _versionInfoPath]
-                                        options:0
-                                          error:nil];
-  if (data) {
-    NSPropertyListFormat format;
-    NSDictionary *d = [NSPropertyListSerialization
-        propertyListWithData:data
-                      options:0
-                       format:&format
-                        error:nil];
-    if (d) {
-      [_versionInfo addEntriesFromDictionary:d];
-    }
-  }  // end data
-}
-
-@end
 
 @implementation CVApplicationController (AppDelegate)
 

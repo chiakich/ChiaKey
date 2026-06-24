@@ -1,7 +1,6 @@
 // [AUTO_HEADER]
 
 #import <Cocoa/Cocoa.h>
-#import <WebKit/WebKit.h>
 
 #import "LFUtilities.h"
 
