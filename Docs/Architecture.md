@@ -67,9 +67,8 @@ helpers。這些都視為歷史資料，除非它仍是現代 macOS build 的必
 3. iOS `UIInputViewController`。
 4. 安裝、簽章、release packaging。
 
-iOS host 已拆到 sibling repo `../ChiaKey-iOS`，主 repo 只保留
-`ChiaKeyCore` 的公開 facade 與 minimal platform placeholder。實作細節集中在
-`Docs/iOSImplementation.md`。
+iOS host 可放在獨立 repo；主 repo 只保留 `ChiaKeyCore` 的公開 facade 與
+minimal platform placeholder。實作細節集中在 `Docs/iOSImplementation.md`。
 
 ### 保留老派組字策略
 

@@ -3,18 +3,18 @@
 最後更新：2026-06-23
 
 這份文件保留在 ChiaKey 主 repo，說明 iOS custom keyboard 要如何接
-`ChiaKeyCore`。實際 iOS app 與 keyboard extension 已拆到 sibling repo：
+`ChiaKeyCore`。實際 iOS app 與 keyboard extension 可放在獨立 repo，並把
+主 repo 作為共用輸入核心來源。
+
+建議 repo layout：
 
 ```text
-../ChiaKey-iOS/
-```
-
-目前本機開發 layout：
-
-```text
-work/
-├── KeyKey-Boneyard/   # ChiaKeyCore、OpenVanilla、OVIMMandarin、bundled DB
-└── ChiaKey-iOS/       # iOS container app + keyboard extension
+ChiaKey-iOS/
+├── App/
+├── KeyboardExtension/
+├── Shared/
+├── Resources/
+└── Support/HeaderShims/
 ```
 
 未來若要正式化依賴，可以把 `ChiaKeyCore` 轉成 submodule、Swift Package 或
@@ -25,7 +25,7 @@ XCFramework。主 repo 仍保留 `Loaders/iOS-Keyboard/Resources/.gitkeep`，用
 
 ```text
 iOS KeyboardExtension / UIKit
-  -> ObjC++ / Swift bridge in ChiaKey-iOS
+  -> ObjC++ / Swift bridge in the iOS host repo
   -> ChiaKeyCore
   -> OVIMMandarin
   -> Formosa + Manjusri + SQLite ChiaKeySource.db
@@ -91,7 +91,7 @@ snapshot。
 C ABI bridge、OVIMMandarin、Formosa 與 Manjusri source，確保主 repo 的共用核心
 仍能被 iOS toolchain 解析。
 
-iOS app/extension build 請到 `../ChiaKey-iOS` 跑：
+iOS app/extension build 請在對應的 iOS host repo 執行：
 
 ```sh
 Scripts/test-ios-xcode-build.sh

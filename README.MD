@@ -42,14 +42,14 @@
 4. bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
 5. 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
 6. 詞庫由獨立 repo `ChiaKey-Lexicon` 透過 GitHub Releases 發佈。
-7. 新增實驗性的 `ChiaKeyCore` host-neutral engine facade，作為 sibling iOS repo 的共用輸入核心地基。
+7. 新增實驗性的 `ChiaKeyCore` host-neutral engine facade，作為獨立 iOS host repo 可共用的輸入核心地基。
 
-本機開發環境使用 Xcode 26.5。
+需使用支援 Apple Silicon 的現代 Xcode；目前已在 Xcode 26.5 驗證。
 
 ## 決策文件
 
 - [架構決策](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
-- [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與 sibling iOS repo 關係。
+- [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與獨立 iOS host repo 關係。
 - [iOS 實作指南](Docs/iOSImplementation.md)：iOS keyboard extension 的 core 接法、repo 邊界與驗證入口。
 - [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
 - [Release packaging](Docs/ReleasePackaging.md)：正式 `.pkg` installer、簽章與 notarization 流程。
@@ -60,7 +60,7 @@
 
 目前第一個現代化里程碑是讓歷史 target 能在 Xcode 26+ / Apple Silicon 上編譯。
 
-本機曾於 2026-06-22 驗證：
+已於 2026-06-22 使用 Xcode 26.5 驗證：
 
 ```sh
 xcodebuild -project ChiaKey-Source/Takao.xcodeproj \
@@ -80,7 +80,7 @@ xcodebuild -project ChiaKey-Source/Takao.xcodeproj \
   build
 ```
 
-目前 Release build 已可在現代 Xcode 完成。先前的 `LSMinimumSystemVersion`、legacy library search path、shell script phase output、舊 WebView、舊 TSM fallback 與 CommonPanels sheet API 警告已整理；這些調整多屬於 build hygiene 或維護性清理。乾淨 rebuild 仍會看到部分舊 API / nib 警告，例如 `NSConnection`、舊 AppKit 常數與既有 XIB layout notices；這些要分批評估，尤其 IPC 與組字視窗相關程式不應一次大換。
+目前 Release build 已可在現代 Xcode 完成。先前的 `LSMinimumSystemVersion`、legacy library search path、shell script phase output、舊 WebView、舊 TSM fallback 與 CommonPanels sheet API 警告已整理；這些調整多屬於建置設定與維護性清理。乾淨 rebuild 仍會看到部分舊 API / nib 警告，例如 `NSConnection`、舊 AppKit 常數與既有 XIB layout notices；這些要分批評估，尤其 IPC 與組字視窗相關程式不應一次大換。
 
 ## 本機測試
 
@@ -196,8 +196,7 @@ Scripts/test-core-smoke.sh
 Scripts/test-ios-core-syntax.sh
 ```
 
-實際 iOS app + keyboard extension project 已拆到 sibling repo `../ChiaKey-iOS`。
-要驗證 iOS Xcode build，請在該 repo 執行 `Scripts/test-ios-xcode-build.sh`。
+iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接入共用輸入核心。若有對應的 iOS host project，請在該 repo 執行它自己的 Xcode build 驗證腳本。
 
 ## 目錄概覽
 
@@ -208,7 +207,7 @@ Scripts/test-ios-core-syntax.sh
 - `ChiaKey-Source/Frameworks/Manjusri/`：SQLite-backed language model。
 - `ChiaKey-Source/ModulePackages/OVIMMandarin/`：智慧注音 OpenVanilla module。
 - `ChiaKey-Source/Loaders/OSX-IMK/`：目前發佈中的 macOS InputMethodKit host。
-- `ChiaKey-Source/Loaders/iOS-Keyboard/`：iOS host placeholder；實作位於 sibling repo `../ChiaKey-iOS`。
+- `ChiaKey-Source/Loaders/iOS-Keyboard/`：iOS host placeholder；實際 iOS host 可放在獨立 repo。
 - `ChiaKey-Source/Distributions/Takao/CookedDatabase/`：本機 bundled fallback DB 位置；DB 由詞庫 repo 或 release artifact 提供。
 - `Scripts/`：本機 build、install、icon、lexicon helper。
 - `Docs/`：現代化決策文件。

@@ -2,7 +2,7 @@
 
 最後更新：2026-06-24
 
-這份文件只追蹤工作順序，不是架構 source of truth。
+這份文件只追蹤工作順序，不是正式架構決策文件。
 
 正式決策請看：
 
@@ -122,7 +122,7 @@ Active input method path、倉頡、簡易不應只因為老就移除。
 
 ### 6. iOS-ready core boundary
 
-這不是立即發佈 iOS app，而是把 engine 與平台 host 的 seam 固定住。
+先把 engine 與平台 host 的邊界固定住，未來保留實作空間。
 實作細節集中在 [iOSImplementation.md](iOSImplementation.md)。
 
 下一步：
@@ -130,7 +130,7 @@ Active input method path、倉頡、簡易不應只因為老就移除。
 1. 將 `ChiaKeyCore` 接成正式 Xcode library target 或 Swift Package wrapper。
 2. 加 ObjC++ / Swift bridge，讓 Swift host 不直接 include OpenVanilla internals。
 3. 以 XCTest 固定 `你好`、候選選字、退格、標點、commit acknowledgement。
-4. 在 sibling repo `../ChiaKey-iOS` 維護最小 keyboard extension shell。
+4. 在獨立 iOS host repo 維護最小 keyboard extension shell。
 5. 保持沒有 Full Access 時仍可使用 bundled DB 與 extension writable path。
 
 ## 延後事項
@@ -145,4 +145,4 @@ Active input method path、倉頡、簡易不應只因為老就移除。
 6. personal learning overhaul
 7. iOS UI polish 與完整上架流程
 
-這些之後可能值得做，但現在更需要測試、release hygiene 與穩定詞庫 pipeline。
+這些之後可能值得做，但現在更需要測試、release 流程整理與穩定詞庫 pipeline。

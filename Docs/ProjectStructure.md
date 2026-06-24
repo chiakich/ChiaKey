@@ -88,15 +88,15 @@ ChiaKey-Source/Frameworks/ChiaKeyCore/
 ChiaKey-Source/Loaders/
 ├── CrossPlatform/       # macOS host 目前仍使用的 shared loader helpers
 ├── OSX-IMK/             # 目前發佈中的 macOS InputMethodKit host
-└── iOS-Keyboard/        # iOS host placeholder; implementation lives in ../ChiaKey-iOS
+└── iOS-Keyboard/        # iOS host placeholder; implementation can live in a separate repo
 ```
 
 `OSX-IMK` 已被 `Takao.xcodeproj` 大量引用。除非一起做 Xcode project
 migration，否則不要直接更名或搬動這個資料夾。
 
-`iOS-Keyboard` 目前只保留平台位置；實際 iOS app / keyboard extension 已拆到
-sibling repo `../ChiaKey-iOS`。iOS repo 應只透過 `ChiaKeyCore` 接主 repo，
-不直接把 host code 寫回 `OVIMSmartMandarin` internals。
+`iOS-Keyboard` 目前只保留平台位置；實際 iOS app / keyboard extension 可放在
+獨立 repo。iOS repo 應只透過 `ChiaKeyCore` 接主 repo，不直接把 host code
+寫回 `OVIMSmartMandarin` internals。
 
 ## iOS Host Placeholder
 
@@ -105,10 +105,10 @@ ChiaKey-Source/Loaders/iOS-Keyboard/
 └── Resources/           # reserved for future neutral fixtures if needed
 ```
 
-實際 iOS repo 目前放在 sibling path：
+若 iOS host 放在獨立 repo，建議維持下列結構：
 
 ```text
-../ChiaKey-iOS/
+ChiaKey-iOS/
 ├── App/
 ├── KeyboardExtension/
 ├── Shared/
@@ -117,9 +117,9 @@ ChiaKey-Source/Loaders/iOS-Keyboard/
 └── ChiaKey-iOS.xcodeproj
 ```
 
-未來若正式拆遠端 repo，優先保持 `App/`、`KeyboardExtension/`、`Shared/`、
-`Resources/` 這個 shape，再決定 `ChiaKeyCore` 要用 submodule、Swift Package 或
-vendored source。
+正式維護時，優先保持 `App/`、`KeyboardExtension/`、`Shared/`、`Resources/`
+這個 shape，再決定 `ChiaKeyCore` 要用 submodule、Swift Package 或 vendored
+source。
 
 iOS host 的資料流應是：
 
