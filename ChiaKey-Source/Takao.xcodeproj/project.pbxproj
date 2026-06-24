@@ -4960,7 +4960,7 @@
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.Keykey.ReverseLookup;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.ReverseLookup;
 				PRODUCT_NAME = YKReverseLookup;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
@@ -4986,7 +4986,7 @@
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.yahoo.Keykey.ReverseLookup;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.ChiaKey.ReverseLookup;
 				PRODUCT_NAME = YKReverseLookup;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = bundle;
