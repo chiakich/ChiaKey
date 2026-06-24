@@ -140,7 +140,7 @@ App repo 不應累積每一版 generated lexicon release。
 5. generated DB 的 GitHub Release assets。
 6. lexicon CI checks。
 
-Generated `ChiaKeySource.db` 應放在 GitHub Release assets，不應進入一般 git history。
+Generated `ChiaKeySource.db` 應放在 GitHub Release assets，不應進入一般 git history。App repo 只接受詞庫 repo 或 release artifact 產出的 DB 作為本機 bundled fallback，不再保存 raw lexicon source 或執行 DB build pipeline。
 
 ## Runtime 資料權責
 

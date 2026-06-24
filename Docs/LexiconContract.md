@@ -226,8 +226,10 @@ App repo 負責：
 3. runtime fallback behavior
 4. 偏好設定的 update UI
 5. user-facing error messages
-6. bundled fallback DB
+6. bundled fallback DB 的放置、驗證與使用流程
 7. compatibility documentation
+
+App repo 不負責保存 raw lexicon source，也不負責從 source build release DB。
 
 驗證應保守。拒絕一個壞 release，比安裝後默默破壞輸入行為好。
 

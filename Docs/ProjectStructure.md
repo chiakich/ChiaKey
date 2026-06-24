@@ -157,6 +157,8 @@ Scripts/dev-install-local.sh
 ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db
 ```
 
-這條路徑仍被既有 build 與 scripts 使用。未來若 macOS 與 iOS 共用 bundled
-runtime resources，可以新增中性的 resource 入口，再讓各平台 target copy
-到自己的 bundle。
+這條路徑仍被既有 build 與 scripts 使用，但 DB 由 ChiaKey-Lexicon release
+artifact 或本機 lexicon DB 提供；app repo 不再保留 historical `DataSource`
+raw files，也不在打包流程中重建詞庫 DB。未來若 macOS 與 iOS 共用 bundled
+runtime resources，可以新增中性的 resource 入口，再讓各平台 target copy 到
+自己的 bundle。

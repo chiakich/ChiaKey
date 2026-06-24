@@ -43,6 +43,11 @@ macOS 將 `com.apple.provenance` extended attribute 轉成 `._*` AppleDouble
 
 這適合本機測試 package payload，不適合公開 release。
 
+如果 `ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db`
+不存在，release packaging 會停止，不會從 raw source 重建 DB。請先放入
+ChiaKey-Lexicon 產出的 release/local DB，或用 `--bundle-local-lexicon` /
+`--local-lexicon` 明確指定要包進 app 的 DB。
+
 ## 正式簽章與 notarization
 
 公開 release 應使用：

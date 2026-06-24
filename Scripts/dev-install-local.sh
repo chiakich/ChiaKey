@@ -6,7 +6,6 @@ PROJECT="${ROOT_DIR}/ChiaKey-Source/Takao.xcodeproj"
 DATA_TABLES_DIR="${ROOT_DIR}/ChiaKey-Source/DataTables"
 DATABASES_DIR="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase"
 SMART_MANDARIN_DB="${DATABASES_DIR}/ChiaKeySource.db"
-SMART_MANDARIN_DB_SCRIPT="${ROOT_DIR}/Scripts/build-dev-smart-mandarin-db.rb"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 LOCAL_LEXICON_BUNDLE_SCRIPT="${ROOT_DIR}/Scripts/bundle-local-lexicon.sh"
 ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
@@ -83,6 +82,24 @@ run_bundle_local_lexicon() {
 
   print_command "${args[@]}"
   "${args[@]}"
+}
+
+require_lexicon_database_source() {
+  if [[ "${DRY_RUN}" == "1" || -f "${SMART_MANDARIN_DB}" || "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
+    return
+  fi
+
+  cat >&2 <<EOF
+Bundled fallback lexicon database not found:
+  ${SMART_MANDARIN_DB}
+
+This app repo no longer rebuilds ChiaKeySource.db from raw DataSource files.
+Use a database produced by the lexicon repo or release pipeline, then either:
+  - place it at the path above, or
+  - rerun with --bundle-local-lexicon to use the active local lexicon, or
+  - rerun with --local-lexicon /path/to/ChiaKeySource.db
+EOF
+  exit 1
 }
 
 require_value() {
@@ -186,11 +203,9 @@ run /bin/mkdir -p "${BUILT_RESOURCES}"
 run /bin/rm -rf "${BUILT_RESOURCES}/DataTables"
 run /usr/bin/ditto "${DATA_TABLES_DIR}" "${BUILT_RESOURCES}/DataTables"
 
-if [[ ! -f "${SMART_MANDARIN_DB}" && -f "${SMART_MANDARIN_DB_SCRIPT}" ]]; then
-  run /usr/bin/ruby "${SMART_MANDARIN_DB_SCRIPT}"
-fi
+require_lexicon_database_source
 
-if [[ "${DRY_RUN}" == "1" || -d "${DATABASES_DIR}" ]]; then
+if [[ "${DRY_RUN}" == "1" || -f "${SMART_MANDARIN_DB}" ]]; then
   run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
   run /usr/bin/ditto "${DATABASES_DIR}" "${BUILT_RESOURCES}/Databases"
   if [[ "${DRY_RUN}" == "1" || -f "${BUILT_RESOURCES}/Databases/ChiaKeySource.db" ]]; then

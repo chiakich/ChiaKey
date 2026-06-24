@@ -108,6 +108,8 @@ Scripts/dev-install-local.sh --open-settings
 
 `--bundle-local-lexicon` 會先驗證目前 active 的本機詞庫，再把 `~/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db` 複製進 dev build 的 `ChiaKey.app/Contents/Resources/Databases/ChiaKeySource.db`。若要測另一份本機 DB，使用 `--local-lexicon` 指定路徑。這適合在詞庫 repo 本機產出 DB 後，直接測 bundled DB fallback；正式執行時外部 active 詞庫仍會優先於 app 內建詞庫。
 
+若本機沒有 `ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db`，dev install 不會從 raw source 重建 DB。請先使用詞庫 repo 產出的 release/local DB，或以 `--bundle-local-lexicon` / `--local-lexicon` 明確指定要包進 app 的 DB。
+
 第一次安裝後，請到「系統設定 > 鍵盤 > 文字輸入」新增千秋輸入法。之後多數開發循環只需要跑 helper script，再切離與切回輸入法。
 
 若 macOS 持續使用舊的 input source cache，登出再登入一次通常可以清掉。
@@ -207,7 +209,7 @@ Scripts/test-ios-core-syntax.sh
 - `ChiaKey-Source/ModulePackages/OVIMMandarin/`：智慧注音 OpenVanilla module。
 - `ChiaKey-Source/Loaders/OSX-IMK/`：目前發佈中的 macOS InputMethodKit host。
 - `ChiaKey-Source/Loaders/iOS-Keyboard/`：iOS host placeholder；實作位於 sibling repo `../ChiaKey-iOS`。
-- `ChiaKey-Source/Distributions/Takao/CookedDatabase/`：目前 bundled fallback DB 與歷史 distribution outputs。
+- `ChiaKey-Source/Distributions/Takao/CookedDatabase/`：本機 bundled fallback DB 位置；DB 由詞庫 repo 或 release artifact 提供。
 - `Scripts/`：本機 build、install、icon、lexicon helper。
 - `Docs/`：現代化決策文件。
 
@@ -217,4 +219,4 @@ Scripts/test-ios-core-syntax.sh
 
 千秋輸入法 app repo 不維護語料來源，也不決定詞庫產製策略；這些工作由 ChiaKey-Lexicon repo 負責。app repo 只負責定義 runtime 需要的 DB contract、驗證 release artifact、安裝 / 更新 active lexicon，以及提供 bundled DB fallback。
 
-舊開源包曾附 `DataSource-1.1.2528` 作為外部來源說明，但該資料夾只有 README，沒有真正語料；千秋輸入法不再保存該占位資料夾。詞庫格式與更新契約請見 `Docs/LexiconContract.md`。
+歷史 KeyKey `DataSource` raw files 不再保存在 app repo。其 provenance 與 bootstrap DB 由 ChiaKey-Lexicon repo 管理；需要 bundled fallback DB 時，請使用詞庫 repo 產出的 release artifact 或本機 DB。詞庫格式與更新契約請見 `Docs/LexiconContract.md`。
