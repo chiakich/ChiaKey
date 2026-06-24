@@ -111,13 +111,14 @@ Active input method path、倉頡、簡易不應只因為老就移除。
 
 ### 5. Release packaging
 
-維護與驗證路徑穩定後，再把 app 包成現代 macOS 發佈形式：
+已建立 `Scripts/build-release-package.sh` 作為本機與 CI 共用的 `.pkg`
+打包入口。正式 release 前仍需要補齊公開發佈環節：
 
-1. repeatable Release build
-2. signed app bundle
-3. notarization plan
-4. GitHub Release artifact
-5. install / rollback 文件
+1. Developer ID Application / Installer signing identities
+2. notarization credential 與 CI keychain setup
+3. tag push 後自動上傳 `.pkg` 到 GitHub Release
+4. 視需要把 notarized `.pkg` 包進 `.dmg`
+5. install / rollback 文件與 release smoke test
 
 ### 6. iOS-ready core boundary
 

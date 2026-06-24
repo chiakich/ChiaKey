@@ -33,6 +33,7 @@
 - [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與 sibling iOS repo 關係。
 - [iOS 實作指南](Docs/iOSImplementation.md)：iOS keyboard extension 的 core 接法、repo 邊界與驗證入口。
 - [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
+- [Release packaging](Docs/ReleasePackaging.md)：正式 `.pkg` installer、簽章與 notarization 流程。
 - [現代化 roadmap](Docs/ModernizationPlan.md)：已完成基線、下一步與延後事項。
 - [OneKey 移除說明](Docs/LexiconOneKeyRemoval.md)：給詞庫 repo 的相容性說明。
 
@@ -91,6 +92,28 @@ Scripts/dev-install-local.sh --open-settings
 第一次安裝後，請到「系統設定 > 鍵盤 > 文字輸入」新增千秋輸入法。之後多數開發循環只需要跑 helper script，再切離與切回輸入法。
 
 若 macOS 持續使用舊的 input source cache，登出再登入一次通常可以清掉。
+
+## Release package
+
+正式發佈使用 macOS Installer `.pkg`，安裝目的地是：
+
+```text
+/Library/Input Methods/ChiaKey.app
+```
+
+建立本機 unsigned package：
+
+```sh
+Scripts/build-release-package.sh
+```
+
+預設輸出在：
+
+```text
+artifacts/release/
+```
+
+公開 release 應提供 Developer ID Application / Installer signing identities，並跑 notarization。細節請見 [Release packaging](Docs/ReleasePackaging.md)。
 
 ## 圖示
 
