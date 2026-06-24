@@ -29,6 +29,7 @@
 @implementation CVSmileyViewController
 
 - (void)dealloc {
+  [_view release];
   [_array release];
   [super dealloc];
 }
@@ -38,19 +39,23 @@
     _array = [[d valueForKey:@"Messages"] retain];
     BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"SmileyView" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
+    [_view retain];
   }
   return self;
 }
 - (void)awakeFromNib {
   [_tableView setTarget:self];
   [_tableView setDoubleAction:@selector(sendStringFromTableView:)];
+  [_tableView reloadData];
   [_sendButton setTitle:LFLSTR(@"Send")];
   [_sendButton setStringValue:LFLSTR(@"Send")];
 }
 - (NSView *)view {
   return _view;
 }
-- (void)sendStringOfRowIndex:(int)rowIndex {
+- (void)sendStringOfRowIndex:(NSInteger)rowIndex {
+  if (rowIndex < 0 || rowIndex >= (NSInteger)[_array count]) return;
+
   id obj = [_array objectAtIndex:rowIndex];
   NSString *text = nil;
   if ([obj isKindOfClass:[NSString class]]) {
@@ -72,13 +77,13 @@
   }
 }
 - (IBAction)sendString:(id)sender {
-  int selection = [_tableView selectedRow];
+  NSInteger selection = [_tableView selectedRow];
   if (selection > -1 && selection != NSNotFound) {
     [self sendStringOfRowIndex:selection];
   }
 }
 - (IBAction)sendStringFromTableView:(id)sender {
-  int selection = [_tableView clickedRow];
+  NSInteger selection = [_tableView clickedRow];
   if (selection > -1 && selection != NSNotFound) {
     [self sendStringOfRowIndex:selection];
   }
@@ -86,7 +91,7 @@
 
 #pragma mark NSTableView data source and delegate methods.
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView {
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
   return [_array count];
 }
 - (id)tableView:(NSTableView *)aTableView

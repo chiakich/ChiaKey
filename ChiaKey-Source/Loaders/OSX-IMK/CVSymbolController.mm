@@ -30,6 +30,13 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
 - (void)loadSymbolTable:(NSNotification *)notification {
   // NSLog(@"received %@", notification);
 
+  NSInteger selectedIndex = [_popUpButton indexOfSelectedItem];
+  NSString *selectedTitle = [[[_popUpButton selectedItem] title] copy];
+
+  if ([[_symbolContentView subviews] count]) {
+    NSView *lastView = [[_symbolContentView subviews] objectAtIndex:0];
+    [lastView removeFromSuperview];
+  }
   if ([_viewArray count]) [_viewArray removeAllObjects];
 
   NSString *locale =
@@ -43,7 +50,11 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
   NSEnumerator *enumerator = [array objectEnumerator];
 
   while (d = [enumerator nextObject]) {
-    if ([[d valueForKey:@"IsSymbolButtonList"] isEqualToString:@"true"]) {
+    NSArray *messages = [d valueForKey:@"Messages"];
+    BOOL hasMessages = [messages isKindOfClass:[NSArray class]] &&
+                       [messages count] > 0;
+    if (!hasMessages &&
+        [[d valueForKey:@"IsSymbolButtonList"] isEqualToString:@"true"]) {
       CVButtonViewController *controller =
           [[CVButtonViewController alloc] initWithDictionary:d];
       [controller autorelease];
@@ -59,10 +70,23 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
     [_popUpButton addItemWithTitle:name];
   }
   if ([_viewArray count]) {
-    id item = [_viewArray objectAtIndex:0];
+    NSInteger indexToSelect = 0;
+    NSInteger titleIndex = selectedTitle
+                               ? [_popUpButton indexOfItemWithTitle:selectedTitle]
+                               : -1;
+    if (titleIndex >= 0) {
+      indexToSelect = titleIndex;
+    } else if (selectedIndex >= 0 &&
+               selectedIndex < (NSInteger)[_viewArray count]) {
+      indexToSelect = selectedIndex;
+    }
+
+    [_popUpButton selectItemAtIndex:indexToSelect];
+    id item = [_viewArray objectAtIndex:indexToSelect];
     NSView *view = [item view];
     [self toggleActiveView:view];
   }
+  [selectedTitle release];
 }
 
 - (void)awakeFromNib {
@@ -158,7 +182,9 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
   windowRect.size.height = symbolFrame.size.height + 65;
   windowRect.origin.y = currentMaxY - windowRect.size.height;
   windowRect = [self constrainedWindowFrame:windowRect forPoint:anchorPoint];
-  [[self window] setFrame:windowRect display:YES animate:YES];
+  [[self window] setFrame:windowRect
+                  display:YES
+                  animate:[[self window] isVisible]];
 
   [_symbolContentView setFrame:symbolFrame];
   [_symbolContentView addSubview:view];
@@ -169,6 +195,7 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
 - (IBAction)toggleSymbol:(id)sender {
   NSInteger selectedIndex =
       [_popUpButton indexOfItem:[_popUpButton selectedItem]];
+  if (selectedIndex < 0 || selectedIndex >= (NSInteger)[_viewArray count]) return;
   id item = [_viewArray objectAtIndex:selectedIndex];
   NSView *view = [item view];
   [self toggleActiveView:view];
