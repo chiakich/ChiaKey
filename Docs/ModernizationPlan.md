@@ -1,6 +1,6 @@
 # 千秋輸入法現代化 Roadmap
 
-最後更新：2026-06-23
+最後更新：2026-06-24
 
 這份文件只追蹤工作順序，不是架構 source of truth。
 
@@ -38,6 +38,7 @@
 9. Locale tags 已針對現代 macOS 正規化。
 10. GitHub fork 已 credit 官方 Yahoo archive upstream。
 11. `ChiaKeyCore` host-neutral facade 已建立，並有 macOS smoke test 與 iPhoneOS syntax probe。
+12. 舊 Yahoo runtime integrations、legacy dictionary panel、tracker、legacy installer pipeline、dead update/feed endpoints 與 standalone legacy helper projects 已移除。
 
 ## 下一步
 
@@ -101,10 +102,10 @@ Cleanup 應用小 commit 進行，且保持 `Takao-All` 可編譯。
 
 好的下一批 candidates：
 
-1. old installer / package-maker artifacts
-2. dead Yahoo update/feed paths
-3. historical studies 與 internal documents
-4. 產品沒有 exposes 的 unused extra modules
+1. historical studies 與 internal documents
+2. 產品沒有 exposes 的 unused extra modules
+3. confirmed-unused helper utilities
+4. 仍由 runtime 或偏好設定間接載入、但產品不再 exposes 的資料檔
 
 Active input method path、倉頡、簡易不應只因為老就移除。
 
