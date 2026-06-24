@@ -6,6 +6,8 @@
 #import "CVSmileyViewController.h"
 #import "OpenVanillaController.h"
 
+static const CGFloat CVSymbolWindowScreenPadding = 20.0;
+
 @implementation CVSymbolController
 
 - (id)init {
@@ -89,13 +91,56 @@
 }
 
 - (void)temporaryHide {
+  if ([[self window] isVisible]) {
+    _frameBeforeTemporaryHide = [[self window] frame];
+    _isTemporarilyHidden = YES;
+  }
   [[self window] orderOut:self];
 }
 - (void)restoreWindowStatus {
-  if (_isVisible) [self showWindow:self];
+  if (!_isVisible) return;
+
+  if (_isTemporarilyHidden) {
+    NSPoint anchorPoint = NSMakePoint(NSMidX(_frameBeforeTemporaryHide),
+                                     NSMaxY(_frameBeforeTemporaryHide) - 1);
+    NSRect windowRect = [self constrainedWindowFrame:_frameBeforeTemporaryHide
+                                            forPoint:anchorPoint];
+    [[self window] setFrame:windowRect display:NO];
+    _isTemporarilyHidden = NO;
+  }
+
+  [[self window] orderFront:self];
 }
 - (BOOL)isVisible {
   return _isVisible;
+}
+- (NSRect)screenVisibleFrameForPoint:(NSPoint)point {
+  NSScreen *screen = nil;
+  NSEnumerator *enumerator = [[NSScreen screens] objectEnumerator];
+  while (screen = [enumerator nextObject]) {
+    NSRect frame = [screen frame];
+    if (point.x >= NSMinX(frame) && point.x <= NSMaxX(frame) &&
+        point.y >= NSMinY(frame) && point.y <= NSMaxY(frame)) {
+      return [screen visibleFrame];
+    }
+  }
+  return [[NSScreen mainScreen] visibleFrame];
+}
+- (NSRect)constrainedWindowFrame:(NSRect)windowRect forPoint:(NSPoint)point {
+  NSRect screenFrame = [self screenVisibleFrameForPoint:point];
+
+  if (NSMaxX(windowRect) > NSMaxX(screenFrame))
+    windowRect.origin.x =
+        NSMaxX(screenFrame) - windowRect.size.width - CVSymbolWindowScreenPadding;
+  if (NSMinX(windowRect) < NSMinX(screenFrame))
+    windowRect.origin.x = NSMinX(screenFrame) + CVSymbolWindowScreenPadding;
+  if (NSMaxY(windowRect) > NSMaxY(screenFrame))
+    windowRect.origin.y =
+        NSMaxY(screenFrame) - windowRect.size.height - CVSymbolWindowScreenPadding;
+  if (NSMinY(windowRect) < NSMinY(screenFrame))
+    windowRect.origin.y = NSMinY(screenFrame) + CVSymbolWindowScreenPadding;
+
+  return windowRect;
 }
 - (void)toggleActiveView:(NSView *)view {
   if ([[_symbolContentView subviews] count]) {
@@ -108,9 +153,11 @@
   NSRect symbolFrame = [_symbolContentView frame];
   symbolFrame.size = viewRect.size;
   NSRect windowRect = [[self window] frame];
+  NSPoint anchorPoint = NSMakePoint(NSMidX(windowRect), NSMaxY(windowRect) - 1);
   float currentMaxY = NSMaxY(windowRect);
   windowRect.size.height = symbolFrame.size.height + 65;
   windowRect.origin.y = currentMaxY - windowRect.size.height;
+  windowRect = [self constrainedWindowFrame:windowRect forPoint:anchorPoint];
   [[self window] setFrame:windowRect display:YES animate:YES];
 
   [_symbolContentView setFrame:symbolFrame];
@@ -127,40 +174,21 @@
   [self toggleActiveView:view];
 }
 - (IBAction)showWindow:(id)sender {
-  NSPoint point = [[self window] frame].origin;
-
-  NSScreen *screen = nil;
-  NSEnumerator *enumerator = [[NSScreen screens] objectEnumerator];
-  BOOL found = NO;
-  NSRect frame;
-  while (screen = [enumerator nextObject]) {
-    frame = [screen frame];
-    if (point.x >= NSMinX(frame) && point.x <= NSMaxX(frame) &&
-        point.y >= NSMinY(frame) && point.y <= NSMaxX(frame)) {
-      found = YES;
-      break;
-    }
-  }
-  if (!found) frame = [[NSScreen mainScreen] frame];
-
-  NSRect windowRect = [[self window] frame];
-  if (NSMaxX(windowRect) > NSMaxX(frame))
-    windowRect.origin.x = NSMaxX(frame) - windowRect.size.width - 20;
-  if (NSMinX(windowRect) < NSMinX(frame))
-    windowRect.origin.x = NSMinX(frame) + 20;
-  if (NSMaxY(windowRect) > NSMaxY(frame))
-    windowRect.origin.y = NSMaxY(frame) - windowRect.size.height - 20;
-  if (NSMinY(windowRect) < NSMinY(frame))
-    windowRect.origin.y = NSMinX(frame) + 20;
-  [[self window] setFrameOrigin:windowRect.origin];
+  NSRect originalWindowRect = [[self window] frame];
+  NSRect windowRect =
+      [self constrainedWindowFrame:originalWindowRect
+                           forPoint:originalWindowRect.origin];
+  [[self window] setFrame:windowRect display:NO];
   [super showWindow:sender];
 }
 - (IBAction)hide:(id)sender {
   [[self window] orderOut:self];
   _isVisible = NO;
+  _isTemporarilyHidden = NO;
 }
 - (IBAction)show:(id)sender {
   [[OpenVanillaLoader sharedInstance] mergeCannedMessagesData];
+  _isTemporarilyHidden = NO;
   [self showWindow:sender];
   _isVisible = YES;
 }
@@ -170,6 +198,7 @@
 - (BOOL)windowShouldClose:(id)window {
   [window orderOut:self];
   _isVisible = NO;
+  _isTemporarilyHidden = NO;
   return NO;
 }
 
