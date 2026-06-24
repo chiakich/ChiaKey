@@ -1,6 +1,5 @@
 UnitTest++ r186
 Expat 2.0.1
 sqlite 3.6.11 (amalgamated version)
-sqlite-cerod-see 3.6.0 (amalgamated version)
 sqlite-see
 zlib 1.2.3

@@ -1,7 +1,0 @@
-#!/bin/bash
-# echo "Start preflight script"
-# VERSION_FOR_INSTALLER="2286";
-# URL="http://tw.rd.yahoo.com/referurl/keykey/client/installer/start/${VERSION_FOR_INSTALLER}M105/*http://tw.yimg.com/i/tw/download/ykkimg/blank.gif"
-# /usr/bin/curl -L -A "ChiaKey/2026.06 (macOS)" $URL  > /dev/null
-# echo "End preflight script"
-exit 0

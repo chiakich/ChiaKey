@@ -1,5 +1,0 @@
-/* Localized versions of Info.plist keys */
-
-CFBundleName = "ChiaKey Activation Help";
-CFBundleDisplayName = "ChiaKey Activation Help";
-NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";

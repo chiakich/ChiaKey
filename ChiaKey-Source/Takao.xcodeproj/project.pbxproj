@@ -252,8 +252,6 @@
 		6A4773790D5C621400C6C744 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A4773760D5C621400C6C744 /* AppKit.framework */; };
 		6A47737B0D5C621400C6C744 /* InputMethodKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A4773780D5C621400C6C744 /* InputMethodKit.framework */; };
 		6A4773840D5C622A00C6C744 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A4773830D5C622A00C6C744 /* AudioToolbox.framework */; };
-		6A50DE5F0D76785B002A7DAD /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A4773770D5C621400C6C744 /* Cocoa.framework */; };
-		6A50DE730D767937002A7DAD /* CocoaInit.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A50DE720D767937002A7DAD /* CocoaInit.m */; };
 		6A52DB791095CB9000788A09 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6A52DB771095CB9000788A09 /* InfoPlist.strings */; };
 		6A5F593F0EEFF72400A395D9 /* Minotaur.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AD322220D76D793005083D4 /* Minotaur.cpp */; };
 		6A6CE73D0EC9C2B900244B97 /* OVLocalization.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6CE73C0EC9C2B900244B97 /* OVLocalization.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -310,7 +308,6 @@
 		6AD322680D76DA6B005083D4 /* Minotaur.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AD322220D76D793005083D4 /* Minotaur.cpp */; };
 		6AD322720D76DAAD005083D4 /* libKeyring.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AD322590D76DA3E005083D4 /* libKeyring.a */; };
 		6AD3236C0D76DAE3005083D4 /* libKeyring.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AD322590D76DA3E005083D4 /* libKeyring.a */; };
-		6AE3FA880D76773700C7D18D /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AE3FA870D76773700C7D18D /* Main.cpp */; };
 		6AE3FAD20D76779100C7D18D /* PlainVanilla.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771070D5C56D500C6C744 /* PlainVanilla.h */; };
 		6AE3FAD30D76779100C7D18D /* PVBasicKeyValueMapImpl.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771080D5C56D500C6C744 /* PVBasicKeyValueMapImpl.h */; };
 		6AE3FAD40D76779100C7D18D /* PVBundleLoadingSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771090D5C56D500C6C744 /* PVBundleLoadingSystem.h */; };
@@ -328,7 +325,6 @@
 		6AE3FAE00D76779A00C7D18D /* PVBundleLoadingSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A4771180D5C56D500C6C744 /* PVBundleLoadingSystem.cpp */; };
 		6AE3FAE10D76779A00C7D18D /* PVPropertyList.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4771190D5C56D500C6C744 /* PVPropertyList.mm */; };
 		6AE3FAE20D7677A500C7D18D /* libOpenVanilla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A47702B0D5C521600C6C744 /* libOpenVanilla.a */; };
-		6AE3FAE70D7677C200C7D18D /* libPlainVanilla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AE3FA950D76776200C7D18D /* libPlainVanilla.a */; };
 		6AE560AB0EF3B37B002460F0 /* LFCrossDevelopmentTools.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AE560A90EF3B37B002460F0 /* LFCrossDevelopmentTools.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6AE560AC0EF3B37B002460F0 /* LFCrossDevelopmentTools.m in Sources */ = {isa = PBXBuildFile; fileRef = 6AE560AA0EF3B37B002460F0 /* LFCrossDevelopmentTools.m */; };
 		6AE561A80EF3CD7E002460F0 /* OVDistributionConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AE561A50EF3CD7E002460F0 /* OVDistributionConfig.h */; };
@@ -403,8 +399,6 @@
 		D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */; };
 		D462F3570EBEDBBC00958621 /* editReading.png in Resources */ = {isa = PBXBuildFile; fileRef = D462F3550EBEDBBC00958621 /* editReading.png */; };
 		D462F3580EBEDBBC00958621 /* editPhrase.png in Resources */ = {isa = PBXBuildFile; fileRef = D462F3560EBEDBBC00958621 /* editPhrase.png */; };
-		D46B36540DA94EEE007A738E /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D46B36530DA94EEE007A738E /* main.m */; };
-		D46B36590DA94EFD007A738E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D46B36570DA94EFD007A738E /* InfoPlist.strings */; };
 		D4788E8D0EBDD49000853873 /* add.png in Resources */ = {isa = PBXBuildFile; fileRef = D4788E890EBDD49000853873 /* add.png */; };
 		D4788E8E0EBDD49000853873 /* delete.png in Resources */ = {isa = PBXBuildFile; fileRef = D4788E8A0EBDD49000853873 /* delete.png */; };
 		D479FDA60D604E8A00B33AA2 /* enter.gif in Copy Files (WebUI) */ = {isa = PBXBuildFile; fileRef = D479FD9F0D604E7B00B33AA2 /* enter.gif */; };
@@ -451,15 +445,6 @@
 		D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */; };
 		D49CAECD0D8ECE3500738634 /* About.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D49CAECC0D8ECE3500738634 /* About.jpg */; };
 		D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
-		D4B3E72D0DC7A68E000980D8 /* HelpController.m in Sources */ = {isa = PBXBuildFile; fileRef = D4B3E72A0DC7A68E000980D8 /* HelpController.m */; };
-		D4B3E72E0DC7A68E000980D8 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D4B3E72C0DC7A68E000980D8 /* main.m */; };
-		D4B3E73B0DC7A6C4000980D8 /* preference.png in Resources */ = {isa = PBXBuildFile; fileRef = D4B3E7330DC7A6C4000980D8 /* preference.png */; };
-		D4B3E73C0DC7A6C4000980D8 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D4B3E7350DC7A6C4000980D8 /* MainMenu.xib */; };
-		D4B3E73D0DC7A6C4000980D8 /* install.html in Resources */ = {isa = PBXBuildFile; fileRef = D4B3E7370DC7A6C4000980D8 /* install.html */; };
-		D4B3E73E0DC7A6C4000980D8 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D4B3E7390DC7A6C4000980D8 /* InfoPlist.strings */; };
-		D4B3E7530DC7A763000980D8 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */; };
-		D4B3E8140DC7A917000980D8 /* InstallerHelp.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */; };
-		D4BAC60C0DA95ED5008E90A4 /* package.icns in Resources */ = {isa = PBXBuildFile; fileRef = D4BAC60B0DA95ED5008E90A4 /* package.icns */; };
 		D4BAC6150DA9659C008E90A4 /* speak.gif in Copy Files (WebUI) */ = {isa = PBXBuildFile; fileRef = D4BAC6140DA96585008E90A4 /* speak.gif */; };
 		D4C2FFB710623345005DB6AF /* TakaoLoadedModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4C2FFB510623345005DB6AF /* TakaoLoadedModule.m */; };
 		D4D0BC710EEDAB06007CACEA /* PEMainWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = D4D0BC700EEDAB06007CACEA /* PEMainWindow.m */; };
@@ -669,13 +654,6 @@
 			remoteGlobalIDString = 6A47702A0D5C521600C6C744;
 			remoteInfo = "OpenVanilla (Library)";
 		};
-		6AE3FAE50D7677B700C7D18D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 6AE3FA940D76776200C7D18D;
-			remoteInfo = "PlainVanilla (Library)";
-		};
 		6AEB82560EADC333005F82AB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
@@ -718,26 +696,12 @@
 			remoteGlobalIDString = D42B09D20EBDD31C00AB5B7A;
 			remoteInfo = PhraseEditor;
 		};
-		D46B36680DA94FC8007A738E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D46B36450DA94EBC007A738E;
-			remoteInfo = InstallerUI;
-		};
 		D47D5EB30D5EE01F0093524C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = D47D5E2F0D5EDD640093524C;
 			remoteInfo = Preferences;
-		};
-		D4B3E80E0DC7A90C000980D8 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D4B3E71A0DC7A643000980D8;
-			remoteInfo = InstallerHelp;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -805,7 +769,6 @@
 			dstSubfolderSpec = 12;
 			files = (
 				D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */,
-				D4B3E8140DC7A917000980D8 /* InstallerHelp.app in Copy Files (support) */,
 				D47D5EC20D5EE09C0093524C /* Preferences.app in Copy Files (support) */,
 			);
 			name = "Copy Files (support)";
@@ -829,10 +792,6 @@
 		5B3CE6D32991588100641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ModulePackages/OVAFPhraseConverter/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5B3CE6D42991588200641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ModulePackages/OVAFReverseLookup/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5B3CE6D52991588200641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ModulePackages/YKAFWordCount/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		5B3CE6D62991588200641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = "Distributions/Takao/Installer-OSX-Help/en.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
-		5B3CE6D82991588200641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = en; path = "Distributions/Takao/Installer-OSX-Help/en.lproj/install.html"; sourceTree = "<group>"; };
-		5B3CE6D92991588300641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = en; path = "Distributions/Takao/Installer-OSX-Help/en.lproj/preference.png"; sourceTree = "<group>"; };
-		5B3CE6DA2991588300641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = "Distributions/Takao/Installer-OSX-UI/en.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		5B3CE6DC2991588300641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = "Loaders/OSX-IMK/en.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		5B3CE6DD2991588300641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = "Loaders/OSX-IMK/en.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		5B3CE6DE2991588400641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = PreferenceApplications/OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -845,7 +804,6 @@
 		5BE8931929915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoReverseLookup.xib; sourceTree = "<group>"; };
 		5BE8931A29915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoWordCount.xib; sourceTree = "<group>"; };
 		5BE8931B29915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoGenericSettings.xib; sourceTree = "<group>"; };
-		5BE8931D29915D2700A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = "Distributions/Takao/Installer-OSX-Help/Base.lproj/MainMenu.xib"; sourceTree = "<group>"; };
 		5BE8931E29915D2700A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Utilities/PhraseEditor/OSX/Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		6A0138EB0ED1D44200715577 /* YKAFWordCount.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YKAFWordCount.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = YKAFWordCount.cpp; path = ModulePackages/YKAFWordCount/YKAFWordCount.cpp; sourceTree = "<group>"; };
@@ -1022,7 +980,6 @@
 		6A4773770D5C621400C6C744 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		6A4773780D5C621400C6C744 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = /System/Library/Frameworks/InputMethodKit.framework; sourceTree = "<absolute>"; };
 		6A4773830D5C622A00C6C744 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = /System/Library/Frameworks/AudioToolbox.framework; sourceTree = "<absolute>"; };
-		6A50DE720D767937002A7DAD /* CocoaInit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CocoaInit.m; path = Utilities/VersionInfoMaker/CocoaInit.m; sourceTree = "<group>"; };
 		6A52DB7A1095CB9700788A09 /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_TW; path = ModulePackages/YKAFWordCount/zh_TW.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		6A52DB7B1095CB9900788A09 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = ModulePackages/YKAFWordCount/zh_CN.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		6A6CE73C0EC9C2B900244B97 /* OVLocalization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OVLocalization.h; sourceTree = "<group>"; };
@@ -1033,7 +990,6 @@
 		6A7FF87D0D71F89F001EA93C /* OVAFEval.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVAFEval.h; path = ModulePackages/OVAFEval/OVAFEval.h; sourceTree = "<group>"; };
 		6A7FF87E0D71F89F001EA93C /* OVAFEvalPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVAFEvalPackage.h; path = ModulePackages/OVAFEval/OVAFEvalPackage.h; sourceTree = "<group>"; };
 		6AACDEEF109855DD00128BB7 /* YKReverseLookup-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "YKReverseLookup-Info.plist"; path = "ModulePackages/OVAFReverseLookup/YKReverseLookup-Info.plist"; sourceTree = "<group>"; };
-		6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = /System/Library/Frameworks/WebKit.framework; sourceTree = "<absolute>"; };
 		6AB5B31A0D5C8E920040CD26 /* OVIMMandarinPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVIMMandarinPackage.h; path = ModulePackages/OVIMMandarin/OVIMMandarinPackage.h; sourceTree = "<group>"; };
 		6AB5B31B0D5C8E920040CD26 /* OVIMTraditionalMandarin.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OVIMTraditionalMandarin.cpp; path = ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp; sourceTree = "<group>"; };
 		6AB5B31C0D5C8E920040CD26 /* OVIMTraditionalMandarin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVIMTraditionalMandarin.h; path = ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.h; sourceTree = "<group>"; };
@@ -1075,8 +1031,6 @@
 		6AD322290D76D7C2005083D4 /* DevVendorDBKeyPhrase.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = DevVendorDBKeyPhrase.c; path = Distributions/Takao/Keyring/DevVendorDBKeyPhrase.c; sourceTree = "<group>"; };
 		6AD3222A0D76D7C2005083D4 /* SQLiteCryptoInit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SQLiteCryptoInit.cpp; path = Distributions/Takao/Keyring/SQLiteCryptoInit.cpp; sourceTree = "<group>"; };
 		6AD322590D76DA3E005083D4 /* libKeyring.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libKeyring.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		6AE3FA7D0D76771300C7D18D /* VersionInfoMaker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = VersionInfoMaker; sourceTree = BUILT_PRODUCTS_DIR; };
-		6AE3FA870D76773700C7D18D /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = Utilities/VersionInfoMaker/Main.cpp; sourceTree = "<group>"; };
 		6AE3FA950D76776200C7D18D /* libPlainVanilla.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPlainVanilla.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		6AE560A90EF3B37B002460F0 /* LFCrossDevelopmentTools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LFCrossDevelopmentTools.h; path = Frameworks/LFExtensions/LFCrossDevelopmentTools.h; sourceTree = "<group>"; };
 		6AE560AA0EF3B37B002460F0 /* LFCrossDevelopmentTools.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LFCrossDevelopmentTools.m; path = Frameworks/LFExtensions/LFCrossDevelopmentTools.m; sourceTree = "<group>"; };
@@ -1157,10 +1111,6 @@
 		D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVSymbolController.mm; path = "Loaders/OSX-IMK/CVSymbolController.mm"; sourceTree = "<group>"; };
 		D462F3550EBEDBBC00958621 /* editReading.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = editReading.png; path = Utilities/PhraseEditor/OSX/Images/editReading.png; sourceTree = "<group>"; };
 		D462F3560EBEDBBC00958621 /* editPhrase.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = editPhrase.png; path = Utilities/PhraseEditor/OSX/Images/editPhrase.png; sourceTree = "<group>"; };
-		D46B36460DA94EBC007A738E /* Installer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Installer.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D46B36530DA94EEE007A738E /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = "Distributions/Takao/Installer-OSX-UI/main.m"; sourceTree = "<group>"; };
-		D46B365C0DA94F15007A738E /* zh_CN */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = zh_CN; path = "Distributions/Takao/Installer-OSX-UI/zh_CN.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
-		D46B365F0DA94F31007A738E /* zh_TW */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = zh_TW; path = "Distributions/Takao/Installer-OSX-UI/zh_TW.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		D4788E890EBDD49000853873 /* add.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = add.png; path = Utilities/PhraseEditor/OSX/Images/add.png; sourceTree = "<group>"; };
 		D4788E8A0EBDD49000853873 /* delete.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = delete.png; path = Utilities/PhraseEditor/OSX/Images/delete.png; sourceTree = "<group>"; };
 		D479FD9F0D604E7B00B33AA2 /* enter.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = enter.gif; path = WebResources/enter.gif; sourceTree = "<group>"; };
@@ -1229,24 +1179,10 @@
 		D49CAECC0D8ECE3500738634 /* About.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = About.jpg; path = "Loaders/OSX-IMK/Images/About.jpg"; sourceTree = "<group>"; };
 		D4A1F1A90EE30AF20064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D4A1F1B00EE30DB60064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
-		D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InstallerHelp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D4B3E7290DC7A68E000980D8 /* HelpController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HelpController.h; path = "Distributions/Takao/Installer-OSX-Help/HelpController.h"; sourceTree = "<group>"; };
-		D4B3E72A0DC7A68E000980D8 /* HelpController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HelpController.m; path = "Distributions/Takao/Installer-OSX-Help/HelpController.m"; sourceTree = "<group>"; };
-		D4B3E72C0DC7A68E000980D8 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = "Distributions/Takao/Installer-OSX-Help/main.m"; sourceTree = "<group>"; };
-		D4B3E7FA0DC7A796000980D8 /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = zh_TW; path = "Distributions/Takao/Installer-OSX-Help/zh_TW.lproj/preference.png"; sourceTree = "<group>"; };
-		D4B3E7FB0DC7A796000980D8 /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_TW; path = "Distributions/Takao/Installer-OSX-Help/zh_TW.lproj/MainMenu.xib"; sourceTree = "<group>"; };
-		D4B3E7FC0DC7A796000980D8 /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = zh_TW; path = "Distributions/Takao/Installer-OSX-Help/zh_TW.lproj/install.html"; sourceTree = "<group>"; };
-		D4B3E7FD0DC7A796000980D8 /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_TW; path = "Distributions/Takao/Installer-OSX-Help/zh_TW.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
-		D4B3E8000DC7A7B0000980D8 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = zh_CN; path = "Distributions/Takao/Installer-OSX-Help/zh_CN.lproj/preference.png"; sourceTree = "<group>"; };
-		D4B3E8010DC7A7B0000980D8 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = "Distributions/Takao/Installer-OSX-Help/zh_CN.lproj/MainMenu.xib"; sourceTree = "<group>"; };
-		D4B3E8020DC7A7B0000980D8 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = zh_CN; path = "Distributions/Takao/Installer-OSX-Help/zh_CN.lproj/install.html"; sourceTree = "<group>"; };
-		D4B3E8030DC7A7B0000980D8 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = "Distributions/Takao/Installer-OSX-Help/zh_CN.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
-		D4BAC60B0DA95ED5008E90A4 /* package.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = package.icns; path = "Distributions/Takao/Installer-OSX-UI/package.icns"; sourceTree = "<group>"; };
 		D4BAC6140DA96585008E90A4 /* speak.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = speak.gif; path = WebResources/speak.gif; sourceTree = "<group>"; };
 		D4C2FF84106230A9005DB6AF /* OpenVanillaService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OpenVanillaService.h; path = "Loaders/OSX-IMK/OpenVanillaService.h"; sourceTree = "<group>"; };
 		D4C2FFB410623345005DB6AF /* TakaoLoadedModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoLoadedModule.h; path = PreferenceApplications/OSX/TakaoLoadedModule.h; sourceTree = "<group>"; };
 		D4C2FFB510623345005DB6AF /* TakaoLoadedModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoLoadedModule.m; path = PreferenceApplications/OSX/TakaoLoadedModule.m; sourceTree = "<group>"; wrapsLines = 1; };
-		D4CB39580D9D7665000F7DE9 /* DotMacKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DotMacKit.framework; path = ExternalLibraries/DotMacKit.framework; sourceTree = "<group>"; };
 		D4D0BC6F0EEDAB06007CACEA /* PEMainWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEMainWindow.h; path = Utilities/PhraseEditor/OSX/PEMainWindow.h; sourceTree = "<group>"; };
 		D4D0BC700EEDAB06007CACEA /* PEMainWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PEMainWindow.m; path = Utilities/PhraseEditor/OSX/PEMainWindow.m; sourceTree = "<group>"; };
 		D4DCDB7E10665240003FAFB5 /* TakaoReverseLookup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoReverseLookup.h; path = PreferenceApplications/OSX/TakaoReverseLookup.h; sourceTree = "<group>"; };
@@ -1431,15 +1367,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6AE3FA7B0D76771300C7D18D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6A50DE5F0D76785B002A7DAD /* Cocoa.framework in Frameworks */,
-				6AE3FAE70D7677C200C7D18D /* libPlainVanilla.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6AE3FA930D76776200C7D18D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1478,27 +1405,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D46B36440DA94EBC007A738E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D47D5E2E0D5EDD640093524C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */,
 				D4132C3010A858A0002C7E2F /* Security.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D4B3E7190DC7A643000980D8 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D4B3E7530DC7A763000980D8 /* WebKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1613,12 +1525,9 @@
 				6ACA0C430D5C87AB00514BC7 /* Statically Linked Module Packages */,
 				D47D5E3C0D5EDD7F0093524C /* Preferences */,
 				C1A1F0010F00000100000001 /* install-lexicon-release.sh */,
-				D4B3E7120DC7A616000980D8 /* Installer Help */,
-				D46B363D0DA94EA1007A738E /* Installer UI */,
 				D42B09B80EBDD2E900AB5B7A /* Utilities */,
 				6AED2FAA0D8BCF0D00E6D3F8 /* CareService (Library) */,
 				6AD3221C0D76D74B005083D4 /* Keyring */,
-				6AE3FA710D766FBF00C7D18D /* Deployment Tools */,
 				6A4772A10D5C5FF700C6C744 /* Distribution Specific */,
 				6A4771460D5C583600C6C744 /* OS X Frameworks and Libraries */,
 				6A476FF90D5C4DBE00C6C744 /* ExternalLibraries */,
@@ -1641,13 +1550,10 @@
 				6A2D56120D5D889400E710D6 /* libManjusri.a */,
 				D47D5E300D5EDD650093524C /* Preferences.app */,
 				6A428A2D0D74066D00ABCDA1 /* ManjusriBuilder */,
-				6AE3FA7D0D76771300C7D18D /* VersionInfoMaker */,
 				6AE3FA950D76776200C7D18D /* libPlainVanilla.a */,
 				6AD322590D76DA3E005083D4 /* libKeyring.a */,
 				6AED2FA10D8BCEF600E6D3F8 /* libCareService.a */,
-				D46B36460DA94EBC007A738E /* Installer.app */,
 				6ABC3E8D0DBF625C00146A8B /* PhraseTool */,
-				D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */,
 				6AB931660EA42CE2005CD336 /* YKReverseLookup.bundle */,
 				6AEB823C0EADC1EE005F82AB /* YKAFPhraseConverter.bundle */,
 				6AC898E90EB5F9F3009217C5 /* YKAFPhraseAware.bundle */,
@@ -1891,9 +1797,7 @@
 				D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */,
 				6A7E657E0E1BB2F30071ED92 /* libSystem.B.tbd */,
 				6AF6B7890DD08DE400A0C8FD /* libz.1.tbd */,
-				D4CB39580D9D7665000F7DE9 /* DotMacKit.framework */,
 				D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */,
-				6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */,
 				6A4773830D5C622A00C6C744 /* AudioToolbox.framework */,
 				6A4773760D5C621400C6C744 /* AppKit.framework */,
 				6A4773770D5C621400C6C744 /* Cocoa.framework */,
@@ -2086,23 +1990,6 @@
 			name = Source;
 			sourceTree = "<group>";
 		};
-		6AE3FA710D766FBF00C7D18D /* Deployment Tools */ = {
-			isa = PBXGroup;
-			children = (
-				6AE3FA850D76772100C7D18D /* VersionInfoMaker */,
-			);
-			name = "Deployment Tools";
-			sourceTree = "<group>";
-		};
-		6AE3FA850D76772100C7D18D /* VersionInfoMaker */ = {
-			isa = PBXGroup;
-			children = (
-				6A50DE720D767937002A7DAD /* CocoaInit.m */,
-				6AE3FA870D76773700C7D18D /* Main.cpp */,
-			);
-			name = VersionInfoMaker;
-			sourceTree = "<group>";
-		};
 		6AE561A40EF3CD5E002460F0 /* Cross-Platform Loader Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -2202,23 +2089,6 @@
 			name = Images;
 			sourceTree = "<group>";
 		};
-		D429EC840DCA2387002A2436 /* Source */ = {
-			isa = PBXGroup;
-			children = (
-				D46B36530DA94EEE007A738E /* main.m */,
-			);
-			name = Source;
-			sourceTree = "<group>";
-		};
-		D429EC850DCA238C002A2436 /* Resource */ = {
-			isa = PBXGroup;
-			children = (
-				D4BAC60B0DA95ED5008E90A4 /* package.icns */,
-				D46B36570DA94EFD007A738E /* InfoPlist.strings */,
-			);
-			name = Resource;
-			sourceTree = "<group>";
-		};
 		D42B09B80EBDD2E900AB5B7A /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
@@ -2304,15 +2174,6 @@
 				6A4772E90D5C607200C6C744 /* CVFloatingBackground.m */,
 			);
 			name = "UI Components";
-			sourceTree = "<group>";
-		};
-		D46B363D0DA94EA1007A738E /* Installer UI */ = {
-			isa = PBXGroup;
-			children = (
-				D429EC850DCA238C002A2436 /* Resource */,
-				D429EC840DCA2387002A2436 /* Source */,
-			);
-			name = "Installer UI";
 			sourceTree = "<group>";
 		};
 		D4788E870EBDD48400853873 /* Images */ = {
@@ -2544,36 +2405,6 @@
 				D484CF5A0EC226850051B6CA /* CVAboutController.mm */,
 			);
 			name = AboutWindow;
-			sourceTree = "<group>";
-		};
-		D4B3E7120DC7A616000980D8 /* Installer Help */ = {
-			isa = PBXGroup;
-			children = (
-				D4B3E72F0DC7A69A000980D8 /* Source */,
-				D4B3E7300DC7A6A9000980D8 /* Resource */,
-			);
-			name = "Installer Help";
-			sourceTree = "<group>";
-		};
-		D4B3E72F0DC7A69A000980D8 /* Source */ = {
-			isa = PBXGroup;
-			children = (
-				D4B3E7290DC7A68E000980D8 /* HelpController.h */,
-				D4B3E72A0DC7A68E000980D8 /* HelpController.m */,
-				D4B3E72C0DC7A68E000980D8 /* main.m */,
-			);
-			name = Source;
-			sourceTree = "<group>";
-		};
-		D4B3E7300DC7A6A9000980D8 /* Resource */ = {
-			isa = PBXGroup;
-			children = (
-				D4B3E7330DC7A6C4000980D8 /* preference.png */,
-				D4B3E7350DC7A6C4000980D8 /* MainMenu.xib */,
-				D4B3E7370DC7A6C4000980D8 /* install.html */,
-				D4B3E7390DC7A6C4000980D8 /* InfoPlist.strings */,
-			);
-			name = Resource;
 			sourceTree = "<group>";
 		};
 		D4FC91460EC895580087648C /* Horizontal Candidate Window */ = {
@@ -3120,8 +2951,6 @@
 				6ACA0C5F0D5C889C00514BC7 /* PBXTargetDependency */,
 				6AD322810D76DADB005083D4 /* PBXTargetDependency */,
 				6AED2FC20D8BCF7F00E6D3F8 /* PBXTargetDependency */,
-				D46B36690DA94FC8007A738E /* PBXTargetDependency */,
-				D4B3E80F0DC7A90C000980D8 /* PBXTargetDependency */,
 				D43CC14C0EE413750032096E /* PBXTargetDependency */,
 				6AB931930EA42E60005CD336 /* PBXTargetDependency */,
 				6AEB82700EADC46C005F82AB /* PBXTargetDependency */,
@@ -3226,23 +3055,6 @@
 			productReference = 6AD322590D76DA3E005083D4 /* libKeyring.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		6AE3FA7C0D76771300C7D18D /* VersionInfoMaker */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 6AE3FA860D76772100C7D18D /* Build configuration list for PBXNativeTarget "VersionInfoMaker" */;
-			buildPhases = (
-				6AE3FA7A0D76771300C7D18D /* Sources */,
-				6AE3FA7B0D76771300C7D18D /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				6AE3FAE60D7677B700C7D18D /* PBXTargetDependency */,
-			);
-			name = VersionInfoMaker;
-			productName = VersionInfoMaker;
-			productReference = 6AE3FA7D0D76771300C7D18D /* VersionInfoMaker */;
-			productType = "com.apple.product-type.tool";
-		};
 		6AE3FA940D76776200C7D18D /* PlainVanilla (Library) */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6AE3FAB30D76778000C7D18D /* Build configuration list for PBXNativeTarget "PlainVanilla (Library)" */;
@@ -3330,23 +3142,6 @@
 			productReference = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */;
 			productType = "com.apple.product-type.application";
 		};
-		D46B36450DA94EBC007A738E /* InstallerUI */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D46B364B0DA94EBD007A738E /* Build configuration list for PBXNativeTarget "InstallerUI" */;
-			buildPhases = (
-				D46B36420DA94EBC007A738E /* Resources */,
-				D46B36430DA94EBC007A738E /* Sources */,
-				D46B36440DA94EBC007A738E /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = InstallerUI;
-			productName = InstallerUI;
-			productReference = D46B36460DA94EBC007A738E /* Installer.app */;
-			productType = "com.apple.product-type.application";
-		};
 		D47D5E2F0D5EDD640093524C /* Preferences */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D47D5E350D5EDD660093524C /* Build configuration list for PBXNativeTarget "Preferences" */;
@@ -3363,23 +3158,6 @@
 			name = Preferences;
 			productName = Preferences;
 			productReference = D47D5E300D5EDD650093524C /* Preferences.app */;
-			productType = "com.apple.product-type.application";
-		};
-		D4B3E71A0DC7A643000980D8 /* InstallerHelp */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D4B3E7200DC7A644000980D8 /* Build configuration list for PBXNativeTarget "InstallerHelp" */;
-			buildPhases = (
-				D4B3E7170DC7A643000980D8 /* Resources */,
-				D4B3E7180DC7A643000980D8 /* Sources */,
-				D4B3E7190DC7A643000980D8 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = InstallerHelp;
-			productName = InstallerHelp;
-			productReference = D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -3418,14 +3196,11 @@
 				6AED2FA00D8BCEF600E6D3F8 /* CareService (Library) */,
 				6A476FFD0D5C510C00C6C744 /* UnitTest++ */,
 				6A4770530D5C529400C6C744 /* TestOpenVanilla */,
-				6AE3FA7C0D76771300C7D18D /* VersionInfoMaker */,
 				6A428A2C0D74066D00ABCDA1 /* ManjusriBuilder */,
 				6ABC3E8C0DBF625C00146A8B /* PhraseTool */,
 				D47D5E2F0D5EDD640093524C /* Preferences */,
 				D42B09D20EBDD31C00AB5B7A /* PhraseEditor */,
 				6AD322580D76DA3E005083D4 /* Keyring */,
-				D46B36450DA94EBC007A738E /* InstallerUI */,
-				D4B3E71A0DC7A643000980D8 /* InstallerHelp */,
 				6AB931650EA42CE2005CD336 /* YKReverseLookup */,
 				6AEB823B0EADC1EE005F82AB /* YKAFPhraseConverter */,
 				6AC898E80EB5F9F3009217C5 /* YKAFPhraseAware */,
@@ -3534,15 +3309,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D46B36420DA94EBC007A738E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D46B36590DA94EFD007A738E /* InfoPlist.strings in Resources */,
-				D4BAC60C0DA95ED5008E90A4 /* package.icns in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D47D5E2C0D5EDD640093524C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -3564,17 +3330,6 @@
 				D455A6391062575F00CC2B47 /* plugin.tiff in Resources */,
 				D41DFA331062A7B400B73EFA /* TakaoWordCount.xib in Resources */,
 				D4DCDB8E106652BC003FAFB5 /* TakaoReverseLookup.xib in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D4B3E7170DC7A643000980D8 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D4B3E73B0DC7A6C4000980D8 /* preference.png in Resources */,
-				D4B3E73C0DC7A6C4000980D8 /* MainMenu.xib in Resources */,
-				D4B3E73D0DC7A6C4000980D8 /* install.html in Resources */,
-				D4B3E73E0DC7A6C4000980D8 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3810,15 +3565,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6AE3FA7A0D76771300C7D18D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6AE3FA880D76773700C7D18D /* Main.cpp in Sources */,
-				6A50DE730D767937002A7DAD /* CocoaInit.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6AE3FA920D76776200C7D18D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -3868,14 +3614,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D46B36430DA94EBC007A738E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D46B36540DA94EEE007A738E /* main.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D47D5E2D0D5EDD640093524C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -3899,15 +3637,6 @@
 				D4C2FFB710623345005DB6AF /* TakaoLoadedModule.m in Sources */,
 				D41DFA001062A3A000B73EFA /* TakaoWordCount.m in Sources */,
 				D4DCDB8110665240003FAFB5 /* TakaoReverseLookup.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D4B3E7180DC7A643000980D8 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D4B3E72D0DC7A68E000980D8 /* HelpController.m in Sources */,
-				D4B3E72E0DC7A68E000980D8 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4044,11 +3773,6 @@
 			target = 6A47702A0D5C521600C6C744 /* OpenVanilla (Library) */;
 			targetProxy = 6AE3FAE30D7677AB00C7D18D /* PBXContainerItemProxy */;
 		};
-		6AE3FAE60D7677B700C7D18D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 6AE3FA940D76776200C7D18D /* PlainVanilla (Library) */;
-			targetProxy = 6AE3FAE50D7677B700C7D18D /* PBXContainerItemProxy */;
-		};
 		6AEB82570EADC333005F82AB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 6A476EE60D5C48CE00C6C744 /* OpenVanilla (Framework) */;
@@ -4079,20 +3803,10 @@
 			target = D42B09D20EBDD31C00AB5B7A /* PhraseEditor */;
 			targetProxy = D43CC14B0EE413750032096E /* PBXContainerItemProxy */;
 		};
-		D46B36690DA94FC8007A738E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D46B36450DA94EBC007A738E /* InstallerUI */;
-			targetProxy = D46B36680DA94FC8007A738E /* PBXContainerItemProxy */;
-		};
 		D47D5EB40D5EE01F0093524C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D47D5E2F0D5EDD640093524C /* Preferences */;
 			targetProxy = D47D5EB30D5EE01F0093524C /* PBXContainerItemProxy */;
-		};
-		D4B3E80F0DC7A90C000980D8 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D4B3E71A0DC7A643000980D8 /* InstallerHelp */;
-			targetProxy = D4B3E80E0DC7A90C000980D8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -4177,16 +3891,6 @@
 			name = MainMenu.xib;
 			sourceTree = "<group>";
 		};
-		D46B36570DA94EFD007A738E /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D46B365C0DA94F15007A738E /* zh_CN */,
-				D46B365F0DA94F31007A738E /* zh_TW */,
-				5B3CE6DA2991588300641F53 /* en */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
 		D47D5E770D5EDE120093524C /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -4245,46 +3949,6 @@
 				5BE8931729915D2600A3F6CC /* Base */,
 			);
 			name = AboutWindow.xib;
-			sourceTree = "<group>";
-		};
-		D4B3E7330DC7A6C4000980D8 /* preference.png */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D4B3E7FA0DC7A796000980D8 /* zh_TW */,
-				D4B3E8000DC7A7B0000980D8 /* zh_CN */,
-				5B3CE6D92991588300641F53 /* en */,
-			);
-			name = preference.png;
-			sourceTree = "<group>";
-		};
-		D4B3E7350DC7A6C4000980D8 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D4B3E7FB0DC7A796000980D8 /* zh_TW */,
-				D4B3E8010DC7A7B0000980D8 /* zh_CN */,
-				5BE8931D29915D2700A3F6CC /* Base */,
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-		D4B3E7370DC7A6C4000980D8 /* install.html */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D4B3E7FC0DC7A796000980D8 /* zh_TW */,
-				D4B3E8020DC7A7B0000980D8 /* zh_CN */,
-				5B3CE6D82991588200641F53 /* en */,
-			);
-			name = install.html;
-			sourceTree = "<group>";
-		};
-		D4B3E7390DC7A6C4000980D8 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D4B3E7FD0DC7A796000980D8 /* zh_TW */,
-				D4B3E8030DC7A7B0000980D8 /* zh_CN */,
-				5B3CE6D62991588200641F53 /* en */,
-			);
-			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
 		D4DCDB8B106652BC003FAFB5 /* TakaoReverseLookup.xib */ = {
@@ -5186,51 +4850,6 @@
 			};
 			name = Release;
 		};
-		6AE3FA7F0D76771400C7D18D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_VERSION = "";
-				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_CFLAGS = "-fvisibility=hidden";
-				PRODUCT_NAME = VersionInfoMaker;
-				SDKROOT = macosx;
-				ZERO_LINK = YES;
-			};
-			name = Debug;
-		};
-		6AE3FA800D76771400C7D18D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COPY_PHASE_STRIP = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_MODEL_TUNING = G5;
-				GCC_VERSION = "";
-				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_CFLAGS = "-fvisibility=hidden";
-				PRODUCT_NAME = VersionInfoMaker;
-				SDKROOT = macosx;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		6AE3FA960D76776200C7D18D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -5463,66 +5082,6 @@
 			};
 			name = Release;
 		};
-		D46B36490DA94EBD007A738E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = "Distributions/Takao/Installer-OSX-UI/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerUI;
-				PRODUCT_NAME = Installer;
-				SDKROOT = macosx;
-			};
-			name = Debug;
-		};
-		D46B364A0DA94EBD007A738E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = "Distributions/Takao/Installer-OSX-UI/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerUI;
-				PRODUCT_NAME = Installer;
-				SDKROOT = macosx;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		D47D5E330D5EDD660093524C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -5590,65 +5149,6 @@
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
-		D4B3E71E0DC7A644000980D8 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = "Distributions/Takao/Installer-OSX-Help/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerHelp;
-				PRODUCT_NAME = InstallerHelp;
-				SDKROOT = macosx;
-			};
-			name = Debug;
-		};
-		D4B3E71F0DC7A644000980D8 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = YES;
-				DEAD_CODE_STRIPPING = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = "Distributions/Takao/Installer-OSX-Help/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiakey.inputmethod.ChiaKey.InstallerHelp;
-				PRODUCT_NAME = InstallerHelp;
-				SDKROOT = macosx;
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -5818,15 +5318,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6AE3FA860D76772100C7D18D /* Build configuration list for PBXNativeTarget "VersionInfoMaker" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				6AE3FA7F0D76771400C7D18D /* Debug */,
-				6AE3FA800D76771400C7D18D /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		6AE3FAB30D76778000C7D18D /* Build configuration list for PBXNativeTarget "PlainVanilla (Library)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -5872,29 +5363,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D46B364B0DA94EBD007A738E /* Build configuration list for PBXNativeTarget "InstallerUI" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D46B36490DA94EBD007A738E /* Debug */,
-				D46B364A0DA94EBD007A738E /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		D47D5E350D5EDD660093524C /* Build configuration list for PBXNativeTarget "Preferences" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D47D5E330D5EDD660093524C /* Debug */,
 				D47D5E340D5EDD660093524C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		D4B3E7200DC7A644000980D8 /* Build configuration list for PBXNativeTarget "InstallerHelp" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D4B3E71E0DC7A644000980D8 /* Debug */,
-				D4B3E71F0DC7A644000980D8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

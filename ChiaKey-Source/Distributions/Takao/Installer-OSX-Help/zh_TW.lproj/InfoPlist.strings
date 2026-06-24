@@ -1,5 +1,0 @@
-/* Localized versions of Info.plist keys */
-
-CFBundleName = "千秋輸入法啟用說明";
-CFBundleDisplayName = "千秋輸入法啟用說明";
-NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";

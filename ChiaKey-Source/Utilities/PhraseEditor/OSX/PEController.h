@@ -11,7 +11,7 @@
 #import "LFUtilities.h"
 #import "PESettingTableView.h"
 
-#define HELP_URL @"http://tw.widget.yahoo.com/keykey/help/phraseeditor.html"
+#define HELP_URL @"https://github.com/akira02/KeyKey-Boneyard"
 
 #ifndef OPENVANILLA_DO_CONNECTION_NAME
 #error Must define OPENVANILLA_DO_CONNECTION_NAME
