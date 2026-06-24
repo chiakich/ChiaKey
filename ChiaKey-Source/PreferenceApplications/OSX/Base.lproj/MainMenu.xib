@@ -1132,7 +1132,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="611">
-                                <rect key="frame" x="133" y="10" width="84" height="14"/>
+                                <rect key="frame" x="133" y="10" width="280" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="612">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1150,7 +1150,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="533">
-                                <rect key="frame" x="133" y="54" width="56" height="14"/>
+                                <rect key="frame" x="133" y="54" width="280" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="534">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1159,7 +1159,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="607">
-                                <rect key="frame" x="133" y="32" width="56" height="14"/>
+                                <rect key="frame" x="133" y="32" width="280" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="608">
                                     <font key="font" metaFont="smallSystem"/>

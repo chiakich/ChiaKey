@@ -15,6 +15,10 @@ static NSString *const ChiaKeyLatestLexiconDefaultsKey =
     @"ChiaKeyLatestLexiconVersion";
 static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
     @"ChiaKeyLatestLexiconCheck";
+static NSString *const ChiaKeySourceDatabaseArtifactKind =
+    @"chiakey-source-db";
+static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
+    @"keykey-source-db";
 
 @implementation TakaoUpdate
 
@@ -39,6 +43,39 @@ static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
   return [self _jsonDictionaryFromData:data error:nil];
 }
 
+- (NSDictionary *)_databaseArtifactFromManifest:(NSDictionary *)manifest {
+  NSArray *artifacts = [manifest objectForKey:@"artifacts"];
+  if (![artifacts isKindOfClass:[NSArray class]]) return nil;
+
+  NSArray *preferredKinds = [NSArray
+      arrayWithObjects:ChiaKeySourceDatabaseArtifactKind,
+                       LegacyKeyKeySourceDatabaseArtifactKind, nil];
+
+  for (NSString *preferredKind in preferredKinds) {
+    for (id artifact in artifacts) {
+      if (![artifact isKindOfClass:[NSDictionary class]]) continue;
+      if ([[artifact objectForKey:@"kind"] isEqualToString:preferredKind])
+        return artifact;
+    }
+  }
+
+  return nil;
+}
+
+- (NSString *)_formattedLexiconVersionFromManifest:(NSDictionary *)manifest {
+  NSString *version = [manifest objectForKey:@"version"];
+  if (![version isKindOfClass:[NSString class]] || ![version length])
+    return nil;
+
+  NSDictionary *databaseArtifact = [self _databaseArtifactFromManifest:manifest];
+  NSString *sha256 = [databaseArtifact objectForKey:@"sha256"];
+  if (![sha256 isKindOfClass:[NSString class]] || [sha256 length] < 8)
+    return version;
+
+  return [NSString stringWithFormat:@"%@ (%@)", version,
+                                    [sha256 substringToIndex:8]];
+}
+
 - (NSString *)_lexiconInstallRoot {
   NSArray *paths = NSSearchPathForDirectoriesInDomains(
       NSApplicationSupportDirectory, NSUserDomainMask, YES);
@@ -48,23 +85,53 @@ static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
                        @"ChiaKey/Lexicons"];
 }
 
-- (NSString *)_currentLexiconVersion {
+- (NSDictionary *)_activeLexiconManifest {
   NSString *activePath =
       [[self _lexiconInstallRoot] stringByAppendingPathComponent:@"active"];
 
-  NSDictionary *metadata = [self
-      _jsonDictionaryAtPath:[activePath stringByAppendingPathComponent:
-                                            @"metadata.json"]];
-  NSString *version = [metadata objectForKey:@"version"];
-  if ([version length]) return version;
+  return [self _jsonDictionaryAtPath:[activePath stringByAppendingPathComponent:
+                                                     @"lexicon-manifest.json"]];
+}
 
-  NSDictionary *manifest = [self
-      _jsonDictionaryAtPath:[activePath stringByAppendingPathComponent:
-                                            @"lexicon-manifest.json"]];
-  version = [manifest objectForKey:@"version"];
-  if ([version length]) return version;
+- (NSString *)_runningDatabaseVersion {
+  id ovService = nil;
+  @try {
+    ovService = [NSConnection
+        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
+                                            host:nil];
+    if (ovService) {
+      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+      NSString *version = [ovService databaseVersion];
+      if ([version length]) return version;
+    }
+  } @catch (NSException *e) {
+    return nil;
+  }
 
   return nil;
+}
+
+- (NSString *)_currentLexiconDisplayVersion {
+  NSString *runningVersion = [self _runningDatabaseVersion];
+  if ([runningVersion length]) return runningVersion;
+
+  return [self _formattedLexiconVersionFromManifest:
+                   [self _activeLexiconManifest]];
+}
+
+- (NSString *)_currentLexiconComparableVersion {
+  NSDictionary *manifest = [self _activeLexiconManifest];
+  NSString *version = [manifest objectForKey:@"version"];
+  if ([version isKindOfClass:[NSString class]] && [version length])
+    return version;
+
+  NSString *runningVersion = [self _runningDatabaseVersion];
+  if (![runningVersion length]) return nil;
+
+  NSRange spaceRange = [runningVersion rangeOfString:@" "];
+  if (spaceRange.location != NSNotFound)
+    runningVersion = [runningVersion substringToIndex:spaceRange.location];
+  return runningVersion;
 }
 
 - (NSString *)_displayString:(NSString *)string fallback:(NSString *)fallback {
@@ -79,7 +146,7 @@ static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
 
 - (void)_getVersionInfo {
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-  NSString *currentVersion = [self _currentLexiconVersion];
+  NSString *currentVersion = [self _currentLexiconDisplayVersion];
   NSString *latestVersion =
       [defaults stringForKey:ChiaKeyLatestLexiconDefaultsKey];
   NSString *latestCheck =
@@ -264,7 +331,7 @@ static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
     return;
   }
 
-  NSString *currentTag = [self _currentLexiconVersion];
+  NSString *currentTag = [self _currentLexiconComparableVersion];
   if ([currentTag length] &&
       [self _compareVersion:currentTag toVersion:latestTag] !=
           NSOrderedAscending) {

@@ -15,10 +15,12 @@
   return self;
 }
 - (void)awakeFromNib {
-  [[self window] setBackgroundColor:[NSColor colorWithCalibratedHue:0.16
-                                                         saturation:0.22
-                                                         brightness:0.97
-                                                              alpha:1.00]];
+  [[self window] setBackgroundColor:[NSColor colorWithCalibratedWhite:0.08
+                                                                alpha:0.92]];
+  [_messageTextField setTextColor:[NSColor whiteColor]];
+  [_messageTextField setDrawsBackground:NO];
+  [_messageTextField setBezeled:NO];
+  [_messageTextField setBordered:NO];
   _lineHeight = [_messageTextField frame].size.height;
 }
 - (void)setWindowLocation:(NSPoint)point {

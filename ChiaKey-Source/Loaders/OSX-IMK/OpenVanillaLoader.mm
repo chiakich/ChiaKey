@@ -24,6 +24,10 @@ NSString *CVLoaderUpdateCannedMessagesNotification =
 
 static const char *kChiaKeySourceDatabaseFile = "ChiaKeySource.db";
 static const char *kLegacyKeyKeySourceDatabaseFile = "KeyKeySource.db";
+static NSString *const kChiaKeySourceDatabaseArtifactKind =
+    @"chiakey-source-db";
+static NSString *const kLegacyKeyKeySourceDatabaseArtifactKind =
+    @"keykey-source-db";
 
 string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
                                 const string &dbAndTableName) {
@@ -78,6 +82,50 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
   }
 
   return service;
+}
+
+static NSDictionary *JSONDictionaryAtPath(NSString *path) {
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  if (!data) return nil;
+
+  id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+  if (![object isKindOfClass:[NSDictionary class]]) return nil;
+
+  return object;
+}
+
+static NSDictionary *DatabaseArtifactFromManifest(NSDictionary *manifest) {
+  NSArray *artifacts = [manifest objectForKey:@"artifacts"];
+  if (![artifacts isKindOfClass:[NSArray class]]) return nil;
+
+  NSArray *preferredKinds = [NSArray
+      arrayWithObjects:kChiaKeySourceDatabaseArtifactKind,
+                       kLegacyKeyKeySourceDatabaseArtifactKind, nil];
+
+  for (NSString *preferredKind in preferredKinds) {
+    for (id artifact in artifacts) {
+      if (![artifact isKindOfClass:[NSDictionary class]]) continue;
+      if ([[artifact objectForKey:@"kind"] isEqualToString:preferredKind])
+        return artifact;
+    }
+  }
+
+  return nil;
+}
+
+static NSString *FormattedLexiconVersionFromManifestAtPath(NSString *path) {
+  NSDictionary *manifest = JSONDictionaryAtPath(path);
+  NSString *version = [manifest objectForKey:@"version"];
+  if (![version isKindOfClass:[NSString class]] || ![version length])
+    return nil;
+
+  NSDictionary *databaseArtifact = DatabaseArtifactFromManifest(manifest);
+  NSString *sha256 = [databaseArtifact objectForKey:@"sha256"];
+  if (![sha256 isKindOfClass:[NSString class]] || [sha256 length] < 8)
+    return nil;
+
+  return [NSString stringWithFormat:@"%@ (%@)", version,
+                                    [sha256 substringToIndex:8]];
 }
 
 #ifdef OVLOADER_USE_SQLITE_CRYPTO
@@ -332,6 +380,18 @@ using namespace OpenVanilla;
                                  "cooked_information");
   }
 
+  NSString *mainDBDisplayVersion = nil;
+  if (selectedDBFile == userChiaKeySourceDBFile) {
+    string manifestFile =
+        OVPathHelper::PathCat(userLexiconPath, "lexicon-manifest.json");
+    mainDBDisplayVersion = FormattedLexiconVersionFromManifestAtPath(
+        [NSString stringWithUTF8String:manifestFile.c_str()]);
+  }
+  if (![mainDBDisplayVersion length] && mainDBVersion.size()) {
+    mainDBDisplayVersion =
+        [NSString stringWithUTF8String:mainDBVersion.c_str()];
+  }
+
   if (supplementDBVersion.size()) {
     NSLog(@"Registered supplement DB version '%s'",
           supplementDBVersion.c_str());
@@ -346,17 +406,14 @@ using namespace OpenVanilla;
         NSLog(@"Detaching supplement DB because it's older");
         if (dbc) dbc->execute("DETACH supplement");
         [_databaseVersion autorelease];
-        _databaseVersion =
-            [[NSString alloc] initWithUTF8String:mainDBVersion.c_str()];
+        _databaseVersion = [mainDBDisplayVersion retain];
       }
     }
-  } else if (mainDBVersion.size()) {
-    NSLog(@"Registered main DB version '%s'",
-          mainDBVersion.c_str());
+  } else if ([mainDBDisplayVersion length]) {
+    NSLog(@"Registered main DB version '%@'", mainDBDisplayVersion);
 
     [_databaseVersion autorelease];
-    _databaseVersion =
-        [[NSString alloc] initWithUTF8String:mainDBVersion.c_str()];
+    _databaseVersion = [mainDBDisplayVersion retain];
   }
 
   if (!_SQLiteDatabaseService) {
