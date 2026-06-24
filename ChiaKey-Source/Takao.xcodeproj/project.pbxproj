@@ -444,6 +444,7 @@
 		D4987D1F0E17FB37001D4197 /* CVKeyboardHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */; };
 		D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */; };
 		D49CAECD0D8ECE3500738634 /* About.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D49CAECC0D8ECE3500738634 /* About.jpg */; };
+		5B9C1A002C06000000ABCD01 /* chiaki.gif in Resources */ = {isa = PBXBuildFile; fileRef = 5B9C1A012C06000000ABCD01 /* chiaki.gif */; };
 		D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D4BAC6150DA9659C008E90A4 /* speak.gif in Copy Files (WebUI) */ = {isa = PBXBuildFile; fileRef = D4BAC6140DA96585008E90A4 /* speak.gif */; };
 		D4C2FFB710623345005DB6AF /* TakaoLoadedModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4C2FFB510623345005DB6AF /* TakaoLoadedModule.m */; };
@@ -1177,6 +1178,7 @@
 		D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVKeyboardHelper.h; path = "Loaders/OSX-IMK/CVKeyboardHelper.h"; sourceTree = "<group>"; };
 		D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVKeyboardHelper.m; path = "Loaders/OSX-IMK/CVKeyboardHelper.m"; sourceTree = "<group>"; };
 		D49CAECC0D8ECE3500738634 /* About.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = About.jpg; path = "Loaders/OSX-IMK/Images/About.jpg"; sourceTree = "<group>"; };
+		5B9C1A012C06000000ABCD01 /* chiaki.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = chiaki.gif; path = "Loaders/OSX-IMK/Images/chiaki.gif"; sourceTree = "<group>"; };
 		D4A1F1A90EE30AF20064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D4A1F1B00EE30DB60064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D4BAC6140DA96585008E90A4 /* speak.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = speak.gif; path = WebResources/speak.gif; sourceTree = "<group>"; };
@@ -2080,6 +2082,7 @@
 			isa = PBXGroup;
 			children = (
 				D49CAECC0D8ECE3500738634 /* About.jpg */,
+				5B9C1A012C06000000ABCD01 /* chiaki.gif */,
 				D4112E840D631738001475CB /* FontSmaller.tiff */,
 				D4112E850D631738001475CB /* FontBigger.tiff */,
 				D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */,
@@ -3252,6 +3255,7 @@
 				D4112E860D631738001475CB /* FontSmaller.tiff in Resources */,
 				D4112E870D631738001475CB /* FontBigger.tiff in Resources */,
 				D49CAECD0D8ECE3500738634 /* About.jpg in Resources */,
+				5B9C1A002C06000000ABCD01 /* chiaki.gif in Resources */,
 				D484CF660EC2277E0051B6CA /* AboutWindow.xib in Resources */,
 				D482C3A90ECB41D8005E8D68 /* HorizontalCandidateWindow.xib in Resources */,
 				D482C3AA0ECB41D8005E8D68 /* MainMenu.xib in Resources */,

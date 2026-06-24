@@ -3,8 +3,19 @@
 #import "CVAboutController.h"
 
 #import "CVApplicationController.h"
-#import "OpenVanillaLoader.h"
-#import "Version.h"
+
+static void CVApplyAboutTextStyle(NSView *view) {
+  if ([view isKindOfClass:[NSTextField class]]) {
+    NSTextField *textField = (NSTextField *)view;
+    [textField setTextColor:[NSColor whiteColor]];
+    [textField setBackgroundColor:[NSColor clearColor]];
+    [textField setDrawsBackground:NO];
+  }
+
+  for (NSView *subview in [view subviews]) {
+    CVApplyAboutTextStyle(subview);
+  }
+}
 
 @implementation CVAboutController
 
@@ -25,7 +36,9 @@
 
 - (void)awakeFromNib {
   [[self window] setLevel:NSFloatingWindowLevel];
-  [[self window] setBackgroundColor:[NSColor whiteColor]];
+  [[self window] setBackgroundColor:[NSColor colorWithCalibratedWhite:0.05
+                                                                alpha:1.0]];
+  CVApplyAboutTextStyle([[self window] contentView]);
   defaultWindowSize = [[self window] frame].size;
 }
 
@@ -48,14 +61,16 @@
   if (useWordCount) {
     NSRect frame = [[self window] frame];
     frame.size = defaultWindowSize;
-    frame.size.height += 60;
+    frame.size.height += 110;
     if (!_wordCountController) {
       _wordCountController = [[TakaoWordCount alloc] init];
     }
     [_wordCountController update];
     [[self window] setFrame:frame display:NO];
     NSView *view = [_wordCountController view];
-    [view setFrame:NSMakeRect(20, 50, defaultWindowSize.width - 40, 100)];
+    [view setFrame:NSMakeRect((defaultWindowSize.width - 260) / 2,
+                              defaultWindowSize.height + 5, 260, 100)];
+    CVApplyAboutTextStyle(view);
     [[[self window] contentView] addSubview:view];
   } else {
     if (_wordCountController && [[_wordCountController view] superview]) {
@@ -65,55 +80,6 @@
       [[self window] setFrame:frame display:YES];
     }
   }
-
-  NSString *name =
-      [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
-  if (!name)
-    name = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleName"];
-  NSString *version =
-      [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
-
-#if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
-  bool tiger = true;
-#else
-  bool tiger = false;
-#endif
-
-  VersionNumber verNum([version UTF8String]);
-
-  const char *vn =
-      [[[OpenVanillaLoader sharedInstance] databaseVersion] UTF8String];
-  VersionNumber dbNum;
-
-  if (vn) {
-    dbNum = VersionNumber(vn);
-  }
-
-  if (!tiger) {
-    version =
-        [NSString stringWithFormat:@"%d.%d\n(build %d, database %d)",
-                                   verNum.majorVersion(), verNum.minorVersion(),
-                                   verNum.buildNumber(), dbNum.buildNumber()];
-  } else {
-    version = [NSString
-        stringWithFormat:@"%d.%d\n(build %d for OS X Tiger, database %d)",
-                         verNum.majorVersion(), verNum.minorVersion(),
-                         verNum.buildNumber(), dbNum.buildNumber()];
-  }
-
-  NSMutableString *copyright = [[[[NSBundle mainBundle]
-      objectForInfoDictionaryKey:@"NSHumanReadableCopyright"] mutableCopy]
-      autorelease];
-
-  // insert a \n between "Taiwan All Rights Reserved"...
-  NSRange range = [copyright rangeOfString:@"Taiwan All"];
-  if (range.location != NSNotFound) {
-    [copyright replaceCharactersInRange:range withString:@"Taiwan\nAll"];
-  }
-
-  [_aboutTextField
-      setStringValue:[NSString stringWithFormat:@"%@ %@\n%@", name, version,
-                                                copyright]];
   init = YES;
 }
 
