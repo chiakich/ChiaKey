@@ -268,14 +268,6 @@
 		6A7FF8800D71F89F001EA93C /* OVAFEval.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A7FF87C0D71F89F001EA93C /* OVAFEval.cpp */; };
 		6A7FF8810D71F89F001EA93C /* OVAFEval.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A7FF87D0D71F89F001EA93C /* OVAFEval.h */; };
 		6A7FF8820D71F89F001EA93C /* OVAFEvalPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A7FF87E0D71F89F001EA93C /* OVAFEvalPackage.h */; };
-		6A859F460E41A4C0002C3544 /* LFHTTPRequest.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F3F0E41A4C0002C3544 /* LFHTTPRequest.h */; };
-		6A859F470E41A4C0002C3544 /* LFWebAPIToolbox.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F400E41A4C0002C3544 /* LFWebAPIToolbox.h */; };
-		6A859F480E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F410E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.h */; };
-		6A859F490E41A4C0002C3544 /* LFHTTPRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A859F430E41A4C0002C3544 /* LFHTTPRequest.m */; };
-		6A859F4A0E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = 6A859F440E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch */; };
-		6A859F4B0E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6A859F450E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m */; };
-		6A859F880E41AAC9002C3544 /* libLFWebAPIToolbox.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A859F360E41A495002C3544 /* libLFWebAPIToolbox.a */; };
-		6A85A1F70E41ADF9002C3544 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A85A1F50E41ADF9002C3544 /* SystemConfiguration.framework */; };
 		6AB5B3080D5C8D350040CD26 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6AB5B3020D5C8D350040CD26 /* InfoPlist.strings */; };
 		6AB5B31D0D5C8E920040CD26 /* OVIMMandarinPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B31A0D5C8E920040CD26 /* OVIMMandarinPackage.h */; };
 		6AB5B31E0D5C8E920040CD26 /* OVIMTraditionalMandarin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AB5B31B0D5C8E920040CD26 /* OVIMTraditionalMandarin.cpp */; };
@@ -585,13 +577,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 6A4772920D5C5FCE00C6C744;
 			remoteInfo = "Takao (Loader OSX-IMK)";
-		};
-		6A859F820E41AAB5002C3544 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 6A859F350E41A495002C3544;
-			remoteInfo = LFWebAPIToolbox;
 		};
 		6AB931740EA42D19005CD336 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1047,17 +1032,6 @@
 		6A7FF87C0D71F89F001EA93C /* OVAFEval.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OVAFEval.cpp; path = ModulePackages/OVAFEval/OVAFEval.cpp; sourceTree = "<group>"; };
 		6A7FF87D0D71F89F001EA93C /* OVAFEval.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVAFEval.h; path = ModulePackages/OVAFEval/OVAFEval.h; sourceTree = "<group>"; };
 		6A7FF87E0D71F89F001EA93C /* OVAFEvalPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVAFEvalPackage.h; path = ModulePackages/OVAFEval/OVAFEvalPackage.h; sourceTree = "<group>"; };
-		6A859F360E41A495002C3544 /* libLFWebAPIToolbox.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLFWebAPIToolbox.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A859F3F0E41A4C0002C3544 /* LFHTTPRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LFHTTPRequest.h; sourceTree = "<group>"; };
-		6A859F400E41A4C0002C3544 /* LFWebAPIToolbox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LFWebAPIToolbox.h; sourceTree = "<group>"; };
-		6A859F410E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+LFHTTPFormExtensions.h"; sourceTree = "<group>"; };
-		6A859F430E41A4C0002C3544 /* LFHTTPRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LFHTTPRequest.m; sourceTree = "<group>"; };
-		6A859F440E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LFWebAPIToolbox_Prefix.pch; sourceTree = "<group>"; };
-		6A859F450E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+LFHTTPFormExtensions.m"; sourceTree = "<group>"; };
-		6A859F5E0E41A6A8002C3544 /* TrackerMaker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TrackerMaker.h; path = Distributions/Takao/TrackerMaker/TrackerMaker.h; sourceTree = "<group>"; };
-		6A859F610E41A6DF002C3544 /* TrackerSender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TrackerSender.h; path = Distributions/Takao/TrackerSender/OSX/TrackerSender.h; sourceTree = "<group>"; };
-		6A859F620E41A6DF002C3544 /* TrackerSender.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = TrackerSender.mm; path = Distributions/Takao/TrackerSender/OSX/TrackerSender.mm; sourceTree = "<group>"; };
-		6A85A1F50E41ADF9002C3544 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = /System/Library/Frameworks/SystemConfiguration.framework; sourceTree = "<absolute>"; };
 		6AACDEEF109855DD00128BB7 /* YKReverseLookup-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "YKReverseLookup-Info.plist"; path = "ModulePackages/OVAFReverseLookup/YKReverseLookup-Info.plist"; sourceTree = "<group>"; };
 		6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = /System/Library/Frameworks/WebKit.framework; sourceTree = "<absolute>"; };
 		6AB5B31A0D5C8E920040CD26 /* OVIMMandarinPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVIMMandarinPackage.h; path = ModulePackages/OVIMMandarin/OVIMMandarinPackage.h; sourceTree = "<group>"; };
@@ -1406,14 +1380,6 @@
 				6A47737B0D5C621400C6C744 /* InputMethodKit.framework in Frameworks */,
 				6A7E65870E1BB3600071ED92 /* libSystem.B.tbd in Frameworks */,
 				5B3CE69429914F7800641F53 /* libsqlite3.tbd in Frameworks */,
-				6A85A1F70E41ADF9002C3544 /* SystemConfiguration.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6A859F340E41A495002C3544 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1642,7 +1608,6 @@
 				5BAD29D02B7E14410013D695 /* PhraseEditorRelease.entitlements */,
 				6AE561A40EF3CD5E002460F0 /* Cross-Platform Loader Components */,
 				6AB9315C0EA42CA6005CD336 /* Dynamic Module Packages */,
-				6A859F5D0E41A673002C3544 /* Takao-Specific */,
 				6A4771520D5C5D7600C6C744 /* Loader (OSX-IMK) */,
 				6A476F790D5C4D0300C6C744 /* Frameworks */,
 				6ACA0C430D5C87AB00514BC7 /* Statically Linked Module Packages */,
@@ -1683,7 +1648,6 @@
 				D46B36460DA94EBC007A738E /* Installer.app */,
 				6ABC3E8D0DBF625C00146A8B /* PhraseTool */,
 				D4B3E71B0DC7A643000980D8 /* InstallerHelp.app */,
-				6A859F360E41A495002C3544 /* libLFWebAPIToolbox.a */,
 				6AB931660EA42CE2005CD336 /* YKReverseLookup.bundle */,
 				6AEB823C0EADC1EE005F82AB /* YKAFPhraseConverter.bundle */,
 				6AC898E90EB5F9F3009217C5 /* YKAFPhraseAware.bundle */,
@@ -1699,7 +1663,6 @@
 			children = (
 				5B3CE69529914FB900641F53 /* libz.tbd */,
 				5B3CE69229914F3900641F53 /* libsqlite3.tbd */,
-				6A859F2C0E41A473002C3544 /* LFWebAPIToolbox */,
 				6AD322060D76D741005083D4 /* Minotaur */,
 				6A2D55F80D5D886600E710D6 /* Manjusri */,
 				6AEBCFFA0D5D7DEA00ABF19D /* Formosa */,
@@ -1926,7 +1889,6 @@
 				D493E9D6167775BE00BA9368 /* libsqlite3.tbd */,
 				D455A7FF106267A200CC2B47 /* Security.framework */,
 				D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */,
-				6A85A1F50E41ADF9002C3544 /* SystemConfiguration.framework */,
 				6A7E657E0E1BB2F30071ED92 /* libSystem.B.tbd */,
 				6AF6B7890DD08DE400A0C8FD /* libz.1.tbd */,
 				D4CB39580D9D7665000F7DE9 /* DotMacKit.framework */,
@@ -1971,47 +1933,6 @@
 				6A2D56720D5DA22900E710D6 /* Cooked Database */,
 			);
 			name = "Distribution Specific";
-			sourceTree = "<group>";
-		};
-		6A859F2C0E41A473002C3544 /* LFWebAPIToolbox */ = {
-			isa = PBXGroup;
-			children = (
-				6A859F3E0E41A4C0002C3544 /* Headers */,
-				6A859F420E41A4C0002C3544 /* Source */,
-			);
-			name = LFWebAPIToolbox;
-			sourceTree = "<group>";
-		};
-		6A859F3E0E41A4C0002C3544 /* Headers */ = {
-			isa = PBXGroup;
-			children = (
-				6A859F3F0E41A4C0002C3544 /* LFHTTPRequest.h */,
-				6A859F400E41A4C0002C3544 /* LFWebAPIToolbox.h */,
-				6A859F410E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.h */,
-			);
-			name = Headers;
-			path = Frameworks/LFWebAPIToolbox/Headers;
-			sourceTree = "<group>";
-		};
-		6A859F420E41A4C0002C3544 /* Source */ = {
-			isa = PBXGroup;
-			children = (
-				6A859F430E41A4C0002C3544 /* LFHTTPRequest.m */,
-				6A859F440E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch */,
-				6A859F450E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m */,
-			);
-			name = Source;
-			path = Frameworks/LFWebAPIToolbox/Source;
-			sourceTree = "<group>";
-		};
-		6A859F5D0E41A673002C3544 /* Takao-Specific */ = {
-			isa = PBXGroup;
-			children = (
-				6A859F610E41A6DF002C3544 /* TrackerSender.h */,
-				6A859F620E41A6DF002C3544 /* TrackerSender.mm */,
-				6A859F5E0E41A6A8002C3544 /* TrackerMaker.h */,
-			);
-			name = "Takao-Specific";
 			sourceTree = "<group>";
 		};
 		6AB5B30B0D5C8D440040CD26 /* Resources */ = {
@@ -2885,17 +2806,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6A859F320E41A495002C3544 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6A859F460E41A4C0002C3544 /* LFHTTPRequest.h in Headers */,
-				6A859F470E41A4C0002C3544 /* LFWebAPIToolbox.h in Headers */,
-				6A859F480E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.h in Headers */,
-				6A859F4A0E41A4C0002C3544 /* LFWebAPIToolbox_Prefix.pch in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6ABC3EB90DBF62A900146A8B /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -3223,23 +3133,6 @@
 			productReference = 6A4772930D5C5FCE00C6C744 /* ChiaKey.app */;
 			productType = "com.apple.product-type.application";
 		};
-		6A859F350E41A495002C3544 /* LFWebAPIToolbox */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 6A859F3D0E41A4BC002C3544 /* Build configuration list for PBXNativeTarget "LFWebAPIToolbox" */;
-			buildPhases = (
-				6A859F320E41A495002C3544 /* Headers */,
-				6A859F330E41A495002C3544 /* Sources */,
-				6A859F340E41A495002C3544 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = LFWebAPIToolbox;
-			productName = LFWebAPIToolbox;
-			productReference = 6A859F360E41A495002C3544 /* libLFWebAPIToolbox.a */;
-			productType = "com.apple.product-type.library.static";
-		};
 		6AB931650EA42CE2005CD336 /* YKReverseLookup */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6AB9316A0EA42CE4005CD336 /* Build configuration list for PBXNativeTarget "YKReverseLookup" */;
@@ -3533,7 +3426,6 @@
 				6AD322580D76DA3E005083D4 /* Keyring */,
 				D46B36450DA94EBC007A738E /* InstallerUI */,
 				D4B3E71A0DC7A643000980D8 /* InstallerHelp */,
-				6A859F350E41A495002C3544 /* LFWebAPIToolbox */,
 				6AB931650EA42CE2005CD336 /* YKReverseLookup */,
 				6AEB823B0EADC1EE005F82AB /* YKAFPhraseConverter */,
 				6AC898E80EB5F9F3009217C5 /* YKAFPhraseAware */,
@@ -3859,15 +3751,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6A859F330E41A495002C3544 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6A859F490E41A4C0002C3544 /* LFHTTPRequest.m in Sources */,
-				6A859F4B0E41A4C0002C3544 /* NSData+LFHTTPFormExtensions.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6AB931630EA42CE2005CD336 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4095,11 +3978,6 @@
 			isa = PBXTargetDependency;
 			target = 6A4772920D5C5FCE00C6C744 /* Takao (Loader OSX-IMK) */;
 			targetProxy = 6A514CE40DA268E000464D51 /* PBXContainerItemProxy */;
-		};
-		6A859F830E41AAB5002C3544 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 6A859F350E41A495002C3544 /* LFWebAPIToolbox */;
-			targetProxy = 6A859F820E41AAB5002C3544 /* PBXContainerItemProxy */;
 		};
 		6AB931750EA42D19005CD336 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -5062,58 +4940,6 @@
 			};
 			name = Release;
 		};
-		6A859F3B0E41A496002C3544 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_VERSION = "";
-				INSTALL_PATH = /usr/local/lib;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_NAME = LFWebAPIToolbox;
-			};
-			name = Debug;
-		};
-		6A859F3C0E41A496002C3544 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_VERSION = "";
-				INSTALL_PATH = /usr/local/lib;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					AppKit,
-				);
-				PRODUCT_NAME = LFWebAPIToolbox;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		6AB931680EA42CE3005CD336 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -5943,15 +5769,6 @@
 			buildConfigurations = (
 				6A514CE00DA268C500464D51 /* Debug */,
 				6A514CE10DA268C500464D51 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		6A859F3D0E41A4BC002C3544 /* Build configuration list for PBXNativeTarget "LFWebAPIToolbox" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				6A859F3B0E41A496002C3544 /* Debug */,
-				6A859F3C0E41A496002C3544 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
