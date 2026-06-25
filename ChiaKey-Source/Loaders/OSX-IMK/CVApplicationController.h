@@ -14,7 +14,8 @@
 #import "OpenVanillaLoader.h"
 #import "OpenVanillaService.h"
 
-@interface CVApplicationController : NSObject <OpenVanillaService> {
+@interface CVApplicationController
+    : NSObject <NSApplicationDelegate, OpenVanillaService> {
   CVPlainTextCandidateController *_plainTextCandidateController;
   CVVerticalCandidateController *_verticalCandidateController;
   CVHorizontalCandidateController *_horizontalCandidateController;

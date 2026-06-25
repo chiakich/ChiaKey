@@ -533,6 +533,10 @@ using namespace OpenVanilla;
   string loaderUserDataPath =
       OVDirectoryHelper::UserApplicationSupportDataDirectory(
           _loaderPolicy->loaderName());
+  if (!OVDirectoryHelper::CheckDirectory(loaderUserDataPath)) {
+    NSLog(@"Cannot create user data directory: %s",
+          loaderUserDataPath.c_str());
+  }
 
   vector<string> signedModuleLoadPaths;
   do {

@@ -104,8 +104,23 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  BOOL result = [[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:[NSApplication sharedApplication] topLevelObjects:nil];
-  //	NSLog(@"nib loading result: %d", result);
+  [NSApplication sharedApplication];
+  BOOL isBackgroundOnly =
+      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"LSBackgroundOnly"]
+          boolValue];
+  CVApplicationController *applicationController = nil;
+  CVApplicationController *applicationDelegate = nil;
+  if (isBackgroundOnly) {
+    applicationController = [[CVApplicationController alloc] init];
+    [NSApp setDelegate:applicationController];
+    applicationDelegate = applicationController;
+  } else {
+    BOOL result = [[NSBundle mainBundle] loadNibNamed:@"MainMenu"
+                                                owner:NSApp
+                                      topLevelObjects:nil];
+    //	NSLog(@"nib loading result: %d", result);
+    applicationDelegate = (CVApplicationController *)[NSApp delegate];
+  }
 
   NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
   NSString *modulePath =
@@ -113,7 +128,7 @@ int main(int argc, char *argv[]) {
   NSArray *loadPaths = [NSArray arrayWithObjects:modulePath, nil];
 
   OpenVanillaLoader *ovl = [OpenVanillaLoader sharedInstance];
-  [[NSApp delegate] setLoader:ovl];
+  [applicationDelegate setLoader:ovl];
   [NSThread detachNewThreadSelector:@selector(start:)
                            toTarget:ovl
                          withObject:loadPaths];
@@ -123,6 +138,8 @@ int main(int argc, char *argv[]) {
   // [OpenVanillaController cleanUpAutoUpdate];
   [ovl shutDown];
   [OpenVanillaLoader releaseSharedObjects];
+  [NSApp setDelegate:nil];
+  [applicationController release];
   [OVInputMethodServer release];
   [pool drain];
   return 0;

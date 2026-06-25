@@ -17,6 +17,45 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
 
 @implementation CVApplicationController
 
+- (void)_initializeControllerIfNeeded {
+  if (_serverConnection) return;
+
+  _loader = nil;
+
+  _plainTextCandidateController = [CVPlainTextCandidateController new];
+  _horizontalCandidateController = [CVHorizontalCandidateController new];
+  _verticalCandidateController = [CVVerticalCandidateController new];
+  _searchController = [CVSearchController new];
+  _symbolController = [CVSymbolController new];
+  _tooltipController = [CVToolTipController new];
+  _aboutController = [CVAboutController new];
+  _inputMethodToggleWindowController =
+      [CVInputMethodToggleWindowController new];
+
+  _serverPort = [[NSPort port] retain];
+  _serverConnection =
+      [[NSConnection connectionWithReceivePort:_serverPort
+                                      sendPort:_serverPort] retain];
+
+  // NSConnection *connection = [NSConnection defaultConnection];
+  [_serverConnection setRootObject:self];
+
+  if ([_serverConnection registerName:OPENVANILLA_DO_CONNECTION_NAME]) {
+    //	    NSLog(@"OpenVanilla DO service registered: %@",
+    // OPENVANILLA_DO_CONNECTION_NAME);
+  } else {
+    NSLog(@"Failed to register DO service");
+  }
+}
+
+- (id)init {
+  self = [super init];
+  if (self) {
+    [self _initializeControllerIfNeeded];
+  }
+  return self;
+}
+
 - (void)dealloc {
   [_verticalCandidateController release];
   [_horizontalCandidateController release];
@@ -77,32 +116,7 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
 #pragma mark To initialize the Application Controller
 
 - (void)awakeFromNib {
-  _loader = nil;
-
-  _plainTextCandidateController = [CVPlainTextCandidateController new];
-  _horizontalCandidateController = [CVHorizontalCandidateController new];
-  _verticalCandidateController = [CVVerticalCandidateController new];
-  _searchController = [CVSearchController new];
-  _symbolController = [CVSymbolController new];
-  _tooltipController = [CVToolTipController new];
-  _aboutController = [CVAboutController new];
-  _inputMethodToggleWindowController =
-      [CVInputMethodToggleWindowController new];
-
-  _serverPort = [[NSPort port] retain];
-  _serverConnection =
-      [[NSConnection connectionWithReceivePort:_serverPort
-                                      sendPort:_serverPort] retain];
-
-  // NSConnection *connection = [NSConnection defaultConnection];
-  [_serverConnection setRootObject:self];
-
-  if ([_serverConnection registerName:OPENVANILLA_DO_CONNECTION_NAME]) {
-    //	    NSLog(@"OpenVanilla DO service registered: %@",
-    // OPENVANILLA_DO_CONNECTION_NAME);
-  } else {
-    NSLog(@"Failed to register DO service");
-  }
+  [self _initializeControllerIfNeeded];
 }
 
 - (IBAction)showAboutWindow:(id)sender {
