@@ -78,14 +78,19 @@ file for terms.
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
 - (void)setKeyboardLayoutUI {
+  [_keyboardLayoutIdentifierArray release];
   _keyboardLayoutIdentifierArray = [[NSMutableArray alloc] init];
   NSString *keyboardLayout = [_takaoDictionary valueForKey:@"KeyboardLayout"];
   NSMenu *menu = [[[NSMenu alloc] initWithTitle:@"menu"] autorelease];
   CFArrayRef list = TISCreateInputSourceList(NULL, true);
+  if (!list) {
+    [_keyboardLayoutPopUpButton setMenu:menu];
+    return;
+  }
 
   int i = 0;
   int selectedIndex = -1;
-  int indexOfEnUS = 0;
+  int indexOfEnUS = -1;
   for (i = 0; i < CFArrayGetCount(list); i++) {
     TISInputSourceRef source =
         (TISInputSourceRef)CFArrayGetValueAtIndex(list, i);
@@ -116,10 +121,12 @@ file for terms.
     CFStringRef sourceId =
         TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
     NSString *sourceIdString = (NSString *)sourceId;
+    int menuIndex = [_keyboardLayoutIdentifierArray count];
     if ([sourceIdString isEqualToString:@"com.apple.keylayout.US"])
-      indexOfEnUS = i;
+      indexOfEnUS = menuIndex;
 
-    if ([sourceIdString isEqualToString:keyboardLayout]) selectedIndex = i;
+    if ([sourceIdString isEqualToString:keyboardLayout])
+      selectedIndex = menuIndex;
 
     [_keyboardLayoutIdentifierArray addObject:sourceIdString];
     [menu addItem:menuItem];
@@ -127,11 +134,19 @@ file for terms.
   [_keyboardLayoutPopUpButton setMenu:menu];
 
   if (selectedIndex < 0) {
-    selectedIndex = indexOfEnUS;
-    [_takaoDictionary setValue:@"com.apple.keylayout.US"
-                        forKey:@"KeyboardLayout"];
+    if (indexOfEnUS >= 0) {
+      selectedIndex = indexOfEnUS;
+      [_takaoDictionary setValue:@"com.apple.keylayout.US"
+                          forKey:@"KeyboardLayout"];
+    } else if ([_keyboardLayoutIdentifierArray count]) {
+      selectedIndex = 0;
+      [_takaoDictionary setValue:[_keyboardLayoutIdentifierArray objectAtIndex:0]
+                          forKey:@"KeyboardLayout"];
+    }
   }
-  [_keyboardLayoutPopUpButton selectItemAtIndex:selectedIndex];
+  if (selectedIndex >= 0)
+    [_keyboardLayoutPopUpButton selectItemAtIndex:selectedIndex];
+  CFRelease(list);
 }
 #endif
 
@@ -484,8 +499,13 @@ file for terms.
   [_stopPlayiongButton setEnabled:NO];
 }
 - (IBAction)setKeyboardLayout:(id)sender {
-  NSString *keyboardLayout = [_keyboardLayoutIdentifierArray
-      objectAtIndex:[sender indexOfSelectedItem]];
+  NSInteger selectedIndex = [sender indexOfSelectedItem];
+  if (selectedIndex < 0 ||
+      (NSUInteger)selectedIndex >= [_keyboardLayoutIdentifierArray count])
+    return;
+
+  NSString *keyboardLayout =
+      [_keyboardLayoutIdentifierArray objectAtIndex:(NSUInteger)selectedIndex];
   if (!keyboardLayout) return;
   [_takaoDictionary setValue:keyboardLayout forKey:@"KeyboardLayout"];
   [self doWrite];
@@ -493,9 +513,10 @@ file for terms.
 - (IBAction)resetKeyboardLayout:(id)sender {
   NSString *keyboardLayout = @"com.apple.keylayout.US";
   [_takaoDictionary setValue:keyboardLayout forKey:@"KeyboardLayout"];
-  [_keyboardLayoutPopUpButton
-      selectItemAtIndex:[_keyboardLayoutIdentifierArray
-                            indexOfObject:keyboardLayout]];
+  NSUInteger selectedIndex =
+      [_keyboardLayoutIdentifierArray indexOfObject:keyboardLayout];
+  if (selectedIndex != NSNotFound)
+    [_keyboardLayoutPopUpButton selectItemAtIndex:selectedIndex];
   [self doWrite];
 }
 - (IBAction)setHighlightColor:(id)sender {
