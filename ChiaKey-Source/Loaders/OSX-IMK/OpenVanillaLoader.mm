@@ -386,6 +386,12 @@ using namespace OpenVanilla;
         OVPathHelper::PathCat(userLexiconPath, "lexicon-manifest.json");
     mainDBDisplayVersion = FormattedLexiconVersionFromManifestAtPath(
         [NSString stringWithUTF8String:manifestFile.c_str()]);
+  } else if (selectedDBFile == bundledChiaKeyDBFile ||
+             selectedDBFile == legacyBundledKeyKeyDBFile) {
+    string manifestFile =
+        OVPathHelper::PathCat(dbPath, "lexicon-manifest.json");
+    mainDBDisplayVersion = FormattedLexiconVersionFromManifestAtPath(
+        [NSString stringWithUTF8String:manifestFile.c_str()]);
   }
   if (![mainDBDisplayVersion length] && mainDBVersion.size()) {
     mainDBDisplayVersion =

@@ -16,6 +16,9 @@ ZLIB_README_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/zlib/README"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 LOCAL_LEXICON_BUNDLE_SCRIPT="${ROOT_DIR}/Scripts/bundle-local-lexicon.sh"
 ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
+LEXICON_RELEASE_REPO="${LEXICON_RELEASE_REPO:-akira02/ChiaKey-Lexicon}"
+LEXICON_RELEASE_TAG="${LEXICON_RELEASE_TAG:-}"
+LEXICON_RELEASE_MANIFEST_URL="${LEXICON_RELEASE_MANIFEST_URL:-}"
 
 SCHEME="Takao-All"
 APP_NAME="ChiaKey.app"
@@ -38,6 +41,7 @@ export COPYFILE_DISABLE=1
 SKIP_BUILD=0
 BUNDLE_LOCAL_LEXICON=0
 LOCAL_LEXICON_DB="${ACTIVE_LEXICON_DB}"
+BUNDLE_RELEASE_LEXICON=1
 NOTARIZE=0
 STAPLE=1
 KEEP_WORK_DIR=0
@@ -65,7 +69,14 @@ Options:
   --notary-profile PROFILE           notarytool keychain profile. Default: NOTARY_PROFILE env.
   --skip-staple                      Do not staple after notarization.
   --bundle-local-lexicon             Bundle the active local lexicon into the app.
+                                     Overrides the default GitHub release lexicon.
   --local-lexicon PATH               Bundle this local ChiaKeySource.db into the app.
+                                     Overrides the default GitHub release lexicon.
+  --bundle-release-lexicon           Download and bundle a ChiaKey-Lexicon release.
+                                     This is the default release behavior.
+  --lexicon-repo OWNER/REPO          Lexicon repo. Default: ${LEXICON_RELEASE_REPO}
+  --lexicon-tag TAG                  Lexicon release tag. Default: latest release.
+  --lexicon-manifest-url URL         Manifest URL. Overrides --lexicon-repo/tag.
   --keep-work-dir                    Keep temporary staging files.
   -h, --help                         Show this help.
 
@@ -93,6 +104,29 @@ run() {
   "$@"
 }
 
+download() {
+  local output="$1"
+  local url="$2"
+
+  run /usr/bin/curl -fL --retry 3 --silent --show-error \
+    --header "User-Agent: ChiaKey Release Packager" \
+    --output "${output}" "${url}"
+}
+
+verify_sha256() {
+  local file="$1"
+  local expected="$2"
+  local actual
+
+  actual="$(/usr/bin/shasum -a 256 "${file}" | /usr/bin/awk '{print $1}')"
+  if [[ "${actual}" != "${expected}" ]]; then
+    echo "SHA-256 mismatch for ${file}" >&2
+    echo "  expected: ${expected}" >&2
+    echo "  actual:   ${actual}" >&2
+    exit 1
+  fi
+}
+
 copy_legal_notices() {
   local legal_dir="${BUILT_RESOURCES}/Legal"
   local external_dir="${legal_dir}/ExternalLibraries"
@@ -111,8 +145,173 @@ copy_legal_notices() {
   run /bin/cp "${ZLIB_README_FILE}" "${external_dir}/zlib/README"
 }
 
+copy_release_lexicon() {
+  local lexicon_dir="${WORK_DIR}/release-lexicon"
+  local manifest_file="${lexicon_dir}/lexicon-manifest.json"
+  local manifest_url="${LEXICON_RELEASE_MANIFEST_URL}"
+
+  run /bin/rm -rf "${lexicon_dir}"
+  run /bin/mkdir -p "${lexicon_dir}"
+
+  if [[ -z "${manifest_url}" ]]; then
+    if [[ -n "${LEXICON_RELEASE_TAG}" ]]; then
+      manifest_url="https://github.com/${LEXICON_RELEASE_REPO}/releases/download/${LEXICON_RELEASE_TAG}/lexicon-manifest.json"
+    else
+      manifest_url="https://github.com/${LEXICON_RELEASE_REPO}/releases/latest/download/lexicon-manifest.json"
+    fi
+  fi
+
+  echo "Downloading lexicon release manifest:"
+  echo "  ${manifest_url}"
+  download "${manifest_file}" "${manifest_url}"
+
+  local artifact_info
+  artifact_info="$(
+    /usr/bin/ruby -rjson - "${manifest_file}" <<'RUBY'
+manifest_path = ARGV.fetch(0)
+manifest = JSON.parse(File.read(manifest_path))
+
+db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" } ||
+     manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "keykey-source-db" }
+metadata = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "metadata" }
+abort "manifest does not contain a chiakey-source-db or keykey-source-db artifact" unless db
+
+fields = [
+  manifest.fetch("version"),
+  manifest.fetch("database_schema_version"),
+  db.fetch("url"),
+  db.fetch("filename"),
+  db.fetch("sha256"),
+  metadata&.fetch("url", ""),
+  metadata&.fetch("filename", ""),
+  metadata&.fetch("sha256", "")
+]
+puts fields.join("\t")
+RUBY
+  )"
+
+  local version db_schema_version db_url db_filename db_sha metadata_url metadata_filename metadata_sha
+  IFS=$'\t' read -r version db_schema_version db_url db_filename db_sha metadata_url metadata_filename metadata_sha <<<"${artifact_info}"
+
+  if [[ "${db_schema_version}" != "1" ]]; then
+    echo "Unsupported lexicon database schema version: ${db_schema_version}" >&2
+    exit 1
+  fi
+
+  local db_download="${lexicon_dir}/${db_filename}"
+  local metadata_download=""
+  echo "Downloading lexicon database:"
+  echo "  ${db_url}"
+  download "${db_download}" "${db_url}"
+  verify_sha256 "${db_download}" "${db_sha}"
+
+  if [[ -n "${metadata_url}" ]]; then
+    metadata_download="${lexicon_dir}/${metadata_filename}"
+    echo "Downloading lexicon metadata:"
+    echo "  ${metadata_url}"
+    download "${metadata_download}" "${metadata_url}"
+    verify_sha256 "${metadata_download}" "${metadata_sha}"
+  fi
+
+  run "${LEXICON_INSTALL_SCRIPT}" --validate-db "${db_download}"
+
+  run /bin/rm -rf "${BUILT_RESOURCES}/Databases"
+  run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
+  run /bin/cp "${db_download}" "${BUILT_RESOURCES}/Databases/ChiaKeySource.db"
+  run /bin/cp "${manifest_file}" "${BUILT_RESOURCES}/Databases/lexicon-manifest.json"
+  if [[ -n "${metadata_download}" ]]; then
+    run /bin/cp "${metadata_download}" "${BUILT_RESOURCES}/Databases/metadata.json"
+  fi
+
+  echo "Bundled ChiaKey lexicon release ${version}."
+}
+
+create_product_resources() {
+  run /bin/rm -rf "${PRODUCT_RESOURCES_DIR}"
+  run /bin/mkdir -p "${PRODUCT_RESOURCES_DIR}" \
+    "${PRODUCT_RESOURCES_DIR}/zh_TW.lproj" \
+    "${PRODUCT_RESOURCES_DIR}/zh_CN.lproj"
+
+  run /bin/cp "${LICENSE_FILE}" "${PRODUCT_RESOURCES_DIR}/License.txt"
+
+  cat >"${PRODUCT_RESOURCES_DIR}/ReadMe.txt" <<'README'
+ChiaKey installs a macOS input method.
+
+After installation, open System Settings > Keyboard > Text Input > Edit,
+then add ChiaKey from the Chinese input source list.
+
+This beta package is unsigned and intended for proof-of-concept testing.
+macOS may show a security warning before installation or first launch.
+README
+
+  cat >"${PRODUCT_RESOURCES_DIR}/Conclusion.txt" <<'CONCLUSION'
+Installation finished.
+
+If System Settings did not open automatically, open System Settings > Keyboard
+> Text Input > Edit, then add ChiaKey from the Chinese input source list.
+
+After adding ChiaKey, switch away from and back to ChiaKey if the input method
+was already running.
+CONCLUSION
+
+  cat >"${PRODUCT_RESOURCES_DIR}/zh_TW.lproj/ReadMe.txt" <<'README_ZH_TW'
+ChiaKey 會安裝一個 macOS 輸入法。
+
+安裝後請打開「系統設定」>「鍵盤」>「文字輸入」>「編輯」，再從中文輸入來源清單加入 ChiaKey。
+
+這是未簽章的 beta POC 安裝包，只適合測試更新與安裝流程。macOS 可能會在安裝或首次啟動時顯示安全性警告。
+README_ZH_TW
+
+  cat >"${PRODUCT_RESOURCES_DIR}/zh_TW.lproj/Conclusion.txt" <<'CONCLUSION_ZH_TW'
+安裝完成。
+
+如果「系統設定」沒有自動打開，請打開「系統設定」>「鍵盤」>「文字輸入」>「編輯」，再從中文輸入來源清單加入 ChiaKey。
+
+加入 ChiaKey 後，如果輸入法原本已經在執行，請先切到其他輸入法，再切回 ChiaKey。
+CONCLUSION_ZH_TW
+
+  cat >"${PRODUCT_RESOURCES_DIR}/zh_CN.lproj/ReadMe.txt" <<'README_ZH_CN'
+ChiaKey 会安装一个 macOS 输入法。
+
+安装后请打开“系统设置”>“键盘”>“文本输入”>“编辑”，再从中文输入源列表加入 ChiaKey。
+
+这是未签名的 beta POC 安装包，只适合测试更新与安装流程。macOS 可能会在安装或首次启动时显示安全性警告。
+README_ZH_CN
+
+  cat >"${PRODUCT_RESOURCES_DIR}/zh_CN.lproj/Conclusion.txt" <<'CONCLUSION_ZH_CN'
+安装完成。
+
+如果“系统设置”没有自动打开，请打开“系统设置”>“键盘”>“文本输入”>“编辑”，再从中文输入源列表加入 ChiaKey。
+
+加入 ChiaKey 后，如果输入法原本已经在运行，请先切到其他输入法，再切回 ChiaKey。
+CONCLUSION_ZH_CN
+}
+
+create_distribution_file() {
+  cat >"${DISTRIBUTION_FILE}" <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+  <title>ChiaKey</title>
+  <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+  <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="true"/>
+  <license file="License.txt"/>
+  <readme file="ReadMe.txt"/>
+  <conclusion file="Conclusion.txt"/>
+  <choices-outline>
+    <line choice="default"/>
+  </choices-outline>
+  <choice id="default" title="ChiaKey" description="Install the ChiaKey input method.">
+    <pkg-ref id="${COMPONENT_IDENTIFIER}"/>
+  </choice>
+  <pkg-ref id="${COMPONENT_IDENTIFIER}" version="${VERSION}" auth="Root">${CLEAN_COMPONENT_PKG_NAME}</pkg-ref>
+</installer-gui-script>
+EOF
+}
+
 require_lexicon_database_source() {
-  if [[ -f "${SMART_MANDARIN_DB}" || "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
+  if [[ -f "${SMART_MANDARIN_DB}" ||
+        "${BUNDLE_LOCAL_LEXICON}" == "1" ||
+        "${BUNDLE_RELEASE_LEXICON}" == "1" ]]; then
     return
   fi
 
@@ -120,9 +319,10 @@ require_lexicon_database_source() {
 Bundled fallback lexicon database not found:
   ${SMART_MANDARIN_DB}
 
-Release packaging no longer rebuilds ChiaKeySource.db from raw DataSource files.
-Use a database produced by the lexicon repo or release pipeline, then either:
-  - place it at the path above, or
+Release packaging does not rebuild ChiaKeySource.db from raw DataSource files.
+By default it downloads the latest ChiaKey-Lexicon GitHub release. If you
+explicitly disabled that flow, either:
+  - rerun without the local lexicon override, or
   - rerun with --bundle-local-lexicon to use the active local lexicon, or
   - rerun with --local-lexicon /path/to/ChiaKeySource.db
 EOF
@@ -195,12 +395,34 @@ while [[ $# -gt 0 ]]; do
       ;;
     --bundle-local-lexicon)
       BUNDLE_LOCAL_LEXICON=1
+      BUNDLE_RELEASE_LEXICON=0
       shift
       ;;
     --local-lexicon)
       require_value "$1" "${2:-}"
       BUNDLE_LOCAL_LEXICON=1
+      BUNDLE_RELEASE_LEXICON=0
       LOCAL_LEXICON_DB="$2"
+      shift 2
+      ;;
+    --bundle-release-lexicon)
+      BUNDLE_RELEASE_LEXICON=1
+      BUNDLE_LOCAL_LEXICON=0
+      shift
+      ;;
+    --lexicon-repo)
+      require_value "$1" "${2:-}"
+      LEXICON_RELEASE_REPO="$2"
+      shift 2
+      ;;
+    --lexicon-tag)
+      require_value "$1" "${2:-}"
+      LEXICON_RELEASE_TAG="$2"
+      shift 2
+      ;;
+    --lexicon-manifest-url)
+      require_value "$1" "${2:-}"
+      LEXICON_RELEASE_MANIFEST_URL="$2"
       shift 2
       ;;
     --keep-work-dir)
@@ -251,6 +473,9 @@ PKG_SCRIPTS_DIR="${WORK_DIR}/pkg-scripts"
 COMPONENT_PKG="${WORK_DIR}/ChiaKey-component.pkg"
 EXPANDED_COMPONENT_DIR="${WORK_DIR}/ChiaKey-component-expanded"
 CLEAN_COMPONENT_PKG="${WORK_DIR}/ChiaKey-component-clean.pkg"
+CLEAN_COMPONENT_PKG_NAME="$(basename "${CLEAN_COMPONENT_PKG}")"
+DISTRIBUTION_FILE="${WORK_DIR}/Distribution.xml"
+PRODUCT_RESOURCES_DIR="${WORK_DIR}/product-resources"
 
 rebuild_component_package_without_metadata_payload() {
   # Recent macOS pkgbuild serializes provenance xattrs as AppleDouble payload
@@ -296,7 +521,7 @@ run /usr/bin/ditto --norsrc "${DATA_TABLES_DIR}" "${BUILT_RESOURCES}/DataTables"
 
 require_lexicon_database_source
 
-if [[ -f "${SMART_MANDARIN_DB}" ]]; then
+if [[ "${BUNDLE_RELEASE_LEXICON}" != "1" && -f "${SMART_MANDARIN_DB}" ]]; then
   run /bin/mkdir -p "${BUILT_RESOURCES}/Databases"
   run /usr/bin/ditto --norsrc "${DATABASES_DIR}" "${BUILT_RESOURCES}/Databases"
   if [[ -f "${BUILT_RESOURCES}/Databases/ChiaKeySource.db" ]]; then
@@ -316,6 +541,10 @@ if [[ "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
     --app "${BUILT_APP}" \
     --source "${LOCAL_LEXICON_DB}" \
     --suppress-signing-note
+fi
+
+if [[ "${BUNDLE_RELEASE_LEXICON}" == "1" ]]; then
+  copy_release_lexicon
 fi
 
 run /usr/bin/find "${BUILT_RESOURCES}" -name ".gitignore" -delete
@@ -357,6 +586,15 @@ cat >"${PKG_SCRIPTS_DIR}/postinstall" <<'POSTINSTALL'
 /usr/bin/pkill -x ChiaKey >/dev/null 2>&1 || true
 /usr/bin/pkill -f '/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
 
+console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
+if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
+   /usr/bin/id -u "${console_user}" >/dev/null 2>&1; then
+  console_uid="$(/usr/bin/id -u "${console_user}")"
+  /bin/launchctl asuser "${console_uid}" \
+    /usr/bin/open "x-apple.systempreferences:com.apple.Keyboard-Settings.extension" \
+    >/dev/null 2>&1 || true
+fi
+
 exit 0
 POSTINSTALL
 run /bin/chmod 755 "${PKG_SCRIPTS_DIR}/postinstall"
@@ -373,9 +611,14 @@ run /usr/bin/pkgbuild \
 
 rebuild_component_package_without_metadata_payload
 
+create_product_resources
+create_distribution_file
+
 PRODUCTBUILD_ARGS=(
   /usr/bin/productbuild
-  --package "${CLEAN_COMPONENT_PKG}"
+  --distribution "${DISTRIBUTION_FILE}"
+  --resources "${PRODUCT_RESOURCES_DIR}"
+  --package-path "${WORK_DIR}"
   --identifier "${PACKAGE_IDENTIFIER}"
   --version "${VERSION}"
 )
@@ -403,7 +646,9 @@ if [[ "${KEEP_WORK_DIR}" != "1" ]]; then
     "${PKG_SCRIPTS_DIR}" \
     "${COMPONENT_PKG}" \
     "${EXPANDED_COMPONENT_DIR}" \
-    "${CLEAN_COMPONENT_PKG}"
+    "${CLEAN_COMPONENT_PKG}" \
+    "${DISTRIBUTION_FILE}" \
+    "${PRODUCT_RESOURCES_DIR}"
 fi
 
 cat <<EOF
@@ -413,6 +658,8 @@ Built installer package:
 
 Install target:
   /Library/Input Methods/${APP_NAME}
+  or ~/Library/Input Methods/${APP_NAME}, depending on the Installer domain
+  selected by the user.
 
 EOF
 

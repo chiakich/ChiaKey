@@ -33,7 +33,7 @@ artifacts/release/ChiaKey-<CFBundleVersion>-unsigned.pkg
 沒有提供 signing identity 時，script 會：
 
 1. build Release `Takao-All`
-2. 補齊 DataTables、bundled DB 與詞庫 installer script
+2. 補齊 DataTables、從 GitHub 下載最新版 ChiaKey-Lexicon release 詞庫、以及詞庫 installer script
 3. ad-hoc sign `ChiaKey.app`
 4. 建立 unsigned `.pkg`
 
@@ -51,10 +51,10 @@ ChiaKey.app/Contents/Resources/Legal/
 
 其中包含主專案 `LICENSE`、`COPYING`、`ACKNOWLEDGEMENTS` 與 vendored libraries 的必要 notices，讓 binary redistribution 也保留授權聲明。
 
-如果 `ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db`
-不存在，release packaging 會停止，不會從 raw source 重建 DB。請先放入
-ChiaKey-Lexicon 產出的 release/local DB，或用 `--bundle-local-lexicon` /
-`--local-lexicon` 明確指定要包進 app 的 DB。
+release packaging 預設會使用 GitHub 上最新的 ChiaKey-Lexicon release，
+下載 `lexicon-manifest.json`、資料庫與 metadata，驗證 SHA-256 與資料庫健康狀態後
+包進 app。它不會從 raw source 重建 DB，也不會默默使用本機 CookedDatabase 作為
+正式 release 詞庫。
 
 ## 正式簽章與 notarization
 
@@ -84,7 +84,8 @@ artifacts/release/ChiaKey-<CFBundleVersion>.pkg
 
 ## 可選：bundle 本機詞庫
 
-如果要把目前 active local lexicon 放進 app bundle 作為 fallback DB：
+正式 release 不應使用本機詞庫；預設流程會抓 GitHub release。只有在做本機測試時，
+才建議把目前 active local lexicon 放進 app bundle 作為 fallback DB：
 
 ```sh
 Scripts/build-release-package.sh --bundle-local-lexicon
@@ -96,7 +97,7 @@ Scripts/build-release-package.sh --bundle-local-lexicon
 Scripts/build-release-package.sh --local-lexicon /path/to/ChiaKeySource.db
 ```
 
-正式 release 通常應使用已驗證、版本化的詞庫 release artifact，而不是臨時本機 DB。
+正式 release 應使用已驗證、版本化的詞庫 release artifact，而不是臨時本機 DB。
 
 ## CI / GitHub Release 方向
 
