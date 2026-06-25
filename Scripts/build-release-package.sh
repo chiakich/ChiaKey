@@ -15,6 +15,10 @@ EXPAT_COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/expat/COPYING"
 ZLIB_README_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/zlib/README"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 LOCAL_LEXICON_BUNDLE_SCRIPT="${ROOT_DIR}/Scripts/bundle-local-lexicon.sh"
+INSTALLER_TEMPLATE_DIR="${ROOT_DIR}/Packaging/Installer"
+INSTALLER_DISTRIBUTION_TEMPLATE="${INSTALLER_TEMPLATE_DIR}/Distribution.xml.in"
+INSTALLER_RESOURCES_DIR="${INSTALLER_TEMPLATE_DIR}/Resources"
+INSTALLER_SCRIPTS_DIR="${INSTALLER_TEMPLATE_DIR}/Scripts"
 ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
 LEXICON_RELEASE_REPO="${LEXICON_RELEASE_REPO:-akira02/ChiaKey-Lexicon}"
 LEXICON_RELEASE_TAG="${LEXICON_RELEASE_TAG:-}"
@@ -228,84 +232,23 @@ RUBY
 
 create_product_resources() {
   run /bin/rm -rf "${PRODUCT_RESOURCES_DIR}"
-  run /bin/mkdir -p "${PRODUCT_RESOURCES_DIR}" \
-    "${PRODUCT_RESOURCES_DIR}/zh_TW.lproj" \
-    "${PRODUCT_RESOURCES_DIR}/zh_CN.lproj"
-
+  run /bin/mkdir -p "${PRODUCT_RESOURCES_DIR}"
+  run /usr/bin/ditto --norsrc "${INSTALLER_RESOURCES_DIR}" "${PRODUCT_RESOURCES_DIR}"
   run /bin/cp "${LICENSE_FILE}" "${PRODUCT_RESOURCES_DIR}/License.txt"
-
-  cat >"${PRODUCT_RESOURCES_DIR}/ReadMe.txt" <<'README'
-ChiaKey installs a macOS input method.
-
-After installation, open System Settings > Keyboard > Text Input > Edit,
-then add ChiaKey from the Chinese input source list.
-
-This beta package is unsigned and intended for proof-of-concept testing.
-macOS may show a security warning before installation or first launch.
-README
-
-  cat >"${PRODUCT_RESOURCES_DIR}/Conclusion.txt" <<'CONCLUSION'
-Installation finished.
-
-If System Settings did not open automatically, open System Settings > Keyboard
-> Text Input > Edit, then add ChiaKey from the Chinese input source list.
-
-After adding ChiaKey, switch away from and back to ChiaKey if the input method
-was already running.
-CONCLUSION
-
-  cat >"${PRODUCT_RESOURCES_DIR}/zh_TW.lproj/ReadMe.txt" <<'README_ZH_TW'
-ChiaKey 會安裝一個 macOS 輸入法。
-
-安裝後請打開「系統設定」>「鍵盤」>「文字輸入」>「編輯」，再從中文輸入來源清單加入 ChiaKey。
-
-這是未簽章的 beta POC 安裝包，只適合測試更新與安裝流程。macOS 可能會在安裝或首次啟動時顯示安全性警告。
-README_ZH_TW
-
-  cat >"${PRODUCT_RESOURCES_DIR}/zh_TW.lproj/Conclusion.txt" <<'CONCLUSION_ZH_TW'
-安裝完成。
-
-如果「系統設定」沒有自動打開，請打開「系統設定」>「鍵盤」>「文字輸入」>「編輯」，再從中文輸入來源清單加入 ChiaKey。
-
-加入 ChiaKey 後，如果輸入法原本已經在執行，請先切到其他輸入法，再切回 ChiaKey。
-CONCLUSION_ZH_TW
-
-  cat >"${PRODUCT_RESOURCES_DIR}/zh_CN.lproj/ReadMe.txt" <<'README_ZH_CN'
-ChiaKey 会安装一个 macOS 输入法。
-
-安装后请打开“系统设置”>“键盘”>“文本输入”>“编辑”，再从中文输入源列表加入 ChiaKey。
-
-这是未签名的 beta POC 安装包，只适合测试更新与安装流程。macOS 可能会在安装或首次启动时显示安全性警告。
-README_ZH_CN
-
-  cat >"${PRODUCT_RESOURCES_DIR}/zh_CN.lproj/Conclusion.txt" <<'CONCLUSION_ZH_CN'
-安装完成。
-
-如果“系统设置”没有自动打开，请打开“系统设置”>“键盘”>“文本输入”>“编辑”，再从中文输入源列表加入 ChiaKey。
-
-加入 ChiaKey 后，如果输入法原本已经在运行，请先切到其他输入法，再切回 ChiaKey。
-CONCLUSION_ZH_CN
 }
 
 create_distribution_file() {
-  cat >"${DISTRIBUTION_FILE}" <<EOF
-<?xml version="1.0" encoding="utf-8"?>
-<installer-gui-script minSpecVersion="2">
-  <title>ChiaKey</title>
-  <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
-  <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="true"/>
-  <license file="License.txt"/>
-  <readme file="ReadMe.txt"/>
-  <conclusion file="Conclusion.txt"/>
-  <choices-outline>
-    <line choice="default"/>
-  </choices-outline>
-  <choice id="default" title="ChiaKey" description="Install the ChiaKey input method.">
-    <pkg-ref id="${COMPONENT_IDENTIFIER}"/>
-  </choice>
-  <pkg-ref id="${COMPONENT_IDENTIFIER}" version="${VERSION}" auth="Root">${CLEAN_COMPONENT_PKG_NAME}</pkg-ref>
-</installer-gui-script>
-EOF
+  print_command /usr/bin/sed \
+    -e "s#__COMPONENT_IDENTIFIER__#${COMPONENT_IDENTIFIER}#g" \
+    -e "s#__VERSION__#${VERSION}#g" \
+    -e "s#__CLEAN_COMPONENT_PKG_NAME__#${CLEAN_COMPONENT_PKG_NAME}#g" \
+    "${INSTALLER_DISTRIBUTION_TEMPLATE}" ">" "${DISTRIBUTION_FILE}"
+
+  /usr/bin/sed \
+    -e "s#__COMPONENT_IDENTIFIER__#${COMPONENT_IDENTIFIER}#g" \
+    -e "s#__VERSION__#${VERSION}#g" \
+    -e "s#__CLEAN_COMPONENT_PKG_NAME__#${CLEAN_COMPONENT_PKG_NAME}#g" \
+    "${INSTALLER_DISTRIBUTION_TEMPLATE}" >"${DISTRIBUTION_FILE}"
 }
 
 require_lexicon_database_source() {
@@ -580,23 +523,7 @@ run /usr/bin/find "${STAGE_ROOT}" -name "._*" -delete
 run /usr/bin/find "${STAGE_ROOT}" -name ".DS_Store" -delete
 run /usr/bin/xattr -cr "${STAGE_ROOT}"
 
-cat >"${PKG_SCRIPTS_DIR}/postinstall" <<'POSTINSTALL'
-#!/bin/sh
-
-/usr/bin/pkill -x ChiaKey >/dev/null 2>&1 || true
-/usr/bin/pkill -f '/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
-
-console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
-if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
-   /usr/bin/id -u "${console_user}" >/dev/null 2>&1; then
-  console_uid="$(/usr/bin/id -u "${console_user}")"
-  /bin/launchctl asuser "${console_uid}" \
-    /usr/bin/open "x-apple.systempreferences:com.apple.Keyboard-Settings.extension" \
-    >/dev/null 2>&1 || true
-fi
-
-exit 0
-POSTINSTALL
+run /bin/cp "${INSTALLER_SCRIPTS_DIR}/postinstall" "${PKG_SCRIPTS_DIR}/postinstall"
 run /bin/chmod 755 "${PKG_SCRIPTS_DIR}/postinstall"
 
 run /usr/bin/pkgbuild \

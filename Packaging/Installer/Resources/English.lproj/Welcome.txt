@@ -1,0 +1,18 @@
+Welcome to ChiaKey.
+
+ChiaKey is a modern macOS bopomofo input method revival project based on the
+open-source code of Yahoo! Kimo Input Method / OpenVanilla.
+This package installs the input method and includes the ChiaKey-Lexicon
+dictionary.
+
+The goal of this input method is to preserve KeyKey's feel for Traditional
+Chinese bopomofo input while making the project buildable, testable,
+maintainable, and releasable on modern Apple Silicon Macs.
+
+This is not an official Yahoo product. The source code is released under a
+BSD-style license; see LICENSE.
+The Yahoo! name and contributor names may not be used to endorse derived
+products without prior written permission.
+
+After installation, open System Settings > Keyboard > Text Input > Edit > "+",
+then choose Traditional Chinese > ChiaKey from the language list.

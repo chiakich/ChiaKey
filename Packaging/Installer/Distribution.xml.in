@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+  <title>ChiaKey</title>
+  <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+  <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="true"/>
+  <welcome file="Welcome.txt" mime-type="text/plain"/>
+  <license file="License.txt" mime-type="text/plain"/>
+  <conclusion file="Conclusion.txt" mime-type="text/plain"/>
+  <choices-outline>
+    <line choice="default"/>
+  </choices-outline>
+  <choice id="default" title="ChiaKey" description="Install the ChiaKey input method.">
+    <pkg-ref id="__COMPONENT_IDENTIFIER__"/>
+  </choice>
+  <pkg-ref id="__COMPONENT_IDENTIFIER__" version="__VERSION__" auth="Root">__CLEAN_COMPONENT_PKG_NAME__</pkg-ref>
+</installer-gui-script>
