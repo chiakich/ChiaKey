@@ -13,8 +13,6 @@ file for terms.
         @header TakaoPhrases
 */
 
-enum transaction_type { tDownload = -1, tUpload = 1 };
-
 /*!
         @class TakaoPhrases
         @abstract The class to interact with the interface of exporting and
@@ -23,12 +21,6 @@ enum transaction_type { tDownload = -1, tUpload = 1 };
 
 @interface TakaoPhrases : NSObject {
   IBOutlet id window;
-  IBOutlet id _exportDotMacButton;
-  IBOutlet id _importDotMacButton;
-  IBOutlet id _progressWindow;
-  IBOutlet id _progressIndicator;
-  NSTimer *_transactionTimer;
-  int _transactionType;
 }
 
 /*!
@@ -45,19 +37,5 @@ enum transaction_type { tDownload = -1, tUpload = 1 };
         @param sender The sender object.
 */
 - (IBAction)importDatabase:(id)sender;
-/*!
-        @method exportDatabaseToDotMac:
-        @abstract Exports the user phrase database to a text file and then
-   uploads it to the iDisk service of MobileMe
-        @param sender The sender object.
-*/
-- (IBAction)exportDatabaseToDotMac:(id)sender;
-/*!
-        @method importDatabaseFromDotMac:
-        @abstract Downloads user phrase database as a text file from the iDisk
-   service of MobileMe and then performs import.
-        @param sender The sender object.
-*/
-- (IBAction)importDatabaseFromDotMac:(id)sender;
 - (IBAction)launchEditor:(id)sender;
 @end

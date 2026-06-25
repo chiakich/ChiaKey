@@ -321,31 +321,6 @@
                 </subviews>
             </view>
         </window>
-        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="892">
-            <windowStyleMask key="styleMask" titled="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="196" y="429" width="306" height="81"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1055"/>
-            <view key="contentView" id="893">
-                <rect key="frame" x="0.0" y="0.0" width="306" height="81"/>
-                <autoresizingMask key="autoresizingMask"/>
-                <subviews>
-                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="895">
-                        <rect key="frame" x="17" y="44" width="199" height="17"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Transfering data, please wait..." id="896">
-                            <font key="font" metaFont="system"/>
-                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                    <progressIndicator wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" minValue="20" maxValue="100" doubleValue="20" bezeled="NO" indeterminate="YES" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="894">
-                        <rect key="frame" x="18" y="16" width="270" height="20"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    </progressIndicator>
-                </subviews>
-            </view>
-        </window>
         <customView id="472" userLabel="General View">
             <rect key="frame" x="0.0" y="0.0" width="480" height="472"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1028,7 +1003,7 @@
             </subviews>
         </customView>
         <customView id="445" userLabel="Phrase View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="260"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="145"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1011">
@@ -1042,37 +1017,6 @@
                         <action selector="launchEditor:" target="655" id="1015"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="884">
-                    <rect key="frame" x="31" y="162" width="116" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="MobileMe:" id="885">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
-                <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="883">
-                    <rect key="frame" x="154" y="122" width="268" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="Upload Database to iDisk" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="886">
-                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="exportDatabaseToDotMac:" target="655" id="891"/>
-                    </connections>
-                </button>
-                <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="882">
-                    <rect key="frame" x="154" y="151" width="268" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="Download Database from iDisk" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="887">
-                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="importDatabaseFromDotMac:" target="655" id="890"/>
-                    </connections>
-                </button>
                 <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1013">
                     <rect key="frame" x="31" y="23" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1083,7 +1027,7 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="521">
-                    <rect key="frame" x="31" y="223" width="116" height="17"/>
+                    <rect key="frame" x="31" y="107" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Backup Database:" id="522">
                         <font key="font" metaFont="system"/>
@@ -1092,7 +1036,7 @@
                     </textFieldCell>
                 </textField>
                 <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="466">
-                    <rect key="frame" x="154" y="183" width="268" height="32"/>
+                    <rect key="frame" x="154" y="67" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="Export Database…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="467">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1103,7 +1047,7 @@
                     </connections>
                 </button>
                 <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="464">
-                    <rect key="frame" x="154" y="212" width="268" height="32"/>
+                    <rect key="frame" x="154" y="96" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="Import Database…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="465">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1467,10 +1411,6 @@
         </customObject>
         <customObject id="655" customClass="TakaoPhrases">
             <connections>
-                <outlet property="_exportDotMacButton" destination="883" id="889"/>
-                <outlet property="_importDotMacButton" destination="882" id="888"/>
-                <outlet property="_progressIndicator" destination="894" id="897"/>
-                <outlet property="_progressWindow" destination="892" id="898"/>
                 <outlet property="window" destination="371" id="663"/>
             </connections>
         </customObject>

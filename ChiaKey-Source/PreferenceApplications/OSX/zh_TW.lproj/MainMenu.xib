@@ -321,31 +321,6 @@
                 </subviews>
             </view>
         </window>
-        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="894">
-            <windowStyleMask key="styleMask" titled="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="196" y="429" width="306" height="81"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1280" height="778"/>
-            <view key="contentView" id="895">
-                <rect key="frame" x="0.0" y="0.0" width="306" height="81"/>
-                <autoresizingMask key="autoresizingMask"/>
-                <subviews>
-                    <textField verticalHuggingPriority="750" id="897">
-                        <rect key="frame" x="17" y="44" width="108" height="17"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="傳輸中，請稍候…" id="898">
-                            <font key="font" metaFont="system"/>
-                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                    <progressIndicator wantsLayer="YES" verticalHuggingPriority="750" minValue="20" maxValue="100" doubleValue="20" bezeled="NO" indeterminate="YES" style="bar" id="896">
-                        <rect key="frame" x="18" y="16" width="270" height="20"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    </progressIndicator>
-                </subviews>
-            </view>
-        </window>
         <customView id="472" userLabel="General View">
             <rect key="frame" x="0.0" y="0.0" width="480" height="451"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1030,7 +1005,7 @@
             </subviews>
         </customView>
         <customView id="445" userLabel="Phrase View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="254"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="145"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="1022">
@@ -1053,39 +1028,8 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="886">
-                    <rect key="frame" x="154" y="116" width="268" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="上傳自訂詞資料庫到 iDisk" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="889">
-                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="exportDatabaseToDotMac:" target="655" id="890"/>
-                    </connections>
-                </button>
-                <button verticalHuggingPriority="750" imageHugsTitle="YES" id="887">
-                    <rect key="frame" x="154" y="145" width="268" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="push" title="從 iDisk 下載自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="888">
-                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="importDatabaseFromDotMac:" target="655" id="891"/>
-                    </connections>
-                </button>
-                <textField verticalHuggingPriority="750" id="884">
-                    <rect key="frame" x="31" y="156" width="116" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="MobileMe：" id="885">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <textField verticalHuggingPriority="750" id="521">
-                    <rect key="frame" x="31" y="217" width="116" height="17"/>
+                    <rect key="frame" x="31" y="107" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="自訂詞資料庫：" id="522">
                         <font key="font" metaFont="system"/>
@@ -1094,7 +1038,7 @@
                     </textFieldCell>
                 </textField>
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="466">
-                    <rect key="frame" x="154" y="177" width="268" height="32"/>
+                    <rect key="frame" x="154" y="67" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="匯出自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="467">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1105,7 +1049,7 @@
                     </connections>
                 </button>
                 <button verticalHuggingPriority="750" imageHugsTitle="YES" id="464">
-                    <rect key="frame" x="154" y="206" width="268" height="32"/>
+                    <rect key="frame" x="154" y="96" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="匯入自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="465">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1457,10 +1401,6 @@
         </customObject>
         <customObject id="655" customClass="TakaoPhrases">
             <connections>
-                <outlet property="_exportDotMacButton" destination="886" id="892"/>
-                <outlet property="_importDotMacButton" destination="887" id="893"/>
-                <outlet property="_progressIndicator" destination="896" id="900"/>
-                <outlet property="_progressWindow" destination="894" id="899"/>
                 <outlet property="window" destination="371" id="663"/>
             </connections>
         </customObject>
