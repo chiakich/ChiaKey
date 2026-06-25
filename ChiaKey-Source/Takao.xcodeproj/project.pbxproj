@@ -393,6 +393,7 @@
 		D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */; };
 		D450DE5F0D5F1117009A9C2A /* ChiaKey32.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */; };
+		C1B000020F00000100000002 /* ChiaKeyMenuIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */; };
 		D455A6391062575F00CC2B47 /* plugin.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D455A6371062575F00CC2B47 /* plugin.tiff */; };
 		D45A178C0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */ = {isa = PBXBuildFile; fileRef = D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */; };
 		D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */; };
@@ -1105,6 +1106,7 @@
 		D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey.icns; path = "Loaders/OSX-IMK/Images/ChiaKey.icns"; sourceTree = "<group>"; };
 		D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey16.icns; path = "Loaders/OSX-IMK/Images/ChiaKey16.icns"; sourceTree = "<group>"; };
 		D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey32.icns; path = "Loaders/OSX-IMK/Images/ChiaKey32.icns"; sourceTree = "<group>"; };
+		C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ChiaKeyMenuIcon.png; path = "Loaders/OSX-IMK/Images/ChiaKeyMenuIcon.png"; sourceTree = "<group>"; };
 		D455A6371062575F00CC2B47 /* plugin.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = plugin.tiff; path = PreferenceApplications/OSX/Images/plugin.tiff; sourceTree = "<group>"; };
 		D455A7FF106267A200CC2B47 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVSymbolController.h; path = "Loaders/OSX-IMK/CVSymbolController.h"; sourceTree = "<group>"; };
@@ -2087,6 +2089,7 @@
 				D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */,
 				D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */,
 				D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */,
+				C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */,
 			);
 			name = Images;
 			sourceTree = "<group>";
@@ -3251,6 +3254,7 @@
 				D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */,
 				D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */,
 				D450DE5F0D5F1117009A9C2A /* ChiaKey32.icns in Resources */,
+				C1B000020F00000100000002 /* ChiaKeyMenuIcon.png in Resources */,
 				D4112E860D631738001475CB /* FontSmaller.tiff in Resources */,
 				D4112E870D631738001475CB /* FontBigger.tiff in Resources */,
 				D49CAECD0D8ECE3500738634 /* About.jpg in Resources */,

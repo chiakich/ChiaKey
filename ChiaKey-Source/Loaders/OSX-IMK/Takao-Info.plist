@@ -37,12 +37,12 @@
 	<string>OpenVanillaController</string>
 	<key>InputMethodServerDelegateClass</key>
 	<string>OpenVanillaController</string>
-	<key>LSBackgroundOnly</key>
-	<string>1</string>
 	<key>LSHasLocalizedDisplayName</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>
 	<string>11.0</string>
+	<key>LSUIElement</key>
+	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 涼風千秋 Chiaki.C</string>
 	<key>NSMainNibFile</key>
@@ -68,6 +68,6 @@
 		<string>Hans</string>
 	</array>
 	<key>tsInputMethodIconFileKey</key>
-	<string>ChiaKey16.icns</string>
+	<string>ChiaKeyMenuIcon.png</string>
 </dict>
 </plist>

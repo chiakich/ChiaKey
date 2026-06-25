@@ -105,12 +105,13 @@ int main(int argc, char *argv[]) {
   }
 
   [NSApplication sharedApplication];
-  BOOL isBackgroundOnly =
-      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"LSBackgroundOnly"]
-          boolValue];
+  NSBundle *mainBundle = [NSBundle mainBundle];
+  BOOL usesProgrammaticDelegate =
+      [[mainBundle objectForInfoDictionaryKey:@"LSBackgroundOnly"] boolValue] ||
+      [[mainBundle objectForInfoDictionaryKey:@"LSUIElement"] boolValue];
   CVApplicationController *applicationController = nil;
   CVApplicationController *applicationDelegate = nil;
-  if (isBackgroundOnly) {
+  if (usesProgrammaticDelegate) {
     applicationController = [[CVApplicationController alloc] init];
     [NSApp setDelegate:applicationController];
     applicationDelegate = applicationController;
