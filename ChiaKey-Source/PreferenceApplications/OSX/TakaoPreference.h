@@ -50,6 +50,7 @@ static NSString *PluginToolbarItemIdentifier = @"Plugins";
   IBOutlet id _takaoGenericController;
   IBOutlet id _takaoGlobalController;
   IBOutlet id _takaoLoadedModuleController;
+  IBOutlet id _takaoUpdateController;
   NSImage *_defaultApplicationImage;
 
   BOOL _hasGenericInputMethods;

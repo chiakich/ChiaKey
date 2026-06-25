@@ -177,6 +177,11 @@ file for terms.
   [self setActiveView:view animate:YES];
   [self setAppIcon:[sender image]];
   [window setTitle:LFLSTR([sender itemIdentifier])];
+
+  if ([[sender itemIdentifier] isEqualToString:UpdateToolbarItemIdentifier] &&
+      [_takaoUpdateController respondsToSelector:@selector(updatePaneDidBecomeActive)]) {
+    [_takaoUpdateController updatePaneDidBecomeActive];
+  }
 }
 
 #pragma mark NSWindow delegate methods

@@ -20,18 +20,37 @@ file for terms.
 */
 
 @interface TakaoUpdate : NSObject {
-  IBOutlet id _checkProgressIndicator;
-  IBOutlet id _currentVersionTextField;
-  IBOutlet id _latestVersionTextField;
-  IBOutlet id _latestCheckTextField;
+  IBOutlet id _applicationCheckButton;
+  IBOutlet id _applicationCurrentVersionTextField;
+  IBOutlet id _applicationIncludeBetaCheckBox;
+  IBOutlet id _applicationInstallButton;
+  IBOutlet id _applicationLatestCheckTextField;
+  IBOutlet id _applicationLatestVersionTextField;
+  IBOutlet id _applicationProgressIndicator;
+  IBOutlet id _lexiconCheckButton;
+  IBOutlet id _lexiconCurrentVersionTextField;
+  IBOutlet id _lexiconInstallButton;
+  IBOutlet id _lexiconLatestVersionTextField;
+  IBOutlet id _lexiconLatestCheckTextField;
+  IBOutlet id _lexiconProgressIndicator;
   IBOutlet id _window;
+  NSString *_availableApplicationPackageName;
+  NSString *_availableApplicationPackageURL;
+  NSString *_availableApplicationTag;
+  NSString *_availableLexiconTag;
+  BOOL _didAutoCheckOnShow;
   NSTask *_task;
 }
 
 /*!
-        @method checkUpdateNow:
-        @abstract To check for updates.
+        @method checkApplicationUpdateNow:
+        @abstract To check for input method updates.
         @param sender The sender object.
 */
-- (IBAction)checkUpdateNow:(id)sender;
+- (IBAction)checkApplicationUpdateNow:(id)sender;
+- (IBAction)checkLexiconUpdateNow:(id)sender;
+- (IBAction)installApplicationUpdate:(id)sender;
+- (IBAction)installLexiconUpdate:(id)sender;
+- (IBAction)toggleIncludeBetaReleases:(id)sender;
+- (void)updatePaneDidBecomeActive;
 @end

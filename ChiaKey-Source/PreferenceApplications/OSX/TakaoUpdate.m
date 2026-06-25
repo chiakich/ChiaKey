@@ -9,6 +9,21 @@ file for terms.
 
 #import "TakaoHelper.h"
 
+static NSString *const ChiaKeyApplicationReleasesURL =
+    @"https://api.github.com/repos/akira02/ChiaKey/releases";
+static NSString *const ChiaKeyApplicationLatestReleaseURLDefaultsKey =
+    @"ChiaKeyLatestApplicationReleaseURL";
+static NSString *const ChiaKeyApplicationLatestPackageNameDefaultsKey =
+    @"ChiaKeyLatestApplicationPackageName";
+static NSString *const ChiaKeyApplicationLatestPackageURLDefaultsKey =
+    @"ChiaKeyLatestApplicationPackageURL";
+static NSString *const ChiaKeyApplicationIncludeBetaDefaultsKey =
+    @"ChiaKeyApplicationIncludeBetaReleases";
+static NSString *const ChiaKeyLatestApplicationDefaultsKey =
+    @"ChiaKeyLatestApplicationVersion";
+static NSString *const ChiaKeyLatestApplicationCheckDefaultsKey =
+    @"ChiaKeyLatestApplicationCheck";
+
 static NSString *const ChiaKeyLexiconLatestURL =
     @"https://github.com/akira02/ChiaKey-Lexicon/releases/latest";
 static NSString *const ChiaKeyLatestLexiconDefaultsKey =
@@ -25,6 +40,10 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
 - (void)dealloc {
   if (_task) [_task terminate];
   [_task release];
+  [_availableApplicationPackageName release];
+  [_availableApplicationPackageURL release];
+  [_availableApplicationTag release];
+  [_availableLexiconTag release];
   [super dealloc];
 }
 
@@ -134,6 +153,16 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   return runningVersion;
 }
 
+- (NSString *)_currentApplicationVersion {
+  NSString *version =
+      [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  if (![version length]) {
+    version = [[NSBundle mainBundle]
+        objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+  }
+  return version;
+}
+
 - (NSString *)_displayString:(NSString *)string fallback:(NSString *)fallback {
   return [string length] ? string : fallback;
 }
@@ -144,7 +173,168 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   return [formatter stringFromDate:date];
 }
 
-- (void)_getVersionInfo {
+- (NSString *)_baseVersionString:(NSString *)version {
+  if (![version length]) return nil;
+
+  NSString *trimmed = [version
+      stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  NSCharacterSet *digits = [NSCharacterSet decimalDigitCharacterSet];
+  NSUInteger firstDigit = NSNotFound;
+  for (NSUInteger index = 0; index < [trimmed length]; index++) {
+    unichar character = [trimmed characterAtIndex:index];
+    if ([digits characterIsMember:character]) {
+      firstDigit = index;
+      break;
+    }
+  }
+  if (firstDigit == NSNotFound) return trimmed;
+
+  NSString *base = [trimmed substringFromIndex:firstDigit];
+  NSRange hyphenRange = [base rangeOfString:@"-"];
+  if (hyphenRange.location != NSNotFound)
+    base = [base substringToIndex:hyphenRange.location];
+
+  NSRange metadataRange = [base rangeOfString:@"+"];
+  if (metadataRange.location != NSNotFound)
+    base = [base substringToIndex:metadataRange.location];
+
+  return base;
+}
+
+- (NSArray *)_numericVersionParts:(NSString *)version {
+  NSString *base = [self _baseVersionString:version];
+  if (![base length]) return [NSArray array];
+
+  NSArray *rawParts = [base
+      componentsSeparatedByCharactersInSet:
+          [[NSCharacterSet decimalDigitCharacterSet] invertedSet]];
+  NSMutableArray *parts = [NSMutableArray array];
+  for (NSString *part in rawParts) {
+    if (![part length]) continue;
+    [parts addObject:[NSNumber numberWithInteger:[part integerValue]]];
+  }
+  return parts;
+}
+
+- (NSComparisonResult)_compareVersion:(NSString *)lhs toVersion:(NSString *)rhs {
+  NSArray *leftParts = [self _numericVersionParts:lhs];
+  NSArray *rightParts = [self _numericVersionParts:rhs];
+  NSUInteger count = MAX([leftParts count], [rightParts count]);
+
+  for (NSUInteger index = 0; index < count; index++) {
+    NSInteger leftValue =
+        (index < [leftParts count]) ? [[leftParts objectAtIndex:index] integerValue] : 0;
+    NSInteger rightValue =
+        (index < [rightParts count]) ? [[rightParts objectAtIndex:index] integerValue] : 0;
+    if (leftValue < rightValue) return NSOrderedAscending;
+    if (leftValue > rightValue) return NSOrderedDescending;
+  }
+
+  return NSOrderedSame;
+}
+
+- (BOOL)_isDevelopmentLexiconVersion:(NSString *)version {
+  if (![version length]) return NO;
+  return [[version lowercaseString] rangeOfString:@"dev"].location !=
+         NSNotFound;
+}
+
+- (BOOL)_isApplicationBusy {
+  return ![_applicationProgressIndicator isHidden];
+}
+
+- (BOOL)_isLexiconBusy {
+  return ![_lexiconProgressIndicator isHidden];
+}
+
+- (void)_refreshApplicationInstallButton {
+  BOOL hasAvailablePackage = [_availableApplicationTag length] > 0 &&
+                             [_availableApplicationPackageURL length] > 0;
+  [_applicationInstallButton setHidden:!hasAvailablePackage];
+  [_applicationInstallButton setEnabled:hasAvailablePackage &&
+                                        ![self _isApplicationBusy]];
+}
+
+- (void)_setAvailableApplicationTag:(NSString *)tag
+                         packageURL:(NSString *)packageURL
+                        packageName:(NSString *)packageName {
+  if (_availableApplicationTag != tag) {
+    [_availableApplicationTag release];
+    _availableApplicationTag = [tag copy];
+  }
+  if (_availableApplicationPackageURL != packageURL) {
+    [_availableApplicationPackageURL release];
+    _availableApplicationPackageURL = [packageURL copy];
+  }
+  if (_availableApplicationPackageName != packageName) {
+    [_availableApplicationPackageName release];
+    _availableApplicationPackageName = [packageName copy];
+  }
+  [self _refreshApplicationInstallButton];
+}
+
+- (void)_refreshLexiconInstallButton {
+  BOOL hasAvailableLexicon = [_availableLexiconTag length] > 0;
+  [_lexiconInstallButton setHidden:!hasAvailableLexicon];
+  [_lexiconInstallButton setEnabled:hasAvailableLexicon &&
+                                    ![self _isLexiconBusy]];
+}
+
+- (void)_setAvailableLexiconTag:(NSString *)tag {
+  if (_availableLexiconTag != tag) {
+    [_availableLexiconTag release];
+    _availableLexiconTag = [tag copy];
+  }
+  [self _refreshLexiconInstallButton];
+}
+
+- (void)_setApplicationBusy:(BOOL)busy {
+  if (busy) {
+    [_applicationProgressIndicator startAnimation:self];
+    [_applicationProgressIndicator setHidden:NO];
+  } else {
+    [_applicationProgressIndicator stopAnimation:self];
+    [_applicationProgressIndicator setHidden:YES];
+  }
+
+  [_applicationCheckButton setEnabled:!busy];
+  [_applicationIncludeBetaCheckBox setEnabled:!busy];
+  [self _refreshApplicationInstallButton];
+}
+
+- (void)_setLexiconBusy:(BOOL)busy {
+  if (busy) {
+    [_lexiconProgressIndicator startAnimation:self];
+    [_lexiconProgressIndicator setHidden:NO];
+  } else {
+    [_lexiconProgressIndicator stopAnimation:self];
+    [_lexiconProgressIndicator setHidden:YES];
+  }
+
+  [_lexiconCheckButton setEnabled:!busy];
+  [self _refreshLexiconInstallButton];
+}
+
+- (void)_getApplicationVersionInfo {
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSString *currentVersion = [self _currentApplicationVersion];
+  NSString *latestVersion =
+      [defaults stringForKey:ChiaKeyLatestApplicationDefaultsKey];
+  NSString *latestCheck =
+      [defaults stringForKey:ChiaKeyLatestApplicationCheckDefaultsKey];
+
+  [_applicationCurrentVersionTextField
+      setStringValue:[self _displayString:currentVersion
+                                  fallback:LFLSTR(@"Unknown")]];
+  [_applicationLatestVersionTextField
+      setStringValue:[self _displayString:latestVersion
+                                  fallback:LFLSTR(@"Not checked yet")]];
+  [_applicationLatestCheckTextField
+      setStringValue:[self _displayString:latestCheck
+                                  fallback:LFLSTR(@"Not checked yet")]];
+}
+
+- (void)_getLexiconVersionInfo {
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   NSString *currentVersion = [self _currentLexiconDisplayVersion];
   NSString *latestVersion =
@@ -152,20 +342,173 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   NSString *latestCheck =
       [defaults stringForKey:ChiaKeyLatestLexiconCheckDefaultsKey];
 
-  [_currentVersionTextField
+  [_lexiconCurrentVersionTextField
       setStringValue:[self _displayString:currentVersion
                                   fallback:LFLSTR(@"No lexicon installed")]];
-  [_latestVersionTextField
+  [_lexiconLatestVersionTextField
       setStringValue:[self _displayString:latestVersion
                                   fallback:LFLSTR(@"Not checked yet")]];
-  [_latestCheckTextField
+  [_lexiconLatestCheckTextField
       setStringValue:[self _displayString:latestCheck
                                   fallback:LFLSTR(@"Not checked yet")]];
 }
 
+- (void)_getVersionInfo {
+  [self _getApplicationVersionInfo];
+  [self _getLexiconVersionInfo];
+}
+
 - (void)awakeFromNib {
-  [_checkProgressIndicator setHidden:YES];
+  [_applicationProgressIndicator setHidden:YES];
+  [_lexiconProgressIndicator setHidden:YES];
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  [_applicationIncludeBetaCheckBox
+      setIntValue:[defaults boolForKey:ChiaKeyApplicationIncludeBetaDefaultsKey]];
+  [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+  [self _setAvailableLexiconTag:nil];
   [self _getVersionInfo];
+  [self _setApplicationBusy:NO];
+  [self _setLexiconBusy:NO];
+}
+
+- (NSError *)_updateErrorWithDescription:(NSString *)description
+                                    code:(NSInteger)code {
+  NSDictionary *userInfo =
+      [NSDictionary dictionaryWithObject:description
+                                  forKey:NSLocalizedDescriptionKey];
+  return [NSError errorWithDomain:@"ChiaKeyUpdate"
+                             code:code
+                         userInfo:userInfo];
+}
+
+- (NSDictionary *)_signedPackageAssetFromRelease:(NSDictionary *)release {
+  NSArray *assets = [release objectForKey:@"assets"];
+  if (![assets isKindOfClass:[NSArray class]]) return nil;
+
+  NSDictionary *fallbackAsset = nil;
+  for (id item in assets) {
+    if (![item isKindOfClass:[NSDictionary class]]) continue;
+    NSDictionary *asset = (NSDictionary *)item;
+    NSString *name = [asset objectForKey:@"name"];
+    NSString *downloadURL = [asset objectForKey:@"browser_download_url"];
+    if (![name isKindOfClass:[NSString class]] ||
+        ![downloadURL isKindOfClass:[NSString class]] ||
+        ![downloadURL length])
+      continue;
+    if ([[name pathExtension] caseInsensitiveCompare:@"pkg"] != NSOrderedSame)
+      continue;
+    if ([[name lowercaseString] rangeOfString:@"unsigned"].location !=
+        NSNotFound)
+      continue;
+
+    if (!fallbackAsset) fallbackAsset = asset;
+    if ([[name lowercaseString] hasPrefix:@"chiakey-"]) return asset;
+  }
+
+  return fallbackAsset;
+}
+
+- (void)_latestApplicationReleaseIncludingBeta:(BOOL)includeBeta
+                                    completion:
+                                        (void (^)(NSString *tag,
+                                                  NSString *releaseURL,
+                                                  NSString *packageURL,
+                                                  NSString *packageName,
+                                                  BOOL prerelease,
+                                                  NSError *error))completion {
+  NSURL *url = [NSURL URLWithString:ChiaKeyApplicationReleasesURL];
+  NSMutableURLRequest *request =
+      [NSMutableURLRequest requestWithURL:url
+                              cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                          timeoutInterval:20.0];
+  [request setValue:@"ChiaKey Preferences" forHTTPHeaderField:@"User-Agent"];
+  [request setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
+
+  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+      dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *response,
+                            NSError *requestError) {
+          NSError *completionError = requestError;
+          NSInteger statusCode = 0;
+          if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = [(NSHTTPURLResponse *)response statusCode];
+          }
+          if (!completionError && statusCode >= 400) {
+            completionError =
+                [self _updateErrorWithDescription:LFLSTR(@"GitHub returned an error.")
+                                             code:statusCode];
+          }
+
+          NSString *tag = nil;
+          NSString *releaseURL = nil;
+          NSString *packageURL = nil;
+          NSString *packageName = nil;
+          BOOL prerelease = NO;
+          if (!completionError) {
+            NSError *jsonError = nil;
+            id object = [NSJSONSerialization JSONObjectWithData:data
+                                                        options:0
+                                                          error:&jsonError];
+            if (![object isKindOfClass:[NSArray class]]) {
+              completionError = jsonError ? jsonError
+                                          : [self _updateErrorWithDescription:
+                                                      @"GitHub returned an unexpected response."
+                                                                     code:0];
+            } else {
+              NSString *bestTag = nil;
+              NSString *bestReleaseURL = nil;
+              NSString *bestPackageURL = nil;
+              NSString *bestPackageName = nil;
+              BOOL bestPrerelease = NO;
+              for (id item in (NSArray *)object) {
+                if (![item isKindOfClass:[NSDictionary class]]) continue;
+                NSDictionary *release = (NSDictionary *)item;
+                if ([[release objectForKey:@"draft"] boolValue]) continue;
+                BOOL itemPrerelease =
+                    [[release objectForKey:@"prerelease"] boolValue];
+                if (itemPrerelease && !includeBeta) continue;
+
+                NSString *itemTag = [release objectForKey:@"tag_name"];
+                if (![itemTag isKindOfClass:[NSString class]] ||
+                    ![itemTag length])
+                  continue;
+
+                NSString *itemURL = [release objectForKey:@"html_url"];
+                if (![bestTag length] ||
+                    [self _compareVersion:bestTag toVersion:itemTag] ==
+                        NSOrderedAscending) {
+                  NSDictionary *packageAsset =
+                      [self _signedPackageAssetFromRelease:release];
+                  NSString *itemPackageURL =
+                      [packageAsset objectForKey:@"browser_download_url"];
+                  NSString *itemPackageName = [packageAsset objectForKey:@"name"];
+                  bestTag = itemTag;
+                  bestReleaseURL =
+                      [itemURL isKindOfClass:[NSString class]] ? itemURL : nil;
+                  bestPackageURL =
+                      [itemPackageURL isKindOfClass:[NSString class]]
+                          ? itemPackageURL
+                          : nil;
+                  bestPackageName =
+                      [itemPackageName isKindOfClass:[NSString class]]
+                          ? itemPackageName
+                          : nil;
+                  bestPrerelease = itemPrerelease;
+                }
+              }
+              tag = bestTag;
+              releaseURL = bestReleaseURL;
+              packageURL = bestPackageURL;
+              packageName = bestPackageName;
+              prerelease = bestPrerelease;
+            }
+          }
+
+          if (completion)
+            completion(tag, releaseURL, packageURL, packageName, prerelease,
+                       completionError);
+        }];
+  [task resume];
 }
 
 - (void)_latestLexiconReleaseTagWithCompletion:
@@ -192,12 +535,9 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
           }
 
           if (!completionError && statusCode >= 400) {
-            NSDictionary *userInfo = [NSDictionary
-                dictionaryWithObject:@"GitHub returned an error."
-                              forKey:NSLocalizedDescriptionKey];
-            completionError = [NSError errorWithDomain:@"ChiaKeyLexiconUpdate"
-                                                  code:statusCode
-                                              userInfo:userInfo];
+            completionError =
+                [self _updateErrorWithDescription:LFLSTR(@"GitHub returned an error.")
+                                             code:statusCode];
           }
 
           if (!completionError && response) {
@@ -212,23 +552,6 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
           if (completion) completion(tag, completionError);
         }];
   [task resume];
-}
-
-- (NSComparisonResult)_compareVersion:(NSString *)lhs toVersion:(NSString *)rhs {
-  NSArray *leftParts = [lhs componentsSeparatedByString:@"."];
-  NSArray *rightParts = [rhs componentsSeparatedByString:@"."];
-  NSUInteger count = MAX([leftParts count], [rightParts count]);
-
-  for (NSUInteger index = 0; index < count; index++) {
-    NSInteger leftValue =
-        (index < [leftParts count]) ? [[leftParts objectAtIndex:index] integerValue] : 0;
-    NSInteger rightValue =
-        (index < [rightParts count]) ? [[rightParts objectAtIndex:index] integerValue] : 0;
-    if (leftValue < rightValue) return NSOrderedAscending;
-    if (leftValue > rightValue) return NSOrderedDescending;
-  }
-
-  return NSOrderedSame;
 }
 
 - (NSString *)_bundledLexiconInstallerPath {
@@ -308,12 +631,94 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   [alert beginSheetModalForWindow:_window completionHandler:nil];
 }
 
-- (void)_stopChecking {
-  [_checkProgressIndicator stopAnimation:self];
-  [_checkProgressIndicator setHidden:YES];
+- (void)_handleLatestApplicationTag:(NSString *)latestTag
+                         releaseURL:(NSString *)releaseURL
+                         packageURL:(NSString *)packageURL
+                        packageName:(NSString *)packageName
+                          prerelease:(BOOL)prerelease
+                              error:(NSError *)error
+                         showAlerts:(BOOL)showAlerts {
+  NSString *checkTime = [self _formatDate:[NSDate date]];
+
+  if ([latestTag length]) {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:latestTag forKey:ChiaKeyLatestApplicationDefaultsKey];
+    [defaults setObject:checkTime
+                 forKey:ChiaKeyLatestApplicationCheckDefaultsKey];
+    if ([releaseURL length]) {
+      [defaults setObject:releaseURL
+                   forKey:ChiaKeyApplicationLatestReleaseURLDefaultsKey];
+    }
+    if ([packageURL length]) {
+      [defaults setObject:packageURL
+                   forKey:ChiaKeyApplicationLatestPackageURLDefaultsKey];
+    } else {
+      [defaults removeObjectForKey:ChiaKeyApplicationLatestPackageURLDefaultsKey];
+    }
+    if ([packageName length]) {
+      [defaults setObject:packageName
+                   forKey:ChiaKeyApplicationLatestPackageNameDefaultsKey];
+    } else {
+      [defaults removeObjectForKey:ChiaKeyApplicationLatestPackageNameDefaultsKey];
+    }
+    [defaults synchronize];
+  }
+
+  [self _setApplicationBusy:NO];
+
+  if (![latestTag length]) {
+    [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+    if (showAlerts) {
+      [self _showAlertWithTitle:LFLSTR(@"Unable to check for update via the Internet.")
+                        message:LFLSTR(@"Please check your Internet connection and try again.")];
+    }
+    [self _getVersionInfo];
+    return;
+  }
+
+  NSString *currentVersion = [self _currentApplicationVersion];
+  if ([currentVersion length] &&
+      [self _compareVersion:currentVersion toVersion:latestTag] !=
+          NSOrderedAscending) {
+    [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+    if (showAlerts) {
+      [self _showAlertWithTitle:LFLSTR(@"You are now using the newest version.")
+                        message:LFLSTR(@"You need not to update your software")];
+    }
+    [self _getVersionInfo];
+    return;
+  }
+
+  [self _setAvailableApplicationTag:latestTag
+                         packageURL:packageURL
+                        packageName:packageName];
+  [_applicationLatestVersionTextField setStringValue:latestTag];
+  [_applicationLatestCheckTextField setStringValue:checkTime];
+
+  if (!showAlerts) return;
+
+  NSString *message = [NSString
+      stringWithFormat:LFLSTR(@"Latest input method version: %@"), latestTag];
+  if (prerelease) {
+    message = [message stringByAppendingFormat:@"\n%@",
+                                           LFLSTR(@"This is a beta release.")];
+  }
+  if (![packageURL length]) {
+    message = [message stringByAppendingFormat:@"\n%@",
+                                           LFLSTR(@"Input method package was not found in the release.")];
+  }
+  if ([releaseURL length]) {
+    message = [message stringByAppendingFormat:@"\n%@", releaseURL];
+  }
+
+  [self _showAlertWithTitle:LFLSTR(@"A newer version is available.")
+                    message:message];
+  [self _getVersionInfo];
 }
 
-- (void)_handleLatestLexiconTag:(NSString *)latestTag error:(NSError *)error {
+- (void)_handleLatestLexiconTag:(NSString *)latestTag
+                           error:(NSError *)error
+                      showAlerts:(BOOL)showAlerts {
   NSString *checkTime = [self _formatDate:[NSDate date]];
 
   if ([latestTag length]) {
@@ -323,46 +728,253 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
     [defaults synchronize];
   }
 
+  [self _setLexiconBusy:NO];
+
   if (![latestTag length]) {
-    [self _stopChecking];
-    [self _showAlertWithTitle:LFLSTR(@"Unable to check for update via the Internet.")
-                      message:LFLSTR(@"Please check your Internet connection and try again.")];
+    [self _setAvailableLexiconTag:nil];
+    if (showAlerts) {
+      [self _showAlertWithTitle:LFLSTR(@"Unable to check for update via the Internet.")
+                        message:LFLSTR(@"Please check your Internet connection and try again.")];
+    }
     [self _getVersionInfo];
     return;
   }
 
   NSString *currentTag = [self _currentLexiconComparableVersion];
-  if ([currentTag length] &&
+  if ([self _isDevelopmentLexiconVersion:currentTag] ||
+      ([currentTag length] &&
       [self _compareVersion:currentTag toVersion:latestTag] !=
-          NSOrderedAscending) {
-    [self _stopChecking];
-    [self _showAlertWithTitle:LFLSTR(@"You are now using the newest version.")
-                      message:LFLSTR(@"You need not to update your lexicon")];
+          NSOrderedAscending)) {
+    [self _setAvailableLexiconTag:nil];
+    if (showAlerts) {
+      [self _showAlertWithTitle:LFLSTR(@"You are now using the newest version.")
+                        message:LFLSTR(@"You need not to update your lexicon")];
+    }
     [self _getVersionInfo];
     return;
   }
 
+  [self _setAvailableLexiconTag:latestTag];
+  [_lexiconLatestVersionTextField setStringValue:latestTag];
+  [_lexiconLatestCheckTextField setStringValue:checkTime];
+  if (!showAlerts) return;
+
+  [self _showAlertWithTitle:LFLSTR(@"A newer lexicon is available.")
+                    message:[NSString
+                                stringWithFormat:
+                                    LFLSTR(@"Latest lexicon version: %@"),
+                                    latestTag]];
+}
+
+- (NSString *)_safePackageFileName:(NSString *)packageName
+                        fallbackTag:(NSString *)tag {
+  NSString *fileName = [packageName length]
+                           ? packageName
+                           : [NSString stringWithFormat:@"ChiaKey-%@.pkg",
+                                                        [self _displayString:tag
+                                                                    fallback:@"Update"]];
+  NSCharacterSet *unsafeCharacters =
+      [NSCharacterSet characterSetWithCharactersInString:@"/:"];
+  fileName = [[fileName componentsSeparatedByCharactersInSet:unsafeCharacters]
+      componentsJoinedByString:@"-"];
+  if ([[fileName pathExtension] caseInsensitiveCompare:@"pkg"] !=
+      NSOrderedSame)
+    fileName = [fileName stringByAppendingPathExtension:@"pkg"];
+  return fileName;
+}
+
+- (void)_downloadApplicationPackageFromURL:(NSString *)packageURL
+                               packageName:(NSString *)packageName
+                                completion:
+                                    (void (^)(NSString *path,
+                                              NSError *error))completion {
+  NSURL *url = [NSURL URLWithString:packageURL];
+  if (!url) {
+    if (completion) {
+      completion(nil,
+                 [self _updateErrorWithDescription:LFLSTR(@"Invalid package URL.")
+                                              code:0]);
+    }
+    return;
+  }
+
+  NSString *directory =
+      [NSTemporaryDirectory() stringByAppendingPathComponent:@"ChiaKeyUpdates"];
+  NSString *fileName =
+      [self _safePackageFileName:packageName fallbackTag:_availableApplicationTag];
+  NSString *destinationPath = [directory stringByAppendingPathComponent:fileName];
+  NSURL *destinationURL = [NSURL fileURLWithPath:destinationPath];
+
+  NSURLSessionDownloadTask *task = [[NSURLSession sharedSession]
+      downloadTaskWithURL:url
+        completionHandler:^(NSURL *location, NSURLResponse *response,
+                            NSError *requestError) {
+          NSError *completionError = requestError;
+          NSInteger statusCode = 0;
+          if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = [(NSHTTPURLResponse *)response statusCode];
+          }
+          if (!completionError && statusCode >= 400) {
+            completionError =
+                [self _updateErrorWithDescription:LFLSTR(@"GitHub returned an error.")
+                                             code:statusCode];
+          }
+
+          if (!completionError && !location) {
+            completionError =
+                [self _updateErrorWithDescription:LFLSTR(@"Downloaded package was not found.")
+                                             code:0];
+          }
+
+          if (!completionError) {
+            NSFileManager *fileManager = [NSFileManager defaultManager];
+            [fileManager createDirectoryAtPath:directory
+                   withIntermediateDirectories:YES
+                                    attributes:nil
+                                         error:&completionError];
+            if (!completionError) {
+              [fileManager removeItemAtURL:destinationURL error:nil];
+              [fileManager moveItemAtURL:location
+                                   toURL:destinationURL
+                                   error:&completionError];
+            }
+          }
+
+          if (completion)
+            completion(completionError ? nil : destinationPath,
+                       completionError);
+        }];
+  [task resume];
+}
+
+- (void)_checkApplicationUpdateShowingAlerts:(BOOL)showAlerts {
+  if ([self _isApplicationBusy]) return;
+
+  [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+  [self _setApplicationBusy:YES];
+  BOOL includeBeta = [_applicationIncludeBetaCheckBox intValue] == 1;
+
+  [self _latestApplicationReleaseIncludingBeta:includeBeta
+                                    completion:^(NSString *latestTag,
+                                                 NSString *releaseURL,
+                                                 NSString *packageURL,
+                                                 NSString *packageName,
+                                                 BOOL prerelease,
+                                                 NSError *error) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self _handleLatestApplicationTag:latestTag
+                             releaseURL:releaseURL
+                             packageURL:packageURL
+                            packageName:packageName
+                              prerelease:prerelease
+                                  error:error
+                             showAlerts:showAlerts];
+    });
+  }];
+}
+
+- (void)_checkLexiconUpdateShowingAlerts:(BOOL)showAlerts {
+  if ([self _isLexiconBusy]) return;
+
+  [self _setAvailableLexiconTag:nil];
+  [self _setLexiconBusy:YES];
+
+  [self _latestLexiconReleaseTagWithCompletion:^(NSString *latestTag,
+                                                 NSError *error) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self _handleLatestLexiconTag:latestTag
+                               error:error
+                          showAlerts:showAlerts];
+    });
+  }];
+}
+
+- (void)updatePaneDidBecomeActive {
+  if (_didAutoCheckOnShow) return;
+  _didAutoCheckOnShow = YES;
+  [self _checkApplicationUpdateShowingAlerts:NO];
+  [self _checkLexiconUpdateShowingAlerts:NO];
+}
+
+#pragma mark Interface Builder actions
+
+- (IBAction)checkApplicationUpdateNow:(id)sender {
+  [self _checkApplicationUpdateShowingAlerts:YES];
+}
+
+- (IBAction)checkLexiconUpdateNow:(id)sender {
+  [self _checkLexiconUpdateShowingAlerts:YES];
+}
+
+- (IBAction)installApplicationUpdate:(id)sender {
+  if ([self _isApplicationBusy]) return;
+
+  NSString *packageURL = [[_availableApplicationPackageURL copy] autorelease];
+  NSString *packageName = [[_availableApplicationPackageName copy] autorelease];
+  if (![packageURL length]) {
+    [self _showAlertWithTitle:LFLSTR(@"No input method update selected")
+                      message:LFLSTR(@"Please check for input method updates first.")];
+    return;
+  }
+
+  [self _setApplicationBusy:YES];
+  [self _downloadApplicationPackageFromURL:packageURL
+                               packageName:packageName
+                                completion:^(NSString *path, NSError *error) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self _setApplicationBusy:NO];
+
+      if (error || ![path length]) {
+        [self _showAlertWithTitle:LFLSTR(@"Unable to download input method update.")
+                          message:[self _displayString:[error localizedDescription]
+                                              fallback:LFLSTR(@"Please check your Internet connection and try again.")]];
+        return;
+      }
+
+      BOOL opened =
+          [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
+      if (!opened) {
+        [self _showAlertWithTitle:LFLSTR(@"Unable to open installer.")
+                          message:path];
+      }
+    });
+  }];
+}
+
+- (IBAction)installLexiconUpdate:(id)sender {
+  if ([self _isLexiconBusy]) return;
+
+  NSString *tag = [[_availableLexiconTag copy] autorelease];
+  if (![tag length]) {
+    [self _showAlertWithTitle:LFLSTR(@"No lexicon update selected")
+                      message:LFLSTR(@"Please check for lexicon updates first.")];
+    return;
+  }
+
+  [self _setLexiconBusy:YES];
+
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     NSString *output = nil;
-    BOOL installed = [self _installLexiconRelease:latestTag output:&output];
+    BOOL installed = [self _installLexiconRelease:tag output:&output];
     NSString *installOutput = [output copy];
 
     dispatch_async(dispatch_get_main_queue(), ^{
-      [self _stopChecking];
+      [self _setLexiconBusy:NO];
 
       if (installed) {
+        [self _setAvailableLexiconTag:nil];
         BOOL reloaded = [self _reloadOpenVanillaServer];
         NSString *message = nil;
         if (reloaded) {
           message = [NSString
               stringWithFormat:
                   LFLSTR(@"Installed lexicon %@. ChiaKey has reloaded it."),
-                  latestTag];
+                  tag];
         } else {
           message = [NSString
               stringWithFormat:
                   LFLSTR(@"Installed lexicon %@. Switch away from and back to ChiaKey to reload it."),
-                  latestTag];
+                  tag];
         }
         [self _showAlertWithTitle:LFLSTR(@"Lexicon updated")
                           message:message];
@@ -378,20 +990,13 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   });
 }
 
-#pragma mark Interface Builder actions
-
-- (IBAction)checkUpdateNow:(id)sender {
-  if (![_checkProgressIndicator isHidden]) return;
-
-  [_checkProgressIndicator startAnimation:self];
-  [_checkProgressIndicator setHidden:NO];
-
-  [self _latestLexiconReleaseTagWithCompletion:^(NSString *latestTag,
-                                                 NSError *error) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self _handleLatestLexiconTag:latestTag error:error];
-    });
-  }];
+- (IBAction)toggleIncludeBetaReleases:(id)sender {
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  [defaults setBool:([_applicationIncludeBetaCheckBox intValue] == 1)
+             forKey:ChiaKeyApplicationIncludeBetaDefaultsKey];
+  [defaults synchronize];
+  [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+  _didAutoCheckOnShow = NO;
 }
 
 @end

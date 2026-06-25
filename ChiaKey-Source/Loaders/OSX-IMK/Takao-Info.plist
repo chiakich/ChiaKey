@@ -30,7 +30,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1.1.2528</string>
+	<string>1.1.3</string>
 	<key>InputMethodConnectionName</key>
 	<string>ChiaKey_1_Connection</string>
 	<key>InputMethodServerControllerClass</key>
