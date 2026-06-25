@@ -381,11 +381,13 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                          userInfo:userInfo];
 }
 
-- (NSDictionary *)_signedPackageAssetFromRelease:(NSDictionary *)release {
+- (NSDictionary *)_packageAssetFromRelease:(NSDictionary *)release
+                             allowUnsigned:(BOOL)allowUnsigned {
   NSArray *assets = [release objectForKey:@"assets"];
   if (![assets isKindOfClass:[NSArray class]]) return nil;
 
   NSDictionary *fallbackAsset = nil;
+  NSDictionary *unsignedFallbackAsset = nil;
   for (id item in assets) {
     if (![item isKindOfClass:[NSDictionary class]]) continue;
     NSDictionary *asset = (NSDictionary *)item;
@@ -397,15 +399,23 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
       continue;
     if ([[name pathExtension] caseInsensitiveCompare:@"pkg"] != NSOrderedSame)
       continue;
-    if ([[name lowercaseString] rangeOfString:@"unsigned"].location !=
-        NSNotFound)
+
+    BOOL isUnsigned =
+        [[name lowercaseString] rangeOfString:@"unsigned"].location !=
+        NSNotFound;
+    if (isUnsigned) {
+      if (!allowUnsigned) continue;
+      if (!unsignedFallbackAsset) unsignedFallbackAsset = asset;
+      if ([[name lowercaseString] hasPrefix:@"chiakey-"])
+        unsignedFallbackAsset = asset;
       continue;
+    }
 
     if (!fallbackAsset) fallbackAsset = asset;
     if ([[name lowercaseString] hasPrefix:@"chiakey-"]) return asset;
   }
 
-  return fallbackAsset;
+  return fallbackAsset ? fallbackAsset : unsignedFallbackAsset;
 }
 
 - (void)_latestApplicationReleaseIncludingBeta:(BOOL)includeBeta
@@ -478,7 +488,9 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                     [self _compareVersion:bestTag toVersion:itemTag] ==
                         NSOrderedAscending) {
                   NSDictionary *packageAsset =
-                      [self _signedPackageAssetFromRelease:release];
+                      [self _packageAssetFromRelease:release
+                                      allowUnsigned:(itemPrerelease &&
+                                                     includeBeta)];
                   NSString *itemPackageURL =
                       [packageAsset objectForKey:@"browser_download_url"];
                   NSString *itemPackageName = [packageAsset objectForKey:@"name"];
