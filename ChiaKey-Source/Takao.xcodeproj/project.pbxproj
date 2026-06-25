@@ -389,7 +389,6 @@
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
 		D4447D630E346C5D00BE7D9E /* playSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D610E346C5D00BE7D9E /* playSound.tiff */; };
 		D4466AAE0D912A6800A530D4 /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
-		C1A1F0010F00000100000002 /* install-lexicon-release.sh in Resources */ = {isa = PBXBuildFile; fileRef = C1A1F0010F00000100000001 /* install-lexicon-release.sh */; };
 		D44DB8D5106F0A3C001308F8 /* reload.png in Resources */ = {isa = PBXBuildFile; fileRef = D44DB8D4106F0A3C001308F8 /* reload.png */; };
 		D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */; };
@@ -3265,7 +3264,6 @@
 				D482C3AE0ECB41D8005E8D68 /* SymbolWindow.xib in Resources */,
 				D482C3AF0ECB41D8005E8D68 /* TooltipWindow.xib in Resources */,
 				D482C3B00ECB41D8005E8D68 /* VerticalCandidateWindow.xib in Resources */,
-				C1A1F0010F00000100000002 /* install-lexicon-release.sh in Resources */,
 				D41C8F8E0EF3E0C600BA9742 /* SmileyView.xib in Resources */,
 				D4FF804F0F462074006F4025 /* InputMethodToggleWindowController.xib in Resources */,
 				D41DFA9C1062B19400B73EFA /* TakaoWordCount.xib in Resources */,

@@ -27,7 +27,7 @@ Scripts/build-release-package.sh
 預設輸出：
 
 ```text
-artifacts/release/ChiaKey-<CFBundleVersion>.pkg
+artifacts/release/ChiaKey-<CFBundleVersion>-unsigned.pkg
 ```
 
 沒有提供 signing identity 時，script 會：
@@ -42,6 +42,14 @@ macOS 將 `com.apple.provenance` extended attribute 轉成 `._*` AppleDouble
 條目包進 installer。
 
 這適合本機測試 package payload，不適合公開 release。
+
+打包流程會將授權與 acknowledgement 文件放進 app bundle：
+
+```text
+ChiaKey.app/Contents/Resources/Legal/
+```
+
+其中包含主專案 `LICENSE`、`COPYING`、`ACKNOWLEDGEMENTS` 與 vendored libraries 的必要 notices，讓 binary redistribution 也保留授權聲明。
 
 如果 `ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db`
 不存在，release packaging 會停止，不會從 raw source 重建 DB。請先放入
@@ -64,6 +72,12 @@ APP_SIGN_IDENTITY="Developer ID Application: Example Developer (TEAMID)" \
 INSTALLER_SIGN_IDENTITY="Developer ID Installer: Example Developer (TEAMID)" \
 NOTARY_PROFILE="chiakey-notary" \
   Scripts/build-release-package.sh --notarize
+```
+
+提供 Installer signing identity 時，預設輸出為：
+
+```text
+artifacts/release/ChiaKey-<CFBundleVersion>.pkg
 ```
 
 `NOTARY_PROFILE` 是 `xcrun notarytool store-credentials` 建立在 keychain 裡的 profile 名稱。CI 不能直接使用本機 keychain profile 時，應在 CI job 裡建立 temporary keychain 與 profile，再呼叫同一支 script。

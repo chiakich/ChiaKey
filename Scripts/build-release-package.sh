@@ -6,6 +6,13 @@ PROJECT="${ROOT_DIR}/ChiaKey-Source/Takao.xcodeproj"
 DATA_TABLES_DIR="${ROOT_DIR}/ChiaKey-Source/DataTables"
 DATABASES_DIR="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase"
 SMART_MANDARIN_DB="${DATABASES_DIR}/ChiaKeySource.db"
+LICENSE_FILE="${ROOT_DIR}/LICENSE"
+COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/COPYING"
+ACKNOWLEDGEMENTS_FILE="${ROOT_DIR}/ChiaKey-Source/ACKNOWLEDGEMENTS"
+EXTERNAL_LIBRARY_VERSIONS_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/VERSIONS.txt"
+UNITTEST_COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/UnitTest++/COPYING"
+EXPAT_COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/expat/COPYING"
+ZLIB_README_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/zlib/README"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 LOCAL_LEXICON_BUNDLE_SCRIPT="${ROOT_DIR}/Scripts/bundle-local-lexicon.sh"
 ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
@@ -84,6 +91,24 @@ print_command() {
 run() {
   print_command "$@"
   "$@"
+}
+
+copy_legal_notices() {
+  local legal_dir="${BUILT_RESOURCES}/Legal"
+  local external_dir="${legal_dir}/ExternalLibraries"
+
+  run /bin/rm -rf "${legal_dir}"
+  run /bin/mkdir -p "${legal_dir}" "${external_dir}/UnitTest++" \
+    "${external_dir}/expat" "${external_dir}/zlib"
+
+  run /bin/cp "${LICENSE_FILE}" "${legal_dir}/LICENSE"
+  run /bin/cp "${COPYING_FILE}" "${legal_dir}/ChiaKey-COPYING"
+  run /bin/cp "${ACKNOWLEDGEMENTS_FILE}" "${legal_dir}/ACKNOWLEDGEMENTS"
+  run /bin/cp "${EXTERNAL_LIBRARY_VERSIONS_FILE}" \
+    "${external_dir}/VERSIONS.txt"
+  run /bin/cp "${UNITTEST_COPYING_FILE}" "${external_dir}/UnitTest++/COPYING"
+  run /bin/cp "${EXPAT_COPYING_FILE}" "${external_dir}/expat/COPYING"
+  run /bin/cp "${ZLIB_README_FILE}" "${external_dir}/zlib/README"
 }
 
 require_lexicon_database_source() {
@@ -284,6 +309,8 @@ if [[ -f "${LEXICON_INSTALL_SCRIPT}" ]]; then
   run /bin/cp "${LEXICON_INSTALL_SCRIPT}" "${BUILT_RESOURCES}/Scripts/install-lexicon-release.sh"
 fi
 
+copy_legal_notices
+
 if [[ "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
   run "${LOCAL_LEXICON_BUNDLE_SCRIPT}" \
     --app "${BUILT_APP}" \
@@ -308,7 +335,11 @@ run /usr/bin/codesign --verify --deep --strict "${BUILT_APP}"
 
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${BUILT_APP}/Contents/Info.plist")"
 if [[ -z "${PKG_NAME}" ]]; then
-  PKG_NAME="ChiaKey-${VERSION}.pkg"
+  if [[ -z "${INSTALLER_SIGN_IDENTITY}" ]]; then
+    PKG_NAME="ChiaKey-${VERSION}-unsigned.pkg"
+  else
+    PKG_NAME="ChiaKey-${VERSION}.pkg"
+  fi
 fi
 
 OUTPUT_PKG="${OUTPUT_DIR}/${PKG_NAME}"

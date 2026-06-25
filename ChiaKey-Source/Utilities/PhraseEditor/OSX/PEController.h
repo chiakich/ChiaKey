@@ -11,7 +11,7 @@
 #import "LFUtilities.h"
 #import "PESettingTableView.h"
 
-#define HELP_URL @"https://github.com/akira02/KeyKey-Boneyard"
+#define HELP_URL @"https://github.com/akira02/ChiaKey"
 
 #ifndef OPENVANILLA_DO_CONNECTION_NAME
 #error Must define OPENVANILLA_DO_CONNECTION_NAME

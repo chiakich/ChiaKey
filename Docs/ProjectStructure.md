@@ -15,7 +15,7 @@ InputMethodKit target 先不做破壞性搬移；新的跨平台核心與 iOS re
 ├── Scripts/             # 本機 build、install、驗證與維護 scripts
 ├── KeyKey.xcworkspace   # workspace 入口
 ├── README.MD
-└── LICENSE.txt
+└── LICENSE
 ```
 
 ## Source Tree
@@ -29,8 +29,7 @@ ChiaKey-Source/
 ├── Utilities/
 ├── Distributions/
 ├── DataTables/
-├── ExternalLibraries/
-└── Studies/             # 歷史研究或未接入主線的實驗
+└── ExternalLibraries/
 ```
 
 ## Runtime Layers

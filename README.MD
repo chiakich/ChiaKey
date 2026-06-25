@@ -4,7 +4,7 @@
 
 目標是保留 KeyKey 在繁體中文注音輸入上的手感，並讓專案能在現代 Apple Silicon Mac 上編譯、測試、維護與發佈。
 
-這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE.txt](LICENSE.txt)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
+這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE](LICENSE)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
 
 ## 專案定位
 
@@ -46,9 +46,9 @@
 
 需使用支援 Apple Silicon 的現代 Xcode；目前已在 Xcode 26.5 驗證。
 
-## 決策文件
+## 文件
 
-- [架構決策](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
+- [架構](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
 - [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與獨立 iOS host repo 關係。
 - [iOS 實作指南](Docs/iOSImplementation.md)：iOS keyboard extension 的 core 接法、repo 邊界與驗證入口。
 - [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
@@ -133,6 +133,8 @@ Scripts/build-release-package.sh
 ```text
 artifacts/release/
 ```
+
+未提供 Installer signing identity 時，輸出檔名會加上 `-unsigned`，表示只適合本機測試，不應上傳為公開 release。
 
 公開 release 應提供 Developer ID Application / Installer signing identities，並跑 notarization。細節請見 [Release packaging](Docs/ReleasePackaging.md)。
 
