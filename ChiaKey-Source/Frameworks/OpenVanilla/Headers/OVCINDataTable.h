@@ -688,8 +688,8 @@ class OVCINDataTableParser {
     if (!stream) return properties;
 
     while (!feof(stream)) {
-      char buffer[256];
-      fgets(buffer, sizeof(buffer) - 1, stream);
+      char buffer[256] = {0};
+      if (!fgets(buffer, sizeof(buffer), stream)) break;
 
       if (!*buffer) continue;
 
