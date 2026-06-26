@@ -199,7 +199,7 @@ class OVPathHelper {
 
     if (!realPath.length()) return string(".");
 
-    for (size_t index = realPath.length() - 1; index >= 0; index--) {
+    for (size_t index = realPath.length(); index-- > 0;) {
       if (realPath[index] == separator) {
         if (index) {
           // reserve the \\ on Windows
@@ -214,8 +214,6 @@ class OVPathHelper {
       // if we run into : (like C:) on Windows
       if (realPath[index] == ':')
         return realPath.substr(0, index + 1) + Separator();
-
-      if (!index) break;
     }
 
     return string(".");
@@ -226,11 +224,9 @@ class OVPathHelper {
 
     if (!path.length()) return string();
 
-    for (size_t index = path.length() - 1; index >= 0; index--) {
+    for (size_t index = path.length(); index-- > 0;) {
       if (path[index] == separator)
         return path.substr(index + 1, path.length() - (index + 1));
-
-      if (!index) break;
     }
 
     return path;
@@ -240,12 +236,10 @@ class OVPathHelper {
     char separator = OVPathHelper::Separator();
     if (!path.length()) return string();
 
-    for (size_t index = path.length() - 1; index >= 0; index--) {
+    for (size_t index = path.length(); index-- > 0;) {
       if (path[index] == separator) break;
 
       if (path[index] == '.') return path.substr(0, index);
-
-      if (!index) break;
     }
 
     return path;
