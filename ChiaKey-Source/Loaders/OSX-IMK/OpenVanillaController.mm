@@ -3,6 +3,8 @@
 #import "OpenVanillaController.h"
 
 #import <AudioToolbox/AudioToolbox.h>
+#import <Carbon/Carbon.h>
+#import <string.h>
 
 #import "CVApplicationController.h"
 #import "CVNotifyController.h"
@@ -16,6 +18,61 @@
 
 static OpenVanillaController *OVCActiveContext = nil;
 static id OVCActiveContextSender = nil;
+
+static BOOL OVCInvokeBooleanSelector(id object, SEL selector) {
+  if (![object respondsToSelector:selector]) {
+    return NO;
+  }
+
+  NSMethodSignature *signature = [object methodSignatureForSelector:selector];
+  if (!signature || [signature numberOfArguments] != 2) {
+    return NO;
+  }
+
+  const char *returnType = [signature methodReturnType];
+  if (strcmp(returnType, @encode(BOOL)) != 0 &&
+      strcmp(returnType, @encode(bool)) != 0 &&
+      strcmp(returnType, @encode(char)) != 0 &&
+      strcmp(returnType, @encode(unsigned char)) != 0) {
+    return NO;
+  }
+
+  BOOL result = NO;
+  @try {
+    NSInvocation *invocation =
+        [NSInvocation invocationWithMethodSignature:signature];
+    [invocation setTarget:object];
+    [invocation setSelector:selector];
+    [invocation invoke];
+    [invocation getReturnValue:&result];
+  } @catch (NSException *exception) {
+    return NO;
+  }
+
+  return result;
+}
+
+static BOOL OVCClientReportsSecureInput(id client) {
+  SEL selectors[] = {
+      @selector(isSecureTextEntry),
+      @selector(secureTextEntry),
+      @selector(isSecure),
+      @selector(secure),
+  };
+
+  for (size_t index = 0; index < sizeof(selectors) / sizeof(selectors[0]);
+       ++index) {
+    if (OVCInvokeBooleanSelector(client, selectors[index])) {
+      return YES;
+    }
+  }
+
+  return NO;
+}
+
+static BOOL OVCShouldPassThroughSecureInput(id client) {
+  return IsSecureEventInputEnabled() || OVCClientReportsSecureInput(client);
+}
 
 @implementation OpenVanillaController
 - (void)dealloc {
@@ -373,6 +430,13 @@ static id OVCActiveContextSender = nil;
     }
 #endif
   } else if ([event type] == NSEventTypeKeyDown) {
+    if (OVCShouldPassThroughSecureInput(sender)) {
+      [_composingBuffer setString:@""];
+      _context->clear();
+      [self _resetUI];
+      return NO;
+    }
+
     bool isHandled = false;
 
     NSString *chars = [event characters];
