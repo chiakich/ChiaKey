@@ -327,10 +327,10 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 
   if (![string length]) return nil;
 
-  vector<string> codepoints =
+  std::vector<std::string> codepoints =
       OVUTF8Helper::SplitStringByCodePoint([string UTF8String]);
-  string validatedString;
-  for (vector<string>::const_iterator iter = codepoints.begin();
+  std::string validatedString;
+  for (std::vector<std::string>::const_iterator iter = codepoints.begin();
        iter != codepoints.end(); ++iter) {
     unsigned int codePoint = OVUTF8Helper::CodePointFromSingleUTF8String(*iter);
     if (CVCodePointIsAllowedPhraseCharacter(codePoint)) {
