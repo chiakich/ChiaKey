@@ -11,6 +11,10 @@
 "Symbols" = "符號表";
 "The phrase you want to add is invalid." = "您要加入的詞彙格式不正確！";
 "Add new phrase: " = "加入新詞： ";
+"Confirm Add Phrase" = "確認加入詞彙";
+"Allow ChiaKey to add \"%@\" to your user dictionary?" = "允許千秋輸入法將「%@」加入您的使用者詞庫？";
+"Add Phrase" = "加入詞彙";
+"Cancel" = "取消";
 
 "Send" = "送出";
 

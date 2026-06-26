@@ -11,6 +11,10 @@
 "Symbols" = "Symbols";
 "The phrase you want to add is invalid." = "The phrase you want to add is invalid.";
 "Add new phrase: " = "Add new phrase: ";
+"Confirm Add Phrase" = "Confirm Add Phrase";
+"Allow ChiaKey to add \"%@\" to your user dictionary?" = "Allow ChiaKey to add \"%@\" to your user dictionary?";
+"Add Phrase" = "Add Phrase";
+"Cancel" = "Cancel";
 
 "Send" = "Send";
 

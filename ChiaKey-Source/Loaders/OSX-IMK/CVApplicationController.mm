@@ -15,6 +15,11 @@ static const NSTimeInterval kChiaKeyLexiconAutoUpdateCheckInterval =
     24.0 * 60.0 * 60.0;
 static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
 
+static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
+  return (codePoint >= 0x2E80 && codePoint < 0xFF00) ||
+         (codePoint >= 0x20000 && codePoint <= 0x323AF);
+}
+
 @implementation CVApplicationController
 
 - (void)_initializeControllerIfNeeded {
@@ -302,16 +307,39 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
       stringByTrimmingCharactersInSet:[NSCharacterSet
                                           whitespaceAndNewlineCharacterSet]];
 
-  if (!string && ![string length]) return nil;
-  int i;
-  NSMutableString *validatedString = [NSMutableString string];
-  for (i = 0; i < [string length]; i++) {
-    unichar aChar = [originalString characterAtIndex:i];
-    if (aChar >= 0x2E80 && aChar < 0xFF00) {
-      [validatedString appendFormat:@"%C", aChar];
+  if (![string length]) return nil;
+
+  vector<string> codepoints =
+      OVUTF8Helper::SplitStringByCodePoint([string UTF8String]);
+  string validatedString;
+  for (vector<string>::const_iterator iter = codepoints.begin();
+       iter != codepoints.end(); ++iter) {
+    unsigned int codePoint = OVUTF8Helper::CodePointFromSingleUTF8String(*iter);
+    if (CVCodePointIsAllowedPhraseCharacter(codePoint)) {
+      validatedString += *iter;
     }
   }
-  return validatedString;
+
+  return [NSString stringWithUTF8String:validatedString.c_str()];
+}
+
+- (NSUInteger)_codePointCountOfString:(NSString *)string {
+  if (![string length]) return 0;
+
+  return OVUTF8Helper::SplitStringByCodePoint([string UTF8String]).size();
+}
+
+- (BOOL)_confirmAddPhrase:(NSString *)phrase {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:LFLSTR(@"Confirm Add Phrase")];
+  [alert setInformativeText:[NSString
+                                stringWithFormat:
+                                    LFLSTR(@"Allow ChiaKey to add \"%@\" to "
+                                           @"your user dictionary?"),
+                                    phrase]];
+  [alert addButtonWithTitle:LFLSTR(@"Add Phrase")];
+  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
+  return [alert runModal] == NSAlertFirstButtonReturn;
 }
 
 - (void)handleIncomingURL:(NSAppleEventDescriptor *)event
@@ -330,6 +358,9 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
             notify:LFLSTR(@"The phrase you want to add is invalid.")];
         return;
       }
+      if (![self _confirmAddPhrase:phrase]) {
+        return;
+      }
       [self userPhraseDBAddNewRow:phrase];
       NSString *msg = [NSString
           stringWithFormat:@"%@%@", LFLSTR(@"Add new phrase: "), phrase];
@@ -337,10 +368,13 @@ static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
     } else if ([a count] == 2) {
       NSString *phrase = [self _validatedString:[a objectAtIndex:0]];
       NSString *reading = [a objectAtIndex:1];
-      if ([phrase length] !=
+      if ([self _codePointCountOfString:phrase] !=
           [[reading componentsSeparatedByString:@","] count]) {
         [CVNotifyController
             notify:LFLSTR(@"The phrase you want to add is invalid.")];
+        return;
+      }
+      if (![self _confirmAddPhrase:phrase]) {
         return;
       }
       [self userPhraseDBAddNewRow:phrase];
