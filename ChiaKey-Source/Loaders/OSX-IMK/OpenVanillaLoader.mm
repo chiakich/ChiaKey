@@ -259,8 +259,6 @@ using namespace OpenVanilla;
   string supplementDBFile =
       OVPathHelper::PathCat(libAppSupportDBPath, "Supplement.db");
 
-  cerr << supplementDBFile << endl;
-
   string supplementDBVersion;
   string mainDBVersion;
   string bundledChiaKeyDBFile =
@@ -845,15 +843,12 @@ using namespace OpenVanilla;
     set<string> dedup;
 
     if (select) {
-      NSLog(@"has select, querying: %@",
-            [NSString stringWithUTF8String:(*cpi).c_str()]);
       select->bindTextToColumn(*cpi, 1);
       while (select->step() == SQLITE_ROW) {
         string b = select->textOfColumn(0);
 
         if (exp.match(b)) continue;
 
-        cerr << b << endl;
         dedup.insert(b);
         bpmfs.push_back(b);
       }
