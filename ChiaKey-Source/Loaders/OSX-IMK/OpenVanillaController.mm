@@ -76,6 +76,10 @@ static BOOL OVCShouldPassThroughSecureInput(id client) {
 
 @implementation OpenVanillaController
 - (void)dealloc {
+  if (OVCActiveContext == self) {
+    [OpenVanillaController setActiveContext:nil sender:nil];
+  }
+
   // delete C++ objects here
   delete _context;
   [_composingBuffer release];
