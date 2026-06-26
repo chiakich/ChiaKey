@@ -467,6 +467,16 @@ class PVLoader : public OVBase {
       m_loaderService->logger("Loader")
           << "No input method module found." << endl;
 
+      OVModule* configuredModule = m_moduleManager->moduleWithName(
+          m_cfgPrimaryInputMethod, m_loaderPolicy, m_loaderService, false);
+      if (configuredModule && configuredModule->isInputMethod()) {
+        m_loaderService->logger("Loader")
+            << "Keeping configured input method unavailable at startup: "
+            << m_cfgPrimaryInputMethod << endl;
+        dict->setKeyValue("PrimaryInputMethod", m_cfgPrimaryInputMethod);
+        return;
+      }
+
       m_cfgPrimaryInputMethod = "";
 
       vector<string> inputMethods = allInputMethodIdentifiers();
