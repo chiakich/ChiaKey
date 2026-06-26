@@ -15,6 +15,8 @@ static NSString *const ChiaKeyApplicationLatestReleaseURLDefaultsKey =
     @"ChiaKeyLatestApplicationReleaseURL";
 static NSString *const ChiaKeyApplicationLatestPackageNameDefaultsKey =
     @"ChiaKeyLatestApplicationPackageName";
+static NSString *const ChiaKeyApplicationLatestPackageSHA256DefaultsKey =
+    @"ChiaKeyLatestApplicationPackageSHA256";
 static NSString *const ChiaKeyApplicationLatestPackageURLDefaultsKey =
     @"ChiaKeyLatestApplicationPackageURL";
 static NSString *const ChiaKeyApplicationIncludeBetaDefaultsKey =
@@ -41,6 +43,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   if (_task) [_task terminate];
   [_task release];
   [_availableApplicationPackageName release];
+  [_availableApplicationPackageSHA256 release];
   [_availableApplicationPackageURL release];
   [_availableApplicationTag release];
   [_availableLexiconTag release];
@@ -257,7 +260,8 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
 
 - (void)_setAvailableApplicationTag:(NSString *)tag
                          packageURL:(NSString *)packageURL
-                        packageName:(NSString *)packageName {
+                        packageName:(NSString *)packageName
+                      packageSHA256:(NSString *)packageSHA256 {
   if (_availableApplicationTag != tag) {
     [_availableApplicationTag release];
     _availableApplicationTag = [tag copy];
@@ -269,6 +273,10 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   if (_availableApplicationPackageName != packageName) {
     [_availableApplicationPackageName release];
     _availableApplicationPackageName = [packageName copy];
+  }
+  if (_availableApplicationPackageSHA256 != packageSHA256) {
+    [_availableApplicationPackageSHA256 release];
+    _availableApplicationPackageSHA256 = [packageSHA256 copy];
   }
   [self _refreshApplicationInstallButton];
 }
@@ -364,7 +372,10 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   [_applicationIncludeBetaCheckBox
       setIntValue:[defaults boolForKey:ChiaKeyApplicationIncludeBetaDefaultsKey]];
-  [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+  [self _setAvailableApplicationTag:nil
+                         packageURL:nil
+                        packageName:nil
+                      packageSHA256:nil];
   [self _setAvailableLexiconTag:nil];
   [self _getVersionInfo];
   [self _setApplicationBusy:NO];
@@ -381,13 +392,11 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                          userInfo:userInfo];
 }
 
-- (NSDictionary *)_packageAssetFromRelease:(NSDictionary *)release
-                             allowUnsigned:(BOOL)allowUnsigned {
+- (NSDictionary *)_packageAssetFromRelease:(NSDictionary *)release {
   NSArray *assets = [release objectForKey:@"assets"];
   if (![assets isKindOfClass:[NSArray class]]) return nil;
 
   NSDictionary *fallbackAsset = nil;
-  NSDictionary *unsignedFallbackAsset = nil;
   for (id item in assets) {
     if (![item isKindOfClass:[NSDictionary class]]) continue;
     NSDictionary *asset = (NSDictionary *)item;
@@ -403,19 +412,34 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
     BOOL isUnsigned =
         [[name lowercaseString] rangeOfString:@"unsigned"].location !=
         NSNotFound;
-    if (isUnsigned) {
-      if (!allowUnsigned) continue;
-      if (!unsignedFallbackAsset) unsignedFallbackAsset = asset;
-      if ([[name lowercaseString] hasPrefix:@"chiakey-"])
-        unsignedFallbackAsset = asset;
-      continue;
-    }
+    if (isUnsigned) continue;
 
     if (!fallbackAsset) fallbackAsset = asset;
     if ([[name lowercaseString] hasPrefix:@"chiakey-"]) return asset;
   }
 
-  return fallbackAsset ? fallbackAsset : unsignedFallbackAsset;
+  return fallbackAsset;
+}
+
+- (NSString *)_sha256FromPackageAsset:(NSDictionary *)asset {
+  NSString *digest = [asset objectForKey:@"digest"];
+  if (![digest isKindOfClass:[NSString class]] || ![digest length])
+    digest = [asset objectForKey:@"sha256"];
+  if (![digest isKindOfClass:[NSString class]]) return nil;
+
+  NSString *lowercaseDigest = [digest lowercaseString];
+  if ([lowercaseDigest hasPrefix:@"sha256:"])
+    lowercaseDigest = [lowercaseDigest substringFromIndex:7];
+
+  NSCharacterSet *nonHexCharacters =
+      [[NSCharacterSet characterSetWithCharactersInString:
+                           @"0123456789abcdef"] invertedSet];
+  if ([lowercaseDigest length] != 64 ||
+      [lowercaseDigest rangeOfCharacterFromSet:nonHexCharacters].location !=
+          NSNotFound)
+    return nil;
+
+  return lowercaseDigest;
 }
 
 - (void)_latestApplicationReleaseIncludingBeta:(BOOL)includeBeta
@@ -424,6 +448,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                                                   NSString *releaseURL,
                                                   NSString *packageURL,
                                                   NSString *packageName,
+                                                  NSString *packageSHA256,
                                                   BOOL prerelease,
                                                   NSError *error))completion {
   NSURL *url = [NSURL URLWithString:ChiaKeyApplicationReleasesURL];
@@ -453,6 +478,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
           NSString *releaseURL = nil;
           NSString *packageURL = nil;
           NSString *packageName = nil;
+          NSString *packageSHA256 = nil;
           BOOL prerelease = NO;
           if (!completionError) {
             NSError *jsonError = nil;
@@ -469,6 +495,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
               NSString *bestReleaseURL = nil;
               NSString *bestPackageURL = nil;
               NSString *bestPackageName = nil;
+              NSString *bestPackageSHA256 = nil;
               BOOL bestPrerelease = NO;
               for (id item in (NSArray *)object) {
                 if (![item isKindOfClass:[NSDictionary class]]) continue;
@@ -488,12 +515,12 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                     [self _compareVersion:bestTag toVersion:itemTag] ==
                         NSOrderedAscending) {
                   NSDictionary *packageAsset =
-                      [self _packageAssetFromRelease:release
-                                      allowUnsigned:(itemPrerelease &&
-                                                     includeBeta)];
+                      [self _packageAssetFromRelease:release];
                   NSString *itemPackageURL =
                       [packageAsset objectForKey:@"browser_download_url"];
                   NSString *itemPackageName = [packageAsset objectForKey:@"name"];
+                  NSString *itemPackageSHA256 =
+                      [self _sha256FromPackageAsset:packageAsset];
                   bestTag = itemTag;
                   bestReleaseURL =
                       [itemURL isKindOfClass:[NSString class]] ? itemURL : nil;
@@ -505,6 +532,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                       [itemPackageName isKindOfClass:[NSString class]]
                           ? itemPackageName
                           : nil;
+                  bestPackageSHA256 = itemPackageSHA256;
                   bestPrerelease = itemPrerelease;
                 }
               }
@@ -512,13 +540,14 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
               releaseURL = bestReleaseURL;
               packageURL = bestPackageURL;
               packageName = bestPackageName;
+              packageSHA256 = bestPackageSHA256;
               prerelease = bestPrerelease;
             }
           }
 
           if (completion)
-            completion(tag, releaseURL, packageURL, packageName, prerelease,
-                       completionError);
+            completion(tag, releaseURL, packageURL, packageName, packageSHA256,
+                       prerelease, completionError);
         }];
   [task resume];
 }
@@ -647,6 +676,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                          releaseURL:(NSString *)releaseURL
                          packageURL:(NSString *)packageURL
                         packageName:(NSString *)packageName
+                      packageSHA256:(NSString *)packageSHA256
                           prerelease:(BOOL)prerelease
                               error:(NSError *)error
                          showAlerts:(BOOL)showAlerts {
@@ -673,13 +703,23 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
     } else {
       [defaults removeObjectForKey:ChiaKeyApplicationLatestPackageNameDefaultsKey];
     }
+    if ([packageSHA256 length]) {
+      [defaults setObject:packageSHA256
+                   forKey:ChiaKeyApplicationLatestPackageSHA256DefaultsKey];
+    } else {
+      [defaults
+          removeObjectForKey:ChiaKeyApplicationLatestPackageSHA256DefaultsKey];
+    }
     [defaults synchronize];
   }
 
   [self _setApplicationBusy:NO];
 
   if (![latestTag length]) {
-    [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+    [self _setAvailableApplicationTag:nil
+                           packageURL:nil
+                          packageName:nil
+                        packageSHA256:nil];
     if (showAlerts) {
       [self _showAlertWithTitle:LFLSTR(@"Unable to check for update via the Internet.")
                         message:LFLSTR(@"Please check your Internet connection and try again.")];
@@ -692,7 +732,10 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   if ([currentVersion length] &&
       [self _compareVersion:currentVersion toVersion:latestTag] !=
           NSOrderedAscending) {
-    [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+    [self _setAvailableApplicationTag:nil
+                           packageURL:nil
+                          packageName:nil
+                        packageSHA256:nil];
     if (showAlerts) {
       [self _showAlertWithTitle:LFLSTR(@"You are now using the newest version.")
                         message:LFLSTR(@"You need not to update your software")];
@@ -703,7 +746,8 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
 
   [self _setAvailableApplicationTag:latestTag
                          packageURL:packageURL
-                        packageName:packageName];
+                        packageName:packageName
+                      packageSHA256:packageSHA256];
   [_applicationLatestVersionTextField setStringValue:latestTag];
   [_applicationLatestCheckTextField setStringValue:checkTime];
 
@@ -795,8 +839,114 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   return fileName;
 }
 
+- (BOOL)_runValidationTool:(NSString *)launchPath
+                 arguments:(NSArray *)arguments
+                    output:(NSString **)output {
+  NSTask *task = [[[NSTask alloc] init] autorelease];
+  NSPipe *pipe = [NSPipe pipe];
+  [task setLaunchPath:launchPath];
+  [task setArguments:arguments];
+  [task setStandardOutput:pipe];
+  [task setStandardError:pipe];
+
+  @try {
+    [task launch];
+    [task waitUntilExit];
+  } @catch (NSException *exception) {
+    if (output) *output = [exception description];
+    return NO;
+  }
+
+  NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
+  NSString *toolOutput =
+      [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
+          autorelease];
+  if (output) *output = toolOutput ? toolOutput : @"";
+
+  return [task terminationStatus] == 0;
+}
+
+- (BOOL)_verifySHA256OfFileAtPath:(NSString *)path
+                          expected:(NSString *)expectedSHA256
+                             error:(NSError **)error {
+  if (![expectedSHA256 length]) return YES;
+
+  NSString *shaOutput = nil;
+  BOOL hasSHAOutput =
+      [self _runValidationTool:@"/usr/bin/shasum"
+                     arguments:[NSArray arrayWithObjects:@"-a",
+                                                          @"256",
+                                                          path,
+                                                          nil]
+                        output:&shaOutput];
+  NSArray *components =
+      [shaOutput componentsSeparatedByCharactersInSet:
+                     [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  NSString *actualSHA256 = [components count] ? [components objectAtIndex:0] : nil;
+  if (!hasSHAOutput ||
+      [actualSHA256 caseInsensitiveCompare:expectedSHA256] != NSOrderedSame) {
+    if (error) {
+      *error = [self _updateErrorWithDescription:
+                         LFLSTR(@"Downloaded package SHA-256 did not match "
+                                @"the release metadata.")
+                                             code:0];
+    }
+    return NO;
+  }
+
+  return YES;
+}
+
+- (BOOL)_validateApplicationPackageAtPath:(NSString *)path
+                                    error:(NSError **)error {
+  NSString *signatureOutput = nil;
+  BOOL hasDeveloperIDSignature =
+      [self _runValidationTool:@"/usr/sbin/pkgutil"
+                     arguments:[NSArray arrayWithObjects:@"--check-signature",
+                                                          path, nil]
+                        output:&signatureOutput] &&
+      [signatureOutput rangeOfString:@"Developer ID Installer"
+                              options:NSCaseInsensitiveSearch].location !=
+          NSNotFound;
+  if (!hasDeveloperIDSignature) {
+    if (error) {
+      *error = [self _updateErrorWithDescription:
+                         LFLSTR(@"Downloaded package is not signed with a "
+                                @"Developer ID Installer certificate.")
+                                             code:0];
+    }
+    return NO;
+  }
+
+  NSString *gatekeeperOutput = nil;
+  BOOL acceptedByGatekeeper =
+      [self _runValidationTool:@"/usr/sbin/spctl"
+                     arguments:[NSArray arrayWithObjects:@"--assess",
+                                                          @"--type",
+                                                          @"install",
+                                                          @"--verbose=4",
+                                                          path,
+                                                          nil]
+                        output:&gatekeeperOutput] &&
+      [gatekeeperOutput rangeOfString:@"Notarized Developer ID"
+                              options:NSCaseInsensitiveSearch].location !=
+          NSNotFound;
+  if (!acceptedByGatekeeper) {
+    if (error) {
+      *error = [self _updateErrorWithDescription:
+                         LFLSTR(@"Downloaded package was rejected by Gatekeeper "
+                                @"or is not notarized.")
+                                             code:0];
+    }
+    return NO;
+  }
+
+  return YES;
+}
+
 - (void)_downloadApplicationPackageFromURL:(NSString *)packageURL
                                packageName:(NSString *)packageName
+                            expectedSHA256:(NSString *)expectedSHA256
                                 completion:
                                     (void (^)(NSString *path,
                                               NSError *error))completion {
@@ -850,6 +1000,18 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                                    toURL:destinationURL
                                    error:&completionError];
             }
+            if (!completionError) {
+              [self _verifySHA256OfFileAtPath:destinationPath
+                                      expected:expectedSHA256
+                                         error:&completionError];
+            }
+            if (!completionError) {
+              [self _validateApplicationPackageAtPath:destinationPath
+                                                error:&completionError];
+            }
+            if (completionError) {
+              [fileManager removeItemAtURL:destinationURL error:nil];
+            }
           }
 
           if (completion)
@@ -862,7 +1024,10 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
 - (void)_checkApplicationUpdateShowingAlerts:(BOOL)showAlerts {
   if ([self _isApplicationBusy]) return;
 
-  [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+  [self _setAvailableApplicationTag:nil
+                         packageURL:nil
+                        packageName:nil
+                      packageSHA256:nil];
   [self _setApplicationBusy:YES];
   BOOL includeBeta = [_applicationIncludeBetaCheckBox intValue] == 1;
 
@@ -871,6 +1036,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                                                  NSString *releaseURL,
                                                  NSString *packageURL,
                                                  NSString *packageName,
+                                                 NSString *packageSHA256,
                                                  BOOL prerelease,
                                                  NSError *error) {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -878,6 +1044,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
                              releaseURL:releaseURL
                              packageURL:packageURL
                             packageName:packageName
+                          packageSHA256:packageSHA256
                               prerelease:prerelease
                                   error:error
                              showAlerts:showAlerts];
@@ -923,6 +1090,8 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
 
   NSString *packageURL = [[_availableApplicationPackageURL copy] autorelease];
   NSString *packageName = [[_availableApplicationPackageName copy] autorelease];
+  NSString *packageSHA256 =
+      [[_availableApplicationPackageSHA256 copy] autorelease];
   if (![packageURL length]) {
     [self _showAlertWithTitle:LFLSTR(@"No input method update selected")
                       message:LFLSTR(@"Please check for input method updates first.")];
@@ -932,6 +1101,7 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   [self _setApplicationBusy:YES];
   [self _downloadApplicationPackageFromURL:packageURL
                                packageName:packageName
+                            expectedSHA256:packageSHA256
                                 completion:^(NSString *path, NSError *error) {
     dispatch_async(dispatch_get_main_queue(), ^{
       [self _setApplicationBusy:NO];
@@ -1007,7 +1177,10 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   [defaults setBool:([_applicationIncludeBetaCheckBox intValue] == 1)
              forKey:ChiaKeyApplicationIncludeBetaDefaultsKey];
   [defaults synchronize];
-  [self _setAvailableApplicationTag:nil packageURL:nil packageName:nil];
+  [self _setAvailableApplicationTag:nil
+                         packageURL:nil
+                        packageName:nil
+                      packageSHA256:nil];
   _didAutoCheckOnShow = NO;
 }
 

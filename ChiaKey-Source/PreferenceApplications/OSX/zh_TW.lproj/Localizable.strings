@@ -55,6 +55,9 @@
 "Please check for input method updates first." = "請先檢查輸入法更新。";
 "Invalid package URL." = "更新套件網址無效。";
 "Downloaded package was not found." = "找不到已下載的更新套件。";
+"Downloaded package SHA-256 did not match the release metadata." = "已下載更新套件的 SHA-256 與 release metadata 不符。";
+"Downloaded package is not signed with a Developer ID Installer certificate." = "已下載的更新套件未使用 Developer ID Installer 憑證簽署。";
+"Downloaded package was rejected by Gatekeeper or is not notarized." = "已下載的更新套件遭 Gatekeeper 拒絕，或尚未完成 notarization。";
 "Unable to download input method update." = "無法下載輸入法更新。";
 "Unable to open installer." = "無法開啟安裝程式。";
 "A newer lexicon is available." = "已有新版詞庫";

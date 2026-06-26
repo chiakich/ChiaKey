@@ -55,6 +55,9 @@
 "Please check for input method updates first." = "Please check for input method updates first.";
 "Invalid package URL." = "Invalid package URL.";
 "Downloaded package was not found." = "The downloaded package was not found.";
+"Downloaded package SHA-256 did not match the release metadata." = "The downloaded package SHA-256 did not match the release metadata.";
+"Downloaded package is not signed with a Developer ID Installer certificate." = "The downloaded package is not signed with a Developer ID Installer certificate.";
+"Downloaded package was rejected by Gatekeeper or is not notarized." = "The downloaded package was rejected by Gatekeeper or is not notarized.";
 "Unable to download input method update." = "Unable to download the input method update.";
 "Unable to open installer." = "Unable to open the installer.";
 "A newer lexicon is available." = "A newer lexicon is available.";

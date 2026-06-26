@@ -35,6 +35,7 @@ file for terms.
   IBOutlet id _lexiconProgressIndicator;
   IBOutlet id _window;
   NSString *_availableApplicationPackageName;
+  NSString *_availableApplicationPackageSHA256;
   NSString *_availableApplicationPackageURL;
   NSString *_availableApplicationTag;
   NSString *_availableLexiconTag;
