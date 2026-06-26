@@ -8,6 +8,8 @@ SOURCE_SVG="${IMAGE_DIR}/ChiaKey.svg"
 OUTPUT_ICNS="${IMAGE_DIR}/ChiaKey.icns"
 OUTPUT_ICNS_16="${IMAGE_DIR}/ChiaKey16.icns"
 OUTPUT_ICNS_32="${IMAGE_DIR}/ChiaKey32.icns"
+OUTPUT_MENU_ICON="${IMAGE_DIR}/ChiaKeyMenuIcon.png"
+OUTPUT_MENU_ICON_2X="${IMAGE_DIR}/ChiaKeyMenuIcon@2x.png"
 
 require_tool() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -104,6 +106,9 @@ for size in 16 32 128 256 512; do
     "PNG32:${ICONSET_DIR}/icon_${size}x${size}@2x.png"
 done
 
+magick "${ICONSET_DIR}/icon_16x16.png" -strip "PNG32:${OUTPUT_MENU_ICON}"
+magick "${ICONSET_DIR}/icon_16x16@2x.png" -strip "PNG32:${OUTPUT_MENU_ICON_2X}"
+
 magick "${ICONSET_DIR}/icon_16x16.png" -depth 8 "rgba:${LEGACY_16_RGBA}"
 magick "${ICONSET_DIR}/icon_32x32.png" -depth 8 "rgba:${LEGACY_32_RGBA}"
 
@@ -158,3 +163,5 @@ echo "Generated:"
 echo "  ${OUTPUT_ICNS}"
 echo "  ${OUTPUT_ICNS_16}"
 echo "  ${OUTPUT_ICNS_32}"
+echo "  ${OUTPUT_MENU_ICON}"
+echo "  ${OUTPUT_MENU_ICON_2X}"
