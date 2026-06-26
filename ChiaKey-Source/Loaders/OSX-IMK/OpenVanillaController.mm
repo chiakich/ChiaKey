@@ -816,8 +816,11 @@ static BOOL OVCShouldPassThroughSecureInput(id client) {
       string value = loaderService->loaderFeatureValue();
 
       if (key == "LaunchApp") {
-        value = string("open ") + value;
-        system(value.c_str());
+        NSString *applicationPath =
+            [NSString stringWithUTF8String:value.c_str()];
+        if ([applicationPath length]) {
+          [[NSWorkspace sharedWorkspace] openFile:applicationPath];
+        }
       }
     }
 
