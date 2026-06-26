@@ -30,11 +30,15 @@
 
 #if defined(__APPLE__)
 #include <dirent.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #else
 #include <shlobj.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <windows.h>
 #endif
 
@@ -465,6 +469,20 @@ class OVDirectoryHelper {
 
   static const string TempDirectory() {
 #ifndef WIN32
+#if defined(__APPLE__) && defined(_CS_DARWIN_USER_TEMP_DIR)
+    size_t length = confstr(_CS_DARWIN_USER_TEMP_DIR, NULL, 0);
+    if (length) {
+      vector<char> path(length);
+      if (confstr(_CS_DARWIN_USER_TEMP_DIR, &path[0], length) != 0 &&
+          path[0]) {
+        return string(&path[0]);
+      }
+    }
+#endif
+    const char* tmpDir = getenv("TMPDIR");
+    if (tmpDir && tmpDir[0]) {
+      return string(tmpDir);
+    }
     return string("/tmp");
 #else
     WCHAR path[MAX_PATH + 1];
@@ -480,11 +498,12 @@ class OVDirectoryHelper {
     char* p = (char*)calloc(1, pattern.length() + 1);
     strcpy(p, pattern.c_str());
     int r = mkstemp(p);
-    if (!r) {
+    if (r == -1) {
       free(p);
       return string();
     }
-    string result = to_string(r);
+    close(r);
+    string result(p);
     free(p);
     return result;
 #else

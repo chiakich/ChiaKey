@@ -16,6 +16,14 @@ TEST(FileHelper) {
   string tmp = OVDirectoryHelper::TempDirectory();
   cout << tmp << endl;
 
+  string generatedTempFile =
+      OVDirectoryHelper::GenerateTempFilename("TestOVFileHelper");
+  CHECK(generatedTempFile.length() > 0);
+#ifndef WIN32
+  CHECK(OVPathHelper::PathExists(generatedTempFile));
+  CHECK(OVPathHelper::RemoveEverythingAtPath(generatedTempFile));
+#endif
+
   // filename is in Kanji "document" (2 chars) and a spring symbol
   string mytmp = OVPathHelper::PathCat(
       tmp, "___TestOVFileHelper-\xe6\x96\x87\xe4\xbb\xb6\xe2\x99\xa8");
