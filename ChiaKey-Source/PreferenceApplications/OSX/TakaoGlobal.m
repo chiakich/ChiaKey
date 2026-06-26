@@ -192,6 +192,9 @@ file for terms.
 }
 
 - (void)setUI {
+  [_allowSecureInputCompositionCheckBox
+      setTitle:LFLSTR(@"Compose in secure fields (no learning)")];
+
   if ([[_takaoDictionary valueForKey:@"ShouldPlaySoundOnTypingError"]
           isEqualToString:@"true"])
     [_soundCheckBox setIntValue:1];

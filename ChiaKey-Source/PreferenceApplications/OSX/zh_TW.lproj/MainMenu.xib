@@ -1480,6 +1480,7 @@
         </customView>
         <customObject id="591" customClass="TakaoGlobal">
             <connections>
+                <outlet property="_allowSecureInputCompositionCheckBox" destination="secureInputCompositionCheckBox" id="secureInputCompositionOutlet"/>
                 <outlet property="_candidateWindowStyleMatrix" destination="1027" id="1032"/>
                 <outlet property="_highlightColorPopUpButton" destination="991" id="999"/>
                 <outlet property="_keyboardLayoutPopUpButton" destination="928" id="974"/>
@@ -1487,7 +1488,6 @@
                 <outlet property="_soundCheckBox" destination="847" id="976"/>
                 <outlet property="_soundListPopUpButton" destination="845" id="975"/>
                 <outlet property="_stopPlayiongButton" destination="843" id="978"/>
-                <outlet property="_allowSecureInputCompositionCheckBox" destination="secureInputCompositionCheckBox" id="secureInputCompositionOutlet"/>
                 <outlet property="_useCtrlBackSlashToggleInputMethod" destination="1038" id="1042"/>
             </connections>
         </customObject>

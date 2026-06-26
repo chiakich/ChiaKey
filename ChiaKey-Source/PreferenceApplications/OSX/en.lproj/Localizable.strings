@@ -79,3 +79,4 @@
 "Plugins" = "Plugins";
 "Please select a plugin." = "Please select a plugin.";
 "Do you really want to remove the plugin '%@'?" = "Do you really want to remove the plugin '%@'?";
+"Compose in secure fields (no learning)" = "Compose in secure fields (no learning)";
