@@ -185,10 +185,12 @@ class ManjusriComposer {
     return results;
   }
 
-  size_t chooseCandidate(size_t index, bool shouldUpdate = true) {
+  size_t chooseCandidate(size_t index,
+                         bool shouldUpdate = true,
+                         bool shouldLearnFromSelection = true) {
     if (index >= m_latestCandidate.size()) return 0;
 
-    bool shouldCacheSelection = true;
+    bool shouldCacheSelection = shouldLearnFromSelection;
     Candidate& candi = m_latestCandidate[index];
     const Node& node = *(candi.second);
 
@@ -216,7 +218,8 @@ class ManjusriComposer {
           //     << node.queryString() << endl;
 
           // don't cache the bigram if it's a punctuation symbol
-          if (!OVWildcard::Match(node.queryString(), "_punctuation_*") &&
+          if (shouldLearnFromSelection &&
+              !OVWildcard::Match(node.queryString(), "_punctuation_*") &&
               !OVWildcard::Match(node.queryString(), "_passthru_*") &&
               !OVWildcard::Match(node.queryString(), "_ctrl_*")) {
             m_LM->cacheUserBigram(

@@ -122,6 +122,9 @@ class OVLoaderService : public OVBase {
   // call loader features
   virtual void callLoaderFeature(const string& key, const string& value) = 0;
 
+  virtual void setSecureInputMode(bool enabled) = 0;
+  virtual bool secureInputMode() const = 0;
+
   virtual void* loaderSpecificDataObjectForName(const string& name) = 0;
   // </lithoglyph>
 

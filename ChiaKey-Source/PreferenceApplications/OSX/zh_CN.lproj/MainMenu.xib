@@ -337,6 +337,17 @@
                         <action selector="writePreference:" target="591" id="1043"/>
                     </connections>
                 </button>
+                <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="secureInputCompositionCheckBox">
+                    <rect key="frame" x="136" y="122" width="324" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <buttonCell key="cell" type="check" title="允许在安全输入栏位组字（不学习）" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="secureInputCompositionCheckBoxCell">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="writePreference:" target="591" id="secureInputCompositionAction"/>
+                    </connections>
+                </button>
                 <matrix verticalHuggingPriority="750" fixedFrame="YES" allowsEmptySelection="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1027">
                     <rect key="frame" x="138" y="174" width="236" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -1473,6 +1484,7 @@
                 <outlet property="_soundCheckBox" destination="847" id="976"/>
                 <outlet property="_soundListPopUpButton" destination="845" id="975"/>
                 <outlet property="_stopPlayiongButton" destination="843" id="978"/>
+                <outlet property="_allowSecureInputCompositionCheckBox" destination="secureInputCompositionCheckBox" id="secureInputCompositionOutlet"/>
                 <outlet property="_useCtrlBackSlashToggleInputMethod" destination="1038" id="1042"/>
             </connections>
         </customObject>

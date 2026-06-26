@@ -204,6 +204,12 @@ file for terms.
   else
     [_useUpdateCheckBox setIntValue:0];
 
+  if ([[_takaoDictionary valueForKey:@"AllowSecureInputComposition"]
+          isEqualToString:@"true"])
+    [_allowSecureInputCompositionCheckBox setIntValue:1];
+  else
+    [_allowSecureInputCompositionCheckBox setIntValue:0];
+
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
   if ([[_takaoDictionary valueForKey:@"ToggleInputMethodWithControlBackslash"]
           isEqualToString:@"true"])
@@ -298,6 +304,7 @@ file for terms.
                       forKey:@"OneDimensionalCandidatePanelStyle"];
   [_takaoDictionary setValue:@"true"
                       forKey:@"ToggleInputMethodWithControlBackslash"];
+  [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
 
   LFRetainAssign(_preferenceFilePath,
                  [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]);
@@ -335,6 +342,11 @@ file for terms.
     [_takaoDictionary setValue:@"true" forKey:@"ShouldCheckUpdateOnLaunch"];
   else
     [_takaoDictionary setValue:@"false" forKey:@"ShouldCheckUpdateOnLaunch"];
+
+  if ([_allowSecureInputCompositionCheckBox intValue])
+    [_takaoDictionary setValue:@"true" forKey:@"AllowSecureInputComposition"];
+  else
+    [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
 
   if ([_useCtrlBackSlashToggleInputMethod intValue])
     [_takaoDictionary setValue:@"true"

@@ -105,6 +105,7 @@ class PVLoaderService : public OVLoaderService {
         m_logStringBuffer(m_logEmitter),
         m_logStream(&m_logStringBuffer),
         m_shouldBeep(false),
+        m_secureInputMode(false),
         m_ourEncodingService(0),
         m_encodingService(encodingService),
         m_hookedServiceDelegate(0) {
@@ -181,6 +182,7 @@ class PVLoaderService : public OVLoaderService {
  public:
   virtual void resetState() {
     m_shouldBeep = false;
+    m_secureInputMode = false;
     m_notifyMessage.clear();
 
     // <lithoglyph>
@@ -246,6 +248,12 @@ class PVLoaderService : public OVLoaderService {
 
   virtual const string loaderFeatureValue() { return m_loaderFeatureValue; }
 
+  virtual void setSecureInputMode(bool enabled) {
+    m_secureInputMode = enabled;
+  }
+
+  virtual bool secureInputMode() const { return m_secureInputMode; }
+
   virtual void* loaderSpecificDataObjectForName(const string& name) {
     return m_hookedServiceDelegate
                ? m_hookedServiceDelegate->loaderSpecificDataObjectForName(name)
@@ -276,6 +284,7 @@ class PVLoaderService : public OVLoaderService {
   OVDatabaseService* m_SQLiteDatabaseService;
   OVEncodingService* m_encodingService;
   bool m_shouldBeep;
+  bool m_secureInputMode;
   vector<string> m_notifyMessage;
   string m_locale;
   OVLogEmitter* m_logEmitter;

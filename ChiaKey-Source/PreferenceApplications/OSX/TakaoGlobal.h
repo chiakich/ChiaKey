@@ -28,6 +28,7 @@ file for terms.
   IBOutlet NSMatrix *_candidateWindowStyleMatrix;
   IBOutlet id _useUpdateCheckBox;
   IBOutlet id _useCtrlBackSlashToggleInputMethod;
+  IBOutlet id _allowSecureInputCompositionCheckBox;
 
   NSMutableDictionary *_takaoDictionary;
   NSString *_preferenceFilePath;

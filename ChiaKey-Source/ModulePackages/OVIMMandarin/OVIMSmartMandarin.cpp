@@ -313,12 +313,33 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         // << from << "-" << to << ": " <<
         // m_manjusri.composedString().substr(from -
         // m_manjusri.cursorLeftBound(), to - from) << endl;
-        pair<bool, string> result = m_manjusri.addUserUnigram(from, to);
+        bool secureInputMode = loaderService->secureInputMode();
+        pair<bool, string> result =
+            secureInputMode
+                ? pair<bool, string>(
+                      false, m_manjusri.currentlyMarkedUnigram(from, to))
+                : m_manjusri.addUserUnigram(from, to);
         string& current = result.second;
 
         composingText->clear();
 
-        if (result.first) {
+        if (secureInputMode) {
+          if (loaderService->locale() == "zh_TW" ||
+              loaderService->locale() == "zh-Hant")
+            composingText->showToolTip(
+                string("\xE5\xAE\x89\xE5\x85\xA8\xE8\xBC\xB8\xE5\x85\xA5"
+                       "\xE6\xA8\xA1\xE5\xBC\x8F\xE4\xB8\x8D\xE6\x9C\x83"
+                       "\xE5\xAD\xB8\xE7\xBF\x92\xE6\x96\xB0\xE8\xA9\x9E"));
+          else if (loaderService->locale() == "zh_CN" ||
+                   loaderService->locale() == "zh-Hans")
+            composingText->showToolTip(
+                string("\xE5\xAE\x89\xE5\x85\xA8\xE8\xBE\x93\xE5\x85\xA5"
+                       "\xE6\xA8\xA1\xE5\xBC\x8F\xE4\xB8\x8D\xE4\xBC\x9A"
+                       "\xE5\xAD\xA6\xE4\xB9\xA0\xE6\x96\xB0\xE8\xAF\x8D"));
+          else
+            composingText->showToolTip(
+                "Secure input mode does not learn new phrases.");
+        } else if (result.first) {
           if (loaderService->locale() == "zh_TW" ||
               loaderService->locale() == "zh-Hant")
             composingText->showToolTip(
@@ -855,7 +876,8 @@ bool OVIMSmartMandarinContext::candidateSelected(
     OVCandidateService* candidateService, const string& text, size_t index,
     OVTextBuffer* readingText, OVTextBuffer* composingText,
     OVLoaderService* loaderService) {
-  size_t newCursorPosition = m_manjusri.chooseCandidate(index);
+  size_t newCursorPosition =
+      m_manjusri.chooseCandidate(index, true, !loaderService->secureInputMode());
   composingText->setText(m_manjusri.composedString());
 
   // if it's New Phonetic style, we move the cursor

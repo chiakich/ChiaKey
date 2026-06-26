@@ -70,9 +70,27 @@ static BOOL OVCClientReportsSecureInput(id client) {
   return NO;
 }
 
-static BOOL OVCShouldPassThroughSecureInput(id client) {
+static BOOL OVCIsSecureInputActive(id client) {
   return IsSecureEventInputEnabled() || OVCClientReportsSecureInput(client);
 }
+
+static BOOL OVCAllowsSecureInputComposition() {
+  OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
+  return kvm.stringValueForKey("AllowSecureInputComposition") == "true";
+}
+
+class OVCSecureInputModeScope {
+ public:
+  OVCSecureInputModeScope(PVLoaderService *loaderService, bool enabled)
+      : m_loaderService(loaderService) {
+    m_loaderService->setSecureInputMode(enabled);
+  }
+
+  ~OVCSecureInputModeScope() { m_loaderService->setSecureInputMode(false); }
+
+ private:
+  PVLoaderService *m_loaderService;
+};
 
 @implementation OpenVanillaController
 - (void)dealloc {
@@ -434,13 +452,20 @@ static BOOL OVCShouldPassThroughSecureInput(id client) {
     }
 #endif
   } else if ([event type] == NSEventTypeKeyDown) {
-    if (OVCShouldPassThroughSecureInput(sender)) {
+    BOOL secureInputActive = OVCIsSecureInputActive(sender);
+    BOOL allowSecureInputComposition = OVCAllowsSecureInputComposition();
+    BOOL secureInputComposition =
+        secureInputActive && allowSecureInputComposition;
+
+    if (secureInputActive && !allowSecureInputComposition) {
       [_composingBuffer setString:@""];
       _context->clear();
       [self _resetUI];
       return NO;
     }
 
+    OVCSecureInputModeScope secureInputModeScope(loaderService,
+                                                secureInputComposition);
     bool isHandled = false;
 
     NSString *chars = [event characters];
@@ -805,7 +830,7 @@ static BOOL OVCShouldPassThroughSecureInput(id client) {
       }
     }
 
-    if (loaderService->notifyMessage().size()) {
+    if (!secureInputComposition && loaderService->notifyMessage().size()) {
       vector<string> messages = loaderService->notifyMessage();
       for (vector<string>::iterator iter = messages.begin();
            iter != messages.end(); ++iter) {
@@ -815,7 +840,7 @@ static BOOL OVCShouldPassThroughSecureInput(id client) {
         [CVNotifyController notify:messgae];
       }
     }
-    if (loaderService->loaderFeatureKey().length()) {
+    if (!secureInputComposition && loaderService->loaderFeatureKey().length()) {
       string key = loaderService->loaderFeatureKey();
       string value = loaderService->loaderFeatureValue();
 
@@ -828,7 +853,7 @@ static BOOL OVCShouldPassThroughSecureInput(id client) {
       }
     }
 
-    if (loaderService->URLToOpen().size()) {
+    if (!secureInputComposition && loaderService->URLToOpen().size()) {
       [[NSWorkspace sharedWorkspace]
           openURL:[NSURL
                       URLWithString:[NSString

@@ -337,6 +337,17 @@
                         <action selector="writePreference:" target="591" id="1033"/>
                     </connections>
                 </button>
+                <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="secureInputCompositionCheckBox">
+                    <rect key="frame" x="130" y="122" width="340" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <buttonCell key="cell" type="check" title="Compose in secure fields (no learning)" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="secureInputCompositionCheckBoxCell">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="writePreference:" target="591" id="secureInputCompositionAction"/>
+                    </connections>
+                </button>
                 <matrix verticalHuggingPriority="750" fixedFrame="YES" allowsEmptySelection="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1016">
                     <rect key="frame" x="132" y="173" width="236" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -1487,6 +1498,7 @@
                 <outlet property="_soundCheckBox" destination="847" id="974"/>
                 <outlet property="_soundListPopUpButton" destination="845" id="973"/>
                 <outlet property="_stopPlayiongButton" destination="843" id="976"/>
+                <outlet property="_allowSecureInputCompositionCheckBox" destination="secureInputCompositionCheckBox" id="secureInputCompositionOutlet"/>
                 <outlet property="_useCtrlBackSlashToggleInputMethod" destination="1030" id="1032"/>
             </connections>
         </customObject>
