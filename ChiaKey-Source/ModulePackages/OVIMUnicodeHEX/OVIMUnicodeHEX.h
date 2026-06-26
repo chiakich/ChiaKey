@@ -58,7 +58,7 @@ class UnicodeHEXKeyBuffer {
     len = 0;
     buf[0] = 0;
   }
-  char buf[ebMaxKeySeq];
+  char buf[ebMaxKeySeq + 1];
   size_t len;
 };
 
