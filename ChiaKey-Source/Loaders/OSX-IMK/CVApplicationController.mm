@@ -3,9 +3,7 @@
 #import "CVApplicationController.h"
 
 #import "CVNotifyController.h"
-#import "CVSendKey.h"
 #import "OpenVanillaLoader.h"
-#import "OpenVanillaController.h"
 
 static NSString *const ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey =
     @"ChiaKeyLexiconAutoUpdateLastCheck";
@@ -226,9 +224,31 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   return [_loader identifiersAndLocalizedNamesWithPattern:pattern];
 }
 - (bool)exportUserPhraseDBToFile:(NSString *)path {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:LFLSTR(@"Confirm User Phrase Export")];
+  [alert setInformativeText:[NSString
+                                stringWithFormat:
+                                    LFLSTR(@"Allow ChiaKey to export your user "
+                                           @"phrase dictionary to this file?\n%@"),
+                                    path]];
+  [alert addButtonWithTitle:LFLSTR(@"Export")];
+  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
+  if ([alert runModal] != NSAlertFirstButtonReturn) return false;
+
   return [_loader exportUserPhraseDBToFile:path];
 }
 - (bool)importUserPhraseDBFromFile:(NSString *)path {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:LFLSTR(@"Confirm User Phrase Import")];
+  [alert setInformativeText:[NSString
+                                stringWithFormat:
+                                    LFLSTR(@"Allow ChiaKey to import user "
+                                           @"phrases from this file?\n%@"),
+                                    path]];
+  [alert addButtonWithTitle:LFLSTR(@"Import")];
+  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
+  if ([alert runModal] != NSAlertFirstButtonReturn) return false;
+
   return [_loader importUserPhraseDBFromFile:path];
 }
 
@@ -246,10 +266,8 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 }
 
 - (oneway void)sendString:(NSString *)text {
-  [OpenVanillaController sendComposedStringToCurrentlyActiveContext:text];
 }
 - (oneway void)sendKey:(NSString *)key {
-  [[CVSendKey sharedSendKey] typeString:key];
 }
 
 - (BOOL)userPhraseDBCanProvideService {

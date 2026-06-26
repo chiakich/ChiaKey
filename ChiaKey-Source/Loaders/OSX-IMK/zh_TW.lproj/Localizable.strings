@@ -15,6 +15,12 @@
 "Allow ChiaKey to add \"%@\" to your user dictionary?" = "允許千秋輸入法將「%@」加入您的使用者詞庫？";
 "Add Phrase" = "加入詞彙";
 "Cancel" = "取消";
+"Confirm User Phrase Export" = "確認匯出使用者詞庫";
+"Allow ChiaKey to export your user phrase dictionary to this file?\n%@" = "允許千秋輸入法將您的使用者詞庫匯出到這個檔案？\n%@";
+"Export" = "匯出";
+"Confirm User Phrase Import" = "確認匯入使用者詞庫";
+"Allow ChiaKey to import user phrases from this file?\n%@" = "允許千秋輸入法從這個檔案匯入使用者詞彙？\n%@";
+"Import" = "匯入";
 
 "Send" = "送出";
 

@@ -15,6 +15,12 @@
 "Allow ChiaKey to add \"%@\" to your user dictionary?" = "Allow ChiaKey to add \"%@\" to your user dictionary?";
 "Add Phrase" = "Add Phrase";
 "Cancel" = "Cancel";
+"Confirm User Phrase Export" = "Confirm User Phrase Export";
+"Allow ChiaKey to export your user phrase dictionary to this file?\n%@" = "Allow ChiaKey to export your user phrase dictionary to this file?\n%@";
+"Export" = "Export";
+"Confirm User Phrase Import" = "Confirm User Phrase Import";
+"Allow ChiaKey to import user phrases from this file?\n%@" = "Allow ChiaKey to import user phrases from this file?\n%@";
+"Import" = "Import";
 
 "Send" = "Send";
 
