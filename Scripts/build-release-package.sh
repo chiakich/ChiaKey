@@ -131,6 +131,17 @@ verify_sha256() {
   fi
 }
 
+validate_manifest_path_component() {
+  local label="$1"
+  local value="$2"
+
+  if [[ -z "${value}" || "${value}" == "." || "${value}" == ".." ||
+        ! "${value}" =~ ^[0-9A-Za-z._-]+$ ]]; then
+    echo "Unsafe ${label} in lexicon manifest: ${value}" >&2
+    exit 1
+  fi
+}
+
 copy_legal_notices() {
   local legal_dir="${BUILT_RESOURCES}/Legal"
   local external_dir="${legal_dir}/ExternalLibraries"
@@ -196,6 +207,12 @@ RUBY
 
   local version db_schema_version db_url db_filename db_sha metadata_url metadata_filename metadata_sha
   IFS=$'\t' read -r version db_schema_version db_url db_filename db_sha metadata_url metadata_filename metadata_sha <<<"${artifact_info}"
+
+  validate_manifest_path_component "version" "${version}"
+  validate_manifest_path_component "database filename" "${db_filename}"
+  if [[ -n "${metadata_url}" ]]; then
+    validate_manifest_path_component "metadata filename" "${metadata_filename}"
+  fi
 
   if [[ "${db_schema_version}" != "1" ]]; then
     echo "Unsupported lexicon database schema version: ${db_schema_version}" >&2

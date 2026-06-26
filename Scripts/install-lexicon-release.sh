@@ -97,6 +97,17 @@ puts(left <=> right)
 RUBY
 }
 
+validate_manifest_path_component() {
+  local label="$1"
+  local value="$2"
+
+  if [[ -z "${value}" || "${value}" == "." || "${value}" == ".." ||
+        ! "${value}" =~ ^[0-9A-Za-z._-]+$ ]]; then
+    echo "Unsafe ${label} in lexicon manifest: ${value}" >&2
+    exit 1
+  fi
+}
+
 validate_database_health() {
   local db_path="$1"
   local validation_tmp_dir
@@ -383,6 +394,12 @@ RUBY
 
 IFS=$'\t' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_URL METADATA_FILENAME METADATA_SHA <<<"${ARTIFACT_INFO}"
 
+validate_manifest_path_component "version" "${VERSION}"
+validate_manifest_path_component "database filename" "${DB_FILENAME}"
+if [[ -n "${METADATA_URL}" ]]; then
+  validate_manifest_path_component "metadata filename" "${METADATA_FILENAME}"
+fi
+
 if [[ "${DB_SCHEMA_VERSION}" != "1" ]]; then
   echo "Unsupported database schema version: ${DB_SCHEMA_VERSION}" >&2
   exit 1
@@ -425,7 +442,6 @@ validate_database_health "${DB_DOWNLOAD}"
 
 VERSION_DIR="${INSTALL_ROOT}/versions/${VERSION}"
 ACTIVE_LINK="${INSTALL_ROOT}/active"
-TMP_LINK="${INSTALL_ROOT}/active.tmp.$$"
 
 run /bin/mkdir -p "${VERSION_DIR}"
 run /bin/cp "${DB_DOWNLOAD}" "${VERSION_DIR}/${DB_INSTALL_FILENAME}"
@@ -435,14 +451,9 @@ if [[ -n "${METADATA_DOWNLOAD}" ]]; then
 fi
 
 if [[ "${DRY_RUN}" != "1" ]]; then
-  /bin/rm -rf "${TMP_LINK}"
-  /bin/ln -s "${VERSION_DIR}" "${TMP_LINK}"
-  /bin/rm -rf "${ACTIVE_LINK}"
-  /bin/mv "${TMP_LINK}" "${ACTIVE_LINK}"
+  /bin/ln -sfn "${VERSION_DIR}" "${ACTIVE_LINK}"
 else
-  print_command /bin/ln -s "${VERSION_DIR}" "${TMP_LINK}"
-  print_command /bin/rm -rf "${ACTIVE_LINK}"
-  print_command /bin/mv "${TMP_LINK}" "${ACTIVE_LINK}"
+  print_command /bin/ln -sfn "${VERSION_DIR}" "${ACTIVE_LINK}"
 fi
 
 if [[ "${DRY_RUN}" == "1" ]]; then
