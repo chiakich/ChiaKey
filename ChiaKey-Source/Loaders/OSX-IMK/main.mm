@@ -31,6 +31,32 @@ static TISInputSourceRef ChiaKeyCreateInputSourceForID(NSString *inputSourceID) 
   return source;
 }
 
+static BOOL ChiaKeyEnableInputSourceWithID(NSString *inputSourceID) {
+  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
+  if (!source) {
+    NSLog(@"could not find input source %@", inputSourceID);
+    return NO;
+  }
+
+  OSStatus enableStatus = TISEnableInputSource(source);
+  CFRelease(source);
+  if (enableStatus != noErr) {
+    NSLog(@"failed to enable input source %@: %d", inputSourceID, enableStatus);
+    return NO;
+  }
+  return YES;
+}
+
+static BOOL ChiaKeyHasInputSourceWithID(NSString *inputSourceID) {
+  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
+  if (!source) {
+    return NO;
+  }
+
+  CFRelease(source);
+  return YES;
+}
+
 static int ChiaKeyRegisterInputMethod() {
   NSBundle *mainBundle = [NSBundle mainBundle];
   NSURL *bundleURL = [mainBundle bundleURL];
@@ -40,27 +66,15 @@ static int ChiaKeyRegisterInputMethod() {
     inputSourceID = [mainBundle bundleIdentifier];
   }
 
-  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
-  if (!source) {
+  if (!ChiaKeyHasInputSourceWithID(inputSourceID)) {
     OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
     if (registerStatus != noErr) {
       NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
             bundleURL, registerStatus);
-      return 1;
     }
-    source = ChiaKeyCreateInputSourceForID(inputSourceID);
   }
 
-  if (!source) {
-    NSLog(@"registered input source %@ but could not find it afterward",
-          inputSourceID);
-    return 1;
-  }
-
-  OSStatus enableStatus = TISEnableInputSource(source);
-  CFRelease(source);
-  if (enableStatus != noErr) {
-    NSLog(@"failed to enable input source %@: %d", inputSourceID, enableStatus);
+  if (!ChiaKeyEnableInputSourceWithID(inputSourceID)) {
     return 1;
   }
 
