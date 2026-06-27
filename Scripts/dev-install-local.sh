@@ -16,6 +16,8 @@ ZLIB_README_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/zlib/README"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 LOCAL_LEXICON_BUNDLE_SCRIPT="${ROOT_DIR}/Scripts/bundle-local-lexicon.sh"
 ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
+USER_SUPPORT_DIR="${HOME}/Library/Application Support/ChiaKey"
+USER_PREFERENCES_DIR="${HOME}/Library/Preferences"
 SCHEME="Takao-All"
 APP_NAME="ChiaKey.app"
 PROCESS_NAME="ChiaKey"
@@ -32,6 +34,7 @@ OPEN_SETTINGS=0
 UPDATE_LEXICON=0
 BUNDLE_LOCAL_LEXICON=0
 LOCAL_LEXICON_DB="${ACTIVE_LEXICON_DB}"
+RESET_USER_STATE=0
 
 usage() {
   cat <<EOF
@@ -47,6 +50,7 @@ Options:
   --update-lexicon               Install the latest lexicon release after app install.
   --bundle-local-lexicon         Bundle the active local lexicon into the dev app.
   --local-lexicon PATH           Bundle this local ChiaKeySource.db into the dev app.
+  --reset-user-state             Clear ChiaKey prefs, user DBs, and lexicon DBs before install.
   --dry-run                      Print commands without changing the system.
   --open-settings                Open Keyboard settings after install.
   -h, --help                     Show this help.
@@ -73,6 +77,35 @@ run_allow_fail() {
   if [[ "${DRY_RUN}" != "1" ]]; then
     "$@" >/dev/null 2>&1 || true
   fi
+}
+
+reset_user_state() {
+  run_allow_fail /usr/bin/defaults delete com.chiakey.ChiaKey
+  run_allow_fail /usr/bin/defaults delete com.chiakey.inputmethod.ChiaKey
+
+  run /bin/rm -rf \
+    "${USER_PREFERENCES_DIR}/com.chiakey.ChiaKey.plist" \
+    "${USER_PREFERENCES_DIR}/com.chiakey.ChiaKey.Evaluator.plist" \
+    "${USER_PREFERENCES_DIR}/com.chiakey.ChiaKey.Generic-cj-cin.plist" \
+    "${USER_PREFERENCES_DIR}/com.chiakey.ChiaKey.SmartMandarin.plist" \
+    "${USER_PREFERENCES_DIR}/com.chiakey.ChiaKey.TraditionalMandarin.plist" \
+    "${USER_PREFERENCES_DIR}/com.chiakey.inputmethod.ChiaKey.plist"
+
+  run /bin/rm -rf \
+    "${USER_SUPPORT_DIR}/UserData.db" \
+    "${USER_SUPPORT_DIR}/UserData.db-shm" \
+    "${USER_SUPPORT_DIR}/UserData.db-wal" \
+    "${USER_SUPPORT_DIR}/SmartMandarinUserData.db" \
+    "${USER_SUPPORT_DIR}/SmartMandarinUserData.db-shm" \
+    "${USER_SUPPORT_DIR}/SmartMandarinUserData.db-wal" \
+    "${USER_SUPPORT_DIR}/Generic-cj-cin-DynamicCandidateOrder.sqlite3" \
+    "${USER_SUPPORT_DIR}/Generic-cj-cin-DynamicCandidateOrder.sqlite3-shm" \
+    "${USER_SUPPORT_DIR}/Generic-cj-cin-DynamicCandidateOrder.sqlite3-wal" \
+    "${USER_SUPPORT_DIR}/DataTables" \
+    "${USER_SUPPORT_DIR}/UserCannedMessages.txt" \
+    "${USER_SUPPORT_DIR}/Lexicons"
+
+  run_allow_fail /usr/bin/killall cfprefsd
 }
 
 copy_legal_notices() {
@@ -167,6 +200,10 @@ while [[ $# -gt 0 ]]; do
       LOCAL_LEXICON_DB="$2"
       shift 2
       ;;
+    --reset-user-state)
+      RESET_USER_STATE=1
+      shift
+      ;;
     --dry-run)
       DRY_RUN=1
       shift
@@ -249,8 +286,17 @@ if [[ "${UPDATE_LEXICON}" == "1" && "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
   run "${LEXICON_INSTALL_SCRIPT}" --skip-current
 fi
 
+run_allow_fail /usr/bin/pkill -x "${PROCESS_NAME}"
+run_allow_fail /usr/bin/pkill -f "${APP_NAME}/Contents/MacOS/${PROCESS_NAME}"
+run_allow_fail /usr/bin/pkill -x "${LEGACY_PROCESS_NAME}"
+run_allow_fail /usr/bin/pkill -f "${LEGACY_APP_NAME}/Contents/MacOS/${LEGACY_PROCESS_NAME}"
+
 if [[ "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
   run_bundle_local_lexicon
+fi
+
+if [[ "${RESET_USER_STATE}" == "1" ]]; then
+  reset_user_state
 fi
 
 run /bin/mkdir -p "${INSTALL_DIR}"

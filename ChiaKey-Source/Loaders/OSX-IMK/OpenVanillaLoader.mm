@@ -24,7 +24,9 @@ NSString *CVLoaderUpdateCannedMessagesNotification =
 
 static const char *kChiaKeySourceDatabaseFile = "ChiaKeySource.db";
 static const char *kLegacyKeyKeySourceDatabaseFile = "KeyKeySource.db";
-static const char *kDefaultPrimaryInputMethod = OVIMSMARTMANDARIN_IDENTIFIER;
+static const char *kDefaultPrimaryInputMethod = "SmartMandarin";
+static const char *kLegacyDefaultPrimaryInputMethod =
+    OVIMSMARTMANDARIN_IDENTIFIER;
 static const char *kUserSelectedInputMethodConfigKey =
     "UserSelectedInputMethod";
 static NSString *const kChiaKeySourceDatabaseArtifactKind =
@@ -88,9 +90,18 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
 }
 
 static void EnsureInitialPrimaryInputMethod(PVLoaderPolicy *loaderPolicy) {
-  PVPropertyList loaderConfig(loaderPolicy->propertyListPathForLoader());
+  string plistPath = loaderPolicy->propertyListPathForLoader();
+  PVPropertyList loaderConfig(plistPath);
   PVPlistValue *dict = loaderConfig.rootDictionary();
-  if (dict->valueForKey("PrimaryInputMethod")) return;
+  PVPlistValue *existingPrimary = dict->valueForKey("PrimaryInputMethod");
+  if (existingPrimary) {
+    if (existingPrimary->stringValue() == kLegacyDefaultPrimaryInputMethod) {
+      dict->setKeyValue("PrimaryInputMethod", kDefaultPrimaryInputMethod);
+      loaderConfig.write();
+    }
+
+    return;
+  }
 
   dict->setKeyValue("PrimaryInputMethod", kDefaultPrimaryInputMethod);
   loaderConfig.write();
