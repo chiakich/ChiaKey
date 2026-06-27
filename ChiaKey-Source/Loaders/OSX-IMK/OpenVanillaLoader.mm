@@ -25,6 +25,8 @@ NSString *CVLoaderUpdateCannedMessagesNotification =
 static const char *kChiaKeySourceDatabaseFile = "ChiaKeySource.db";
 static const char *kLegacyKeyKeySourceDatabaseFile = "KeyKeySource.db";
 static const char *kDefaultPrimaryInputMethod = OVIMSMARTMANDARIN_IDENTIFIER;
+static const char *kUserSelectedInputMethodConfigKey =
+    "UserSelectedInputMethod";
 static NSString *const kChiaKeySourceDatabaseArtifactKind =
     @"chiakey-source-db";
 static NSString *const kLegacyKeyKeySourceDatabaseArtifactKind =
@@ -92,6 +94,27 @@ static void EnsureInitialPrimaryInputMethod(PVLoaderPolicy *loaderPolicy) {
 
   dict->setKeyValue("PrimaryInputMethod", kDefaultPrimaryInputMethod);
   loaderConfig.write();
+}
+
+// Self-heal a "sticky" non-default primary input method. Earlier launches (or
+// builds before the lexicon database was bundled) could persist a fallback
+// input method such as Cangjie when Smart Mandarin was momentarily unavailable.
+// On startup, if the user has never explicitly picked an input method and the
+// intended default (Smart Mandarin) is now available, restore it as primary.
+// An explicit user choice is recorded via -noteUserExplicitlySelectedInputMethod
+// and always takes precedence here.
+static void HealDefaultPrimaryInputMethodIfNeeded(PVLoader *loader) {
+  if (!loader) return;
+  if (loader->configRootDictionary()->isKeyTrue(
+          kUserSelectedInputMethodConfigKey))
+    return;
+  if (loader->primaryInputMethod() == kDefaultPrimaryInputMethod) return;
+  // Only switch once the default is actually usable (e.g. its lexicon database
+  // is ready); otherwise leave the current choice untouched.
+  if (loader->isFailedModule(kDefaultPrimaryInputMethod)) return;
+
+  loader->setPrimaryInputMethod(kDefaultPrimaryInputMethod);
+  loader->syncSandwichConfig();
 }
 
 static NSDictionary *JSONDictionaryAtPath(NSString *path) {
@@ -631,6 +654,8 @@ using namespace OpenVanilla;
     _loader->syncSandwichConfig();
   }
 
+  HealDefaultPrimaryInputMethodIfNeeded(_loader);
+
   // NSLog(@"unlocking");
   [[OpenVanillaLoader sharedLock] unlock];
 
@@ -703,6 +728,14 @@ using namespace OpenVanilla;
 }
 - (PVLoader *)loader {
   return _loader;
+}
+- (void)noteUserExplicitlySelectedInputMethod {
+  if (!_loader) return;
+  // Record the explicit choice in the loader config so the startup self-heal
+  // (HealDefaultPrimaryInputMethodIfNeeded) never overrides it afterward.
+  _loader->configRootDictionary()->setKeyValue(kUserSelectedInputMethodConfigKey,
+                                               "true");
+  _loader->syncLoaderConfig(true);
 }
 - (PVLoaderService *)loaderService {
   return _loaderService;

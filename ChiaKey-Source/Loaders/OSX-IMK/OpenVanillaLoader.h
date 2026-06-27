@@ -52,6 +52,7 @@ using namespace CareService;
 - (void)shutDown;
 - (void)reload;
 - (PVLoader *)loader;
+- (void)noteUserExplicitlySelectedInputMethod;
 - (PVLoaderService *)loaderService;
 - (NSArray *)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern;
 - (bool)exportUserPhraseDBToFile:(NSString *)path;

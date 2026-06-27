@@ -892,6 +892,7 @@ class OVCSecureInputModeScope {
   NSMenuItem *menuItem = [sender objectForKey:@"IMKCommandMenuItem"];
   [OpenVanillaLoader sharedLoader]->setPrimaryInputMethod(
       [[menuItem representedObject] UTF8String]);
+  [[OpenVanillaLoader sharedInstance] noteUserExplicitlySelectedInputMethod];
   [OpenVanillaLoader sharedLoader]->syncSandwichConfig();
 
   [self _resetUI];

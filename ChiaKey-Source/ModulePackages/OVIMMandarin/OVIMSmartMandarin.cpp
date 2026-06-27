@@ -989,10 +989,26 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
   // }
 
   if (!lmdb->hasTable("bigrams") || !lmdb->hasTable("unigrams")) {
+    // The lexicon database isn't ready yet (e.g. on first launch before the
+    // bundled/downloaded lexicon is in place). Instead of failing to
+    // initialize -- which would mark Smart Mandarin as an unusable module, grey
+    // it out in the menu, and make the loader fall back to another input method
+    // such as Cangjie -- start in a degraded mode backed by empty placeholder
+    // tables. Smart Mandarin then stays selectable and becomes the default;
+    // once a real lexicon database is installed and the loader reloads, the
+    // populated tables take over.
     loaderService->logger(OVIMMANDARIN_IDENTIFIER)
-        << "doesn't have table required." << endl;  // : " << dbPath << endl;
-    // delete lmdb;
-    return false;
+        << "required lexicon tables missing; starting in degraded mode with "
+           "empty placeholder tables."
+        << endl;
+    if (!lmdb->hasTable("unigrams")) {
+      lmdb->createTable("unigrams", "qstring, current, probability, backoff");
+      lmdb->createIndexOnTable("unigrams_index", "unigrams", "qstring");
+    }
+    if (!lmdb->hasTable("bigrams")) {
+      lmdb->createTable("bigrams", "qstring, previous, current, probability");
+      lmdb->createIndexOnTable("bigrams_index", "bigrams", "qstring");
+    }
   }
 
   //    loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "using: " << dbPath <<
