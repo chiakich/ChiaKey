@@ -1,4 +1,5 @@
 #import <Cocoa/Cocoa.h>
+#import <Carbon/Carbon.h>
 #import <InputMethodKit/InputMethodKit.h>
 #include <string>
 
@@ -11,10 +12,72 @@ using namespace std;
 
 IMKServer *OVInputMethodServer = nil;
 
+static TISInputSourceRef ChiaKeyCreateInputSourceForID(NSString *inputSourceID) {
+  NSDictionary *properties = @{
+    (NSString *)kTISPropertyInputSourceID : inputSourceID,
+  };
+  CFArrayRef sources =
+      TISCreateInputSourceList((CFDictionaryRef)properties, true);
+  if (!sources || CFArrayGetCount(sources) == 0) {
+    if (sources) {
+      CFRelease(sources);
+    }
+    return nil;
+  }
+
+  TISInputSourceRef source =
+      (TISInputSourceRef)CFRetain(CFArrayGetValueAtIndex(sources, 0));
+  CFRelease(sources);
+  return source;
+}
+
+static int ChiaKeyRegisterInputMethod() {
+  NSBundle *mainBundle = [NSBundle mainBundle];
+  NSURL *bundleURL = [mainBundle bundleURL];
+  NSString *inputSourceID =
+      [mainBundle objectForInfoDictionaryKey:@"TISInputSourceID"];
+  if (![inputSourceID length]) {
+    inputSourceID = [mainBundle bundleIdentifier];
+  }
+
+  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
+  if (!source) {
+    OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
+    if (registerStatus != noErr) {
+      NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
+            bundleURL, registerStatus);
+      return 1;
+    }
+    source = ChiaKeyCreateInputSourceForID(inputSourceID);
+  }
+
+  if (!source) {
+    NSLog(@"registered input source %@ but could not find it afterward",
+          inputSourceID);
+    return 1;
+  }
+
+  OSStatus enableStatus = TISEnableInputSource(source);
+  CFRelease(source);
+  if (enableStatus != noErr) {
+    NSLog(@"failed to enable input source %@: %d", inputSourceID, enableStatus);
+    return 1;
+  }
+
+  return 0;
+}
+
 int main(int argc, char *argv[]) {
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
 
   if (argc > 1) {
+    string cmd = argv[1];
+    if (cmd == "install") {
+      int status = ChiaKeyRegisterInputMethod();
+      [pool drain];
+      return status;
+    }
+
     NSApplicationLoad();
     [NSRunLoop currentRunLoop];
 
@@ -27,7 +90,6 @@ int main(int argc, char *argv[]) {
 
       [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
 
-      string cmd = argv[1];
       string arg = (argc > 2) ? argv[2] : "";
 
       if (cmd == "reload") {

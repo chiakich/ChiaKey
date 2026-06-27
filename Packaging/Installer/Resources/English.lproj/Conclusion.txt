@@ -1,8 +1,8 @@
 Installation finished.
 
-If System Settings did not open automatically, open System Settings > Keyboard
-> Text Input > Edit > "+", then choose Traditional Chinese > ChiaKey from the
-language list.
+The installer tried to register and enable ChiaKey automatically. If ChiaKey
+does not appear in the input menu, open System Settings > Keyboard > Text Input
+> Edit > "+", then choose Traditional Chinese > ChiaKey from the language list.
 
 After adding ChiaKey, switch away from and back to ChiaKey if the input method
 was already running.

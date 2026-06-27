@@ -9,7 +9,7 @@
   <choices-outline>
     <line choice="default"/>
   </choices-outline>
-  <choice id="default" title="ChiaKey" description="Install the ChiaKey input method.">
+  <choice id="default" title="ChiaKey Input Method" description="Install the ChiaKey input method.">
     <pkg-ref id="__COMPONENT_IDENTIFIER__"/>
   </choice>
   <pkg-ref id="__COMPONENT_IDENTIFIER__" version="__VERSION__" auth="Root">__CLEAN_COMPONENT_PKG_NAME__</pkg-ref>

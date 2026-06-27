@@ -2,14 +2,39 @@
 
 /usr/bin/pkill -x ChiaKey >/dev/null 2>&1 || true
 /usr/bin/pkill -f '/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
+/usr/bin/pkill -f '/Users/.*/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
 
 console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
+console_home=""
 if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
    /usr/bin/id -u "${console_user}" >/dev/null 2>&1; then
   console_uid="$(/usr/bin/id -u "${console_user}")"
-  /bin/launchctl asuser "${console_uid}" \
-    /usr/bin/open "x-apple.systempreferences:com.apple.Keyboard-Settings.extension" \
-    >/dev/null 2>&1 || true
+  console_home="$(/usr/bin/dscl . -read "/Users/${console_user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}' || true)"
+fi
+
+app_bin=""
+for candidate in \
+  "${2:-}/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey" \
+  "${console_home}/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey" \
+  "/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey"; do
+  if [ -x "${candidate}" ]; then
+    app_bin="${candidate}"
+    break
+  fi
+done
+
+if [ -n "${app_bin}" ]; then
+  echo "ChiaKey postinstall: registering input source with ${app_bin}" >&2
+  if [ -n "${console_uid:-}" ]; then
+    /bin/launchctl asuser "${console_uid}" "${app_bin}" install
+    install_status=$?
+  else
+    "${app_bin}" install
+    install_status=$?
+  fi
+  echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}" >&2
+else
+  echo "ChiaKey postinstall: cannot find installed ChiaKey executable" >&2
 fi
 
 exit 0
