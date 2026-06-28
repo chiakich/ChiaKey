@@ -8,6 +8,7 @@ file for terms.
 #import "TakaoGlobal.h"
 
 #import "../../Frameworks/ChiakiSupport/Headers/ChiakiTextInputSource.h"
+#import "../../Loaders/OSX-IMK/CVCapsLockDelayOverride.h"
 #import "TakaoHelper.h"
 
 @interface TakaoGlobal (Private)
@@ -194,6 +195,8 @@ file for terms.
 - (void)setUI {
   [_allowSecureInputCompositionCheckBox
       setTitle:LFLSTR(@"Compose in secure fields (no learning)")];
+  [_applyCapsLockDelayOverrideCheckBox
+      setTitle:LFLSTR(@"Remove Caps Lock delay")];
 
   if ([[_takaoDictionary valueForKey:@"ShouldPlaySoundOnTypingError"]
           isEqualToString:@"true"])
@@ -212,6 +215,12 @@ file for terms.
     [_allowSecureInputCompositionCheckBox setIntValue:1];
   else
     [_allowSecureInputCompositionCheckBox setIntValue:0];
+
+  if ([[_takaoDictionary valueForKey:@"ApplyCapsLockDelayOverride"]
+          isEqualToString:@"true"])
+    [_applyCapsLockDelayOverrideCheckBox setIntValue:1];
+  else
+    [_applyCapsLockDelayOverrideCheckBox setIntValue:0];
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
   if ([[_takaoDictionary valueForKey:@"ToggleInputMethodWithControlBackslash"]
@@ -308,6 +317,7 @@ file for terms.
   [_takaoDictionary setValue:@"true"
                       forKey:@"ToggleInputMethodWithControlBackslash"];
   [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
+  [_takaoDictionary setValue:@"true" forKey:@"ApplyCapsLockDelayOverride"];
 
   LFRetainAssign(_preferenceFilePath,
                  [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]);
@@ -350,6 +360,13 @@ file for terms.
     [_takaoDictionary setValue:@"true" forKey:@"AllowSecureInputComposition"];
   else
     [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
+
+  if ([_applyCapsLockDelayOverrideCheckBox intValue])
+    [_takaoDictionary setValue:@"true" forKey:@"ApplyCapsLockDelayOverride"];
+  else {
+    [_takaoDictionary setValue:@"false" forKey:@"ApplyCapsLockDelayOverride"];
+    [CVCapsLockDelayOverride reset];
+  }
 
   if ([_useCtrlBackSlashToggleInputMethod intValue])
     [_takaoDictionary setValue:@"true"

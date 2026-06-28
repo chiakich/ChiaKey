@@ -6,6 +6,7 @@
 #include <sstream>
 
 #import "BPMFUserPhraseHelper.h"
+#import "CVCapsLockDelayOverride.h"
 #import "LFCrossDevelopmentTools.h"
 #import "LFUtilities.h"
 #import "OVAFBopomofoCorrectionPackage.h"
@@ -666,9 +667,12 @@ using namespace OpenVanilla;
   }
 
   HealDefaultPrimaryInputMethodIfNeeded(_loader);
+  bool applyCapsLockDelayOverride =
+      kvm.stringValueForKey("ApplyCapsLockDelayOverride") != "false";
 
   // NSLog(@"unlocking");
   [[OpenVanillaLoader sharedLock] unlock];
+  [CVCapsLockDelayOverride applyIfEnabled:applyCapsLockDelayOverride];
 
   // NSLog(@"scheduling");
   [self performSelectorOnMainThread:@selector(_firstTimeUpdateUserData)

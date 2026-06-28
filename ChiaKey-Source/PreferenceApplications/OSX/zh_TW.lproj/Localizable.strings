@@ -82,3 +82,4 @@
 "Please select a plugin." = "請選擇您想要刪除的外掛模組";
 "Do you really want to remove the plugin '%@'?" = "您確定要刪除「%@」這個外掛模組嗎？";
 "Compose in secure fields (no learning)" = "允許在安全輸入欄位組字（不學習）";
+"Remove Caps Lock delay" = "移除 Caps Lock 延遲";

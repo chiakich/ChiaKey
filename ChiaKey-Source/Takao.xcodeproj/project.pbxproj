@@ -245,6 +245,8 @@
 		6A4773150D5C607200C6C744 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772FD0D5C607200C6C744 /* main.mm */; };
 		6A4773170D5C607200C6C744 /* OpenVanillaController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4773010D5C607200C6C744 /* OpenVanillaController.mm */; };
 		6A4773180D5C607200C6C744 /* OpenVanillaLoader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */; };
+		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
+		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		6A47735B0D5C60D300C6C744 /* OpenVanilla.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A47735C0D5C60D300C6C744 /* LFExtensions.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A4771630D5C5E3900C6C744 /* LFExtensions.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A4773730D5C61E600C6C744 /* NSBezierPathAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771560D5C5DF400C6C744 /* NSBezierPathAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -978,6 +980,8 @@
 		6A4773010D5C607200C6C744 /* OpenVanillaController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OpenVanillaController.mm; path = "Loaders/OSX-IMK/OpenVanillaController.mm"; sourceTree = "<group>"; };
 		6A4773020D5C607200C6C744 /* OpenVanillaLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OpenVanillaLoader.h; path = "Loaders/OSX-IMK/OpenVanillaLoader.h"; sourceTree = "<group>"; };
 		6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OpenVanillaLoader.mm; path = "Loaders/OSX-IMK/OpenVanillaLoader.mm"; sourceTree = "<group>"; wrapsLines = 1; };
+		5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVCapsLockDelayOverride.h; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.h"; sourceTree = "<group>"; };
+		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
 		6A4773760D5C621400C6C744 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		6A4773770D5C621400C6C744 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		6A4773780D5C621400C6C744 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = /System/Library/Frameworks/InputMethodKit.framework; sourceTree = "<absolute>"; };
@@ -2158,6 +2162,8 @@
 				6A4773010D5C607200C6C744 /* OpenVanillaController.mm */,
 				6A4773020D5C607200C6C744 /* OpenVanillaLoader.h */,
 				6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */,
+				5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */,
+				5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */,
 				D4C2FF84106230A9005DB6AF /* OpenVanillaService.h */,
 				D4F7DB030D9B8D6500AA67B9 /* CVSendKey.h */,
 				D4F7DB040D9B8D6500AA67B9 /* CVSendKey.m */,
@@ -3495,6 +3501,7 @@
 				6A4773150D5C607200C6C744 /* main.mm in Sources */,
 				6A4773170D5C607200C6C744 /* OpenVanillaController.mm in Sources */,
 				6A4773180D5C607200C6C744 /* OpenVanillaLoader.mm in Sources */,
+				5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */,
 				D479FDB40D60506200B33AA2 /* CVToolTipController.m in Sources */,
 				D4F7A56D0D82E699004AFC38 /* CVSearchController.m in Sources */,
 				D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */,
@@ -3633,6 +3640,7 @@
 				D47D5E570D5EDDC40093524C /* TakaoGeneric.m in Sources */,
 				D47D5E580D5EDDC40093524C /* TakaoGenericSettings.m in Sources */,
 				D47D5E590D5EDDC40093524C /* TakaoGlobal.m in Sources */,
+				5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */,
 				D47D5E5A0D5EDDC40093524C /* TakaoHelper.m in Sources */,
 				D47D5E5C0D5EDDC40093524C /* TakaoPhonetic.m in Sources */,
 				D47D5E5D0D5EDDC40093524C /* TakaoPhrases.m in Sources */,
