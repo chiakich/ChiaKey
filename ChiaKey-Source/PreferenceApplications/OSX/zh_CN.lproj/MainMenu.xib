@@ -575,7 +575,7 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="check" title="按住 Shift 输出英文大写" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="shiftUppercaseCheckboxCell">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                        <font key="font" size="13" name=".PingFangTC-Regular"/>
+                        <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
                         <action selector="writePreference:" target="808" id="shiftUppercaseCheckboxAction"/>
@@ -1295,6 +1295,17 @@
                                     <action selector="installLexiconUpdate:" target="695" id="lexiconInstallAction"/>
                                 </connections>
                             </button>
+                            <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconAutoUpdateCheckbox">
+                                <rect key="frame" x="276" y="5" width="142" height="18"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <buttonCell key="cell" type="check" title="自動更新詞庫" bezelStyle="regularSquare" imagePosition="leading" alignment="right" inset="2" id="lexiconAutoUpdateCheckboxCell">
+                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                    <font key="font" metaFont="smallSystem"/>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="toggleAutomaticLexiconUpdates:" target="695" id="lexiconAutoUpdateAction"/>
+                                </connections>
+                            </button>
                             <progressIndicator hidden="YES" wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" minValue="16" maxValue="100" doubleValue="16" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconProgressIndicator">
                                 <rect key="frame" x="258" y="65" width="16" height="16"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1557,6 +1568,7 @@
                 <outlet property="_applicationLatestCheckTextField" destination="applicationLatestCheckField" id="applicationLatestCheckOutlet"/>
                 <outlet property="_applicationLatestVersionTextField" destination="applicationLatestVersionField" id="applicationLatestVersionOutlet"/>
                 <outlet property="_applicationProgressIndicator" destination="726" id="958"/>
+                <outlet property="_lexiconAutoUpdateCheckBox" destination="lexiconAutoUpdateCheckbox" id="lexiconAutoUpdateOutlet"/>
                 <outlet property="_lexiconCheckButton" destination="537" id="lexiconCheckButtonOutlet"/>
                 <outlet property="_lexiconCurrentVersionTextField" destination="607" id="874"/>
                 <outlet property="_lexiconInstallButton" destination="lexiconInstallButton" id="lexiconInstallButtonOutlet"/>

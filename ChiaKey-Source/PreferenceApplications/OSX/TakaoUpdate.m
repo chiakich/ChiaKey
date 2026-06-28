@@ -32,6 +32,8 @@ static NSString *const ChiaKeyLatestLexiconDefaultsKey =
     @"ChiaKeyLatestLexiconVersion";
 static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
     @"ChiaKeyLatestLexiconCheck";
+static NSString *const ChiaKeyLexiconAutoUpdateEnabledPreferenceKey =
+    @"ShouldAutoUpdateLexicon";
 static NSString *const ChiaKeySourceDatabaseArtifactKind =
     @"chiakey-source-db";
 static NSString *const ChiaKeySourceDatabaseArtifactFilename =
@@ -319,7 +321,30 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   }
 
   [_lexiconCheckButton setEnabled:!busy];
+  [_lexiconAutoUpdateCheckBox setEnabled:!busy];
   [self _refreshLexiconInstallButton];
+}
+
+- (BOOL)_isAutomaticLexiconUpdateEnabled {
+  NSDictionary *preferences =
+      [NSDictionary dictionaryWithContentsOfFile:
+                        [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]];
+  NSString *value =
+      [preferences objectForKey:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+  if (![value length]) return YES;
+
+  return [value isEqualToString:@"true"];
+}
+
+- (void)_setAutomaticLexiconUpdateEnabled:(BOOL)enabled {
+  NSString *path = [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME];
+  NSMutableDictionary *preferences =
+      [NSMutableDictionary dictionaryWithContentsOfFile:path];
+  if (!preferences) preferences = [NSMutableDictionary dictionary];
+
+  [preferences setObject:(enabled ? @"true" : @"false")
+                  forKey:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+  [preferences writeToFile:path atomically:YES];
 }
 
 - (void)_getApplicationVersionInfo {
@@ -371,6 +396,8 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   [_applicationIncludeBetaCheckBox
       setIntValue:[defaults boolForKey:ChiaKeyApplicationIncludeBetaDefaultsKey]];
+  [_lexiconAutoUpdateCheckBox
+      setIntValue:[self _isAutomaticLexiconUpdateEnabled]];
   [self _setAvailableApplicationTag:nil
                          packageURL:nil
                         packageName:nil
@@ -1181,6 +1208,11 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
                         packageName:nil
                       packageSHA256:nil];
   _didAutoCheckOnShow = NO;
+}
+
+- (IBAction)toggleAutomaticLexiconUpdates:(id)sender {
+  [self _setAutomaticLexiconUpdateEnabled:
+            ([_lexiconAutoUpdateCheckBox intValue] == 1)];
 }
 
 @end

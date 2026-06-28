@@ -1275,6 +1275,17 @@
                                     <action selector="installLexiconUpdate:" target="695" id="lexiconInstallAction"/>
                                 </connections>
                             </button>
+                            <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconAutoUpdateCheckbox">
+                                <rect key="frame" x="276" y="5" width="142" height="18"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <buttonCell key="cell" type="check" title="Auto-update lexicon" bezelStyle="regularSquare" imagePosition="leading" alignment="right" inset="2" id="lexiconAutoUpdateCheckboxCell">
+                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                    <font key="font" metaFont="smallSystem"/>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="toggleAutomaticLexiconUpdates:" target="695" id="lexiconAutoUpdateAction"/>
+                                </connections>
+                            </button>
                             <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="537">
                                 <rect key="frame" x="282" y="58" width="136" height="28"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1571,6 +1582,7 @@
                 <outlet property="_applicationLatestCheckTextField" destination="applicationLatestCheckField" id="applicationLatestCheckOutlet"/>
                 <outlet property="_applicationLatestVersionTextField" destination="applicationLatestVersionField" id="applicationLatestVersionOutlet"/>
                 <outlet property="_applicationProgressIndicator" destination="726" id="956"/>
+                <outlet property="_lexiconAutoUpdateCheckBox" destination="lexiconAutoUpdateCheckbox" id="lexiconAutoUpdateOutlet"/>
                 <outlet property="_lexiconCheckButton" destination="537" id="lexiconCheckButtonOutlet"/>
                 <outlet property="_lexiconCurrentVersionTextField" destination="607" id="874"/>
                 <outlet property="_lexiconInstallButton" destination="lexiconInstallButton" id="lexiconInstallButtonOutlet"/>

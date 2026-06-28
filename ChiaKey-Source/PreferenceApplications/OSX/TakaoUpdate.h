@@ -28,6 +28,7 @@ file for terms.
   IBOutlet id _applicationLatestVersionTextField;
   IBOutlet id _applicationProgressIndicator;
   IBOutlet id _lexiconCheckButton;
+  IBOutlet id _lexiconAutoUpdateCheckBox;
   IBOutlet id _lexiconCurrentVersionTextField;
   IBOutlet id _lexiconInstallButton;
   IBOutlet id _lexiconLatestVersionTextField;
@@ -53,5 +54,6 @@ file for terms.
 - (IBAction)installApplicationUpdate:(id)sender;
 - (IBAction)installLexiconUpdate:(id)sender;
 - (IBAction)toggleIncludeBetaReleases:(id)sender;
+- (IBAction)toggleAutomaticLexiconUpdates:(id)sender;
 - (void)updatePaneDidBecomeActive;
 @end

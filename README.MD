@@ -173,7 +173,7 @@ Scripts/install-lexicon-release.sh
 ```sh
 Scripts/install-lexicon-release.sh --tag 2026.06.7
 Scripts/install-lexicon-release.sh --skip-current
-Scripts/install-lexicon-release.sh --min-release-age-days 7 --skip-current
+Scripts/install-lexicon-release.sh --min-release-age-days 3 --skip-current
 Scripts/install-lexicon-release.sh --dry-run
 Scripts/install-lexicon-release.sh --keep-downloads
 ```
@@ -182,7 +182,7 @@ installer 會下載 `lexicon-manifest.json`，下載 manifest 宣告的 DB 與 m
 
 詞庫安裝後，切離再切回千秋輸入法，或重新執行 `Scripts/dev-install-local.sh`，讓 runtime 重新開啟 DB。
 
-偏好設定 app 也提供詞庫更新頁面。輸入法 runtime 啟動後會每天最多檢查一次詞庫；若 GitHub latest release 比目前安裝版本新，且 release 已發佈超過 7 天，會在背景靜默安裝並 reload runtime。失敗時會保留既有 active lexicon。
+偏好設定 app 也提供詞庫更新頁面，並可開關自動更新詞庫。輸入法 runtime 啟動後會每天最多檢查一次詞庫；若 GitHub latest release 比目前安裝版本新，且 release 已發佈超過 3 天，會在背景靜默安裝並 reload runtime。失敗時會保留既有 active lexicon。
 
 不下載、不安裝，只跑本機詞庫 smoke test：
 

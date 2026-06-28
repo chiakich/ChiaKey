@@ -9,9 +9,13 @@ static NSString *const ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey =
     @"ChiaKeyLexiconAutoUpdateLastCheck";
 static NSString *const ChiaKeyLexiconAutoUpdateLastResultDefaultsKey =
     @"ChiaKeyLexiconAutoUpdateLastResult";
+static NSString *const ChiaKeyGlobalPreferencesFilename =
+    @"com.chiakey.ChiaKey.plist";
+static NSString *const ChiaKeyLexiconAutoUpdateEnabledPreferenceKey =
+    @"ShouldAutoUpdateLexicon";
 static const NSTimeInterval kChiaKeyLexiconAutoUpdateCheckInterval =
     24.0 * 60.0 * 60.0;
-static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 7;
+static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 3;
 
 static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   return (codePoint >= 0x2E80 && codePoint < 0xFF00) ||
@@ -422,7 +426,31 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   return nil;
 }
 
+- (NSString *)_globalPreferencesPath {
+  NSArray *paths = NSSearchPathForDirectoriesInDomains(
+      NSLibraryDirectory, NSUserDomainMask, YES);
+  if (![paths count]) return nil;
+
+  return [[[paths objectAtIndex:0] stringByAppendingPathComponent:@"Preferences"]
+      stringByAppendingPathComponent:ChiaKeyGlobalPreferencesFilename];
+}
+
+- (BOOL)_isSilentLexiconUpdateEnabled {
+  NSString *path = [self _globalPreferencesPath];
+  NSDictionary *preferences =
+      [NSDictionary dictionaryWithContentsOfFile:path];
+  NSString *value =
+      [preferences objectForKey:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+  if (![value length]) return YES;
+
+  return [value isEqualToString:@"true"];
+}
+
 - (BOOL)_shouldRunSilentLexiconUpdate {
+  if (![self _isSilentLexiconUpdateEnabled]) {
+    return NO;
+  }
+
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   NSDate *lastCheck =
       [defaults objectForKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];

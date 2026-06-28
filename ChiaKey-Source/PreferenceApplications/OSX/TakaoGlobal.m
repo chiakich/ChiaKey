@@ -308,6 +308,7 @@ file for terms.
   [_takaoDictionary setValue:@"true" forKey:@"ShouldPlaySoundOnTypingError"];
   [_takaoDictionary setValue:@"Default" forKey:@"SoundFilename"];
   [_takaoDictionary setValue:@"true" forKey:@"ShouldCheckUpdateOnLaunch"];
+  [_takaoDictionary setValue:@"true" forKey:@"ShouldAutoUpdateLexicon"];
   [_takaoDictionary setValue:@"Default" forKey:@"HighlightColor"];
   [_takaoDictionary setValue:@"com.apple.keylayout.US"
                       forKey:@"KeyboardLayout"];
