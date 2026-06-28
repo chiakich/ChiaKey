@@ -320,8 +320,6 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
                       OVLoaderService* loaderService);
   bool handleQuickUserUnigramKey(const OVKey* key, OVTextBuffer* composingText,
                                  OVLoaderService* loaderService);
-  void commitBPMFReading(OVTextBuffer* readingText,
-                         OVTextBuffer* composingText);
   void refreshComposingText(OVTextBuffer* composingText);
 
   OVIMSmartMandarin* m_module;

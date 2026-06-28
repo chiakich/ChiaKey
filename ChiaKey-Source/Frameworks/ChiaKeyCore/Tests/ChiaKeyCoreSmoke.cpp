@@ -86,15 +86,50 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
   }
 
   state = engine->snapshot();
-  if (state.committedText != "ㄅ") {
-    return Fail("expected C++ standalone ㄅ to commit ㄅ, got: " +
+  if (!state.committedText.empty()) {
+    return Fail("expected C++ standalone ㄅ space to stay composing, got commit: " +
                 state.committedText);
   }
-  if (!state.readingText.empty() || !state.composingText.empty()) {
-    return Fail("expected C++ standalone ㄅ space to clear buffers");
+  if (state.composingText != "ㄅ") {
+    return Fail("expected C++ standalone ㄅ space to compose ㄅ, got: " +
+                state.composingText);
+  }
+  if (!state.readingText.empty()) {
+    return Fail("expected C++ standalone ㄅ space to clear reading buffer");
   }
   if (state.beeped) {
     return Fail("C++ standalone ㄅ space unexpectedly beeped");
+  }
+
+  if (!engine->handleKey(returnKey)) {
+    return Fail("C++ engine did not handle return after standalone ㄅ");
+  }
+  state = engine->snapshot();
+  if (state.committedText != "ㄅ") {
+    return Fail("expected C++ standalone ㄅ return to commit ㄅ, got: " +
+                state.committedText);
+  }
+  if (state.committedTextSegments.size() != 1 ||
+      state.committedTextSegments[0] != "ㄅ") {
+    return Fail("expected C++ standalone ㄅ to commit as a text segment");
+  }
+
+  engine->acknowledgeCommit();
+  engine->reset();
+  if (!engine->handleAsciiKey('5')) {
+    return Fail("C++ engine did not handle standalone ㄓ key");
+  }
+  if (!engine->handleAsciiKey(' ')) {
+    return Fail("C++ engine did not handle space after standalone ㄓ");
+  }
+
+  state = engine->snapshot();
+  if (!state.committedText.empty()) {
+    return Fail("C++ standalone ㄓ space unexpectedly committed: " +
+                state.committedText);
+  }
+  if (state.composingText.empty() || state.composingText == "ㄓ") {
+    return Fail("expected C++ standalone ㄓ space to compose a non-raw candidate");
   }
 
   return 0;
@@ -201,16 +236,70 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir,
   std::string readingText = snapshot.reading_text ? snapshot.reading_text : "";
   int beeped = snapshot.beeped;
   CKC_EngineSnapshotDestroy(&snapshot);
-  CKC_EngineDestroy(engine);
-  if (committedText != "ㄅ") {
-    return Fail("expected C bridge standalone ㄅ to commit ㄅ, got: " +
+  if (!committedText.empty()) {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge standalone ㄅ space to stay composing, got commit: " +
                 committedText);
   }
-  if (!readingText.empty() || !composingText.empty()) {
-    return Fail("expected C bridge standalone ㄅ space to clear buffers");
+  if (composingText != "ㄅ") {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge standalone ㄅ space to compose ㄅ, got: " +
+                composingText);
+  }
+  if (!readingText.empty()) {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge standalone ㄅ space to clear reading buffer");
   }
   if (beeped) {
+    CKC_EngineDestroy(engine);
     return Fail("C bridge standalone ㄅ space unexpectedly beeped");
+  }
+
+  if (!CKC_EngineHandleKey(engine, &returnKey)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle return after standalone ㄅ");
+  }
+  snapshot = CKC_EngineCopySnapshot(engine);
+  committedText = snapshot.committed_text ? snapshot.committed_text : "";
+  const bool bopomofoCommittedAsTextSegment =
+      snapshot.committed_text_segment_count == 1 &&
+      snapshot.committed_text_segments[0] &&
+      std::string(snapshot.committed_text_segments[0]) == "ㄅ";
+  CKC_EngineSnapshotDestroy(&snapshot);
+  if (committedText != "ㄅ") {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge standalone ㄅ return to commit ㄅ, got: " +
+                committedText);
+  }
+  if (!bopomofoCommittedAsTextSegment) {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge standalone ㄅ to commit as a text segment");
+  }
+
+  CKC_EngineAcknowledgeCommit(engine);
+  CKC_EngineReset(engine);
+  if (!CKC_EngineHandleAsciiKey(engine, '5', modifiers)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle standalone ㄓ key");
+  }
+  if (!CKC_EngineHandleAsciiKey(engine, ' ', modifiers)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle space after standalone ㄓ");
+  }
+
+  snapshot = CKC_EngineCopySnapshot(engine);
+  committedText = snapshot.committed_text ? snapshot.committed_text : "";
+  composingText = snapshot.composing_text ? snapshot.composing_text : "";
+  readingText = snapshot.reading_text ? snapshot.reading_text : "";
+  CKC_EngineSnapshotDestroy(&snapshot);
+  CKC_EngineDestroy(engine);
+  if (!committedText.empty()) {
+    return Fail("C bridge standalone ㄓ space unexpectedly committed: " +
+                committedText);
+  }
+  if (composingText.empty() || composingText == "ㄓ") {
+    return Fail(
+        "expected C bridge standalone ㄓ space to compose a non-raw candidate");
   }
 
   return 0;

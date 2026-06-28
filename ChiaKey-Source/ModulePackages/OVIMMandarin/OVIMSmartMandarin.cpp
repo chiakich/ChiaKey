@@ -51,11 +51,12 @@ static bool OVIMSmartMandarinShouldCommitShiftedLetter(const OVKey* key) {
          (keyCode >= 'A' && keyCode <= 'Z');
 }
 
-static bool OVIMSmartMandarinReadingShouldCommitAsText(
+static bool OVIMSmartMandarinReadingShouldComposeAsPassthrough(
     const BopomofoReadingBuffer& reading) {
   BPMF syllable = reading.syllable();
   return syllable.hasConsonant() && !syllable.hasMiddleVowel() &&
-         !syllable.hasVowel() && !syllable.hasToneMarker();
+         !syllable.hasVowel() && !syllable.hasToneMarker() &&
+         !syllable.belongsToZCSRClass();
 }
 
 class OVIMSmartMandarinStringFilter : public StringFilter {
@@ -238,15 +239,6 @@ bool OVIMSmartMandarinContext::handleQuickUserUnigramKey(
 
   const size_t from = m_cursor - phraseLength;
   return addUserUnigram(from, m_cursor, composingText, loaderService);
-}
-
-void OVIMSmartMandarinContext::commitBPMFReading(
-    OVTextBuffer* readingText, OVTextBuffer* composingText) {
-  composingText->setText(m_BPMFReading.composedString());
-  composingText->commitAsTextSegment();
-  m_BPMFReading.clear();
-  readingText->clear();
-  readingText->updateDisplay();
 }
 
 bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
@@ -849,15 +841,10 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
   if (shouldCompose) {
     string BPMFQueryString = m_BPMFReading.syllable().absoluteOrderString();
     if (shouldCommitReadingIfNoCandidate &&
-        OVIMSmartMandarinReadingShouldCommitAsText(m_BPMFReading)) {
-      commitBPMFReading(readingText, composingText);
-      return true;
-    }
-
-    if (shouldCommitReadingIfNoCandidate &&
-        !m_module->m_LM->isInDictionary(BPMFQueryString, true, &filter)) {
-      commitBPMFReading(readingText, composingText);
-      return true;
+        (OVIMSmartMandarinReadingShouldComposeAsPassthrough(m_BPMFReading) ||
+         !m_module->m_LM->isInDictionary(BPMFQueryString, true, &filter))) {
+      BPMFQueryString = string("_passthru_") + m_BPMFReading.composedString() +
+                        string(" ");
     }
 
     if (m_manjusri.insertAt(m_cursor, BPMFQueryString, &filter)) {

@@ -34,11 +34,12 @@ namespace OpenVanilla {
 
 using namespace Formosa::Mandarin;
 
-static bool OVIMMandarinReadingShouldCommitAsText(
+static bool OVIMMandarinReadingShouldComposeAsPassthrough(
     const BopomofoReadingBuffer& reading) {
   BPMF syllable = reading.syllable();
   return syllable.hasConsonant() && !syllable.hasMiddleVowel() &&
-         !syllable.hasVowel() && !syllable.hasToneMarker();
+         !syllable.hasVowel() && !syllable.hasToneMarker() &&
+         !syllable.belongsToZCSRClass();
 }
 
 OVIMTraditionalMandarinContext::OVIMTraditionalMandarinContext(
@@ -81,20 +82,15 @@ bool OVIMTraditionalMandarinContext::queryAndCompose(
     OVKeyValueDataTableInterface* dataTable, const string& queryString,
     OVTextBuffer* readingText, OVTextBuffer* composingText,
     OVCandidateService* candidateService, OVLoaderService* loaderService) {
-  if (OVIMMandarinReadingShouldCommitAsText(m_readingBuffer)) {
-    composingText->setText(m_readingBuffer.composedString());
-    composingText->commit();
-    m_readingBuffer.clear();
-    readingText->clear();
-    readingText->updateDisplay();
-    return true;
-  }
-
   vector<string> rawResults = dataTable->valuesForKey(queryString);
 
   // now we filter out the characters/strings not supported by the current
   // encoding
   vector<string> results;
+  if (OVIMMandarinReadingShouldComposeAsPassthrough(m_readingBuffer)) {
+    OVIMMandarinPushUniqueString(&results, m_readingBuffer.composedString());
+  }
+
   OVEncodingService* encodingService = loaderService->encodingService();
 
   if (m_module->m_cfgUseCharactersSupportedByEncoding.length()) {
@@ -102,12 +98,12 @@ bool OVIMTraditionalMandarinContext::queryAndCompose(
          rsi != rawResults.end(); ++rsi)
       if (encodingService->stringSupportedByEncoding(
               *rsi, m_module->m_cfgUseCharactersSupportedByEncoding))
-        results.push_back(*rsi);
+        OVIMMandarinPushUniqueString(&results, *rsi);
   } else {
     for (vector<string>::iterator rsi = rawResults.begin();
          rsi != rawResults.end(); ++rsi)
       if (encodingService->stringSupportedBySystem(*rsi))
-        results.push_back(*rsi);
+        OVIMMandarinPushUniqueString(&results, *rsi);
   }
 
   if (!results.size()) {
