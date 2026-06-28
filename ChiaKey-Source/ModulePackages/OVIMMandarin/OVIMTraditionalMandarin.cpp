@@ -34,6 +34,13 @@ namespace OpenVanilla {
 
 using namespace Formosa::Mandarin;
 
+static bool OVIMMandarinReadingShouldCommitAsText(
+    const BopomofoReadingBuffer& reading) {
+  BPMF syllable = reading.syllable();
+  return syllable.hasConsonant() && !syllable.hasMiddleVowel() &&
+         !syllable.hasVowel() && !syllable.hasToneMarker();
+}
+
 OVIMTraditionalMandarinContext::OVIMTraditionalMandarinContext(
     OVIMTraditionalMandarin* module)
     : m_module(module), m_readingBuffer(0) {}
@@ -74,6 +81,15 @@ bool OVIMTraditionalMandarinContext::queryAndCompose(
     OVKeyValueDataTableInterface* dataTable, const string& queryString,
     OVTextBuffer* readingText, OVTextBuffer* composingText,
     OVCandidateService* candidateService, OVLoaderService* loaderService) {
+  if (OVIMMandarinReadingShouldCommitAsText(m_readingBuffer)) {
+    composingText->setText(m_readingBuffer.composedString());
+    composingText->commit();
+    m_readingBuffer.clear();
+    readingText->clear();
+    readingText->updateDisplay();
+    return true;
+  }
+
   vector<string> rawResults = dataTable->valuesForKey(queryString);
 
   // now we filter out the characters/strings not supported by the current
@@ -98,7 +114,10 @@ bool OVIMTraditionalMandarinContext::queryAndCompose(
     // if m_readingBuffer is empty, it's not querying a BPMF
     if (m_readingBuffer.isEmpty()) return false;
 
-    loaderService->beep();
+    composingText->setText(m_readingBuffer.composedString());
+    composingText->commit();
+    m_readingBuffer.clear();
+    readingText->clear();
     readingText->updateDisplay();
     return true;
   } else if (results.size() == 1) {

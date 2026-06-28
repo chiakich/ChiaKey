@@ -77,6 +77,26 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("C++ committed text was not cleared by acknowledgeCommit");
   }
 
+  engine->reset();
+  if (!engine->handleAsciiKey('1')) {
+    return Fail("C++ engine did not handle standalone ㄅ key");
+  }
+  if (!engine->handleAsciiKey(' ')) {
+    return Fail("C++ engine did not handle space after standalone ㄅ");
+  }
+
+  state = engine->snapshot();
+  if (state.committedText != "ㄅ") {
+    return Fail("expected C++ standalone ㄅ to commit ㄅ, got: " +
+                state.committedText);
+  }
+  if (!state.readingText.empty() || !state.composingText.empty()) {
+    return Fail("expected C++ standalone ㄅ space to clear buffers");
+  }
+  if (state.beeped) {
+    return Fail("C++ standalone ㄅ space unexpectedly beeped");
+  }
+
   return 0;
 }
 
@@ -160,9 +180,37 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir,
   snapshot = CKC_EngineCopySnapshot(engine);
   committedText = snapshot.committed_text ? snapshot.committed_text : "";
   CKC_EngineSnapshotDestroy(&snapshot);
-  CKC_EngineDestroy(engine);
   if (!committedText.empty()) {
+    CKC_EngineDestroy(engine);
     return Fail("C bridge committed text was not cleared by acknowledgeCommit");
+  }
+
+  CKC_EngineReset(engine);
+  if (!CKC_EngineHandleAsciiKey(engine, '1', modifiers)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle standalone ㄅ key");
+  }
+  if (!CKC_EngineHandleAsciiKey(engine, ' ', modifiers)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle space after standalone ㄅ");
+  }
+
+  snapshot = CKC_EngineCopySnapshot(engine);
+  committedText = snapshot.committed_text ? snapshot.committed_text : "";
+  composingText = snapshot.composing_text ? snapshot.composing_text : "";
+  std::string readingText = snapshot.reading_text ? snapshot.reading_text : "";
+  int beeped = snapshot.beeped;
+  CKC_EngineSnapshotDestroy(&snapshot);
+  CKC_EngineDestroy(engine);
+  if (committedText != "ㄅ") {
+    return Fail("expected C bridge standalone ㄅ to commit ㄅ, got: " +
+                committedText);
+  }
+  if (!readingText.empty() || !composingText.empty()) {
+    return Fail("expected C bridge standalone ㄅ space to clear buffers");
+  }
+  if (beeped) {
+    return Fail("C bridge standalone ㄅ space unexpectedly beeped");
   }
 
   return 0;

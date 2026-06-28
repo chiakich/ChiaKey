@@ -51,6 +51,13 @@ static bool OVIMSmartMandarinShouldCommitShiftedLetter(const OVKey* key) {
          (keyCode >= 'A' && keyCode <= 'Z');
 }
 
+static bool OVIMSmartMandarinReadingShouldCommitAsText(
+    const BopomofoReadingBuffer& reading) {
+  BPMF syllable = reading.syllable();
+  return syllable.hasConsonant() && !syllable.hasMiddleVowel() &&
+         !syllable.hasVowel() && !syllable.hasToneMarker();
+}
+
 class OVIMSmartMandarinStringFilter : public StringFilter {
  public:
   OVIMSmartMandarinStringFilter(const string& encoding,
@@ -233,6 +240,15 @@ bool OVIMSmartMandarinContext::handleQuickUserUnigramKey(
   return addUserUnigram(from, m_cursor, composingText, loaderService);
 }
 
+void OVIMSmartMandarinContext::commitBPMFReading(
+    OVTextBuffer* readingText, OVTextBuffer* composingText) {
+  composingText->setText(m_BPMFReading.composedString());
+  composingText->commitAsTextSegment();
+  m_BPMFReading.clear();
+  readingText->clear();
+  readingText->updateDisplay();
+}
+
 bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
                                          OVTextBuffer* composingText,
                                          OVCandidateService* candidateService,
@@ -331,6 +347,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
 
   bool readingOnly = false;
   bool shouldCompose = false;
+  bool shouldCommitReadingIfNoCandidate = false;
   bool shouldCommit = false;
   // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "cursor before: " <<
   // m_cursor << endl;
@@ -467,6 +484,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
       } else {
         if (!m_BPMFReading.isEmpty()) {
           shouldCompose = true;
+          shouldCommitReadingIfNoCandidate = true;
         }
       }
     } else if (keyCode == 'q') {
@@ -530,6 +548,9 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
       CallForthCandidateWindow:
         if (!m_BPMFReading.isEmpty()) {
           shouldCompose = true;
+          if (key->keyCode() == OVKeyCode::Return) {
+            shouldCommitReadingIfNoCandidate = true;
+          }
         } else if (!composingText->isEmpty()) {
           if (key->keyCode() == OVKeyCode::Return) {
             shouldCommit = true;
@@ -826,9 +847,20 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
   }
 
   if (shouldCompose) {
-    if (m_manjusri.insertAt(m_cursor,
-                            m_BPMFReading.syllable().absoluteOrderString(),
-                            &filter)) {
+    string BPMFQueryString = m_BPMFReading.syllable().absoluteOrderString();
+    if (shouldCommitReadingIfNoCandidate &&
+        OVIMSmartMandarinReadingShouldCommitAsText(m_BPMFReading)) {
+      commitBPMFReading(readingText, composingText);
+      return true;
+    }
+
+    if (shouldCommitReadingIfNoCandidate &&
+        !m_module->m_LM->isInDictionary(BPMFQueryString, true, &filter)) {
+      commitBPMFReading(readingText, composingText);
+      return true;
+    }
+
+    if (m_manjusri.insertAt(m_cursor, BPMFQueryString, &filter)) {
       m_cursor++;
       m_BPMFReading.clear();
     }
