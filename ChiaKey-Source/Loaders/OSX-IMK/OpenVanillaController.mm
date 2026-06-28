@@ -79,6 +79,33 @@ static BOOL OVCAllowsSecureInputComposition() {
   return kvm.stringValueForKey("AllowSecureInputComposition") == "true";
 }
 
+static UniChar OVCAsciiDigitForVirtualKeyCode(unsigned short virtualKeyCode) {
+  switch (virtualKeyCode) {
+    case 0x12:
+      return '1';
+    case 0x13:
+      return '2';
+    case 0x14:
+      return '3';
+    case 0x15:
+      return '4';
+    case 0x17:
+      return '5';
+    case 0x16:
+      return '6';
+    case 0x1a:
+      return '7';
+    case 0x1c:
+      return '8';
+    case 0x19:
+      return '9';
+    case 0x1d:
+      return '0';
+    default:
+      return 0;
+  }
+}
+
 class OVCSecureInputModeScope {
  public:
   OVCSecureInputModeScope(PVLoaderService *loaderService, bool enabled)
@@ -586,7 +613,10 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
       // translates CTRL-[A-Z] to the correct PVKeyImpl
       if (cocoaModifiers & NSEventModifierFlagControl) {
-        if (unicharCode < 27) {
+        UniChar digitCode = OVCAsciiDigitForVirtualKeyCode(virtualKeyCode);
+        if (digitCode && unicharCode < 32) {
+          unicharCode = digitCode;
+        } else if (unicharCode < 27) {
           unicharCode += ('a' - 1);
         } else {
           switch (unicharCode) {
@@ -686,7 +716,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     } else {
       //		    if (cocoaModifiers & NSShiftKeyMask)
       // vanillaModifiers |= OVKeyMask::Shift;
-      keyImpl = new PVKeyImpl(0, vanillaModifiers);
+      UniChar digitCode =
+          (cocoaModifiers & NSEventModifierFlagControl)
+              ? OVCAsciiDigitForVirtualKeyCode(virtualKeyCode)
+              : 0;
+      keyImpl = new PVKeyImpl(digitCode, vanillaModifiers);
     }
 
     OVKey key(keyImpl);

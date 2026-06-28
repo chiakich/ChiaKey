@@ -123,6 +123,116 @@ void OVIMSmartMandarinContext::clear(OVLoaderService* loaderService) {
   m_markCursor = m_cursor;
 }
 
+void OVIMSmartMandarinContext::refreshComposingText(
+    OVTextBuffer* composingText) {
+  composingText->setText(m_manjusri.composedString());
+  composingText->setCursorPosition(m_cursor - m_manjusri.cursorLeftBound());
+  composingText->setWordSegments(m_manjusri.wordSegments());
+  composingText->updateDisplay();
+}
+
+bool OVIMSmartMandarinContext::addUserUnigram(
+    size_t from, size_t to, OVTextBuffer* composingText,
+    OVLoaderService* loaderService) {
+  bool secureInputMode = loaderService->secureInputMode();
+  pair<bool, string> result =
+      secureInputMode ? pair<bool, string>(
+                            false, m_manjusri.currentlyMarkedUnigram(from, to))
+                      : m_manjusri.addUserUnigram(from, to);
+  string& current = result.second;
+
+  composingText->clear();
+
+  if (secureInputMode) {
+    if (loaderService->locale() == "zh_TW" ||
+        loaderService->locale() == "zh-Hant")
+      composingText->showToolTip(
+          string("\xE5\xAE\x89\xE5\x85\xA8\xE8\xBC\xB8\xE5\x85\xA5"
+                 "\xE6\xA8\xA1\xE5\xBC\x8F\xE4\xB8\x8D\xE6\x9C\x83"
+                 "\xE5\xAD\xB8\xE7\xBF\x92\xE6\x96\xB0\xE8\xA9\x9E"));
+    else if (loaderService->locale() == "zh_CN" ||
+             loaderService->locale() == "zh-Hans")
+      composingText->showToolTip(
+          string("\xE5\xAE\x89\xE5\x85\xA8\xE8\xBE\x93\xE5\x85\xA5"
+                 "\xE6\xA8\xA1\xE5\xBC\x8F\xE4\xB8\x8D\xE4\xBC\x9A"
+                 "\xE5\xAD\xA6\xE4\xB9\xA0\xE6\x96\xB0\xE8\xAF\x8D"));
+    else
+      composingText->showToolTip(
+          "Secure input mode does not learn new phrases.");
+  } else if (result.first) {
+    if (loaderService->locale() == "zh_TW" ||
+        loaderService->locale() == "zh-Hant")
+      composingText->showToolTip(
+          string("\xE5\x8A\xA0\xE5\x85\xA5\xE6\x96\xB0\xE8\xA9\x9E\xEF"
+                 "\xBC\x9A\xE3\x80\x8C") +
+          current + string("\xE3\x80\x8D"));
+    else if (loaderService->locale() == "zh_CN" ||
+             loaderService->locale() == "zh-Hans")
+      composingText->showToolTip(
+          string("\xE5\x8A\xA0\xE5\x85\xA5\xE6\x96\xB0\xE8\xAF\x8D\xEF"
+                 "\xBC\x9A\xE2\x80\x9C") +
+          current + string("\xE2\x80\x9D"));
+    else
+      composingText->showToolTip(string("New phrase \"") + current +
+                                 string("\" added."));
+  } else {
+    if (loaderService->locale() == "zh_TW" ||
+        loaderService->locale() == "zh-Hant")
+      composingText->showToolTip(
+          string("\xE3\x80\x8C") + current +
+          string("\xe3\x80\x8d\xe7\x84\xa1\xe6\xb3\x95\xe5\x8a\xa0\xe5"
+                 "\x85\xa5\xef\xbc\x8c\xe8\xa9\xb2\xe8\xa9\x9e\xe5\xb7"
+                 "\xb2\xe7\xb6\x93\xe5\xad\x98\xe5\x9c\xa8\xe6\x96\xbc"
+                 "\xe8\xb3\x87\xe6\x96\x99\xe5\xba\xab\xe4\xb8\xad"));
+    else if (loaderService->locale() == "zh_CN" ||
+             loaderService->locale() == "zh-Hans")
+      composingText->showToolTip(
+          string("\xE2\x80\x9C") + current +
+          string("\xE2\x80\x9D\xe6\x97\xa0\xe6\xb3\x95\xe5\x8a\xa0\xe5"
+                 "\x85\xa5\xef\xbc\x8c\xe8\xaf\xa5\xe8\xa9\x9e\xe5\xb7"
+                 "\xb2\xe7\xb6\x93\xe5\xad\x98\xe5\x9c\xa8\xe4\xba\x8e"
+                 "\xe6\x95\xb0\xe6\x8d\xae\xe5\xba\x93\xe4\xb8\xad"));
+    else
+      composingText->showToolTip(
+          string("Cannot add \"") + current +
+          string("\". It may already exist in the database."));
+  }
+
+  refreshComposingText(composingText);
+  return true;
+}
+
+bool OVIMSmartMandarinContext::handleQuickUserUnigramKey(
+    const OVKey* key, OVTextBuffer* composingText,
+    OVLoaderService* loaderService) {
+  if (!key->isCtrlPressed() || key->isAltPressed() || key->isOptPressed() ||
+      key->isCommandPressed() || key->isShiftPressed()) {
+    return false;
+  }
+
+  string keyString = key->receivedString();
+  if (keyString.size() != 1 && key->keyCode() >= '1' && key->keyCode() <= '9') {
+    keyString = string(1, static_cast<char>(key->keyCode()));
+  }
+
+  if (keyString.size() != 1 || keyString[0] < '1' || keyString[0] > '9') {
+    return false;
+  }
+
+  if (!m_BPMFReading.isEmpty() || composingText->isEmpty()) {
+    return false;
+  }
+
+  const size_t phraseLength = keyString[0] - '0';
+  if (m_cursor < m_manjusri.cursorLeftBound() + phraseLength) {
+    loaderService->beep();
+    return true;
+  }
+
+  const size_t from = m_cursor - phraseLength;
+  return addUserUnigram(from, m_cursor, composingText, loaderService);
+}
+
 bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
                                          OVTextBuffer* composingText,
                                          OVCandidateService* candidateService,
@@ -164,6 +274,10 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
     return false;
   } else {
     m_module->m_cacheFlushKeyCounter = 0;
+  }
+
+  if (handleQuickUserUnigramKey(key, composingText, loaderService)) {
+    return true;
   }
 
   bool capsLockFilter = true;
@@ -322,80 +436,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
 
         if (from > to) swap(from, to);
 
-        // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "Adding phrase at "
-        // << from << "-" << to << ": " <<
-        // m_manjusri.composedString().substr(from -
-        // m_manjusri.cursorLeftBound(), to - from) << endl;
-        bool secureInputMode = loaderService->secureInputMode();
-        pair<bool, string> result =
-            secureInputMode
-                ? pair<bool, string>(
-                      false, m_manjusri.currentlyMarkedUnigram(from, to))
-                : m_manjusri.addUserUnigram(from, to);
-        string& current = result.second;
-
-        composingText->clear();
-
-        if (secureInputMode) {
-          if (loaderService->locale() == "zh_TW" ||
-              loaderService->locale() == "zh-Hant")
-            composingText->showToolTip(
-                string("\xE5\xAE\x89\xE5\x85\xA8\xE8\xBC\xB8\xE5\x85\xA5"
-                       "\xE6\xA8\xA1\xE5\xBC\x8F\xE4\xB8\x8D\xE6\x9C\x83"
-                       "\xE5\xAD\xB8\xE7\xBF\x92\xE6\x96\xB0\xE8\xA9\x9E"));
-          else if (loaderService->locale() == "zh_CN" ||
-                   loaderService->locale() == "zh-Hans")
-            composingText->showToolTip(
-                string("\xE5\xAE\x89\xE5\x85\xA8\xE8\xBE\x93\xE5\x85\xA5"
-                       "\xE6\xA8\xA1\xE5\xBC\x8F\xE4\xB8\x8D\xE4\xBC\x9A"
-                       "\xE5\xAD\xA6\xE4\xB9\xA0\xE6\x96\xB0\xE8\xAF\x8D"));
-          else
-            composingText->showToolTip(
-                "Secure input mode does not learn new phrases.");
-        } else if (result.first) {
-          if (loaderService->locale() == "zh_TW" ||
-              loaderService->locale() == "zh-Hant")
-            composingText->showToolTip(
-                string("\xE5\x8A\xA0\xE5\x85\xA5\xE6\x96\xB0\xE8\xA9\x9E\xEF"
-                       "\xBC\x9A\xE3\x80\x8C") +
-                current + string("\xE3\x80\x8D"));
-          else if (loaderService->locale() == "zh_CN" ||
-                   loaderService->locale() == "zh-Hans")
-            composingText->showToolTip(
-                string("\xE5\x8A\xA0\xE5\x85\xA5\xE6\x96\xB0\xE8\xAF\x8D\xEF"
-                       "\xBC\x9A\xE2\x80\x9C") +
-                current + string("\xE2\x80\x9D"));
-          else
-            composingText->showToolTip(string("New phrase \"") + current +
-                                       string("\" added."));
-        } else {
-          if (loaderService->locale() == "zh_TW" ||
-              loaderService->locale() == "zh-Hant")
-            composingText->showToolTip(
-                string("\xE3\x80\x8C") + current +
-                string("\xe3\x80\x8d\xe7\x84\xa1\xe6\xb3\x95\xe5\x8a\xa0\xe5"
-                       "\x85\xa5\xef\xbc\x8c\xe8\xa9\xb2\xe8\xa9\x9e\xe5\xb7"
-                       "\xb2\xe7\xb6\x93\xe5\xad\x98\xe5\x9c\xa8\xe6\x96\xbc"
-                       "\xe8\xb3\x87\xe6\x96\x99\xe5\xba\xab\xe4\xb8\xad"));
-          else if (loaderService->locale() == "zh_CN" ||
-                   loaderService->locale() == "zh-Hans")
-            composingText->showToolTip(
-                string("\xE2\x80\x9C") + current +
-                string("\xE2\x80\x9D\xe6\x97\xa0\xe6\xb3\x95\xe5\x8a\xa0\xe5"
-                       "\x85\xa5\xef\xbc\x8c\xe8\xaf\xa5\xe8\xa9\x9e\xe5\xb7"
-                       "\xb2\xe7\xb6\x93\xe5\xad\x98\xe5\x9c\xa8\xe4\xba\x8e"
-                       "\xe6\x95\xb0\xe6\x8d\xae\xe5\xba\x93\xe4\xb8\xad"));
-          else
-            composingText->showToolTip(
-                string("Cannot add \"") + current +
-                string("\". It may already exist in the database."));
-        }
-
-        composingText->setText(m_manjusri.composedString());
-        composingText->setCursorPosition(m_cursor -
-                                         m_manjusri.cursorLeftBound());
-        composingText->updateDisplay();
-        return true;
+        return addUserUnigram(from, to, composingText, loaderService);
       }
 
       if (m_markMode && key->keyCode() == OVKeyCode::Esc ||

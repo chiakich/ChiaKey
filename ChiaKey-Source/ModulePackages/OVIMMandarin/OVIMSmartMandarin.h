@@ -316,6 +316,11 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
 
  protected:
   const BopomofoKeyboardLayout* currentKeyboardLayout();
+  bool addUserUnigram(size_t from, size_t to, OVTextBuffer* composingText,
+                      OVLoaderService* loaderService);
+  bool handleQuickUserUnigramKey(const OVKey* key, OVTextBuffer* composingText,
+                                 OVLoaderService* loaderService);
+  void refreshComposingText(OVTextBuffer* composingText);
 
   OVIMSmartMandarin* m_module;
 

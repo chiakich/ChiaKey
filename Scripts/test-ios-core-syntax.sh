@@ -5,6 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_DIR="$ROOT_DIR/ChiaKey-Source"
 HEADER_SHIMS="$SOURCE_DIR/Frameworks/HeaderShims"
 
+if [[ -z "${DEVELOPER_DIR:-}" && -d "/Applications/Xcode.app/Contents/Developer" ]]; then
+  export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+fi
+
 SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
 
 xcrun --sdk iphoneos clang \

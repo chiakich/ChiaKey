@@ -16,14 +16,13 @@ int Fail(const std::string& message) {
   return 1;
 }
 
-int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir) {
+int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
+                const std::string& lexiconDatabasePath) {
   ChiaKey::EnginePaths paths;
   paths.loadedPath = repoRoot + "/ChiaKey-Source";
   paths.resourcePath = repoRoot + "/ChiaKey-Source";
   paths.writablePath = writableDir;
-  paths.lexiconDatabasePath =
-      repoRoot +
-      "/ChiaKey-Source/Distributions/Takao/CookedDatabase/ChiaKeySource.db";
+  paths.lexiconDatabasePath = lexiconDatabasePath;
 
   ChiaKey::EngineConfig config;
   std::string errorMessage;
@@ -43,6 +42,22 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir) {
   ChiaKey::EngineState state = engine->snapshot();
   if (state.composingText != "你好") {
     return Fail("expected C++ composing text 你好, got: " + state.composingText);
+  }
+
+  ChiaKey::KeyEvent quickAddKey;
+  quickAddKey.keyCode = '2';
+  quickAddKey.modifiers.ctrl = true;
+  if (!engine->handleKey(quickAddKey)) {
+    return Fail("C++ engine did not handle ctrl+2 quick user phrase key");
+  }
+
+  state = engine->snapshot();
+  if (state.composingText != "你好") {
+    return Fail("expected C++ composing text to remain 你好 after ctrl+2, got: " +
+                state.composingText);
+  }
+  if (state.candidateState.visible) {
+    return Fail("ctrl+2 quick user phrase key unexpectedly opened candidates");
   }
 
   ChiaKey::KeyEvent returnKey;
@@ -65,10 +80,9 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir) {
   return 0;
 }
 
-int RunCSmoke(const std::string& repoRoot, const std::string& writableDir) {
+int RunCSmoke(const std::string& repoRoot, const std::string& writableDir,
+              const std::string& lexiconDatabasePath) {
   const std::string sourceDir = repoRoot + "/ChiaKey-Source";
-  const std::string lexiconDatabasePath =
-      sourceDir + "/Distributions/Takao/CookedDatabase/ChiaKeySource.db";
 
   CKC_EnginePaths paths = {};
   paths.loaded_path = sourceDir.c_str();
@@ -103,6 +117,30 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir) {
     return Fail("expected C bridge composing text 你好, got: " + composingText);
   }
 
+  CKC_KeyEvent quickAddKey = {};
+  quickAddKey.key_code = '2';
+  quickAddKey.modifiers.ctrl = 1;
+  if (!CKC_EngineHandleKey(engine, &quickAddKey)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle ctrl+2 quick user phrase key");
+  }
+
+  snapshot = CKC_EngineCopySnapshot(engine);
+  composingText = snapshot.composing_text ? snapshot.composing_text : "";
+  int candidateVisible = snapshot.candidate_state.visible;
+  CKC_EngineSnapshotDestroy(&snapshot);
+  if (composingText != "你好") {
+    CKC_EngineDestroy(engine);
+    return Fail(
+        "expected C bridge composing text to remain 你好 after ctrl+2, got: " +
+        composingText);
+  }
+  if (candidateVisible) {
+    CKC_EngineDestroy(engine);
+    return Fail(
+        "ctrl+2 quick user phrase key unexpectedly opened C bridge candidates");
+  }
+
   CKC_KeyEvent returnKey = {};
   returnKey.key_code = 13;
   if (!CKC_EngineHandleKey(engine, &returnKey)) {
@@ -133,15 +171,20 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  if (argc < 3) {
-    return Fail("usage: ChiaKeyCoreSmoke <repo-root> <writable-dir>");
+  if (argc < 4) {
+    return Fail(
+        "usage: ChiaKeyCoreSmoke <repo-root> <writable-dir> "
+        "<lexicon-database-path>");
   }
 
   const std::string repoRoot = argv[1];
   const std::string writableDir = argv[2];
+  const std::string lexiconDatabasePath = argv[3];
 
-  if (int result = RunCppSmoke(repoRoot, writableDir)) return result;
-  if (int result = RunCSmoke(repoRoot, writableDir)) return result;
+  if (int result = RunCppSmoke(repoRoot, writableDir, lexiconDatabasePath))
+    return result;
+  if (int result = RunCSmoke(repoRoot, writableDir, lexiconDatabasePath))
+    return result;
 
   std::cout << "ChiaKeyCoreSmoke: OK" << std::endl;
   return 0;
