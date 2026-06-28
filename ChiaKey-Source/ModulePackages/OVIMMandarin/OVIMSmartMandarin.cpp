@@ -39,6 +39,18 @@
 
 namespace OpenVanilla {
 
+static bool OVIMSmartMandarinShouldCommitShiftedLetter(const OVKey* key) {
+  if (!key->isShiftPressed() || key->isCapsLockOn() ||
+      key->isDirectTextKey() || key->isCtrlPressed() || key->isOptPressed() ||
+      key->isAltPressed() || key->isCommandPressed()) {
+    return false;
+  }
+
+  unsigned int keyCode = key->keyCode();
+  return (keyCode >= 'a' && keyCode <= 'z') ||
+         (keyCode >= 'A' && keyCode <= 'Z');
+}
+
 class OVIMSmartMandarinStringFilter : public StringFilter {
  public:
   OVIMSmartMandarinStringFilter(const string& encoding,
@@ -211,6 +223,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
 
   if (m_BPMFReading.isValidKey(key->keyCode()) && !key->isCapsLockOn() &&
       !key->isNumLockOn() && !key->isDirectTextKey() &&
+      !OVIMSmartMandarinShouldCommitShiftedLetter(key) &&
       !(ctrlOptX || ctrl0or1 || ctrlX)) {
     m_BPMFReading.combineKey(key->keyCode());
     if (m_BPMFReading.hasToneMarker())
@@ -711,21 +724,14 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
 
               if (keystr.size() == 1 &&
                   (key->isCapsLockOn() || key->isShiftPressed())) {
-                // reverse the case that is sent in (OS X only)
-                char c = key->keyCode();
+                char c = keystr[0];
 
-                if (c >= 'A' && c <= 'Z')
-                  c = tolower(c);
-                else
-                  c = toupper(c);
-
-                // OS X doesn't send lower case letters when CAPS LOCK + SHIFT
-                // are both on, so here
-                if (key->isCapsLockOn() && key->isShiftPressed())
-                  c = toupper(c);
-
-                if (m_module->m_cfgShiftKeyAlwaysCommitUppercaseCharacters &&
-                    key->isShiftPressed()) {
+                if (key->isShiftPressed()) {
+                  if (m_module->m_cfgShiftKeyAlwaysCommitUppercaseCharacters)
+                    c = toupper(c);
+                  else
+                    c = tolower(c);
+                } else if (key->isCapsLockOn()) {
                   c = toupper(c);
                 }
 
@@ -1322,6 +1328,8 @@ void OVIMSmartMandarin::saveConfig(OVKeyValueMap* moduleConfig,
                                 m_cfgShowCandidateListWithSpace);
   moduleConfig->setKeyBoolValue("ClearComposingTextWithEsc",
                                 m_cfgClearComposingTextWithEsc);
+  moduleConfig->setKeyBoolValue("ShiftKeyAlwaysCommitUppercaseCharacters",
+                                m_cfgShiftKeyAlwaysCommitUppercaseCharacters);
 
   if (m_cfgCandidateSelectionKeys.size())
     moduleConfig->setKeyStringValue("CandidateSelectionKeys",

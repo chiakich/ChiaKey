@@ -52,6 +52,14 @@ file for terms.
   else
     [_showCandidateListWithSpaceCheckBox setIntValue:0];
 
+  NSString *shiftKeyAlwaysCommitUppercaseCharacters =
+      [_phoneticDictionary
+          valueForKey:@"ShiftKeyAlwaysCommitUppercaseCharacters"];
+  if ([shiftKeyAlwaysCommitUppercaseCharacters isEqualToString:@"true"])
+    [_shiftKeyAlwaysCommitUppercaseCharactersCheckBox setIntValue:1];
+  else
+    [_shiftKeyAlwaysCommitUppercaseCharactersCheckBox setIntValue:0];
+
   NSString *candidateCursorAtEndOfTargetBlock =
       [_phoneticDictionary valueForKey:@"CandidateCursorAtEndOfTargetBlock"];
   if ([candidateCursorAtEndOfTargetBlock isEqualToString:@"true"])
@@ -81,6 +89,8 @@ file for terms.
   [_phoneticDictionary setValue:@"" forKey:@"UseCharactersSupportedByEncoding"];
   [_phoneticDictionary setValue:@"false" forKey:@"ClearComposingTextWithEsc"];
   [_phoneticDictionary setValue:@"true" forKey:@"ShowCandidateListWithSpace"];
+  [_phoneticDictionary setValue:@"false"
+                         forKey:@"ShiftKeyAlwaysCommitUppercaseCharacters"];
   [_phoneticDictionary setValue:@"false"
                          forKey:@"CandidateCursorAtEndOfTargetBlock"];
   [_phoneticDictionary setValue:@"12345678" forKey:@"CandidateSelectionKeys"];
@@ -137,6 +147,15 @@ file for terms.
   else
     [_phoneticDictionary setValue:@"false"
                            forKey:@"ShowCandidateListWithSpace"];
+
+  if ([_shiftKeyAlwaysCommitUppercaseCharactersCheckBox intValue])
+    [_phoneticDictionary
+        setValue:@"true"
+          forKey:@"ShiftKeyAlwaysCommitUppercaseCharacters"];
+  else
+    [_phoneticDictionary
+        setValue:@"false"
+          forKey:@"ShiftKeyAlwaysCommitUppercaseCharacters"];
 
   if ([[_candidateCursorAtEndOfTargetBlockMatrix selectedCell] tag])
     [_phoneticDictionary setValue:@"true"

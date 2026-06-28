@@ -570,15 +570,17 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="355"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="925">
-                    <rect key="frame" x="151" y="119" width="313" height="29"/>
+                <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="shiftUppercaseCheckbox">
+                    <rect key="frame" x="151" y="123" width="312" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="如果在比較舊型的麥金塔電腦上，將組字區設定得太大，輸入法運作可能會顯得較為緩慢。" id="926">
-                        <font key="font" metaFont="smallSystem"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
+                    <buttonCell key="cell" type="check" title="按住 Shift 輸出英文大寫" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="shiftUppercaseCheckboxCell">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" size="13" name=".PingFangTC-Regular"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="writePreference:" target="808" id="shiftUppercaseCheckboxAction"/>
+                    </connections>
+                </button>
                 <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="921">
                     <rect key="frame" x="434" y="157" width="28" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -733,15 +735,6 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="794">
-                    <rect key="frame" x="48" y="100" width="94" height="17"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="額外設定：" id="795">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
                 <box autoresizesSubviews="NO" verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="807">
                     <rect key="frame" x="117" y="68" width="344" height="5"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -835,6 +828,15 @@
                     <rect key="frame" x="117" y="324" width="343" height="5"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </box>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="794">
+                    <rect key="frame" x="49" y="123" width="94" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="額外設定：" id="795">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
             </subviews>
             <point key="canvasLocation" x="-1184" y="-560"/>
         </customView>
@@ -1510,6 +1512,7 @@
                 <outlet property="_composingTextBufferSizeSlider" destination="917" id="965"/>
                 <outlet property="_keyboardLayoutPopUpButton" destination="776" id="959"/>
                 <outlet property="_selectionKeyComboBox" destination="866" id="964"/>
+                <outlet property="_shiftKeyAlwaysCommitUppercaseCharactersCheckBox" destination="shiftUppercaseCheckbox" id="shiftUppercaseCheckboxOutlet"/>
                 <outlet property="_showCandidateListWithSpaceCheckBox" destination="787" id="962"/>
                 <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="793" id="960"/>
             </connections>

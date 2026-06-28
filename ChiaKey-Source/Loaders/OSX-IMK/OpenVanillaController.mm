@@ -92,6 +92,29 @@ class OVCSecureInputModeScope {
   PVLoaderService *m_loaderService;
 };
 
+static BOOL OVCEventHasCommandControlOrOption(NSEvent *event) {
+  NSEventModifierFlags modifiers = [event modifierFlags];
+  return (modifiers & NSEventModifierFlagCommand) ||
+         (modifiers & NSEventModifierFlagControl) ||
+         (modifiers & NSEventModifierFlagOption);
+}
+
+static BOOL OVCEventIsShiftPressed(NSEvent *event) {
+  return ([event modifierFlags] & NSEventModifierFlagShift) != 0;
+}
+
+static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
+  NSString *text = [event characters];
+  if (![text length] || OVCEventHasCommandControlOrOption(event)) return nil;
+
+  for (NSUInteger index = 0; index < [text length]; index++) {
+    unichar c = [text characterAtIndex:index];
+    if (c < 32 || c == 127 || (c >= 0xF700 && c <= 0xF8FF)) return nil;
+  }
+
+  return [text lowercaseString];
+}
+
 @implementation OpenVanillaController
 - (void)dealloc {
   if (OVCActiveContext == self) {
@@ -116,6 +139,9 @@ class OVCSecureInputModeScope {
     _doNotClearContextStateEvenWithForcedCommit = NO;
     _updateCommitStringBeforeCommit = NO;
     _commitFromOurselves = NO;
+    _temporaryEnglishMode = NO;
+    _shiftKeyPressedForTemporaryEnglish = NO;
+    _shiftKeyTapCanceled = NO;
     _composingBuffer = [NSMutableString new];
 
     [[OpenVanillaLoader sharedLock] lock];
@@ -178,6 +204,23 @@ class OVCSecureInputModeScope {
   loaderService->setPromptDescription("");
   loaderService->setLog("");
   _context->activate();
+}
+
+- (void)sendTemporaryEnglishStringToClient:(NSString *)text sender:(id)sender {
+  if (![text length]) return;
+
+  PVCombinedUTF16TextBuffer combinedBuffer(*(_context->composingText()),
+                                           *(_context->readingText()));
+  string pendingText = combinedBuffer.composedText();
+  if (pendingText.size()) {
+    [_composingBuffer setString:[NSString stringWithUTF8String:pendingText.c_str()]];
+    _commitFromOurselves = YES;
+    [self commitComposition:sender];
+    _context->clear();
+    [self _resetUI];
+  }
+
+  [sender insertText:text replacementRange:NSMakeRange(NSNotFound, NSNotFound)];
 }
 
 #pragma mark Fix cursor position
@@ -349,6 +392,10 @@ class OVCSecureInputModeScope {
   // NSLog(@"deactivateServer (client %08x), identifier: %@", sender, [sender
   // bundleIdentifier]);
 
+  _temporaryEnglishMode = NO;
+  _shiftKeyPressedForTemporaryEnglish = NO;
+  _shiftKeyTapCanceled = NO;
+
   [OpenVanillaController setActiveContext:nil sender:nil];
 
   // force commit
@@ -441,6 +488,22 @@ class OVCSecureInputModeScope {
 
   if ([event type] == NSEventTypeFlagsChanged) {
     // handles caps lock and shift here
+    BOOL shiftPressed = OVCEventIsShiftPressed(event);
+    if (shiftPressed && !_shiftKeyPressedForTemporaryEnglish &&
+        !OVCEventHasCommandControlOrOption(event)) {
+      _shiftKeyPressedForTemporaryEnglish = YES;
+      _shiftKeyTapCanceled = NO;
+    } else if (!shiftPressed && _shiftKeyPressedForTemporaryEnglish) {
+      if (!_shiftKeyTapCanceled) {
+        _temporaryEnglishMode = !_temporaryEnglishMode;
+      }
+      _shiftKeyPressedForTemporaryEnglish = NO;
+      _shiftKeyTapCanceled = NO;
+    } else if (OVCEventHasCommandControlOrOption(event)) {
+      _shiftKeyPressedForTemporaryEnglish = NO;
+      _shiftKeyTapCanceled = NO;
+    }
+
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
     if (!([event modifierFlags] & NSEventModifierFlagControl)) {
       id appDelegate = [NSApp delegate];
@@ -472,6 +535,20 @@ class OVCSecureInputModeScope {
     NSEventModifierFlags cocoaModifiers = [event modifierFlags];
     unsigned short virtualKeyCode = [event keyCode];
     unsigned int vanillaModifiers = 0;
+
+    if (_shiftKeyPressedForTemporaryEnglish &&
+        (cocoaModifiers & NSEventModifierFlagShift)) {
+      _shiftKeyTapCanceled = YES;
+    }
+
+    if (_temporaryEnglishMode && !OVCEventIsShiftPressed(event)) {
+      NSString *temporaryEnglishText = OVCTextForTemporaryEnglishMode(event);
+      if (temporaryEnglishText) {
+        [self sendTemporaryEnglishStringToClient:temporaryEnglishText
+                                          sender:sender];
+        return YES;
+      }
+    }
 
     if (cocoaModifiers & NSEventModifierFlagCapsLock)
       vanillaModifiers |= OVKeyMask::CapsLock;
