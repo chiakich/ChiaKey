@@ -6,6 +6,7 @@ PROJECT="${ROOT_DIR}/ChiaKey-Source/Takao.xcodeproj"
 DATA_TABLES_DIR="${ROOT_DIR}/ChiaKey-Source/DataTables"
 DATABASES_DIR="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase"
 SMART_MANDARIN_DB="${DATABASES_DIR}/ChiaKeySource.db"
+LEXICON_RELEASE_DB_FILENAME="ChiaKeySource.db"
 LICENSE_FILE="${ROOT_DIR}/LICENSE"
 COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/COPYING"
 ACKNOWLEDGEMENTS_FILE="${ROOT_DIR}/ChiaKey-Source/ACKNOWLEDGEMENTS"
@@ -186,10 +187,9 @@ copy_release_lexicon() {
 manifest_path = ARGV.fetch(0)
 manifest = JSON.parse(File.read(manifest_path))
 
-db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" } ||
-     manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "keykey-source-db" }
+db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" }
 metadata = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "metadata" }
-abort "manifest does not contain a chiakey-source-db or keykey-source-db artifact" unless db
+abort "manifest does not contain a chiakey-source-db artifact" unless db
 
 fields = [
   manifest.fetch("version"),
@@ -210,6 +210,10 @@ RUBY
 
   validate_manifest_path_component "version" "${version}"
   validate_manifest_path_component "database filename" "${db_filename}"
+  if [[ "${db_filename}" != "${LEXICON_RELEASE_DB_FILENAME}" ]]; then
+    echo "Lexicon release database filename must be ${LEXICON_RELEASE_DB_FILENAME}: ${db_filename}" >&2
+    exit 1
+  fi
   if [[ -n "${metadata_url}" ]]; then
     validate_manifest_path_component "metadata filename" "${metadata_filename}"
   fi

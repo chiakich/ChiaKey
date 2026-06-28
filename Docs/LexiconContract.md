@@ -46,10 +46,10 @@ Scripts/install-lexicon-release.sh
 
 1. `kind`: 必須是 `chiakey-source-db`
 2. `url`
-3. `filename`
+3. `filename`: 必須是 `ChiaKeySource.db`
 4. `sha256`
 
-過渡期相容：installer 會接受舊版 manifest 的 `keykey-source-db` kind，但新的 release 應全部改用 `chiakey-source-db`。
+Installer 與 release packaging 只接受 `chiakey-source-db` / `ChiaKeySource.db`。舊版 `keykey-source-db` 或 `KeyKeySource.db` 只保留為 runtime migration fallback，不再是合法的新 release artifact。
 
 Optional metadata artifact fields：
 

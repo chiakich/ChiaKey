@@ -6,6 +6,7 @@ TAG=""
 MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/ChiaKey/Lexicons"
 DB_INSTALL_FILENAME="ChiaKeySource.db"
+DB_RELEASE_FILENAME="ChiaKeySource.db"
 DRY_RUN=0
 KEEP_DOWNLOADS=0
 SKIP_CURRENT=0
@@ -371,11 +372,10 @@ ARTIFACT_INFO="$(
 manifest_path = ARGV.fetch(0)
 manifest = JSON.parse(File.read(manifest_path))
 
-db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" } ||
-     manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "keykey-source-db" }
+db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" }
 metadata = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "metadata" }
 
-abort "manifest does not contain a chiakey-source-db or keykey-source-db artifact" unless db
+abort "manifest does not contain a chiakey-source-db artifact" unless db
 
 fields = [
   manifest.fetch("version"),
@@ -396,6 +396,10 @@ IFS=$'\t' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_U
 
 validate_manifest_path_component "version" "${VERSION}"
 validate_manifest_path_component "database filename" "${DB_FILENAME}"
+if [[ "${DB_FILENAME}" != "${DB_RELEASE_FILENAME}" ]]; then
+  echo "Lexicon release database filename must be ${DB_RELEASE_FILENAME}: ${DB_FILENAME}" >&2
+  exit 1
+fi
 if [[ -n "${METADATA_URL}" ]]; then
   validate_manifest_path_component "metadata filename" "${METADATA_FILENAME}"
 fi

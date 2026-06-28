@@ -34,8 +34,8 @@ static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
     @"ChiaKeyLatestLexiconCheck";
 static NSString *const ChiaKeySourceDatabaseArtifactKind =
     @"chiakey-source-db";
-static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
-    @"keykey-source-db";
+static NSString *const ChiaKeySourceDatabaseArtifactFilename =
+    @"ChiaKeySource.db";
 
 @implementation TakaoUpdate
 
@@ -69,16 +69,15 @@ static NSString *const LegacyKeyKeySourceDatabaseArtifactKind =
   NSArray *artifacts = [manifest objectForKey:@"artifacts"];
   if (![artifacts isKindOfClass:[NSArray class]]) return nil;
 
-  NSArray *preferredKinds = [NSArray
-      arrayWithObjects:ChiaKeySourceDatabaseArtifactKind,
-                       LegacyKeyKeySourceDatabaseArtifactKind, nil];
-
-  for (NSString *preferredKind in preferredKinds) {
-    for (id artifact in artifacts) {
-      if (![artifact isKindOfClass:[NSDictionary class]]) continue;
-      if ([[artifact objectForKey:@"kind"] isEqualToString:preferredKind])
-        return artifact;
-    }
+  for (id artifact in artifacts) {
+    if (![artifact isKindOfClass:[NSDictionary class]]) continue;
+    if (![[artifact objectForKey:@"kind"]
+            isEqualToString:ChiaKeySourceDatabaseArtifactKind])
+      continue;
+    if (![[artifact objectForKey:@"filename"]
+            isEqualToString:ChiaKeySourceDatabaseArtifactFilename])
+      continue;
+    return artifact;
   }
 
   return nil;
