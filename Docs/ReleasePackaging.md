@@ -99,21 +99,39 @@ Scripts/build-release-package.sh --local-lexicon /path/to/ChiaKeySource.db
 
 正式 release 應使用已驗證、版本化的詞庫 release artifact，而不是臨時本機 DB。
 
-## CI / GitHub Release 方向
+## 手動發佈 Release(GitHub Action)
 
-之後的 release automation 可以在 tag push 時執行：
+`.github/workflows/release.yml` 提供手動觸發的發佈流程。
+在 GitHub 的 **Actions → Release → Run workflow** 執行。
 
-```sh
-Scripts/build-release-package.sh --notarize
-```
+流程：
 
-然後把 `artifacts/release/*.pkg` 上傳到 GitHub Release。
+1. 從現有 tag 算出下一個版本 tag(若已存在則中止)。
+2. 在 macOS runner 執行 `Scripts/build-release-package.sh` 產生 `.pkg`。
+3. push tag。
+4. 建立 GitHub Release,用 `generate_release_notes` 自動 summary 這版改動,並附上 `.pkg`。
 
-必要 secrets / credentials：
+`generate_release_notes` 由 `softprops/action-gh-release` 觸發,等同呼叫 GitHub
+API 依上一個 tag 至今的 commit / PR 產生 release notes,不需額外設定。
 
-1. Developer ID Application certificate。
-2. Developer ID Installer certificate。
-3. Certificate import password。
-4. Notarytool credentials 或 App Store Connect API key。
+### 輸入參數
 
-在這些 secret 準備好以前，可以先讓 CI 產生 unsigned package artifact 作為 smoke test，但不要把 unsigned package 當公開 release。
+| 參數 | 說明 |
+| --- | --- |
+| `release_type` | 依現有 tag 遞增下一版,預設 `beta`。`beta`→`vX.Y.Z-beta.N`(標為 prerelease);`patch`/`minor`/`major`→遞增對應位;`stable`→去掉 `-beta` 後綴。 |
+| `dry_run` | 只算 tag 與建置,不 push、不發佈。先驗證用。 |
+
+### 簽章 / notarization(可選)
+
+未設定 secrets 時產出 **unsigned(ad-hoc)** package，設定以下 repository secrets 後會自動啟用
+正式簽章與公證:
+
+| Secret | 用途 |
+| --- | --- |
+| `APP_CERT_P12` / `APP_CERT_PASSWORD` | Developer ID Application 憑證(base64 `.p12`)與密碼 |
+| `INSTALLER_CERT_P12` / `INSTALLER_CERT_PASSWORD` | Developer ID Installer 憑證與密碼 |
+| `APP_SIGN_IDENTITY` / `INSTALLER_SIGN_IDENTITY` | 簽章 identity 名稱 |
+| `NOTARY_API_KEY_P8` / `NOTARY_API_KEY_ID` / `NOTARY_API_ISSUER_ID` | App Store Connect API key,供 notarytool 公證 |
+
+workflow 會把憑證匯入臨時 keychain、用 API key 建立 notarytool profile,再呼叫
+同一支 `build-release-package.sh`。

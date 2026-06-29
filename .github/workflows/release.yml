@@ -1,0 +1,182 @@
+name: Release
+
+# Manually triggered release: compute the next tag from existing tags,
+# build the installer package, and publish a GitHub Release with
+# auto-generated release notes.
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "How to bump the next version tag"
+        type: choice
+        required: true
+        default: beta
+        options:
+          - beta    # bump -beta.N (or start beta.1 on current base)
+          - patch   # x.y.(z+1)
+          - minor   # x.(y+1).0
+          - major   # (x+1).0.0
+          - stable  # drop the -beta suffix from the latest tag
+      dry_run:
+        description: "Compute the tag and build, but do not push or publish"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - name: Checkout (full history for tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Compute next version tag
+        id: version
+        run: |
+          set -euo pipefail
+          latest="$(git tag --sort=-v:refname | head -n1 || true)"
+          echo "Latest tag: ${latest:-<none>}"
+          base="${latest#v}"
+
+          # Split into core version and optional beta number.
+          core="${base%%-beta.*}"
+          beta=""
+          if [[ "${base}" == *-beta.* ]]; then
+            beta="${base##*-beta.}"
+          fi
+          : "${core:=1.0.0}"
+          IFS='.' read -r major minor patch <<<"${core}"
+          : "${major:=1}"; : "${minor:=0}"; : "${patch:=0}"
+
+          case "${{ inputs.release_type }}" in
+            beta)
+              if [[ -n "${beta}" ]]; then
+                beta=$((beta + 1))
+              else
+                beta=1
+              fi
+              next="v${major}.${minor}.${patch}-beta.${beta}"
+              prerelease=true
+              ;;
+            patch)
+              next="v${major}.${minor}.$((patch + 1))"
+              prerelease=false
+              ;;
+            minor)
+              next="v${major}.$((minor + 1)).0"
+              prerelease=false
+              ;;
+            major)
+              next="v$((major + 1)).0.0"
+              prerelease=false
+              ;;
+            stable)
+              next="v${major}.${minor}.${patch}"
+              prerelease=false
+              ;;
+            *)
+              echo "Unknown release_type" >&2; exit 1 ;;
+          esac
+
+          if git rev-parse "${next}" >/dev/null 2>&1; then
+            echo "Tag ${next} already exists." >&2
+            exit 1
+          fi
+
+          echo "Next tag: ${next} (prerelease=${prerelease})"
+          echo "tag=${next}" >>"$GITHUB_OUTPUT"
+          echo "prerelease=${prerelease}" >>"$GITHUB_OUTPUT"
+
+      - name: Build release package
+        id: build
+        env:
+          # Signing / notarization are optional. They activate only when the
+          # matching repository secrets are configured; otherwise the package
+          # is built ad-hoc (unsigned), which still succeeds.
+          APP_CERT_P12: ${{ secrets.APP_CERT_P12 }}
+          APP_CERT_PASSWORD: ${{ secrets.APP_CERT_PASSWORD }}
+          INSTALLER_CERT_P12: ${{ secrets.INSTALLER_CERT_P12 }}
+          INSTALLER_CERT_PASSWORD: ${{ secrets.INSTALLER_CERT_PASSWORD }}
+          APP_SIGN_IDENTITY: ${{ secrets.APP_SIGN_IDENTITY }}
+          INSTALLER_SIGN_IDENTITY: ${{ secrets.INSTALLER_SIGN_IDENTITY }}
+          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          args=()
+
+          # Import code-signing certificates into a temporary keychain.
+          if [[ -n "${APP_CERT_P12}" ]]; then
+            KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+            KEYCHAIN_PASSWORD="ci-temp-$RANDOM"
+            security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            security set-keychain-settings -lut 21600 "$KEYCHAIN"
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+            echo "$APP_CERT_P12" | base64 --decode > "$RUNNER_TEMP/app_cert.p12"
+            security import "$RUNNER_TEMP/app_cert.p12" -k "$KEYCHAIN" \
+              -P "$APP_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+
+            if [[ -n "${INSTALLER_CERT_P12}" ]]; then
+              echo "$INSTALLER_CERT_P12" | base64 --decode > "$RUNNER_TEMP/installer_cert.p12"
+              security import "$RUNNER_TEMP/installer_cert.p12" -k "$KEYCHAIN" \
+                -P "$INSTALLER_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+            fi
+
+            security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+            args+=(--app-sign-identity "$APP_SIGN_IDENTITY")
+            [[ -n "${INSTALLER_SIGN_IDENTITY}" ]] && args+=(--installer-sign-identity "$INSTALLER_SIGN_IDENTITY")
+          else
+            echo "No signing secrets configured; building an unsigned (ad-hoc) package."
+          fi
+
+          # Notarize when an App Store Connect API key is provided.
+          if [[ -n "${NOTARY_API_KEY_P8}" ]]; then
+            echo "$NOTARY_API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary_key.p8"
+            xcrun notarytool store-credentials chiakey-notary \
+              --key "$RUNNER_TEMP/notary_key.p8" \
+              --key-id "$NOTARY_API_KEY_ID" \
+              --issuer "$NOTARY_API_ISSUER_ID"
+            args+=(--notarize --notary-profile chiakey-notary)
+          fi
+
+          Scripts/build-release-package.sh "${args[@]}"
+
+          pkg="$(ls -t artifacts/release/*.pkg | head -n1)"
+          echo "Built: $pkg"
+          echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
+
+      - name: Create tag
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          set -euo pipefail
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Publish GitHub Release
+        if: ${{ inputs.dry_run == false }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          files: ${{ steps.build.outputs.pkg }}
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run == true }}
+        run: |
+          echo "Dry run: would publish ${{ steps.version.outputs.tag }}" >>"$GITHUB_STEP_SUMMARY"
+          echo "Package: ${{ steps.build.outputs.pkg }}" >>"$GITHUB_STEP_SUMMARY"
