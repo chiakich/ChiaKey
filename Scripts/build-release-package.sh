@@ -112,6 +112,16 @@ run() {
   "$@"
 }
 
+# Drop known-benign xcodebuild noise (quiet mode only). awk always exits 0 so
+# a real xcodebuild failure still propagates via pipefail.
+filter_build_noise() {
+  /usr/bin/awk '
+    /has no symbols/ { next }
+    /will be run during every build because/ { next }
+    { print }
+  '
+}
+
 download() {
   local output="$1"
   local url="$2"
@@ -478,23 +488,23 @@ rebuild_component_package_without_metadata_payload() {
 }
 
 if [[ "${SKIP_BUILD}" != "1" ]]; then
-  # Quiet by default; --verbose (or VERBOSE=1) restores full output and warnings.
-  XCODEBUILD_QUIET_FLAG=(-quiet)
-  XCODEBUILD_QUIET_SETTINGS=(GCC_WARN_INHIBIT_ALL_WARNINGS=YES SWIFT_SUPPRESS_WARNINGS=YES)
+  XCODEBUILD_ARGS=(
+    /usr/bin/xcodebuild
+    -project "${PROJECT}"
+    -scheme "${SCHEME}"
+    -configuration "${CONFIGURATION}"
+    -derivedDataPath "${DERIVED_DATA_PATH}"
+    CODE_SIGNING_ALLOWED=NO
+    ONLY_ACTIVE_ARCH=YES
+  )
   if [[ "${VERBOSE}" == "1" ]]; then
-    XCODEBUILD_QUIET_FLAG=()
-    XCODEBUILD_QUIET_SETTINGS=()
+    # Full output and warnings.
+    run "${XCODEBUILD_ARGS[@]}" build
+  else
+    # Quiet: suppress per-file progress, compiler warnings, and benign notes.
+    XCODEBUILD_ARGS+=(-quiet GCC_WARN_INHIBIT_ALL_WARNINGS=YES SWIFT_SUPPRESS_WARNINGS=YES)
+    "${XCODEBUILD_ARGS[@]}" build 2>&1 | filter_build_noise
   fi
-  run /usr/bin/xcodebuild \
-    -project "${PROJECT}" \
-    -scheme "${SCHEME}" \
-    -configuration "${CONFIGURATION}" \
-    -derivedDataPath "${DERIVED_DATA_PATH}" \
-    ${XCODEBUILD_QUIET_FLAG[@]+"${XCODEBUILD_QUIET_FLAG[@]}"} \
-    CODE_SIGNING_ALLOWED=NO \
-    ONLY_ACTIVE_ARCH=YES \
-    ${XCODEBUILD_QUIET_SETTINGS[@]+"${XCODEBUILD_QUIET_SETTINGS[@]}"} \
-    build
 fi
 
 if [[ ! -d "${BUILT_APP}" ]]; then
