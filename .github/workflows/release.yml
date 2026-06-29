@@ -58,42 +58,46 @@ jobs:
 
           case "${{ inputs.release_type }}" in
             beta)
-              if [[ -n "${beta}" ]]; then
-                beta=$((beta + 1))
-              else
-                beta=1
-              fi
-              next="v${major}.${minor}.${patch}-beta.${beta}"
+              if [[ -n "${beta}" ]]; then beta=$((beta + 1)); else beta=1; fi
+              suffix="-beta.${beta}"
               prerelease=true
               ;;
-            patch)
-              next="v${major}.${minor}.$((patch + 1))"
-              prerelease=false
-              ;;
-            minor)
-              next="v${major}.$((minor + 1)).0"
-              prerelease=false
-              ;;
-            major)
-              next="v$((major + 1)).0.0"
-              prerelease=false
-              ;;
-            stable)
-              next="v${major}.${minor}.${patch}"
-              prerelease=false
-              ;;
-            *)
-              echo "Unknown release_type" >&2; exit 1 ;;
+            patch)  patch=$((patch + 1)); suffix=""; prerelease=false ;;
+            minor)  minor=$((minor + 1)); patch=0; suffix=""; prerelease=false ;;
+            major)  major=$((major + 1)); minor=0; patch=0; suffix=""; prerelease=false ;;
+            stable) suffix=""; prerelease=false ;;
+            *) echo "Unknown release_type" >&2; exit 1 ;;
           esac
+
+          # core = numeric X.Y.Z written into CFBundleVersion; tag may add -beta.N
+          core="${major}.${minor}.${patch}"
+          next="v${core}${suffix}"
 
           if git rev-parse "${next}" >/dev/null 2>&1; then
             echo "Tag ${next} already exists." >&2
             exit 1
           fi
 
-          echo "Next tag: ${next} (prerelease=${prerelease})"
+          echo "Next tag: ${next} (core=${core}, prerelease=${prerelease})"
           echo "tag=${next}" >>"$GITHUB_OUTPUT"
+          echo "core=${core}" >>"$GITHUB_OUTPUT"
           echo "prerelease=${prerelease}" >>"$GITHUB_OUTPUT"
+
+      - name: Bump CFBundleVersion
+        id: bump
+        run: |
+          set -euo pipefail
+          plist="ChiaKey-Source/Loaders/OSX-IMK/Takao-Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.version.outputs.core }}" "$plist"
+          if git diff --quiet -- "$plist"; then
+            echo "CFBundleVersion already ${{ steps.version.outputs.core }}; nothing to commit."
+            echo "committed=false" >>"$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: bump version to ${{ steps.version.outputs.core }}" -- "$plist"
+            echo "committed=true" >>"$GITHUB_OUTPUT"
+          fi
 
       - name: Build release package
         id: build
@@ -152,16 +156,19 @@ jobs:
             args+=(--notarize --notary-profile chiakey-notary)
           fi
 
-          Scripts/build-release-package.sh "${args[@]}"
+          Scripts/build-release-package.sh ${args[@]+"${args[@]}"}
 
           pkg="$(ls -t artifacts/release/*.pkg | head -n1)"
           echo "Built: $pkg"
           echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
 
-      - name: Create tag
+      - name: Push version bump and tag
         if: ${{ inputs.dry_run == false }}
         run: |
           set -euo pipefail
+          if [[ "${{ steps.bump.outputs.committed }}" == "true" ]]; then
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
