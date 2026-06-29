@@ -7,18 +7,18 @@ on:
   workflow_dispatch:
     inputs:
       release_type:
-        description: "How to bump the next version tag"
+        description: 'How to bump the next version tag'
         type: choice
         required: true
         default: beta
         options:
-          - beta    # bump -beta.N (or start beta.1 on current base)
-          - patch   # x.y.(z+1)
-          - minor   # x.(y+1).0
-          - major   # (x+1).0.0
-          - stable  # drop the -beta suffix from the latest tag
+          - beta # bump -beta.N (or start beta.1 on current base)
+          - patch # x.y.(z+1)
+          - minor # x.(y+1).0
+          - major # (x+1).0.0
+          - stable # drop the -beta suffix from the latest tag
       dry_run:
-        description: "Compute the tag and build, but do not push or publish"
+        description: 'Compute the tag and build, but do not push or publish'
         type: boolean
         required: false
         default: false
@@ -167,6 +167,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${{ steps.bump.outputs.committed }}" == "true" ]]; then
+            git pull --rebase origin "${{ github.ref_name }}"
             git push origin "HEAD:${{ github.ref_name }}"
           fi
           git tag "${{ steps.version.outputs.tag }}"
