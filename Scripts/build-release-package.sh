@@ -6,7 +6,6 @@ PROJECT="${ROOT_DIR}/ChiaKey-Source/Takao.xcodeproj"
 DATA_TABLES_DIR="${ROOT_DIR}/ChiaKey-Source/DataTables"
 DATABASES_DIR="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase"
 SMART_MANDARIN_DB="${DATABASES_DIR}/ChiaKeySource.db"
-LEXICON_RELEASE_DB_FILENAME="ChiaKeySource.db"
 LICENSE_FILE="${ROOT_DIR}/LICENSE"
 COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/COPYING"
 ACKNOWLEDGEMENTS_FILE="${ROOT_DIR}/ChiaKey-Source/ACKNOWLEDGEMENTS"
@@ -44,6 +43,7 @@ MIN_OS_VERSION="${MIN_OS_VERSION:-11.0}"
 export COPYFILE_DISABLE=1
 
 SKIP_BUILD=0
+VERBOSE="${VERBOSE:-0}"
 BUNDLE_LOCAL_LEXICON=0
 LOCAL_LEXICON_DB="${ACTIVE_LEXICON_DB}"
 BUNDLE_RELEASE_LEXICON=1
@@ -68,6 +68,7 @@ Options:
   --output-dir PATH                  Package output directory. Default: ${OUTPUT_DIR}
   --pkg-name NAME                    Output package filename.
   --skip-build                       Package the existing build product.
+  --verbose                          Show full xcodebuild output. Default: quiet.
   --app-sign-identity ID             App signing identity. Default: ${APP_SIGN_IDENTITY}
   --installer-sign-identity ID       Installer signing identity. Default: INSTALLER_SIGN_IDENTITY env.
   --notarize                         Submit the package with notarytool.
@@ -105,7 +106,9 @@ print_command() {
 }
 
 run() {
-  print_command "$@"
+  if [[ "${VERBOSE}" == "1" ]]; then
+    print_command "$@"
+  fi
   "$@"
 }
 
@@ -210,8 +213,10 @@ RUBY
 
   validate_manifest_path_component "version" "${version}"
   validate_manifest_path_component "database filename" "${db_filename}"
-  if [[ "${db_filename}" != "${LEXICON_RELEASE_DB_FILENAME}" ]]; then
-    echo "Lexicon release database filename must be ${LEXICON_RELEASE_DB_FILENAME}: ${db_filename}" >&2
+  # The asset may be version-stamped (e.g. ChiaKeySource-2026.06.14.db); it is
+  # bundled as ChiaKeySource.db regardless. Only require a .db extension.
+  if [[ "${db_filename}" != *.db ]]; then
+    echo "Lexicon release database filename must end with .db: ${db_filename}" >&2
     exit 1
   fi
   if [[ -n "${metadata_url}" ]]; then
@@ -337,6 +342,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-build)
       SKIP_BUILD=1
+      shift
+      ;;
+    --verbose)
+      VERBOSE=1
       shift
       ;;
     --app-sign-identity)
@@ -469,13 +478,22 @@ rebuild_component_package_without_metadata_payload() {
 }
 
 if [[ "${SKIP_BUILD}" != "1" ]]; then
+  # Quiet by default; --verbose (or VERBOSE=1) restores full output and warnings.
+  XCODEBUILD_QUIET_FLAG=(-quiet)
+  XCODEBUILD_QUIET_SETTINGS=(GCC_WARN_INHIBIT_ALL_WARNINGS=YES SWIFT_SUPPRESS_WARNINGS=YES)
+  if [[ "${VERBOSE}" == "1" ]]; then
+    XCODEBUILD_QUIET_FLAG=()
+    XCODEBUILD_QUIET_SETTINGS=()
+  fi
   run /usr/bin/xcodebuild \
     -project "${PROJECT}" \
     -scheme "${SCHEME}" \
     -configuration "${CONFIGURATION}" \
     -derivedDataPath "${DERIVED_DATA_PATH}" \
+    ${XCODEBUILD_QUIET_FLAG[@]+"${XCODEBUILD_QUIET_FLAG[@]}"} \
     CODE_SIGNING_ALLOWED=NO \
     ONLY_ACTIVE_ARCH=YES \
+    ${XCODEBUILD_QUIET_SETTINGS[@]+"${XCODEBUILD_QUIET_SETTINGS[@]}"} \
     build
 fi
 
