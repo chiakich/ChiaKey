@@ -91,7 +91,7 @@ class Lexer {
 
   Token nextToken() {
     char c, n;
-    while (c = current()) {
+    while ((c = current())) {
       ahead();
 
       if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
@@ -151,7 +151,7 @@ class Lexer {
     string result(1, typeChar);
 
     char c;
-    while (c = current()) {
+    while ((c = current())) {
       if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
           (c >= '0' && c <= '9')) {
         result += string(1, c);
@@ -170,7 +170,7 @@ class Lexer {
     string result(1, typeChar);
 
     char c;
-    while (c = current()) {
+    while ((c = current())) {
       if (c >= '0' && c <= '9') {
         result += string(1, c);
         ahead();
@@ -533,7 +533,7 @@ class Parser {
       if (!right) return 0;
 
       return new Node(next, new Node(current), right);
-    } else if (ne = subexp()) {
+    } else if ((ne = subexp())) {
       while (1) {
         // cout << "looping" << endl;
 

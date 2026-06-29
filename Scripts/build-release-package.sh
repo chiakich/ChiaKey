@@ -501,8 +501,8 @@ if [[ "${SKIP_BUILD}" != "1" ]]; then
     # Full output and warnings.
     run "${XCODEBUILD_ARGS[@]}" build
   else
-    # Quiet: suppress per-file progress, compiler warnings, and benign notes.
-    XCODEBUILD_ARGS+=(-quiet GCC_WARN_INHIBIT_ALL_WARNINGS=YES SWIFT_SUPPRESS_WARNINGS=YES)
+    # Quiet: suppress per-file build progress; real warnings still surface.
+    XCODEBUILD_ARGS+=(-quiet)
     "${XCODEBUILD_ARGS[@]}" build 2>&1 | filter_build_noise
   fi
 fi
