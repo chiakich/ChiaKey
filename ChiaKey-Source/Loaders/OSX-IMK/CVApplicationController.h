@@ -15,7 +15,8 @@
 #import "OpenVanillaService.h"
 
 @interface CVApplicationController
-    : NSObject <NSApplicationDelegate, OpenVanillaService> {
+    : NSObject <NSApplicationDelegate, NSXPCListenerDelegate, OpenVanillaService,
+                OpenVanillaXPCService> {
   CVPlainTextCandidateController *_plainTextCandidateController;
   CVVerticalCandidateController *_verticalCandidateController;
   CVHorizontalCandidateController *_horizontalCandidateController;
@@ -27,8 +28,7 @@
 
   OpenVanillaLoader *_loader;
 
-  NSPort *_serverPort;
-  NSConnection *_serverConnection;
+  NSXPCListener *_serviceListener;
 
   // <lithoglyph>
   OVSQLiteConnection *_userPhraseDB;

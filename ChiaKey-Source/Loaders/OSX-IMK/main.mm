@@ -95,14 +95,10 @@ int main(int argc, char *argv[]) {
     NSApplicationLoad();
     [NSRunLoop currentRunLoop];
 
-    id ovService = [[NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil] retain];
-    if (ovService) {
+    id ovService = [[ChiaKeyServiceClient sharedClient] retain];
+    if ([ovService isAvailable]) {
       // NSLog(@"OpenVanilla DO service obtained: %@",
       // OPENVANILLA_DO_CONNECTION_NAME);
-
-      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
 
       string arg = (argc > 2) ? argv[2] : "";
 

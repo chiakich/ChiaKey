@@ -24,11 +24,8 @@ file for terms.
 
   id ovService;
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
-    if (ovService) {
-      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+    ovService = [ChiaKeyServiceClient sharedClient];
+    if ([ovService isAvailable]) {
       fetchedModules =
           [ovService identifiersAndLocalizedNamesWithPattern:@"Generic-*"];
 

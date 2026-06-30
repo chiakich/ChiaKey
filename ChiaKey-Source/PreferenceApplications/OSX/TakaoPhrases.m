@@ -26,9 +26,7 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
   id ovService;
 
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
+    ovService = [ChiaKeyServiceClient sharedClient];
   } @catch (NSException *e) {
     // NSLog(@"Exceptions raise on retreiving version info");
     CKBeginAlertSheet(window, LFLSTR(@"Unable to export database."),
@@ -37,7 +35,7 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
     return;
   }
 
-  if (!ovService) {
+  if (![ovService isAvailable]) {
     CKBeginAlertSheet(
         window, LFLSTR(@"Unable to export database."),
         LFLSTR(@"If you are not runnung ChiaKey, you are not "
@@ -55,8 +53,7 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
   [panel setPrompt:LFLSTR(@"Export")];
   if ([panel runModal] == NSModalResponseOK) {
     NSString *path = [[panel URL] path];
-    if (ovService) {
-      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+    if ([ovService isAvailable]) {
       bool rtn = [ovService exportUserPhraseDBToFile:path];
       if (rtn) {
         CKBeginAlertSheet(window, LFLSTR(@"Done!"),
@@ -77,16 +74,14 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
 - (IBAction)importDatabase:(id)sender {
   id ovService;
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
+    ovService = [ChiaKeyServiceClient sharedClient];
   } @catch (NSException *e) {
     CKBeginAlertSheet(window, LFLSTR(@"Unable to import database."),
                       LFLSTR(@"Unknown errors happened."),
                       NSAlertStyleWarning);
     return;
   }
-  if (!ovService) {
+  if (![ovService isAvailable]) {
     CKBeginAlertSheet(
         window, LFLSTR(@"Unable to import database."),
         LFLSTR(@"If you are not runnung ChiaKey, you are not "
@@ -103,8 +98,7 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
   [panel setPrompt:LFLSTR(@"Choose")];
   if ([panel runModal] == NSModalResponseOK) {
     NSString *path = [[panel URL] path];
-    if (ovService) {
-      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+    if ([ovService isAvailable]) {
       bool rtn = [ovService importUserPhraseDBFromFile:path];
       if (rtn) {
         CKBeginAlertSheet(window, LFLSTR(@"Done!"),

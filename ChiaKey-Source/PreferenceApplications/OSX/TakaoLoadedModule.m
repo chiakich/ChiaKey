@@ -77,10 +77,8 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
 - (void)reloadServer {
   id ovService;
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
-    if (ovService) {
+    ovService = [ChiaKeyServiceClient sharedClient];
+    if ([ovService isAvailable]) {
       [ovService reloadOpenVanilla];
     }
   } @catch (NSException *e) {
@@ -91,10 +89,8 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
 - (void)reloadData {
   id ovService;
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
-    if (ovService) {
+    ovService = [ChiaKeyServiceClient sharedClient];
+    if ([ovService isAvailable]) {
       NSArray *info = [ovService dynamicallyLoadedModulePackageInfo];
       [self setModules:info];
     }
@@ -257,10 +253,8 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
     }
     id ovService;
     @try {
-      ovService = [NSConnection rootProxyForConnectionWithRegisteredName:
-                                    OPENVANILLA_DO_CONNECTION_NAME
-                                                                    host:nil];
-      if (ovService) {
+      ovService = [ChiaKeyServiceClient sharedClient];
+      if ([ovService isAvailable]) {
         [ovService setBlackListOfPackageIdentifers:a];
       }
     } @catch (NSException *e) {

@@ -34,11 +34,8 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 }
 - (void)awakeFromNib {
   [NSApp setDelegate:(id)self];
-  _loader = [[NSConnection
-      rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                          host:nil] retain];
-  if (_loader) {
-    [_loader setProtocolForProxy:@protocol(TakaoPhraseEditorService)];
+  _loader = [[ChiaKeyServiceClient sharedClient] retain];
+  if ([_loader isAvailable]) {
   } else {
     NSAlert *alert = [[[NSAlert alloc] init] autorelease];
     [alert setMessageText:LFLSTR(@"ChiaKey is not running.")];

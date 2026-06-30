@@ -119,11 +119,8 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 - (NSString *)_runningDatabaseVersion {
   id ovService = nil;
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
-    if (ovService) {
-      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+    ovService = [ChiaKeyServiceClient sharedClient];
+    if ([ovService isAvailable]) {
       NSString *version = [ovService databaseVersion];
       if ([version length]) return version;
     }
@@ -676,11 +673,8 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 - (BOOL)_reloadOpenVanillaServer {
   id ovService = nil;
   @try {
-    ovService = [NSConnection
-        rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME
-                                            host:nil];
-    if (ovService) {
-      [ovService setProtocolForProxy:@protocol(OpenVanillaService)];
+    ovService = [ChiaKeyServiceClient sharedClient];
+    if ([ovService isAvailable]) {
       [ovService reloadOpenVanilla];
       return YES;
     }

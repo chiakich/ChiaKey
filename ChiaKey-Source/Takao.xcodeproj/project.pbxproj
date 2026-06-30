@@ -247,6 +247,9 @@
 		6A4773180D5C607200C6C744 /* OpenVanillaLoader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */; };
 		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
+		5BC0A1032C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
+		5BC0A1042C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
+		5BC0A1052C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
 		6A47735B0D5C60D300C6C744 /* OpenVanilla.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A47735C0D5C60D300C6C744 /* LFExtensions.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A4771630D5C5E3900C6C744 /* LFExtensions.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A4773730D5C61E600C6C744 /* NSBezierPathAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771560D5C5DF400C6C744 /* NSBezierPathAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -982,6 +985,7 @@
 		6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OpenVanillaLoader.mm; path = "Loaders/OSX-IMK/OpenVanillaLoader.mm"; sourceTree = "<group>"; wrapsLines = 1; };
 		5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVCapsLockDelayOverride.h; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.h"; sourceTree = "<group>"; };
 		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
+		5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ChiaKeyServiceClient.m; path = "Loaders/OSX-IMK/ChiaKeyServiceClient.m"; sourceTree = "<group>"; };
 		6A4773760D5C621400C6C744 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		6A4773770D5C621400C6C744 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		6A4773780D5C621400C6C744 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = /System/Library/Frameworks/InputMethodKit.framework; sourceTree = "<absolute>"; };
@@ -2149,11 +2153,12 @@
 		};
 		D459B7950D925BBE00CBDE76 /* Source */ = {
 			isa = PBXGroup;
-			children = (
-				D459B7960D925BD300CBDE76 /* UI Components */,
-				D484CEDA0EC218170051B6CA /* UIControllers */,
-				6A4772FD0D5C607200C6C744 /* main.mm */,
-				6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
+				children = (
+					D459B7960D925BD300CBDE76 /* UI Components */,
+					D484CEDA0EC218170051B6CA /* UIControllers */,
+					5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */,
+					6A4772FD0D5C607200C6C744 /* main.mm */,
+					6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,
 				6A4772E60D5C607200C6C744 /* CVEncodingService.h */,
 				6A4772E70D5C607200C6C744 /* CVEncodingService.mm */,
@@ -3486,8 +3491,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
-				6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
+					D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
+					5BC0A1032C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */,
+					6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
 				6A4773070D5C607200C6C744 /* CVBubbleTextView.m in Sources */,
 				6A4773080D5C607200C6C744 /* CVBubbleTextWindow.m in Sources */,
 				6A47730A0D5C607200C6C744 /* CVFloatingPanelWindow.m in Sources */,
@@ -3624,8 +3630,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */,
-				D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */,
+					D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */,
+					5BC0A1042C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */,
+					D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */,
 				D42B09F30EBDD36900AB5B7A /* main.m in Sources */,
 				D42B09F40EBDD36900AB5B7A /* PESettingTableView.m in Sources */,
 				D47D76000ED0409400386753 /* PEDialogWindow.m in Sources */,
@@ -3637,8 +3644,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D47D5E550D5EDDC40093524C /* main.m in Sources */,
-				D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */,
+					D47D5E550D5EDDC40093524C /* main.m in Sources */,
+					5BC0A1052C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */,
+					D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */,
 				D47D5E570D5EDDC40093524C /* TakaoGeneric.m in Sources */,
 				D47D5E580D5EDDC40093524C /* TakaoGenericSettings.m in Sources */,
 				D47D5E590D5EDDC40093524C /* TakaoGlobal.m in Sources */,
@@ -4516,7 +4524,7 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 					GCC_PREPROCESSOR_DEFINITIONS = (
 						"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
-						"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
+						"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
 						OVLOADER_USE_SQLITE_CRYPTO,
 						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
 						"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
@@ -4560,7 +4568,7 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 					GCC_PREPROCESSOR_DEFINITIONS = (
 						"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
-						"OPENVANILLA_CONNECTION_NAME=@\\\"ChiaKey_1_Connection\\\"",
+						"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
 						OVLOADER_USE_SQLITE_CRYPTO,
 						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
 						"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",

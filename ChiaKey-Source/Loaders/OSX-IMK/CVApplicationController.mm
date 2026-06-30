@@ -25,7 +25,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 @implementation CVApplicationController
 
 - (void)_initializeControllerIfNeeded {
-  if (_serverConnection) return;
+  if (_serviceListener) return;
 
   _loader = nil;
 
@@ -39,20 +39,10 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   _inputMethodToggleWindowController =
       [CVInputMethodToggleWindowController new];
 
-  _serverPort = [[NSPort port] retain];
-  _serverConnection =
-      [[NSConnection connectionWithReceivePort:_serverPort
-                                      sendPort:_serverPort] retain];
-
-  // NSConnection *connection = [NSConnection defaultConnection];
-  [_serverConnection setRootObject:self];
-
-  if ([_serverConnection registerName:OPENVANILLA_DO_CONNECTION_NAME]) {
-    //	    NSLog(@"OpenVanilla DO service registered: %@",
-    // OPENVANILLA_DO_CONNECTION_NAME);
-  } else {
-    NSLog(@"Failed to register DO service");
-  }
+  _serviceListener = [[NSXPCListener alloc]
+      initWithMachServiceName:OPENVANILLA_DO_CONNECTION_NAME];
+  [_serviceListener setDelegate:self];
+  [_serviceListener resume];
 }
 
 - (id)init {
@@ -72,6 +62,8 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [_tooltipController release];
   [_aboutController release];
   [_inputMethodToggleWindowController release];
+  [_serviceListener invalidate];
+  [_serviceListener release];
   [super dealloc];
 }
 - (void)setLoader:(OpenVanillaLoader *)aLoader {
@@ -128,6 +120,16 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 
 - (IBAction)showAboutWindow:(id)sender {
   [[self aboutController] showWindow:sender];
+}
+
+- (BOOL)listener:(NSXPCListener *)listener
+    shouldAcceptNewConnection:(NSXPCConnection *)newConnection {
+  [newConnection setExportedInterface:
+                     [NSXPCInterface
+                         interfaceWithProtocol:@protocol(OpenVanillaXPCService)]];
+  [newConnection setExportedObject:self];
+  [newConnection resume];
+  return YES;
 }
 - (NSDictionary *)_dictionaryWithIdentifier:(string)identifier
                               localizedName:(NSString *)localizedName {
@@ -316,6 +318,141 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 
 - (void)setBlackListOfPackageIdentifers:(NSArray *)inIdentifiers {
   [_loader setBlackListOfPackageIdentifers:inIdentifiers];
+}
+
+#pragma mark XPC Service Methods
+
+- (void)reloadOpenVanillaWithReply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self reloadOpenVanilla];
+    reply();
+  });
+}
+- (void)sendString:(NSString *)text withReply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self sendString:text];
+    reply();
+  });
+}
+- (void)sendKey:(NSString *)key withReply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self sendKey:key];
+    reply();
+  });
+}
+- (void)primaryInputMethodWithReply:(void (^)(NSString *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self primaryInputMethod]);
+  });
+}
+- (void)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern
+                                          reply:(void (^)(NSArray *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self identifiersAndLocalizedNamesWithPattern:pattern]);
+  });
+}
+- (void)exportUserPhraseDBToFile:(NSString *)path
+                            reply:(void (^)(BOOL value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self exportUserPhraseDBToFile:path]);
+  });
+}
+- (void)importUserPhraseDBFromFile:(NSString *)path
+                              reply:(void (^)(BOOL value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self importUserPhraseDBFromFile:path]);
+  });
+}
+- (void)versionWithReply:(void (^)(NSString *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self version]);
+  });
+}
+- (void)databaseVersionWithReply:(void (^)(NSString *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self databaseVersion]);
+  });
+}
+- (void)dynamicallyLoadedModulePackageInfoWithReply:
+    (void (^)(NSArray *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self dynamicallyLoadedModulePackageInfo]);
+  });
+}
+- (void)setBlackListOfPackageIdentifers:(NSArray *)inIdentifiers
+                                  reply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self setBlackListOfPackageIdentifers:inIdentifiers];
+    reply();
+  });
+}
+- (void)userInformationForCareServiceWithReply:
+    (void (^)(NSString *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self userInformationForCareService]);
+  });
+}
+- (void)userPhraseDBCanProvideServiceWithReply:(void (^)(BOOL value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self userPhraseDBCanProvideService]);
+  });
+}
+- (void)userPhraseDBNumberOfRowWithReply:(void (^)(int value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self userPhraseDBNumberOfRow]);
+  });
+}
+- (void)userPhraseDBDictionaryAtRow:(int)row
+                              reply:(void (^)(NSDictionary *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self userPhraseDBDictionaryAtRow:row]);
+  });
+}
+- (void)userPhraseDBReadingsForPhrase:(NSString *)phrase
+                                reply:(void (^)(NSArray *value))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    reply([self userPhraseDBReadingsForPhrase:phrase]);
+  });
+}
+- (void)userPhraseDBSaveWithReply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self userPhraseDBSave];
+    reply();
+  });
+}
+- (void)userPhraseDBSetNewReading:(NSString *)reading
+                    forPhraseAtRow:(int)row
+                             reply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self userPhraseDBSetNewReading:reading forPhraseAtRow:row];
+    reply();
+  });
+}
+- (void)userPhraseDBDeleteRow:(int)row reply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self userPhraseDBDeleteRow:row];
+    reply();
+  });
+}
+- (void)userPhraseDBAddNewRow:(NSString *)phrase reply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self userPhraseDBAddNewRow:phrase];
+    reply();
+  });
+}
+- (void)userPhraseDBAddNewRows:(NSArray *)array reply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self userPhraseDBAddNewRows:array];
+    reply();
+  });
+}
+- (void)userPhraseDBSetPhrase:(NSString *)phrase
+                        atRow:(int)row
+                        reply:(void (^)(void))reply {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self userPhraseDBSetPhrase:phrase atRow:row];
+    reply();
+  });
 }
 
 @end

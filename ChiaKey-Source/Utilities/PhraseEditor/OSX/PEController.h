@@ -17,6 +17,8 @@
 #error Must define OPENVANILLA_DO_CONNECTION_NAME
 #endif
 
+#import "OpenVanillaService.h"
+
 static NSString *addToolbarItemIdentifier = @"Add";
 static NSString *deleteToolbarItemIdentifier = @"Delete";
 static NSString *editPhraseToolbarItemIdentifier = @"Edit Phrase";
