@@ -7,14 +7,9 @@ file for terms.
 
 #import "TakaoLoadedModule.h"
 
-#include <Security/Authorization.h>
-#include <Security/AuthorizationTags.h>
-
 #import "TakaoPreference.h"
 #import "TakaoReverseLookup.h"
 #import "TakaoWordCount.h"
-
-static AuthorizationRef authorizationRef = NULL;
 
 static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
                                        NSString *informativeText,
@@ -28,6 +23,39 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
     [alert addButtonWithTitle:alternateButton];
   }
   return alert;
+}
+
+static NSString *TakaoShellQuotedArgument(NSString *argument) {
+  NSString *quotedArgument =
+      [argument stringByReplacingOccurrencesOfString:@"'"
+                                         withString:@"'\\''"];
+  return [NSString stringWithFormat:@"'%@'", quotedArgument];
+}
+
+static NSString *TakaoAppleScriptStringLiteral(NSString *string) {
+  NSString *escapedString =
+      [string stringByReplacingOccurrencesOfString:@"\\"
+                                       withString:@"\\\\"];
+  escapedString = [escapedString stringByReplacingOccurrencesOfString:@"\""
+                                                           withString:@"\\\""];
+  return [NSString stringWithFormat:@"\"%@\"", escapedString];
+}
+
+static BOOL TakaoRemoveItemAtPathWithAdministratorPrivileges(NSString *path) {
+  NSString *command = [NSString
+      stringWithFormat:@"rm -rf %@",
+                       TakaoShellQuotedArgument([path stringByStandardizingPath])];
+  NSString *source = [NSString
+      stringWithFormat:@"do shell script %@ with administrator privileges",
+                       TakaoAppleScriptStringLiteral(command)];
+  NSAppleScript *script = [[[NSAppleScript alloc] initWithSource:source] autorelease];
+  NSDictionary *errorInfo = nil;
+  [script executeAndReturnError:&errorInfo];
+  if (errorInfo) {
+    NSLog(@"Failed to remove plugin at %@: %@", path, errorInfo);
+    return NO;
+  }
+  return YES;
 }
 
 @implementation TakaoLoadedModule
@@ -70,7 +98,7 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
 
   if (![_modules count]) {
     [_pluginView setFrame:NSMakeRect(0, 0, 480, 230)];
-    [[NSApp delegate] setActiveView:_pluginView animate:YES];
+    [(TakaoPreference *)[NSApp delegate] setActiveView:_pluginView animate:YES];
     [_pluginView setNeedsDisplay:YES];
   }
 }
@@ -134,29 +162,7 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
     return;
   }
 
-  OSStatus status;
-
-  if (authorizationRef == NULL) {
-    status = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment,
-                                 kAuthorizationFlagDefaults, &authorizationRef);
-  } else {
-    status = noErr;
-  }
-
-  if (status != noErr) {
-    NSLog(@"Could not get authorization, failing.");
-    return;
-  }
-
-  char *args[3];
-  args[0] = "-rf";
-  args[1] = (char *)[path UTF8String];
-  args[2] = (char *)NULL;
-
-  status = AuthorizationExecuteWithPrivileges(
-      authorizationRef, "/bin/rm", kAuthorizationFlagDefaults, args, NULL);
-
-  if (status != noErr) {
+  if (!TakaoRemoveItemAtPathWithAdministratorPrivileges(path)) {
     NSAlert *alert = TakaoLoadedModuleAlert(
         LFLSTR(@"Failed to remove the specific plugin!"),
         LFLSTR(@"PLease check your system privilege and try again."),
@@ -171,7 +177,7 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
 }
 
 - (IBAction)removePlugin:(id)sender {
-  int selectedRow = [_tableView selectedRow];
+  NSInteger selectedRow = [_tableView selectedRow];
 
   if (selectedRow < 0) {
     NSAlert *alert = TakaoLoadedModuleAlert(
@@ -288,7 +294,7 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification {
   NSTableView *tableView = [aNotification object];
-  int selectedRow = [tableView selectedRow];
+  NSInteger selectedRow = [tableView selectedRow];
   if (selectedRow < 0) {
     [self setContentView:nil];
     [_pluginView setFrame:NSMakeRect(0, [_pluginView bounds].size.height - 230,
@@ -312,7 +318,7 @@ static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
                               230)];
     }
   }
-  [[NSApp delegate] setActiveView:_pluginView animate:YES];
+  [(TakaoPreference *)[NSApp delegate] setActiveView:_pluginView animate:YES];
   [_pluginView setNeedsDisplay:YES];
 }
 

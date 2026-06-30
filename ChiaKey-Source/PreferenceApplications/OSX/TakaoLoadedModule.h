@@ -9,7 +9,7 @@ file for terms.
 
 #import "TakaoSettings.h"
 
-@interface TakaoLoadedModule : NSObject {
+@interface TakaoLoadedModule : NSObject <NSTableViewDataSource, NSTableViewDelegate> {
   IBOutlet NSView *_pluginView;
 
   IBOutlet NSTableView *_tableView;
