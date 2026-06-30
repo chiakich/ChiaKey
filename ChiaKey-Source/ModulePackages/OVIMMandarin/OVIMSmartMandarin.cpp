@@ -534,6 +534,18 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         }
         break;
 
+      case OVKeyCode::Tab:
+        if (!m_BPMFReading.isEmpty()) {
+          loaderService->beep();
+        } else {
+          if (composingText->isEmpty()) return false;
+
+          if (!m_manjusri.forceBreakAt(m_cursor, &filter)) {
+            loaderService->beep();
+          }
+        }
+        break;
+
       // case OVKeyCode::Space:
       case OVKeyCode::Return:
       case OVKeyCode::Down:
@@ -896,10 +908,16 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
     // quirks (e.g. repeated commit of present composing buffer)
     do {
       continuePop = false;
-      string newlyPopped = m_manjusri.shift();
-      popped += newlyPopped;
-      if (m_cursor != m_manjusri.cursorLeftBound())
-        m_cursor -= OVUTF8Helper::SplitStringByCodePoint(newlyPopped).size();
+      pair<bool, string> shifted = m_manjusri.shift();
+      if (!shifted.first) break;
+      popped += shifted.second;
+      if (m_cursor != m_manjusri.cursorLeftBound()) {
+        const size_t shiftedLength =
+            OVUTF8Helper::SplitStringByCodePoint(shifted.second).size();
+        const size_t cursorOffset = m_cursor - m_manjusri.cursorLeftBound();
+        m_cursor = shiftedLength >= cursorOffset ? m_manjusri.cursorLeftBound()
+                                                 : m_cursor - shiftedLength;
+      }
       m_manjusri.update();
       m_manjusri.logStats(loaderService);
 

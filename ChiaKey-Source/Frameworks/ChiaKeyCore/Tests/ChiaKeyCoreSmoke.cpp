@@ -78,6 +78,41 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
   }
 
   engine->reset();
+  for (char key : keys) {
+    if (!engine->handleAsciiKey(key)) {
+      return Fail(std::string("C++ engine did not handle pre-tab key: ") +
+                  key);
+    }
+  }
+
+  ChiaKey::KeyEvent leftKey;
+  leftKey.keyCode = 28;
+  if (!engine->handleKey(leftKey)) {
+    return Fail("C++ engine did not handle left key before tab break");
+  }
+
+  ChiaKey::KeyEvent tabKey;
+  tabKey.keyCode = 9;
+  if (!engine->handleKey(tabKey)) {
+    return Fail("C++ engine did not handle tab break key");
+  }
+
+  state = engine->snapshot();
+  if (!state.committedText.empty()) {
+    return Fail("expected C++ tab break not to commit text, got: " +
+                state.committedText);
+  }
+  if (state.composingText != "你好") {
+    return Fail("expected C++ tab break to keep composing 你好, got: " +
+                state.composingText);
+  }
+  if (state.wordSegments.size() != 2 || state.wordSegments[0].length != 1 ||
+      state.wordSegments[1].location != 1 ||
+      state.wordSegments[1].length != 1) {
+    return Fail("expected C++ tab break to force word segments at cursor");
+  }
+
+  engine->reset();
   if (!engine->handleAsciiKey('1')) {
     return Fail("C++ engine did not handle standalone ㄅ key");
   }
@@ -218,6 +253,53 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir,
   if (!committedText.empty()) {
     CKC_EngineDestroy(engine);
     return Fail("C bridge committed text was not cleared by acknowledgeCommit");
+  }
+
+  CKC_EngineReset(engine);
+  for (char key : keys) {
+    if (!CKC_EngineHandleAsciiKey(engine, key, modifiers)) {
+      CKC_EngineDestroy(engine);
+      return Fail(std::string("C bridge engine did not handle pre-tab key: ") +
+                  key);
+    }
+  }
+
+  CKC_KeyEvent leftKey = {};
+  leftKey.key_code = 28;
+  if (!CKC_EngineHandleKey(engine, &leftKey)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle left key before tab break");
+  }
+
+  CKC_KeyEvent tabKey = {};
+  tabKey.key_code = 9;
+  if (!CKC_EngineHandleKey(engine, &tabKey)) {
+    CKC_EngineDestroy(engine);
+    return Fail("C bridge engine did not handle tab break key");
+  }
+
+  snapshot = CKC_EngineCopySnapshot(engine);
+  committedText = snapshot.committed_text ? snapshot.committed_text : "";
+  composingText = snapshot.composing_text ? snapshot.composing_text : "";
+  const bool tabForcedWordSegments =
+      snapshot.word_segment_count == 2 &&
+      snapshot.word_segments[0].length == 1 &&
+      snapshot.word_segments[1].location == 1 &&
+      snapshot.word_segments[1].length == 1;
+  CKC_EngineSnapshotDestroy(&snapshot);
+  if (!committedText.empty()) {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge tab break not to commit text, got: " +
+                committedText);
+  }
+  if (composingText != "你好") {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge tab break to keep composing 你好, got: " +
+                composingText);
+  }
+  if (!tabForcedWordSegments) {
+    CKC_EngineDestroy(engine);
+    return Fail("expected C bridge tab break to force word segments at cursor");
   }
 
   CKC_EngineReset(engine);

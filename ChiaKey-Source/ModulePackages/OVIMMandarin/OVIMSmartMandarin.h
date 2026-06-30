@@ -82,6 +82,10 @@ class ManjusriComposer {
     m_graph.removeQueryBlockAndBuild(index - 1, filter);
   }
 
+  bool forceBreakAt(size_t index, StringFilter* filter = 0) {
+    return m_graph.forceBreakAt(index, filter);
+  }
+
   size_t cursorLeftBound() { return m_cursorLeftBound; }
 
   size_t cursorRightBound() { return m_cursorRightBound; }
@@ -120,8 +124,8 @@ class ManjusriComposer {
     return results;
   }
 
-  const string shift() {
-    if (m_latestFastPath.size() < 3) return string();
+  const pair<bool, string> shift() {
+    if (m_latestFastPath.size() < 3) return pair<bool, string>(false, "");
 
     const Node& node = *(m_latestFastPath[1].nodePointer);
     const Node& node2 = *(m_latestFastPath[2].nodePointer);
@@ -134,8 +138,7 @@ class ManjusriComposer {
                 const Node& node = *(ssnsip.second);
                 Location loc = node.location(); */
 
-    pair<bool, string> rsp = m_graph.shiftNodeAndMaintainPathWalk(node, node2);
-    return rsp.second;
+    return m_graph.shiftNodeAndMaintainPathWalk(node, node2);
   }
 
   void update() {

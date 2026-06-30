@@ -220,6 +220,7 @@ class Graph {
   bool insertQueryBlockAndBuild(const string& newBlock, size_t atIndex,
                                 StringFilter* filter = 0);
   bool removeQueryBlockAndBuild(size_t atIndex, StringFilter* filter = 0);
+  bool forceBreakAt(size_t atIndex, StringFilter* filter = 0);
 
   // this is used to "pop" the head node, be sure you pop the one in the path
   // with highest score
@@ -231,12 +232,15 @@ class Graph {
 
  protected:
   void resetSource();
+  bool crossesForcedBreak(const Location& location) const;
+  void rebuild(StringFilter* filter = 0);
 
   LanguageModel* m_LM;
 
   // the building blocks
   StringVector m_source;
   NodeSet m_nodes;
+  set<size_t> m_forcedBreaks;
   size_t m_queryGenerationSpan;
 
   double m_buildTime;
@@ -267,6 +271,7 @@ inline Graph::Graph(LanguageModel* lm, size_t queryGenerationSpan)
 inline void Graph::clear() {
   m_nodes.clear();
   m_source.clear();
+  m_forcedBreaks.clear();
   m_buildTime = 0.0;
   m_walkTime = 0.0;
   resetSource();
@@ -279,6 +284,7 @@ inline void Graph::resetSource() {
 
 inline void Graph::setSource(const StringVector& source) {
   m_source.clear();
+  m_forcedBreaks.clear();
   m_source.push_back(m_LM->BOSQueryString());
   m_source.insert(m_source.end(), source.begin(), source.end());
   m_source.push_back(m_LM->EOSQueryString());
@@ -287,6 +293,20 @@ inline void Graph::setSource(const StringVector& source) {
 inline double Graph::lastBuildTime() { return m_buildTime; }
 
 inline double Graph::lastWalkTime() { return m_walkTime; }
+
+inline bool Graph::crossesForcedBreak(const Location& location) const {
+  for (set<size_t>::const_iterator iter = m_forcedBreaks.begin();
+       iter != m_forcedBreaks.end(); ++iter) {
+    if (location.first < *iter && *iter < location.first + location.second)
+      return true;
+  }
+  return false;
+}
+
+inline void Graph::rebuild(StringFilter* filter) {
+  m_nodes.clear();
+  build(filter);
+}
 
 inline void Graph::build(StringFilter* filter) {
   // cerr << "build " << (filter ? "has filter" : "has no filter") << endl;
@@ -335,6 +355,7 @@ inline void Graph::build(StringFilter* filter) {
     Location& location = (*sbiter).first;
 
     if (aliasToIgnore.find(location) != aliasToIgnore.end()) continue;
+    if (crossesForcedBreak(location)) continue;
 
     string& subblock = (*sbiter).second;
 
@@ -723,6 +744,12 @@ inline bool Graph::insertQueryBlockAndBuild(const string& newBlock,
 
   m_nodes = newNodes;
   m_source.insert(m_source.begin() + atIndex, newBlock);
+  set<size_t> relocatedBreaks;
+  for (set<size_t>::const_iterator iter = m_forcedBreaks.begin();
+       iter != m_forcedBreaks.end(); ++iter) {
+    relocatedBreaks.insert(*iter >= atIndex ? *iter + 1 : *iter);
+  }
+  m_forcedBreaks = relocatedBreaks;
   build(filter);
   m_buildTime = benchmark.elapsedSeconds();
   return true;
@@ -959,8 +986,23 @@ inline bool Graph::removeQueryBlockAndBuild(size_t atIndex,
 
   m_nodes = newNodes;
   m_source.erase(m_source.begin() + atIndex);
+  set<size_t> relocatedBreaks;
+  for (set<size_t>::const_iterator iter = m_forcedBreaks.begin();
+       iter != m_forcedBreaks.end(); ++iter) {
+    if (*iter == atIndex) continue;
+    relocatedBreaks.insert(*iter > atIndex ? *iter - 1 : *iter);
+  }
+  m_forcedBreaks = relocatedBreaks;
   build(filter);
   m_buildTime = benchmark.elapsedSeconds();
+  return true;
+}
+
+inline bool Graph::forceBreakAt(size_t atIndex, StringFilter* filter) {
+  if (!atIndex || atIndex >= m_source.size() - 1) return false;
+
+  m_forcedBreaks.insert(atIndex);
+  rebuild(filter);
   return true;
 }
 };  // namespace Manjusri
