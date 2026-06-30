@@ -448,9 +448,9 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         return addUserUnigram(from, to, composingText, loaderService);
       }
 
-      if (m_markMode && key->keyCode() == OVKeyCode::Esc ||
-          m_markMode && key->keyCode() == OVKeyCode::Left ||
-          m_markMode && key->keyCode() == OVKeyCode::Right) {
+      if (m_markMode && (key->keyCode() == OVKeyCode::Esc ||
+                         key->keyCode() == OVKeyCode::Left ||
+                         key->keyCode() == OVKeyCode::Right)) {
         m_markMode = false;
         composingText->clear();
         composingText->setText(m_manjusri.composedString());

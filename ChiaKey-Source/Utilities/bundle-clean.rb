@@ -11,7 +11,13 @@ end
 
 headers = Dir.glob(File.join(ARGV[0], "**", "*.h"))
 
-headers.each { |f| File.unlink(f) ; puts "Removed: #{f}" }
+removed_count = 0
+headers.each do |f|
+  File.unlink(f)
+  removed_count += 1
+end
+
+puts "Removed #{removed_count} bundled headers" if removed_count > 0
 
 # ARGV[0] =~ /.+\/(.+?)\..+/
 # binary = File.join(ARGV[0], "Contents", "MacOS", "#{$1}")

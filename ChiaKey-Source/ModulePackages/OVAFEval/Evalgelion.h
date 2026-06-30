@@ -254,6 +254,9 @@ inline ostream& operator<<(ostream& stream, const Token& token) {
     case Token::Dot:
       type = "dot";
       break;
+    case Token::Unknown:
+      type = "unknown";
+      break;
   }
   stream << "[" << type << ", '" << token.value << "']";
   return stream;
@@ -512,6 +515,9 @@ class Parser {
         moveAhead();
         // cout << ")";
         return ne;
+
+      default:
+        return nullptr;
     }
 
     return nullptr;

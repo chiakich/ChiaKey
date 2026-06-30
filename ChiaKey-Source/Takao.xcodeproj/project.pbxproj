@@ -3354,17 +3354,19 @@
 /* Begin PBXShellScriptBuildPhase section */
 		6AFC805E0D9900BD007588D8 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
+				"$TARGET_BUILD_DIR/$WRAPPER_NAME/Contents/Frameworks",
 			);
 			outputPaths = (
+				"$DERIVED_FILE_DIR/bundle-clean.stamp",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/ruby $SRCROOT/Utilities/bundle-clean.rb \"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\n";
+			shellScript = "/usr/bin/ruby $SRCROOT/Utilities/bundle-clean.rb \"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\n/usr/bin/touch \"$SCRIPT_OUTPUT_FILE_0\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 

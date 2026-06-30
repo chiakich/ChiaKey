@@ -97,7 +97,7 @@
   size_t currentPage = panel->currentPage() + 1;
   size_t pageCount = panel->pageCount();
   NSString *pageString =
-      [NSString stringWithFormat:@"%d/%d", currentPage, pageCount];
+      [NSString stringWithFormat:@"%zu/%zu", currentPage, pageCount];
   NSString *prompt = [NSString stringWithUTF8String:panel->prompt().c_str()];
 
   OVCandidateList *list = panel->candidateList();
