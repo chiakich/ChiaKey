@@ -67,7 +67,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [[_tableView tableColumnWithIdentifier:@"reading"] setDataCell:cell];
 #endif
   [_tableView
-      registerForDraggedTypes:[NSArray arrayWithObject:NSStringPboardType]];
+      registerForDraggedTypes:[NSArray arrayWithObject:NSPasteboardTypeString]];
   [_tableView setDraggingSourceOperationMask:NSDragOperationEvery forLocal:NO];
   [_tableView setAllowsMultipleSelection:YES];
   [_tableView setDataSource:self];
@@ -150,7 +150,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 
     NSString *string = [NSString stringWithFormat:@"%@ %@", phrase, reading];
     NSEvent *e = [NSApp currentEvent];
-    if ([e modifierFlags] & NSAlternateKeyMask) {
+    if ([e modifierFlags] & NSEventModifierFlagOption) {
       string = [NSString stringWithFormat:@"+bpmf %@", string];
     }
     currentIndex = [rowIndexes indexGreaterThanIndex:currentIndex];
@@ -170,9 +170,9 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   }
 
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-  NSArray *types = [NSArray arrayWithObjects:NSStringPboardType, nil];
+  NSArray *types = [NSArray arrayWithObjects:NSPasteboardTypeString, nil];
   [pasteboard declareTypes:types owner:self];
-  [pasteboard setString:[self stringForCopying] forType:NSStringPboardType];
+  [pasteboard setString:[self stringForCopying] forType:NSPasteboardTypeString];
 }
 - (IBAction)editPhrase:(id)sender {
   int selectedRow = [_tableView selectedRow];
@@ -398,7 +398,6 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [panel setExtensionHidden:NO];
   [panel setCanCreateDirectories:NO];
   [panel setNameFieldLabel:LFLSTR(@"Export As:")];
-  [panel setRequiredFileType:@"txt"];
   [panel setTitle:LFLSTR(@"Export Database")];
   [panel setMessage:LFLSTR(@"Exporting your own customized phrases database.")];
   [panel setPrompt:LFLSTR(@"Export")];
@@ -517,8 +516,9 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 - (BOOL)tableView:(NSTableView *)tv
     writeRowsWithIndexes:(NSIndexSet *)rowIndexes
             toPasteboard:(NSPasteboard *)pboard {
-  [pboard declareTypes:[NSArray arrayWithObject:NSStringPboardType] owner:self];
-  [pboard setString:[self stringForCopying] forType:NSStringPboardType];
+  [pboard declareTypes:[NSArray arrayWithObject:NSPasteboardTypeString]
+                 owner:self];
+  [pboard setString:[self stringForCopying] forType:NSPasteboardTypeString];
   return YES;
 }
 - (NSDragOperation)tableView:(NSTableView *)tv

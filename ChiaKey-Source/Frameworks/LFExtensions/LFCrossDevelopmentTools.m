@@ -18,10 +18,10 @@ LFCrossDevelopmentInfo *LFGetSharedCrossDevelopmentInfo() {
     LFSharedCrossDevelopmentInfo =
         (LFCrossDevelopmentInfo *)calloc(1, sizeof(LFCrossDevelopmentInfo));
 
-    Gestalt(gestaltSystemVersionMajor,
-            &LFSharedCrossDevelopmentInfo->OSXVersionMajor);
-    Gestalt(gestaltSystemVersionMinor,
-            &LFSharedCrossDevelopmentInfo->OSXVersionMinor);
+    NSOperatingSystemVersion version =
+        [[NSProcessInfo processInfo] operatingSystemVersion];
+    LFSharedCrossDevelopmentInfo->OSXVersionMajor = (SInt32)version.majorVersion;
+    LFSharedCrossDevelopmentInfo->OSXVersionMinor = (SInt32)version.minorVersion;
   }
 
   return LFSharedCrossDevelopmentInfo;

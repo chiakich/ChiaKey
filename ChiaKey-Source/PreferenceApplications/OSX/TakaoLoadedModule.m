@@ -16,6 +16,20 @@ file for terms.
 
 static AuthorizationRef authorizationRef = NULL;
 
+static NSAlert *TakaoLoadedModuleAlert(NSString *messageText,
+                                       NSString *informativeText,
+                                       NSString *defaultButton,
+                                       NSString *alternateButton) {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:messageText];
+  [alert setInformativeText:informativeText ?: @""];
+  [alert addButtonWithTitle:defaultButton];
+  if (alternateButton) {
+    [alert addButtonWithTitle:alternateButton];
+  }
+  return alert;
+}
+
 @implementation TakaoLoadedModule
 
 - (void)dealloc {
@@ -106,7 +120,7 @@ static AuthorizationRef authorizationRef = NULL;
 - (void)alertDidEnd:(NSAlert *)alert
          returnCode:(int)returnCode
         contextInfo:(void *)contextInfo {
-  if (returnCode != NSOKButton) {
+  if (returnCode != NSAlertFirstButtonReturn) {
     [self setUIEnabled:YES];
     return;
   }
@@ -116,17 +130,10 @@ static AuthorizationRef authorizationRef = NULL;
       [selectedPlugin valueForKey:OVServiceLoadedModulePackageBundlePathKey];
 
   if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:
-                     LFLSTR(@"The specified module is already removed!")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:@""];
-    [alert beginSheetModalForWindow:_window
-                      modalDelegate:nil
-                     didEndSelector:NULL
-                        contextInfo:NULL];
+    NSAlert *alert = TakaoLoadedModuleAlert(
+        LFLSTR(@"The specified module is already removed!"), @"",
+        LFLSTR(@"OK"), nil);
+    [alert beginSheetModalForWindow:_window completionHandler:nil];
     [self setUIEnabled:YES];
     return;
   }
@@ -154,18 +161,11 @@ static AuthorizationRef authorizationRef = NULL;
       authorizationRef, "/bin/rm", kAuthorizationFlagDefaults, args, NULL);
 
   if (status != noErr) {
-    NSAlert *alert = [NSAlert
-             alertWithMessageText:LFLSTR(
-                                      @"Failed to remove the specific plugin!")
-                    defaultButton:LFLSTR(@"OK")
-                  alternateButton:nil
-                      otherButton:nil
-        informativeTextWithFormat:
-            LFLSTR(@"PLease check your system privilege and try again.")];
-    [alert beginSheetModalForWindow:_window
-                      modalDelegate:nil
-                     didEndSelector:NULL
-                        contextInfo:NULL];
+    NSAlert *alert = TakaoLoadedModuleAlert(
+        LFLSTR(@"Failed to remove the specific plugin!"),
+        LFLSTR(@"PLease check your system privilege and try again."),
+        LFLSTR(@"OK"), nil);
+    [alert beginSheetModalForWindow:_window completionHandler:nil];
     return;
   }
 
@@ -178,16 +178,9 @@ static AuthorizationRef authorizationRef = NULL;
   int selectedRow = [_tableView selectedRow];
 
   if (selectedRow < 0) {
-    NSAlert *alert =
-        [NSAlert alertWithMessageText:LFLSTR(@"Please select a plugin.")
-                        defaultButton:LFLSTR(@"OK")
-                      alternateButton:nil
-                          otherButton:nil
-            informativeTextWithFormat:@""];
-    [alert beginSheetModalForWindow:_window
-                      modalDelegate:self
-                     didEndSelector:NULL
-                        contextInfo:NULL];
+    NSAlert *alert = TakaoLoadedModuleAlert(
+        LFLSTR(@"Please select a plugin."), @"", LFLSTR(@"OK"), nil);
+    [alert beginSheetModalForWindow:_window completionHandler:nil];
     return;
   }
 
@@ -197,15 +190,14 @@ static AuthorizationRef authorizationRef = NULL;
           LFLSTR(@"Do you really want to remove the plugin '%@'?"),
           [selectedPlugin
               valueForKey:OVServiceLoadedModulePackageLocalizedNameKey]];
-  NSAlert *alert = [NSAlert alertWithMessageText:message
-                                   defaultButton:LFLSTR(@"Remove")
-                                 alternateButton:LFLSTR(@"Cancel")
-                                     otherButton:nil
-                       informativeTextWithFormat:@""];
+  NSAlert *alert = TakaoLoadedModuleAlert(message, @"", LFLSTR(@"Remove"),
+                                          LFLSTR(@"Cancel"));
   [alert beginSheetModalForWindow:_window
-                    modalDelegate:self
-                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                      contextInfo:selectedPlugin];
+                completionHandler:^(NSModalResponse returnCode) {
+                  [self alertDidEnd:alert
+                          returnCode:(int)returnCode
+                         contextInfo:selectedPlugin];
+                }];
 }
 - (void)setUIEnabled:(BOOL)enabled {
   [_tableView setEnabled:enabled];

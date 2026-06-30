@@ -959,7 +959,8 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
         NSString *applicationPath =
             [NSString stringWithUTF8String:value.c_str()];
         if ([applicationPath length]) {
-          [[NSWorkspace sharedWorkspace] openFile:applicationPath];
+          [[NSWorkspace sharedWorkspace]
+              openURL:[NSURL fileURLWithPath:applicationPath]];
         }
       }
     }
