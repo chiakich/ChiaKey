@@ -8,7 +8,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface PESettingTableView : NSTableView {
+@interface PESettingTableView : NSTableView <NSTableViewDataSource, NSTableViewDelegate> {
   NSMutableArray *_array;
 }
 

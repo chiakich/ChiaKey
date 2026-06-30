@@ -226,7 +226,7 @@
 
   NSRect frame = [[NSScreen mainScreen] visibleFrame];
   NSArray *screens = [NSScreen screens];
-  int i, c = [screens count];
+  NSUInteger i, c = [screens count];
 
   if ([screens count] > 1) {
     for (i = 0; i < c; i++) {
@@ -284,14 +284,14 @@
 
 - (IBAction)sendKey:(id)sender {
   if (_sending) return;
-  int selectedItem = [_tableView selectedRow];
+  NSInteger selectedItem = [_tableView selectedRow];
   string keyString = _panel->candidateKeyAtIndex(selectedItem).receivedString();
   [[CVSendKey sharedSendKey]
       typeString:[NSString stringWithUTF8String:keyString.c_str()]];
 }
 
 - (IBAction)updateSelectedCandidate:(id)sender {
-  int selectedItem = [_tableView selectedRow];
+  NSInteger selectedItem = [_tableView selectedRow];
   _panel->setHighlightIndex((size_t)selectedItem);
   NSPoint p = [[self window] frame].origin;
   p.y = p.y + [[self window] frame].size.height;
@@ -330,7 +330,7 @@
     willDisplayCell:(id)aCell
      forTableColumn:(NSTableColumn *)aTableColumn
                 row:(int)rowIndex {
-  int selectedRow = [_tableView selectedRow];
+  NSInteger selectedRow = [_tableView selectedRow];
   if ([[aTableColumn identifier] isEqualToString:@"candidate"]) {
     if (rowIndex == selectedRow)
       [aCell setTextColor:_highlightTextColor];
@@ -348,7 +348,7 @@
   return nil;
 }
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView {
-  return [_candidateArray count];
+  return (int)[_candidateArray count];
 }
 
 @end

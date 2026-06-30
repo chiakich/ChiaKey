@@ -45,7 +45,7 @@ static NSString *reloadToolbarItemIdentifier = @"Reload";
 
 #pragma mark -
 
-@interface PEController : NSWindowController {
+@interface PEController : NSWindowController <NSTableViewDataSource, NSTableViewDelegate> {
   id _loader;
   IBOutlet NSTableView *_tableView;
   IBOutlet NSTextField *_statusTextField;

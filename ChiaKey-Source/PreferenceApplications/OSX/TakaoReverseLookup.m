@@ -75,7 +75,7 @@ file for terms.
   return _view;
 }
 - (IBAction)changeReverseLookupSetting:(id)sender {
-  int selected = [sender indexOfSelectedItem];
+  NSInteger selected = [sender indexOfSelectedItem];
   NSString *reverseLookupModuleName = @"";
   if (selected > 0 && selected < 4) {
     reverseLookupModuleName = [_reverseLookupArray objectAtIndex:selected - 1];

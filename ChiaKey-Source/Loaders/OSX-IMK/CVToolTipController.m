@@ -33,7 +33,7 @@
 
 - (void)autoSize {
   NSAttributedString *c = [_messageTextField attributedStringValue];
-  int lines = [[[c string] componentsSeparatedByString:@"\n"] count];
+  NSUInteger lines = [[[c string] componentsSeparatedByString:@"\n"] count];
   float h = _lineHeight * lines;
 
   NSRect rect = [c boundingRectWithSize:NSMakeSize(1600, h)

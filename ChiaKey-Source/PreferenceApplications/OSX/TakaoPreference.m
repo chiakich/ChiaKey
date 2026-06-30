@@ -9,6 +9,7 @@ file for terms.
 
 #import "TakaoGeneric.h"
 #import "TakaoGlobal.h"
+#import "TakaoUpdate.h"
 #import "TakaoWindow.h"
 
 @implementation TakaoPreference
@@ -177,7 +178,7 @@ file for terms.
 
   if ([[sender itemIdentifier] isEqualToString:UpdateToolbarItemIdentifier] &&
       [_takaoUpdateController respondsToSelector:@selector(updatePaneDidBecomeActive)]) {
-    [_takaoUpdateController updatePaneDidBecomeActive];
+    [(TakaoUpdate *)_takaoUpdateController updatePaneDidBecomeActive];
   }
 }
 

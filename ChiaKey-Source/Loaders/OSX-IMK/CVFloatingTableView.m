@@ -29,7 +29,7 @@
   [_tableBackgroundColor setFill];
   [[NSBezierPath bezierPathWithRect:clipRect] fill];
 
-  int selectedRow = [self selectedRow];
+  NSInteger selectedRow = [self selectedRow];
   if (selectedRow == -1) return;
 
   NSColor *fromColor = [NSColor highlightGradientFromColor];

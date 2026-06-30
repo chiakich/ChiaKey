@@ -25,15 +25,15 @@
 - (void)cancelEditing:(NSText *)text {
   [text setDelegate:nil];
   [self abortEditing];
-  [[[NSApp delegate] window] makeFirstResponder:self];
+  [[(PEController *)[NSApp delegate] window] makeFirstResponder:self];
 }
 
 - (IBAction)delete:(id)sender {
-  [[self delegate] delete:self];
+  [(PEController *)[self delegate] delete:self];
 }
 
 - (IBAction)copy:(id)sender {
-  [[self delegate] copy:self];
+  [(PEController *)[self delegate] copy:self];
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
@@ -59,7 +59,7 @@
 
   if (key == NSDeleteFunctionKey || key == NSDeleteCharFunctionKey ||
       key == NSDeleteCharacter) {
-    [[self delegate] delete:self];
+    [(PEController *)[self delegate] delete:self];
     return;
   } else if (key == ' ') {
   } else if (key == 13) {
@@ -79,9 +79,10 @@
   if (![self isEnabled]) return;
 
   NSPoint location = [event locationInWindow];
-  int clickedRow = [self rowAtPoint:[self convertPoint:location fromView:nil]];
-  int clickedRColumnIndex = [self columnAtPoint:[self convertPoint:location
-                                                          fromView:nil]];
+  NSInteger clickedRow = [self rowAtPoint:[self convertPoint:location fromView:nil]];
+  NSInteger clickedRColumnIndex = [self columnAtPoint:[self convertPoint:location
+                                                                 fromView:nil]];
+  if (clickedRow < 0 || clickedRColumnIndex < 0) return;
   NSTableColumn *clickedColumn =
       [[self tableColumns] objectAtIndex:clickedRColumnIndex];
   NSString *identifier = [clickedColumn identifier];
@@ -91,10 +92,10 @@
   if ([event clickCount] > 1) {
     if ([identifier isEqualToString:@"phrase"]) {
       if ([[self delegate] respondsToSelector:@selector(editPhrase:)])
-        [[self delegate] editPhrase:self];
+        [(PEController *)[self delegate] editPhrase:self];
     } else if ([identifier isEqualToString:@"reading"]) {
       if ([[self delegate] respondsToSelector:@selector(editReading:)])
-        [[self delegate] editReading:self];
+        [(PEController *)[self delegate] editReading:self];
     }
   }
 }

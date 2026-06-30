@@ -89,9 +89,9 @@ file for terms.
     return;
   }
 
-  int i = 0;
-  int selectedIndex = -1;
-  int indexOfEnUS = -1;
+  CFIndex i = 0;
+  NSInteger selectedIndex = -1;
+  NSInteger indexOfEnUS = -1;
   for (i = 0; i < CFArrayGetCount(list); i++) {
     TISInputSourceRef source =
         (TISInputSourceRef)CFArrayGetValueAtIndex(list, i);
@@ -122,7 +122,7 @@ file for terms.
     CFStringRef sourceId =
         TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
     NSString *sourceIdString = (NSString *)sourceId;
-    int menuIndex = [_keyboardLayoutIdentifierArray count];
+    NSInteger menuIndex = (NSInteger)[_keyboardLayoutIdentifierArray count];
     if ([sourceIdString isEqualToString:@"com.apple.keylayout.US"])
       indexOfEnUS = menuIndex;
 

@@ -35,7 +35,7 @@
       initWithAttributedString:[self attributedStringValue]] autorelease];
 
   if (_cursorIndex > [cursorString length])
-    _cursorIndex = [cursorString length];
+    _cursorIndex = (int)[cursorString length];
 
   // draw the cursor
   [cursorString
@@ -157,7 +157,7 @@
   NSRect rect;
   float h;
   c = [_promptDescriptionTextField attributedStringValue];
-  int lines = [[[c string] componentsSeparatedByString:@"\n"] count];
+  NSUInteger lines = [[[c string] componentsSeparatedByString:@"\n"] count];
   h = _promptDecriptionLineHeight * lines;
   rect = [c boundingRectWithSize:NSMakeSize(1600, h)
                          options:NSStringDrawingUsesLineFragmentOrigin];

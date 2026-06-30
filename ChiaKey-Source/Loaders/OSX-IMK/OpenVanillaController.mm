@@ -210,10 +210,12 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
   _context->clear();
   _context->deactivate();
-  [[[NSApp delegate] verticalCandidateController]
+  CVApplicationController *applicationController =
+      (CVApplicationController *)[NSApp delegate];
+  [[applicationController verticalCandidateController]
       updateContent:_context->candidateService()->accessVerticalCandidatePanel()
             atPoint:NSMakePoint(0., 0.)];
-  [[[NSApp delegate] horizontalCandidateController]
+  [[applicationController horizontalCandidateController]
       updateContent:_context->candidateService()
                         ->accessHorizontalCandidatePanel()
             atPoint:NSMakePoint(0., 0.)];
@@ -223,8 +225,8 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       ->accessHorizontalCandidatePanel()
       ->finishUpdate();
 
-  [[[NSApp delegate] tooltipController] hide];
-  [[[NSApp delegate] searchController] hide];
+  [[applicationController tooltipController] hide];
+  [[applicationController searchController] hide];
 
   PVLoaderService *loaderService = [OpenVanillaLoader sharedLoaderService];
   loaderService->setPrompt("");
@@ -395,9 +397,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       fontHeight = 18.0;
     }
 
-    [[[NSApp delegate] verticalCandidateController]
+    CVApplicationController *applicationController =
+        (CVApplicationController *)[NSApp delegate];
+    [[applicationController verticalCandidateController]
         setCandidateTextHeight:fontHeight];
-    [[[NSApp delegate] horizontalCandidateController]
+    [[applicationController horizontalCandidateController]
         setCandidateTextHeight:fontHeight];
   }
 
@@ -412,7 +416,8 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
   _context->activate();
 
-  [[[NSApp delegate] symbolController] restoreWindowStatus];
+  [[(CVApplicationController *)[NSApp delegate] symbolController]
+      restoreWindowStatus];
   [OpenVanillaController setActiveContext:self sender:sender];
 }
 - (void)deactivateServer:(id)sender {
@@ -432,10 +437,12 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _context->clear();
   _context->deactivate();
 
-  [[[NSApp delegate] verticalCandidateController]
+  CVApplicationController *applicationController =
+      (CVApplicationController *)[NSApp delegate];
+  [[applicationController verticalCandidateController]
       updateContent:_context->candidateService()->accessVerticalCandidatePanel()
             atPoint:NSMakePoint(0., 0.)];
-  [[[NSApp delegate] horizontalCandidateController]
+  [[applicationController horizontalCandidateController]
       updateContent:_context->candidateService()
                         ->accessHorizontalCandidatePanel()
             atPoint:NSMakePoint(0., 0.)];
@@ -447,9 +454,9 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
   // NSLog(@"deactivateServer (client %08x)", sender);
 
-  [[[NSApp delegate] symbolController] temporaryHide];
-  [[[NSApp delegate] tooltipController] hide];
-  [[[NSApp delegate] searchController] hide];
+  [[applicationController symbolController] temporaryHide];
+  [[applicationController tooltipController] hide];
+  [[applicationController searchController] hide];
   PVLoaderService *loaderService = [OpenVanillaLoader sharedLoaderService];
   loaderService->setPrompt("");
   loaderService->setPromptDescription("");
@@ -476,7 +483,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     if (_updateCommitStringBeforeCommit) {
       PVCombinedUTF16TextBuffer::SegmentPairVector emptyPairs;
       [self _updateClient:sender
-           cursorPosition:[_composingBuffer length]
+           cursorPosition:(int)[_composingBuffer length]
              segmentPairs:emptyPairs];
     }
 
@@ -831,7 +838,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
                         point:cursorPosition
                   readingFrom:(int)promptBuffer.cursorPosition()
                 readingLength:(int)_context->composingText()->codePointCount()
-                  cursorIndex:cursorIndex];
+                  cursorIndex:(int)cursorIndex];
       else
         [[appDelegate searchController]
                showWithPrompt:[NSString stringWithUTF8String:promptText.c_str()]
@@ -840,7 +847,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
                        buffer:[NSString stringWithUTF8String:buffer.c_str()]
                   readingFrom:(int)promptBuffer.cursorPosition()
                 readingLength:(int)_context->composingText()->codePointCount()
-                  cursorIndex:cursorIndex];
+                  cursorIndex:(int)cursorIndex];
 
       cursorPosition = [[appDelegate searchController] cursorPosition];
       fontHeight = [[appDelegate searchController] bufferHeight];
@@ -851,7 +858,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
         if (cursorIndex && cursorIndex >= [_composingBuffer length])
           cursorIndex = [_composingBuffer length];
         [self _updateClient:sender
-             cursorPosition:cursorIndex
+             cursorPosition:(int)cursorIndex
                segmentPairs:combinedBuffer.wideSegmentPairs()];
         _context->composingText()->finishUpdate();
         _context->readingText()->finishUpdate();
@@ -993,12 +1000,14 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
 - (void)_resetUI {
   PVLoaderService *loaderService = [OpenVanillaLoader sharedLoaderService];
+  CVApplicationController *applicationController =
+      (CVApplicationController *)[NSApp delegate];
   loaderService->resetState();
-  [[[NSApp delegate] verticalCandidateController] hide];
-  [[[NSApp delegate] horizontalCandidateController] hide];
+  [[applicationController verticalCandidateController] hide];
+  [[applicationController horizontalCandidateController] hide];
   //	[[[NSApp delegate] plainTextCandidateController] hideTextWindow];
-  [[[NSApp delegate] tooltipController] hide];
-  [[[NSApp delegate] searchController] hide];
+  [[applicationController tooltipController] hide];
+  [[applicationController searchController] hide];
 }
 - (void)switchInputMethodAction:(id)sender {
   NSMenuItem *menuItem = [sender objectForKey:@"IMKCommandMenuItem"];
@@ -1046,10 +1055,12 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   [CVNotifyController notify:msg];
 }
 - (void)symbolAction:(id)sender {
-  if ([[[[NSApp delegate] symbolController] window] isVisible]) {
-    [[[NSApp delegate] symbolController] hide:self];
+  CVSymbolController *symbolController =
+      [(CVApplicationController *)[NSApp delegate] symbolController];
+  if ([[symbolController window] isVisible]) {
+    [symbolController hide:self];
   } else {
-    [[[NSApp delegate] symbolController] show:self];
+    [symbolController show:self];
   }
 }
 - (void)helpAction:(id)sender {
@@ -1088,7 +1099,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 }
 
 - (void)aboutAction:(id)sender {
-  [[NSApp delegate] showAboutWindow:sender];
+  [(CVApplicationController *)[NSApp delegate] showAboutWindow:sender];
   [self _resetUI];
 }
 
@@ -1121,7 +1132,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
 - (NSMenu *)menu {
   NSMenu *menu = [[[NSMenu alloc] init] autorelease];
-  NSArray *a = [[NSApp delegate] inputMethodsArray];
+  NSArray *a = [(CVApplicationController *)[NSApp delegate] inputMethodsArray];
   NSEnumerator *e = [a objectEnumerator];
   NSDictionary *d = nil;
   while (d = [e nextObject]) {

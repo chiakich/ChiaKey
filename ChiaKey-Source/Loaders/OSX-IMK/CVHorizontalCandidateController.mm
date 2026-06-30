@@ -167,7 +167,7 @@
 
   NSRect frame = [[NSScreen mainScreen] visibleFrame];
   NSArray *screens = [NSScreen screens];
-  int i, c = [screens count];
+  NSUInteger i, c = [screens count];
   if ([screens count] > 1) {
     for (i = 0; i < c; i++) {
       NSScreen *screen = [screens objectAtIndex:i];
@@ -200,7 +200,7 @@
 
   if (panel->isInControl()) {
     [_candidateControl setClickable:YES];
-    [_candidateControl setHighlightdeIndex:highlightedIndex];
+    [_candidateControl setHighlightdeIndex:(int)highlightedIndex];
   } else {
     [_candidateControl setClickable:NO];
   }

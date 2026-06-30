@@ -43,7 +43,7 @@ file for terms.
   }
 
   [_genericModuleListTableView setDataSource:self];
-  [_genericModuleListTableView setDelegate:(id)self];
+  [_genericModuleListTableView setDelegate:self];
   [_genericModuleListTableView reloadData];
 
   id controller = [[_modules objectAtIndex:0] valueForKey:@"controller"];
@@ -58,18 +58,18 @@ file for terms.
 
 #pragma mark NSTableView data source methods
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView {
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
   return [_modules count];
 }
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                          row:(int)rowIndex {
+                          row:(NSInteger)rowIndex {
   if ([[aTableColumn identifier] isEqualToString:@"modules"])
     return [[_modules objectAtIndex:rowIndex] valueForKey:@"name"];
   return nil;
 }
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification {
-  int index = [_genericModuleListTableView selectedRow];
+  NSInteger index = [_genericModuleListTableView selectedRow];
   if ([[_genericSettingView subviews] objectAtIndex:0])
     [[[_genericSettingView subviews] objectAtIndex:0] removeFromSuperview];
   if ([_modules objectAtIndex:index]) {

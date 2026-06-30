@@ -48,6 +48,7 @@
 
 - (IBAction)showAboutWindow:(id)sender;
 - (NSArray *)inputMethodsArray;
+- (NSString *)primaryInputMethod;
 @end
 
 @interface CVApplicationController (AppDelegate)

@@ -68,7 +68,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [_tableView setDraggingSourceOperationMask:NSDragOperationEvery forLocal:NO];
   [_tableView setAllowsMultipleSelection:YES];
   [_tableView setDataSource:self];
-  [_tableView setDelegate:(id)self];
+  [_tableView setDelegate:self];
   [_tableView setRowHeight:20.0];
 
   [_phraseWindow setDefaultButtonCell:[_okButton cell]];
@@ -112,7 +112,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 - (IBAction)add:(id)sender {
   [_loader userPhraseDBAddNewRow:[NSString stringWithUTF8String:"新詞"]];
   [_tableView reloadData];
-  int count = [self numberOfRowsInTableView:_tableView];
+  NSInteger count = [self numberOfRowsInTableView:_tableView];
   [_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:count - 1]
           byExtendingSelection:NO];
   [self editPhrase:self];
@@ -127,7 +127,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   NSUInteger currentIndex = [rowIndexes lastIndex];
 
   while (currentIndex != NSNotFound) {
-    [_loader userPhraseDBDeleteRow:currentIndex];
+    [_loader userPhraseDBDeleteRow:(int)currentIndex];
     currentIndex = [rowIndexes indexLessThanIndex:currentIndex];
   }
   [_tableView reloadData];
@@ -140,7 +140,8 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   NSUInteger currentIndex = [rowIndexes firstIndex];
 
   while (currentIndex != NSNotFound) {
-    NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:currentIndex];
+    NSDictionary *dataDict =
+        [_loader userPhraseDBDictionaryAtRow:(int)currentIndex];
 
     NSString *phrase = [dataDict objectForKey:@"Text"];
     NSString *reading = [dataDict objectForKey:@"BPMF"];
@@ -172,7 +173,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [pasteboard setString:[self stringForCopying] forType:NSPasteboardTypeString];
 }
 - (IBAction)editPhrase:(id)sender {
-  int selectedRow = [_tableView selectedRow];
+  NSInteger selectedRow = [_tableView selectedRow];
   if (selectedRow < 0) return;
 
   [_tableView editColumn:[_tableView columnWithIdentifier:@"phrase"]
@@ -181,11 +182,12 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                   select:YES];
 }
 - (IBAction)editReading:(id)sender {
-  int selectedRow = [_tableView selectedRow];
+  NSInteger selectedRow = [_tableView selectedRow];
   if (selectedRow < 0) return;
 
-  _editingRow = selectedRow;
-  NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:selectedRow];
+  _editingRow = (int)selectedRow;
+  NSDictionary *dataDict =
+      [_loader userPhraseDBDictionaryAtRow:(int)selectedRow];
   NSString *phrase = [dataDict objectForKey:@"Text"];
 
   if (![phrase length]) return;
@@ -247,7 +249,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   }
 
   NSArray *people = [[ABAddressBook sharedAddressBook] people];
-  int count = [people count];
+  NSUInteger count = [people count];
 
   NSMutableArray *array = [NSMutableArray array];
   NSEnumerator *enumerator = [people objectEnumerator];
@@ -450,7 +452,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 - (void)tableView:(NSTableView *)aTableView
     willDisplayCell:(id)aCell
      forTableColumn:(NSTableColumn *)aTableColumn
-                row:(int)rowIndex {
+                row:(NSInteger)rowIndex {
   NSString *identifier = [aTableColumn identifier];
   if ([identifier isEqualToString:@"phrase"]) {
     NSFont *font = [NSFont fontWithName:@"LiHeiPro" size:16.0];
@@ -460,15 +462,16 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     [aCell setFont:font];
   }
 }
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView {
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
   return [_loader userPhraseDBNumberOfRow];
 }
 
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                          row:(int)rowIndex {
+                          row:(NSInteger)rowIndex {
   NSString *identifier = [aTableColumn identifier];
-  NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:rowIndex];
+  NSDictionary *dataDict =
+      [_loader userPhraseDBDictionaryAtRow:(int)rowIndex];
 
   if ([identifier isEqualToString:@"phrase"]) {
     return [dataDict objectForKey:@"Text"];
@@ -491,7 +494,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 - (void)tableView:(NSTableView *)aTableView
     setObjectValue:(id)anObject
     forTableColumn:(NSTableColumn *)aTableColumn
-               row:(int)rowIndex {
+               row:(NSInteger)rowIndex {
   NSString *identifier = [aTableColumn identifier];
 
   if ([identifier isEqualToString:@"phrase"]) {
@@ -500,9 +503,10 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 
     if ([string length] > 7) string = [string substringToIndex:7];
 
-    NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:rowIndex];
+    NSDictionary *dataDict =
+        [_loader userPhraseDBDictionaryAtRow:(int)rowIndex];
     if (![[dataDict objectForKey:@"Text"] isEqualToString:string]) {
-      [_loader userPhraseDBSetPhrase:string atRow:rowIndex];
+      [_loader userPhraseDBSetPhrase:string atRow:(int)rowIndex];
       [aTableView reloadData];
       [self editReading:self];
       [self updateStatus];
@@ -520,7 +524,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 }
 - (NSDragOperation)tableView:(NSTableView *)tv
                 validateDrop:(id<NSDraggingInfo>)info
-                 proposedRow:(int)row
+                 proposedRow:(NSInteger)row
        proposedDropOperation:(NSTableViewDropOperation)op {
   return NSDragOperationNone;
 }
@@ -540,7 +544,6 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                    editPhraseToolbarItemIdentifier,
                                    editReaingToolbarItemIdentifier,
                                    reloadToolbarItemIdentifier,
-                                   NSToolbarSeparatorItemIdentifier,
                                    importAddressBookToolbarItemIdentifier, nil];
 }
 
@@ -549,7 +552,6 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                    deleteToolbarItemIdentifier,
                                    editPhraseToolbarItemIdentifier,
                                    editReaingToolbarItemIdentifier,
-                                   NSToolbarSeparatorItemIdentifier,
                                    importAddressBookToolbarItemIdentifier,
                                    reloadToolbarItemIdentifier, nil];
 }

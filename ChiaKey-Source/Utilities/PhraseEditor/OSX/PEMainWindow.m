@@ -16,18 +16,18 @@
   if ([event type] == NSEventTypeKeyDown) {
     if ([event keyCode] == 53) {
       NSText *text = [self fieldEditor:YES forObject:self];
-      if ([text delegate] != nil &&
-          [[text delegate] respondsToSelector:@selector(cancelEditing:)]) {
-        [self makeFirstResponder:[text delegate]];
-        [[text delegate] cancelEditing:text];
+      id delegate = [text delegate];
+      if ([delegate isKindOfClass:[PEPhraseTableView class]]) {
+        [self makeFirstResponder:(PEPhraseTableView *)delegate];
+        [(PEPhraseTableView *)delegate cancelEditing:text];
         [text setDelegate:nil];
         return;
       }
     } else if ([[event charactersIgnoringModifiers] characterAtIndex:0] == 13) {
       NSText *text = [self fieldEditor:YES forObject:self];
-      if ([text delegate] != nil &&
-          [[text delegate] respondsToSelector:@selector(cancelEditing:)]) {
-        [self makeFirstResponder:[text delegate]];
+      id delegate = [text delegate];
+      if ([delegate isKindOfClass:[PEPhraseTableView class]]) {
+        [self makeFirstResponder:(PEPhraseTableView *)delegate];
         [self endEditingFor:text];
         [text setDelegate:nil];
         return;

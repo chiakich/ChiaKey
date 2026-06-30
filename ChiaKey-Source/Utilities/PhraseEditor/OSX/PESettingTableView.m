@@ -13,7 +13,7 @@
 - (void)awakeFromNib {
   _array = [NSMutableArray new];
   [self setDataSource:self];
-  [self setDelegate:(id)self];
+  [self setDelegate:self];
 }
 - (void)dealloc {
   [_array release];
@@ -40,13 +40,13 @@
 
 #pragma mark NSTableView data source and delegate methods.
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView {
-  return (int)[_array count];
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
+  return [_array count];
 }
 
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                          row:(int)rowIndex {
+                          row:(NSInteger)rowIndex {
   NSString *identifier = [aTableColumn identifier];
   if ([identifier isEqualToString:@"character"]) {
     return [[_array objectAtIndex:rowIndex] valueForKey:@"Text"];
@@ -57,14 +57,14 @@
 - (void)tableView:(NSTableView *)aTableView
     willDisplayCell:(id)aCell
      forTableColumn:(NSTableColumn *)aTableColumn
-                row:(int)rowIndex {
+                row:(NSInteger)rowIndex {
   NSString *identifier = [aTableColumn identifier];
   if ([identifier isEqualToString:@"reading"]) {
     NSDictionary *dataDict = [_array objectAtIndex:rowIndex];
     NSArray *readings = [dataDict valueForKey:@"BPMF"];
     NSString *crurrentReading = [dataDict valueForKey:@"CurrentBPMF"];
 
-    int index = [readings indexOfObject:crurrentReading];
+    NSUInteger index = [readings indexOfObject:crurrentReading];
     if (index == NSNotFound) {
       index = 0;
     }
@@ -81,7 +81,7 @@
     [aCell setMenu:menu];
 
     if ([readings count] > 1) {
-      [aCell setObjectValue:[NSNumber numberWithInt:index]];
+      [aCell setObjectValue:[NSNumber numberWithUnsignedInteger:index]];
     }
   }
 }
@@ -89,7 +89,7 @@
 - (void)tableView:(NSTableView *)aTableView
     setObjectValue:(id)anObject
     forTableColumn:(NSTableColumn *)aTableColumn
-               row:(int)rowIndex {
+               row:(NSInteger)rowIndex {
   NSString *identifier = [aTableColumn identifier];
 
   if ([identifier isEqualToString:@"reading"]) {

@@ -25,9 +25,9 @@ file for terms.
         Preferences Utility is launched.
 */
 
-@interface TakaoGeneric : NSObject {
-  IBOutlet id _genericModuleListTableView;
-  IBOutlet id _genericSettingView;
+@interface TakaoGeneric : NSObject <NSTableViewDataSource, NSTableViewDelegate> {
+  IBOutlet NSTableView *_genericModuleListTableView;
+  IBOutlet NSView *_genericSettingView;
 
   NSMutableArray *_modules;
 }

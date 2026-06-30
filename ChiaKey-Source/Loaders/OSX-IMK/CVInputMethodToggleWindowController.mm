@@ -67,9 +67,12 @@
 }
 - (void)moveToNextInputMethod {
   _shouldHideWindow = YES;
-  NSArray *inputMethodArray = [[NSApp delegate] inputMethodsArray];
+  CVApplicationController *applicationController =
+      (CVApplicationController *)[NSApp delegate];
+  NSArray *inputMethodArray = [applicationController inputMethodsArray];
 
-  NSString *currentSelectedInputMethod = [[NSApp delegate] primaryInputMethod];
+  NSString *currentSelectedInputMethod =
+      [applicationController primaryInputMethod];
 
   int currentIndex = 0;
   NSEnumerator *e = [inputMethodArray objectEnumerator];
