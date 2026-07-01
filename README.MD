@@ -4,11 +4,17 @@
 
 目標是保留 KeyKey 在繁體中文注音輸入上的手感，並讓專案能在現代 Apple Silicon Mac 上編譯、測試、維護與發佈。
 
+本專案專注於修復與更新輸入法本體，使用 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon) 作為詞庫資料來源。
+
 這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE](LICENSE)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
+
+> 感謝贊助並支持我長期維護！贊助費將用於支付年度蘋果開發者帳號費用
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A21UAIV9)
 
 ## 專案定位
 
-千秋輸入法不是為了和所有現代注音輸入法競爭功能完整度而建立。這個專案的主要動機是紀念並延續 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 這條歷史脈絡，盡可能保留 KeyKey 在 macOS 上的輸入手感，同時讓它能被現代工具鏈編譯、測試與維護。
+千秋輸入法不是為了和所有現代注音輸入法競爭功能完整度而建立。這個專案的主要動機是紀念並延續 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 這條歷史脈絡，盡可能保留 KeyKey 在 macOS 上的輸入手感，保存台灣注音輸入法少見的 bigram 引擎，同時讓它能被現代工具鏈編譯、測試與維護。
 
 如果你只是想找一套日常可用的現代注音輸入法，也可以先參考這些選擇：
 
