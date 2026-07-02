@@ -8,7 +8,7 @@
 
 這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE](LICENSE)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
 
-> 感謝贊助並支持我長期維護！贊助費將用於支付年度蘋果開發者帳號費用
+> 如果喜歡的話歡迎贊助，費將用於支付年度蘋果開發者帳號費用
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A21UAIV9)
 
