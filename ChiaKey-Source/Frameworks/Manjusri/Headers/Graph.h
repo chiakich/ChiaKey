@@ -201,6 +201,14 @@ class Graph {
   FastPath fastWalk(const string& previous = "",
                     const Location& location = Location(0, 0));
 
+ protected:
+  // memoized core of fastWalk, keyed by (start position, previous text)
+  typedef map<pair<size_t, string>, FastPath> FastWalkMemo;
+  FastPath fastWalkMemoized(const string& previous, const Location& location,
+                            FastWalkMemo& memo);
+
+ public:
+
   void setSource(const StringVector& source);
 
   double lastBuildTime();
@@ -449,6 +457,24 @@ inline FastPath Graph::fastWalk(const string& previous,
   OVBenchmark benchmark;
   benchmark.start();
 
+  // The recursion is a pure function of (start position, previous text), so a
+  // memo table collapses the otherwise exponential blow-up (each end position
+  // was re-expanded once per path reaching it) down to one expansion per
+  // distinct (position, previous) pair.
+  FastWalkMemo memo;
+  FastPath result = fastWalkMemoized(previous, location, memo);
+
+  m_walkTime += benchmark.elapsedSeconds();
+  return result;
+}
+
+inline FastPath Graph::fastWalkMemoized(const string& previous,
+                                        const Location& location,
+                                        FastWalkMemo& memo) {
+  pair<size_t, string> key(location.first + location.second, previous);
+  FastWalkMemo::const_iterator cached = memo.find(key);
+  if (cached != memo.end()) return cached->second;
+
   vector<NodeSet::const_iterator> currentNodes =
       FindNodesFollowing(m_nodes, location);
 
@@ -456,7 +482,7 @@ inline FastPath Graph::fastWalk(const string& previous,
   if (!currentNodes.size()) {
     FastPath result;
     result.push_back(PathNode("", 0.0, m_nodes.end()));
-    m_walkTime += benchmark.elapsedSeconds();
+    memo[key] = result;
     return result;
   }
 
@@ -490,9 +516,9 @@ inline FastPath Graph::fastWalk(const string& previous,
     FastPath nextPath;
 
     if (node.location().second)
-      nextPath =
-          fastWalk(ssp.first,
-                   Location(node.location().first + node.location().second, 0));
+      nextPath = fastWalkMemoized(
+          ssp.first,
+          Location(node.location().first + node.location().second, 0), memo);
 
     nextPath.insert(
         nextPath.begin(),
@@ -517,12 +543,13 @@ inline FastPath Graph::fastWalk(const string& previous,
       }
     }
 
-    m_walkTime += benchmark.elapsedSeconds();
-    return (*bestPath);
+    memo[key] = *bestPath;
+    return *bestPath;
   }
 
-  m_walkTime += benchmark.elapsedSeconds();
-  return FastPath();
+  FastPath empty;
+  memo[key] = empty;
+  return empty;
 }
 
 inline vector<Path> Graph::walk(const string& previous,
