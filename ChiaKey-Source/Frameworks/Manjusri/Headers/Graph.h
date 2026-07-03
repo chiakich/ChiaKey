@@ -361,9 +361,13 @@ inline void Graph::build(StringFilter* filter) {
 
     // cerr << "building " << subblock << endl;
 
+    // query the current subblock's unigrams once and reuse below; a non-empty
+    // result is also what isInDictionary() checks for.
+    UnigramVector currentUnigrams = m_LM->findUnigrams(subblock, true, filter);
+
     // we only build subblocks with length > 2 only if the subblock can be found
     // in the LM
-    if (location.second > 1 && !m_LM->isInDictionary(subblock, true, filter)) {
+    if (location.second > 1 && currentUnigrams.empty()) {
       // cerr << "ignored 1" << endl;
       continue;
     }
@@ -380,7 +384,7 @@ inline void Graph::build(StringFilter* filter) {
         FindNodesPreceding(m_nodes, location);
     if (!precedingNodes.size()) {
       Node node(location, subblock);
-      node.addSortedUnigrams(m_LM->findUnigrams(subblock, true, filter));
+      node.addSortedUnigrams(currentUnigrams);
 
       // candidate cache
       string cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
@@ -406,13 +410,6 @@ inline void Graph::build(StringFilter* filter) {
       Node node(location, subblock);
 
       // builds the bigram
-      BigramVector bivec = m_LM->findBigrams(
-          m_LM->combineBigramQueryString(pnode.queryString(), subblock),
-          filter);
-      // cerr << "found bigrams:" << endl;
-      // cerr << bivec;
-      // cerr << endl;
-
       node.addSortedBigrams(m_LM->findBigrams(
           m_LM->combineBigramQueryString(pnode.queryString(), subblock),
           filter));
@@ -422,7 +419,7 @@ inline void Graph::build(StringFilter* filter) {
           m_LM->findUnigrams(pnode.queryString(), true, filter));
 
       // then the unigrams
-      node.addSortedUnigrams(m_LM->findUnigrams(subblock, true, filter));
+      node.addSortedUnigrams(currentUnigrams);
 
       // candidate cache
       string cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
