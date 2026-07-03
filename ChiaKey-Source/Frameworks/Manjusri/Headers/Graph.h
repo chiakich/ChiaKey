@@ -207,6 +207,12 @@ class Graph {
   FastPath fastWalkMemoized(const string& previous, const Location& location,
                             FastWalkMemo& memo);
 
+  // memoized core of walk; aggressive is constant per top-level call, so the
+  // per-call memo needs only (start position, previous text) as its key
+  typedef map<pair<size_t, string>, vector<Path> > WalkMemo;
+  vector<Path> walkMemoized(const string& previous, const Location& location,
+                            bool aggressive, WalkMemo& memo);
+
  public:
 
   void setSource(const StringVector& source);
@@ -557,6 +563,24 @@ inline vector<Path> Graph::walk(const string& previous,
   m_walkTime = 0.0;
   OVBenchmark benchmark;
   benchmark.start();
+
+  // Same memoization as fastWalk: the recursion is a pure function of
+  // (start position, previous text) for a fixed aggressive flag, so caching it
+  // collapses the exponential re-expansion of shared suffixes.
+  WalkMemo memo;
+  vector<Path> results = walkMemoized(previous, location, aggressive, memo);
+
+  m_walkTime += benchmark.elapsedSeconds();
+  return results;
+}
+
+inline vector<Path> Graph::walkMemoized(const string& previous,
+                                        const Location& location,
+                                        bool aggressive, WalkMemo& memo) {
+  pair<size_t, string> key(location.first + location.second, previous);
+  WalkMemo::const_iterator cached = memo.find(key);
+  if (cached != memo.end()) return cached->second;
+
   vector<Path> results;
   vector<NodeSet::const_iterator> currentNodes =
       FindNodesFollowing(m_nodes, location);
@@ -568,7 +592,7 @@ inline vector<Path> Graph::walk(const string& previous,
                                                  m_nodes.end()));
     results.push_back(end);
 
-    m_walkTime += benchmark.elapsedSeconds();
+    memo[key] = results;
     return results;
   }
 
@@ -602,10 +626,10 @@ inline vector<Path> Graph::walk(const string& previous,
     vector<Path> nextPaths;
 
     if (node.location().second)
-      nextPaths =
-          walk(ssp.first,
-               Location(node.location().first + node.location().second, 0),
-               aggressive);
+      nextPaths = walkMemoized(
+          ssp.first,
+          Location(node.location().first + node.location().second, 0),
+          aggressive, memo);
 
     for (vector<Path>::iterator npiter = nextPaths.begin();
          npiter != nextPaths.end(); ++npiter) {
@@ -633,7 +657,7 @@ inline vector<Path> Graph::walk(const string& previous,
   if (aggressive && results.size() > 1)
     sort(results.begin(), results.end(), PathCompare());
 
-  m_walkTime += benchmark.elapsedSeconds();
+  memo[key] = results;
   return results;
 }
 
