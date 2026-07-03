@@ -97,11 +97,16 @@ inline NodeSet::iterator FindNodeWithNode(NodeSet& nodeset,
   return nodeset.find(queryNode);
 }
 
+// The set is ordered by (location.first, queryString), so we bound the scan to
+// the range of start positions that can possibly match, then apply the exact
+// predicate. This preserves both the matches and their set order.
+
 inline const vector<NodeSet::const_iterator> FindNodesPreceding(
     const NodeSet& nodeset, const Location& location) {
   vector<NodeSet::const_iterator> results;
-  for (NodeSet::const_iterator iter = nodeset.begin(); iter != nodeset.end();
-       ++iter)
+  // preceding nodes end at location.first, so their start is < location.first
+  NodeSet::const_iterator end = nodeset.lower_bound(Node(Location(location.first, 0)));
+  for (NodeSet::const_iterator iter = nodeset.begin(); iter != end; ++iter)
     if ((*iter).isPreceding(location)) results.push_back(iter);
 
   return results;
@@ -110,8 +115,10 @@ inline const vector<NodeSet::const_iterator> FindNodesPreceding(
 inline const vector<NodeSet::const_iterator> FindNodesFollowing(
     const NodeSet& nodeset, const Location& location) {
   vector<NodeSet::const_iterator> results;
-  for (NodeSet::const_iterator iter = nodeset.begin(); iter != nodeset.end();
-       ++iter)
+  // following nodes start exactly at location.first + location.second
+  size_t start = location.first + location.second;
+  NodeSet::const_iterator iter = nodeset.lower_bound(Node(Location(start, 0)));
+  for (; iter != nodeset.end() && (*iter).location().first == start; ++iter)
     if ((*iter).isFollowing(location)) results.push_back(iter);
 
   return results;
@@ -120,8 +127,10 @@ inline const vector<NodeSet::const_iterator> FindNodesFollowing(
 inline const vector<NodeSet::const_iterator> FindNodesOverlapping(
     const NodeSet& nodeset, const Location& location) {
   vector<NodeSet::const_iterator> results;
-  for (NodeSet::const_iterator iter = nodeset.begin(); iter != nodeset.end();
-       ++iter)
+  // overlapping nodes have start <= location.first
+  NodeSet::const_iterator end =
+      nodeset.lower_bound(Node(Location(location.first + 1, 0)));
+  for (NodeSet::const_iterator iter = nodeset.begin(); iter != end; ++iter)
     if ((*iter).isOverlapping(location)) results.push_back(iter);
 
   return results;
