@@ -18,10 +18,12 @@ class Node {
   static Score c_defaultUNKProbability;
   static Score c_defaultUNKBackoff;
   static Score c_defaultOverrideScore;
+  static Score c_phraseLengthBonus;
 
  public:
   static void SetUNK(Score probability, Score backoff);
   static void SetDefaultOverrideScore(Score override);
+  static void SetPhraseLengthBonus(Score bonusPerExtraSyllable);
 
  public:
   Node(const Location& location = Location(0, 0),
@@ -45,6 +47,9 @@ class Node {
   void cancelOverride();
   const vector<string> candidates() const;
   const StringScorePair findHighestScorePair(const string& previous = "") const;
+
+  // Length prior credit per extra syllable (0 for single-syllable/overridden); lets a phrase outscore a char-split.
+  Score lengthPrior() const;
 
   void addSortedBigrams(const BigramVector& bigrams);
   void addSortedUnigrams(const UnigramVector& unigrams);
@@ -378,6 +383,15 @@ inline bool Node::isOverlapping(const Location& location) const {
 inline void Node::SetUNK(Score probability, Score backoff) {
   c_defaultUNKProbability = probability;
   c_defaultUNKBackoff = backoff;
+}
+
+inline void Node::SetPhraseLengthBonus(Score bonusPerExtraSyllable) {
+  c_phraseLengthBonus = bonusPerExtraSyllable;
+}
+
+inline Score Node::lengthPrior() const {
+  if (m_overridden || m_location.second <= 1) return (Score)0;
+  return c_phraseLengthBonus * (Score)(m_location.second - 1);
 }
 
 inline ostream& operator<<(ostream& stream, const Node& node) {
