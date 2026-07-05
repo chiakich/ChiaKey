@@ -528,7 +528,8 @@ inline FastPath Graph::fastWalkMemoized(const string& previous,
 
     nextPath.insert(
         nextPath.begin(),
-        PathNode(ssp.first, ssp.second + nextPath[0].score, *cniter));
+        PathNode(ssp.first,
+                 ssp.second + node.lengthPrior() + nextPath[0].score, *cniter));
     nextPaths.push_back(nextPath);
   }
 
@@ -640,7 +641,8 @@ inline vector<Path> Graph::walkMemoized(const string& previous,
       path.insert(
           path.begin(),
           StringScoreNodeSetIteratorPair(
-              StringScorePair(ssp.first, ssp.second + path[0].first.second),
+              StringScorePair(ssp.first, ssp.second + node.lengthPrior() +
+                                             path[0].first.second),
               *cniter));
 
       // if aggressive, we assume the fist path has the highest score, so we
