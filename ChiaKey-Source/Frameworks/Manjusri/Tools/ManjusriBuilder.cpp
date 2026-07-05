@@ -281,6 +281,15 @@ int main(int argc, char* argv[]) {
       graph.setSource(source);
       graph.build();
       cout << "build time: " << graph.lastBuildTime() << " secs" << endl;
+    } else if (cmd == "buildabs") {
+      StringVector source(args.begin(), args.end());
+      graph.clear();
+      graph.setSource(source);
+      graph.build();
+      cout << "buildabs source: ";
+      for (StringVector::iterator it = source.begin(); it != source.end(); ++it)
+        cout << *it << " ";
+      cout << "(build " << graph.lastBuildTime() << "s)" << endl;
     } else if (cmd == "candidate") {
       if (!args.size())
         cerr << "usage: candidate <index> [preceding]" << endl;
