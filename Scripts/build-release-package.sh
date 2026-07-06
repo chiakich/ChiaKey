@@ -2,6 +2,15 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+LOCAL_ENV_FILE="${CHIAKEY_RELEASE_ENV_FILE:-${ROOT_DIR}/.env.local}"
+if [[ -n "${LOCAL_ENV_FILE}" && -f "${LOCAL_ENV_FILE}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${LOCAL_ENV_FILE}"
+  set +a
+fi
+
 PROJECT="${ROOT_DIR}/ChiaKey-Source/Takao.xcodeproj"
 DATA_TABLES_DIR="${ROOT_DIR}/ChiaKey-Source/DataTables"
 DATABASES_DIR="${ROOT_DIR}/ChiaKey-Source/Distributions/Takao/CookedDatabase"
@@ -85,6 +94,10 @@ Options:
   --lexicon-manifest-url URL         Manifest URL. Overrides --lexicon-repo/tag.
   --keep-work-dir                    Keep temporary staging files.
   -h, --help                         Show this help.
+
+Local environment:
+  If ${ROOT_DIR}/.env.local exists, it is loaded before defaults are applied.
+  Set CHIAKEY_RELEASE_ENV_FILE=/path/to/file to use a different env file.
 
 Signing examples:
   APP_SIGN_IDENTITY="Developer ID Application: Example" \\
@@ -549,11 +562,24 @@ run /usr/bin/find "${BUILT_APP}" -name "._*" -delete
 run /usr/bin/find "${BUILT_APP}" -name ".DS_Store" -delete
 run /usr/bin/xattr -cr "${BUILT_APP}"
 
+sign_app_bundle() {
+  local app_bundle="$1"
+
+  if [[ "${APP_SIGN_IDENTITY}" == "-" ]]; then
+    run /usr/bin/codesign --force --deep --sign - "${app_bundle}"
+  else
+    run /usr/bin/codesign --force --deep --options runtime --timestamp \
+      --sign "${APP_SIGN_IDENTITY}" "${app_bundle}"
+  fi
+}
+
 if [[ "${APP_SIGN_IDENTITY}" == "-" ]]; then
-  run /usr/bin/codesign --force --deep --sign - "${BUILT_APP}"
+  sign_app_bundle "${BUILT_APP}"
 else
-  run /usr/bin/codesign --force --deep --options runtime --timestamp \
-    --sign "${APP_SIGN_IDENTITY}" "${BUILT_APP}"
+  while IFS= read -r nested_app; do
+    sign_app_bundle "${nested_app}"
+  done < <(/usr/bin/find "${BUILT_APP}/Contents" -type d -name "*.app" -print | /usr/bin/sort -r)
+  sign_app_bundle "${BUILT_APP}"
 fi
 
 run /usr/bin/xattr -cr "${BUILT_APP}"
