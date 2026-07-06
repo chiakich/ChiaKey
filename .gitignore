@@ -232,3 +232,8 @@ _TeamCity*
 _UpgradeReport_Files/
 __pycache__/
 ~$*
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
