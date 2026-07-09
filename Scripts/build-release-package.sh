@@ -286,7 +286,9 @@ create_product_resources() {
   run /bin/cp "${LICENSE_FILE}" "${PRODUCT_RESOURCES_DIR}/License.txt"
   for lproj_dir in "${PRODUCT_RESOURCES_DIR}"/*.lproj; do
     if [[ -d "${lproj_dir}" ]]; then
-      run /bin/cp "${LICENSE_FILE}" "${lproj_dir}/License.txt"
+      if [[ ! -f "${lproj_dir}/License.txt" ]]; then
+        run /bin/cp "${LICENSE_FILE}" "${lproj_dir}/License.txt"
+      fi
     fi
   done
 }
