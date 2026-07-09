@@ -159,8 +159,11 @@ jobs:
           Scripts/build-release-package.sh ${args[@]+"${args[@]}"}
 
           pkg="$(ls -t artifacts/release/*.pkg | head -n1)"
+          latest_pkg="artifacts/release/ChiaKey.pkg"
+          cp "$pkg" "$latest_pkg"
           echo "Built: $pkg"
           echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
+          echo "latest_pkg=$latest_pkg" >>"$GITHUB_OUTPUT"
 
       - name: Push version bump and tag
         if: ${{ inputs.dry_run == false }}
@@ -181,7 +184,9 @@ jobs:
           name: ChiaKey ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           prerelease: ${{ steps.version.outputs.prerelease }}
-          files: ${{ steps.build.outputs.pkg }}
+          files: |
+            ${{ steps.build.outputs.pkg }}
+            ${{ steps.build.outputs.latest_pkg }}
 
       - name: Dry run summary
         if: ${{ inputs.dry_run == true }}
