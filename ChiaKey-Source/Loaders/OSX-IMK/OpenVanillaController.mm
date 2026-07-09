@@ -1098,6 +1098,14 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   [self _resetUI];
 }
 
+- (void)reportCandidateIssueAction:(id)sender {
+  NSString *urlString =
+      @"https://github.com/chiakich/ChiaKey-Lexicon/issues/new/choose";
+  NSURL *url = [NSURL URLWithString:urlString];
+  [[NSWorkspace sharedWorkspace] openURL:url];
+  [self _resetUI];
+}
+
 - (void)aboutAction:(id)sender {
   [(CVApplicationController *)[NSApp delegate] showAboutWindow:sender];
   [self _resetUI];
@@ -1250,6 +1258,14 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   [prefMenuItem setAction:@selector(preferenceAction:)];
   [prefMenuItem setTitle:LFLSTR(@"Preferences...")];
   [menu addItem:prefMenuItem];
+
+  NSMenuItem *reportCandidateIssueMenuItem =
+      [[[NSMenuItem alloc] init] autorelease];
+  [reportCandidateIssueMenuItem setTarget:self];
+  [reportCandidateIssueMenuItem
+      setAction:@selector(reportCandidateIssueAction:)];
+  [reportCandidateIssueMenuItem setTitle:LFLSTR(@"Report Candidate Issue")];
+  [menu addItem:reportCandidateIssueMenuItem];
 
   NSMenuItem *aboutMenuItem = [[[NSMenuItem alloc] init] autorelease];
   [aboutMenuItem setTarget:self];
