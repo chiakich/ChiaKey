@@ -11,8 +11,8 @@ maintainable, and releasable on modern Apple Silicon Macs.
 
 This is not an official Yahoo product. The source code is released under a
 BSD-style license; see LICENSE.
-The Yahoo! name and contributor names may not be used to endorse derived
-products without prior written permission.
+The Yahoo! name, Chiaki.C name, and contributor names may not be used to
+endorse derived products without prior written permission.
 
 After installation, open System Settings > Keyboard > Text Input > Edit > "+",
 then choose Traditional Chinese > ChiaKey from the language list.
