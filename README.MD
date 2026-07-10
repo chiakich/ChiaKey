@@ -12,8 +12,8 @@
 
 ## 下載
 
-- [直接下載最新版 macOS 安裝包（.pkg）](https://github.com/akira02/ChiaKey/releases/latest/download/ChiaKey.pkg)
-- [查看所有 Releases](https://github.com/akira02/ChiaKey/releases)
+- [下載最新版 macOS 安裝包（.pkg）](https://github.com/chiakich/ChiaKey/releases/latest/)
+- [查看所有歷史版本](https://github.com/chiakich/ChiaKey/releases/)
 
 下載後開啟 `.pkg`，依照安裝程式指示完成安裝。第一次安裝後若未自動啟動，請到「系統設定 > 鍵盤 > 文字輸入」新增「千秋輸入法」。若安裝後系統仍顯示舊版本或找不到輸入法，登出再登入一次通常可以解決。
 
@@ -33,7 +33,6 @@
 1. macOS 內建注音輸入方式：不需要額外安裝，和系統整合度最高，適合需求單純、希望維持最少維護成本的使用者。
 2. [小麥注音輸入法](https://github.com/openvanilla/McBopomofo)：長期維護的開源注音輸入法，架構較現代、專案焦點清楚。
 3. [vChewing 唯音輸入法](https://vchewing.github.io/) 與其 [macOS repo](https://github.com/vChewing/vChewing-macOS)：功能面完整，支援多種鍵盤、拼音輸入、Sandbox、安全防護、輸出轉換與許多進階偏好設定。
-
 
 ## 目前狀態
 
@@ -64,4 +63,3 @@ Note:
 - [Release packaging](Docs/ReleasePackaging.md)：正式 `.pkg` installer、簽章與 notarization 流程。
 - [現代化 roadmap](Docs/ModernizationPlan.md)：已完成基線、下一步與延後事項。
 - [OneKey 移除說明](Docs/LexiconOneKeyRemoval.md)：給詞庫 repo 的相容性說明。
-
