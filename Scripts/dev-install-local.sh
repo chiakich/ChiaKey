@@ -19,10 +19,17 @@ ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/C
 USER_SUPPORT_DIR="${HOME}/Library/Application Support/ChiaKey"
 USER_PREFERENCES_DIR="${HOME}/Library/Preferences"
 SCHEME="Takao-All"
+# Name of the product Xcode builds; also the release bundle name.
 APP_NAME="ChiaKey.app"
 PROCESS_NAME="ChiaKey"
 LEGACY_APP_NAME="千秋輸入法.app"
 LEGACY_PROCESS_NAME="千秋輸入法"
+
+# The dev install ships as a distinct input method
+DEV_APP_NAME="ChiaKeyDev.app"
+DEV_BUNDLE_ID="com.chiakey.inputmethod.ChiaKeyDev"
+DEV_CONNECTION_NAME="ChiaKeyDev_1_Connection"
+DEV_DISPLAY_NAME="千秋輸入法 (Dev)"
 
 CONFIGURATION="${CONFIGURATION:-Debug}"
 DEFAULT_TMP_DIR="${TMPDIR:-/tmp}"
@@ -40,8 +47,11 @@ usage() {
   cat <<EOF
 Usage: Scripts/dev-install-local.sh [options]
 
-Build and install the local IMK app into:
-  ~/Library/Input Methods/${APP_NAME}
+Build and install the local IMK app as a distinct "dev" input method into:
+  ~/Library/Input Methods/${DEV_APP_NAME}  (displayed as "${DEV_DISPLAY_NAME}")
+
+It uses its own bundle id and connection name, so it coexists with a release
+install without producing duplicate input source entries.
 
 Options:
   --configuration Debug|Release  Build configuration. Default: ${CONFIGURATION}
@@ -106,6 +116,14 @@ reset_user_state() {
     "${USER_SUPPORT_DIR}/Lexicons"
 
   run_allow_fail /usr/bin/killall cfprefsd
+}
+
+# Rewrite the installed bundle's identity so it registers as a distinct dev input method. 
+apply_dev_identity() {
+  run /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${DEV_BUNDLE_ID}" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Set :TISInputSourceID ${DEV_BUNDLE_ID}" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Set :InputMethodConnectionName ${DEV_CONNECTION_NAME}" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Set :CFBundleName ${DEV_DISPLAY_NAME}" "${INSTALLED_PLIST}"
 }
 
 copy_legal_notices() {
@@ -234,8 +252,12 @@ esac
 
 BUILT_APP="${DERIVED_DATA_PATH}/Build/Products/${CONFIGURATION}/${APP_NAME}"
 BUILT_RESOURCES="${BUILT_APP}/Contents/Resources"
-INSTALL_APP="${INSTALL_DIR}/${APP_NAME}"
+INSTALL_APP="${INSTALL_DIR}/${DEV_APP_NAME}"
+INSTALLED_PLIST="${INSTALL_APP}/Contents/Info.plist"
 LEGACY_INSTALL_APP="${INSTALL_DIR}/${LEGACY_APP_NAME}"
+# Older revisions of this script installed the dev build under the release
+# name; remove that stale copy so it does not linger as a second registration.
+STALE_DEV_INSTALL_APP="${INSTALL_DIR}/${APP_NAME}"
 
 case "${INSTALL_APP}" in
   "${HOME}"/Library/Input\ Methods/*.app) ;;
@@ -246,6 +268,11 @@ case "${INSTALL_APP}" in
 esac
 
 if [[ "${SKIP_BUILD}" != "1" ]]; then
+  # Override the compiled-in IMK connection name so the dev build does not
+  # fight the release build over the same Mach connection. $(inherited) keeps
+  # each target's existing definitions; the appended macro wins (clang takes
+  # the last -D for a given name) and only main.mm reads it, so this is inert
+  # for every other target in the scheme.
   run /usr/bin/xcodebuild \
     -project "${PROJECT}" \
     -scheme "${SCHEME}" \
@@ -253,6 +280,7 @@ if [[ "${SKIP_BUILD}" != "1" ]]; then
     -derivedDataPath "${DERIVED_DATA_PATH}" \
     CODE_SIGNING_ALLOWED=NO \
     ONLY_ACTIVE_ARCH=YES \
+    GCC_PREPROCESSOR_DEFINITIONS="\$(inherited) OPENVANILLA_CONNECTION_NAME=@\\\"${DEV_CONNECTION_NAME}\\\"" \
     build
 fi
 
@@ -286,9 +314,9 @@ if [[ "${UPDATE_LEXICON}" == "1" && "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
   run "${LEXICON_INSTALL_SCRIPT}" --skip-current
 fi
 
-run_allow_fail /usr/bin/pkill -x "${PROCESS_NAME}"
-run_allow_fail /usr/bin/pkill -f "${APP_NAME}/Contents/MacOS/${PROCESS_NAME}"
-run_allow_fail /usr/bin/pkill -x "${LEGACY_PROCESS_NAME}"
+# Stop only the dev input method by its bundle path; a coexisting release
+# install (same executable name) keeps running.
+run_allow_fail /usr/bin/pkill -f "${DEV_APP_NAME}/Contents/MacOS/${PROCESS_NAME}"
 run_allow_fail /usr/bin/pkill -f "${LEGACY_APP_NAME}/Contents/MacOS/${LEGACY_PROCESS_NAME}"
 
 if [[ "${BUNDLE_LOCAL_LEXICON}" == "1" ]]; then
@@ -309,16 +337,34 @@ if [[ "${DRY_RUN}" == "1" || -d "${LEGACY_INSTALL_APP}" ]]; then
   run /bin/rm -rf "${LEGACY_INSTALL_APP}"
 fi
 
+# A ChiaKey.app in ~/Library may be an old dev copy (now superseded by the dev
+# variant) or a per-user release install; we cannot tell them apart by path, so
+# warn instead of deleting it — a stale dev copy here would still show as a
+# duplicate entry.
+if [[ "${DRY_RUN}" != "1" && -d "${STALE_DEV_INSTALL_APP}" ]]; then
+  cat >&2 <<EOF
+Note: ${STALE_DEV_INSTALL_APP} exists.
+If it is an old dev build (this script now installs ${DEV_APP_NAME} instead),
+remove it to avoid a duplicate entry:
+  rm -rf "${STALE_DEV_INSTALL_APP}"
+Leave it if it is your release install.
+EOF
+fi
+
 run /usr/bin/ditto "${BUILT_APP}" "${INSTALL_APP}"
+apply_dev_identity
 run /usr/bin/codesign --force --deep --sign - "${INSTALL_APP}"
+
+# Register the dev input source so it appears without a logout/login.
+run_allow_fail "${INSTALL_APP}/Contents/MacOS/${PROCESS_NAME}" install
 
 if [[ "${UPDATE_LEXICON}" == "1" && "${BUNDLE_LOCAL_LEXICON}" != "1" ]]; then
   run "${LEXICON_INSTALL_SCRIPT}" --skip-current
 fi
 
-run_allow_fail /usr/bin/pkill -x "${PROCESS_NAME}"
-run_allow_fail /usr/bin/pkill -f "${APP_NAME}/Contents/MacOS/${PROCESS_NAME}"
-run_allow_fail /usr/bin/pkill -x "${LEGACY_PROCESS_NAME}"
+# Stop only the dev input method by its bundle path; a coexisting release
+# install (same executable name) keeps running.
+run_allow_fail /usr/bin/pkill -f "${DEV_APP_NAME}/Contents/MacOS/${PROCESS_NAME}"
 run_allow_fail /usr/bin/pkill -f "${LEGACY_APP_NAME}/Contents/MacOS/${LEGACY_PROCESS_NAME}"
 
 if [[ "${OPEN_SETTINGS}" == "1" ]]; then
@@ -327,10 +373,11 @@ fi
 
 cat <<EOF
 
-Installed ${APP_NAME} to:
+Installed the dev input method to:
   ${INSTALL_APP}
+It registers separately as "${DEV_DISPLAY_NAME}" and coexists with a release install.
 
-For the first install, add it from System Settings > Keyboard > Text Input.
+For the first install, add "${DEV_DISPLAY_NAME}" from System Settings > Keyboard > Text Input.
 After later code changes, rerun this script and switch away from/back to the input method.
 If macOS still caches an old copy, log out and back in once.
 EOF

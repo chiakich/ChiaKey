@@ -1,29 +1,73 @@
 #!/bin/sh
 
+APP_REL="Library/Input Methods/ChiaKey.app"
+LEGACY_REL="Library/Input Methods/千秋輸入法.app"
+
 /usr/bin/pkill -x ChiaKey >/dev/null 2>&1 || true
+/usr/bin/pkill -x 千秋輸入法 >/dev/null 2>&1 || true
 /usr/bin/pkill -f '/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
 /usr/bin/pkill -f '/Users/.*/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
 
 console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
 console_home=""
+console_uid=""
 if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
    /usr/bin/id -u "${console_user}" >/dev/null 2>&1; then
   console_uid="$(/usr/bin/id -u "${console_user}")"
   console_home="$(/usr/bin/dscl . -read "/Users/${console_user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}' || true)"
 fi
 
-app_bin=""
+# Physical path of a directory, or empty if it does not exist. Used to compare
+# candidate paths that may differ textually (e.g. "//Library" vs "/Library"
+# when the target location "$2" is "/") but resolve to the same bundle.
+canon() {
+  [ -d "$1" ] || return 1
+  ( CDPATH= cd -- "$1" 2>/dev/null && pwd -P ) || return 1
+}
+
+# The bundle this run installed: prefer the chosen target location ("$2"),
+# then the console user's home, then the system domain.
+keep_app=""
 for candidate in \
-  "${2:-}/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey" \
-  "${console_home}/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey" \
-  "/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey"; do
-  if [ -x "${candidate}" ]; then
-    app_bin="${candidate}"
+  "${2:-}/${APP_REL}" \
+  "${console_home}/${APP_REL}" \
+  "/${APP_REL}"; do
+  if [ -x "${candidate}/Contents/MacOS/ChiaKey" ]; then
+    keep_app="${candidate}"
     break
   fi
 done
 
-if [ -n "${app_bin}" ]; then
+keep_canon=""
+if [ -n "${keep_app}" ]; then
+  keep_canon="$(canon "${keep_app}" || true)"
+fi
+
+# Remove one duplicate bundle unless it is the copy we are keeping.
+remove_duplicate() {
+  target="$1"
+  [ -e "${target}" ] || return 0
+  target_canon="$(canon "${target}" || true)"
+  if [ -n "${keep_canon}" ] && [ "${target_canon}" = "${keep_canon}" ]; then
+    return 0
+  fi
+  echo "ChiaKey postinstall: removing duplicate copy at ${target}" >&2
+  /bin/rm -rf "${target}" || true
+}
+
+# Only prune once we are sure which copy to keep; never leave zero copies.
+if [ -n "${keep_canon}" ]; then
+  remove_duplicate "/${APP_REL}"
+  remove_duplicate "/${LEGACY_REL}"
+  for home in /Users/*; do
+    [ -d "${home}" ] || continue
+    remove_duplicate "${home}/${APP_REL}"
+    remove_duplicate "${home}/${LEGACY_REL}"
+  done
+fi
+
+if [ -n "${keep_app}" ]; then
+  app_bin="${keep_app}/Contents/MacOS/ChiaKey"
   echo "ChiaKey postinstall: registering input source with ${app_bin}" >&2
   if [ -n "${console_uid:-}" ]; then
     /bin/launchctl asuser "${console_uid}" "${app_bin}" install
