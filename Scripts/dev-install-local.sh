@@ -120,10 +120,23 @@ reset_user_state() {
 
 # Rewrite the installed bundle's identity so it registers as a distinct dev input method. 
 apply_dev_identity() {
+  local localized_plist
+
   run /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${DEV_BUNDLE_ID}" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Set :TISInputSourceID ${DEV_BUNDLE_ID}" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Set :InputMethodConnectionName ${DEV_CONNECTION_NAME}" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Set :CFBundleName ${DEV_DISPLAY_NAME}" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string ${DEV_DISPLAY_NAME}" "${INSTALLED_PLIST}"
+
+  # LSHasLocalizedDisplayName makes macOS prefer these localized values over
+  # the bundle's Info.plist. Update them too, otherwise the input menu keeps
+  # showing the release name even though the dev bundle identity is distinct.
+  for localized_plist in "${INSTALL_APP}"/Contents/Resources/*.lproj/InfoPlist.strings; do
+    [[ -f "${localized_plist}" ]] || continue
+    run /usr/libexec/PlistBuddy -c "Set :CFBundleName ${DEV_DISPLAY_NAME}" "${localized_plist}"
+    run /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName ${DEV_DISPLAY_NAME}" "${localized_plist}"
+    run /usr/libexec/PlistBuddy -c "Set :com.chiakey.inputmethod.ChiaKey ${DEV_DISPLAY_NAME}" "${localized_plist}"
+  done
 }
 
 copy_legal_notices() {
