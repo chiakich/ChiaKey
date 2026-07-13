@@ -46,10 +46,10 @@ Scripts/install-lexicon-release.sh
 
 1. `kind`: 必須是 `chiakey-source-db`
 2. `url`
-3. `filename`: 必須是 `ChiaKeySource.db`
+3. `filename`: 資料庫 release asset 的檔名；必須是安全的單一路徑元件並以 `.db` 結尾。可使用帶版本號的名稱，例如 `ChiaKeySource-2026.07.4.db`。
 4. `sha256`
 
-Installer 與 release packaging 只接受 `chiakey-source-db` / `ChiaKeySource.db`。舊版 `keykey-source-db` 或 `KeyKeySource.db` 只保留為 runtime migration fallback，不再是合法的新 release artifact。
+Installer 與 release packaging 只接受 `chiakey-source-db` artifact。release asset 可使用版本化 `.db` 檔名；安裝時一律重新命名為 `ChiaKeySource.db`。舊版 `keykey-source-db` 或 `KeyKeySource.db` 只保留為 runtime migration fallback，不再是合法的新 release artifact。
 
 Optional metadata artifact fields：
 

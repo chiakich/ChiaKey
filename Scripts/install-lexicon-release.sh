@@ -6,7 +6,6 @@ TAG=""
 MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/ChiaKey/Lexicons"
 DB_INSTALL_FILENAME="ChiaKeySource.db"
-DB_RELEASE_FILENAME="ChiaKeySource.db"
 DRY_RUN=0
 KEEP_DOWNLOADS=0
 SKIP_CURRENT=0
@@ -396,8 +395,8 @@ IFS=$'\t' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_U
 
 validate_manifest_path_component "version" "${VERSION}"
 validate_manifest_path_component "database filename" "${DB_FILENAME}"
-if [[ "${DB_FILENAME}" != "${DB_RELEASE_FILENAME}" ]]; then
-  echo "Lexicon release database filename must be ${DB_RELEASE_FILENAME}: ${DB_FILENAME}" >&2
+if [[ "${DB_FILENAME}" != *.db ]]; then
+  echo "Lexicon release database filename must end with .db: ${DB_FILENAME}" >&2
   exit 1
 fi
 if [[ -n "${METADATA_URL}" ]]; then
