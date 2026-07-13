@@ -8,9 +8,12 @@
 
 這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE](LICENSE)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
 
-> 如果喜歡的話歡迎贊助，費用將用於支付年度蘋果開發者帳號費用。
+> 如果喜歡的話歡迎贊助！捐款將用於支付年度蘋果開發者帳號費用。
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A21UAIV9)
+海外：
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A21UAIV9)  
+台灣：
+[歐付寶](https://payment.opay.tw/Broadcaster/Donate/9FBD07EA250D8690439227D01A934C15)（支援TWQR行動支付、信用卡、ATM、超商代碼）
 
 ## 下載
 
