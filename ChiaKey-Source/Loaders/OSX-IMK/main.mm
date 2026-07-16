@@ -3,12 +3,47 @@
 #import <InputMethodKit/InputMethodKit.h>
 #include <string>
 
+#import "BPMFUserPhraseHelper.h"
 #import "CVApplicationController.h"
+#import "ChiaKeyServiceCoordination.h"
+#import "ChiaKeyUserPhraseCoordination.h"
 #import "OpenVanillaConfig.h"
 #import "OpenVanillaController.h"
 #import "OpenVanillaLoader.h"
 
 using namespace std;
+
+// CLI import/export operate on the user phrase DB directly (the old XPC
+// channel is gone); a running IME is coordinated via the editing-lock and
+// dirty-flag files, same as the Phrase Editor.
+static OVSQLiteConnection *ChiaKeyOpenUserPhraseDBForCLI() {
+  NSString *dir = ChiaKeyServiceUserDataDirectory();
+  [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                            withIntermediateDirectories:YES
+                                             attributes:nil
+                                                  error:NULL];
+  NSString *path =
+      [dir stringByAppendingPathComponent:@"SmartMandarinUserData.db"];
+  OVSQLiteConnection *db = OVSQLiteConnection::Open([path UTF8String]);
+  if (!db) return 0;
+
+  if (!db->hasTable("user_unigrams")) {
+    db->createTable("user_unigrams", "qstring, current, probability, backoff");
+    db->createIndexOnTable("user_unigrams_index", "user_unigrams", "qstring");
+  }
+  if (!db->hasTable("user_bigram_cache")) {
+    db->createTable("user_bigram_cache",
+                    "qstring, previous, current, probability");
+    db->createIndexOnTable("user_bigram_cache_index", "user_bigram_cache",
+                           "qstring");
+  }
+  if (!db->hasTable("user_candidate_override_cache")) {
+    db->createTable("user_candidate_override_cache", "qstring, current");
+    db->createIndexOnTable("user_candidate_override_cache_index",
+                           "user_candidate_override_cache", "qstring");
+  }
+  return db;
+}
 
 IMKServer *OVInputMethodServer = nil;
 
@@ -95,76 +130,76 @@ int main(int argc, char *argv[]) {
     NSApplicationLoad();
     [NSRunLoop currentRunLoop];
 
-    id ovService = [[ChiaKeyServiceClient sharedClient] retain];
-    if ([ovService isAvailable]) {
-      // NSLog(@"OpenVanilla DO service obtained: %@",
-      // OPENVANILLA_DO_CONNECTION_NAME);
+    string arg = (argc > 2) ? argv[2] : "";
+    int status = 0;
 
-      string arg = (argc > 2) ? argv[2] : "";
-
-      if (cmd == "reload") {
-        NSLog(@"Invoking reload");
-        [ovService reloadOpenVanilla];
-      } else if (cmd == "modulelist") {
-        NSArray *idsAndNames =
-            [ovService identifiersAndLocalizedNamesWithPattern:@"*"];
-
-        if (idsAndNames) {
-          NSEnumerator *ianEnum = [idsAndNames objectEnumerator];
-          id item;
-          while (item = [ianEnum nextObject]) {
-            NSLog(@"module: %@ (%@)", [item objectAtIndex:0],
-                  [item objectAtIndex:1]);
-          }
-        } else {
-          NSLog(@"modulelist failed");
+    if (cmd == "reload") {
+      if (ChiaKeyIMEIsRunning()) {
+        ChiaKeyPostServiceNotification(ChiaKeyReloadRequestedNotification);
+        NSLog(@"reload requested");
+      } else {
+        NSLog(@"reload: ChiaKey is not running");
+        status = 1;
+      }
+    } else if (cmd == "modulelist") {
+      NSArray *idsAndNames =
+          [ChiaKeyReadServiceStatus() objectForKey:ChiaKeyStatusModulesKey];
+      if ([idsAndNames count]) {
+        NSEnumerator *ianEnum = [idsAndNames objectEnumerator];
+        id item;
+        while (item = [ianEnum nextObject]) {
+          NSLog(@"module: %@ (%@)", [item objectAtIndex:0],
+                [item objectAtIndex:1]);
         }
-      } else if (cmd == "import") {
-        if ([ovService importUserPhraseDBFromFile:
-                           [NSString stringWithUTF8String:arg.c_str()]])
-          NSLog(@"import succeeded, file: %s", arg.c_str());
-        else
-          NSLog(@"import failed");
-      } else if (cmd == "export") {
-        if ([ovService
-                exportUserPhraseDBToFile:[NSString
-                                             stringWithUTF8String:arg.c_str()]])
-          NSLog(@"export succeeded, file: %s", arg.c_str());
-        else
-          NSLog(@"export failed");
+      } else {
+        NSLog(@"modulelist: no published status; run the input method first");
+        status = 1;
       }
-      // remark this in production
-      //            else if (cmd == "test") {
-      //                if ([ovService userPhraseDBCanProvideService]) {
-      //                    int row = [ovService userPhraseDBNumberOfRow];
-      //                    NSLog(@"number of user phrase db entries: %d", row);
-      //
-      //                    for (int i = 0 ; i < row ; i++) {
-      //                        NSDictionary *entry = [ovService
-      //                        userPhraseDBDictionaryAtRow:i]; NSLog(@"entry %d
-      //                        : %@", i, entry);
-      //                    }
-      //
-      //                    NSArray *x = [ovService
-      //                    userPhraseDBReadingsForPhrase:@"一個輸入法"]; id n,
-      //                    e = [x objectEnumerator]; while (n = [e nextObject])
-      //                    {
-      //                        NSLog(@"possible sounds: %@", n);
-      //                    }
-      //                }
-      //            }
-      else {
-        NSLog(@"unknown comomand.");
+    } else if (cmd == "import") {
+      NSString *dir = ChiaKeyServiceUserDataDirectory();
+      ChiaKeyClaimUserPhraseEditingLock(dir);
+      ChiaKeyPostUserPhraseNotification(
+          ChiaKeyPhraseEditorDidBeginEditingNotification);
+
+      OVSQLiteConnection *db = ChiaKeyOpenUserPhraseDBForCLI();
+      bool ok = db && Manjusri::BPMFUserPhraseHelper::Import(db, arg);
+      if (db) delete db;
+
+      ChiaKeyTouchCoordinationFile(ChiaKeyUserPhraseDirtyFlagPath(dir));
+      if (ChiaKeyReleaseUserPhraseEditingLockIfOwner(dir)) {
+        ChiaKeyPostUserPhraseNotification(
+            ChiaKeyPhraseEditorDidEndEditingNotification);
       }
 
-      [[NSRunLoop currentRunLoop]
-             runMode:NSDefaultRunLoopMode
-          beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+      if (ok) {
+        NSLog(@"import succeeded, file: %s", arg.c_str());
+      } else {
+        NSLog(@"import failed");
+        status = 1;
+      }
+    } else if (cmd == "export") {
+      OVSQLiteConnection *db = ChiaKeyOpenUserPhraseDBForCLI();
+      bool ok = db && Manjusri::BPMFUserPhraseHelper::Export(db, arg);
+      if (db) delete db;
 
-      return 0;
+      if (ok) {
+        NSLog(@"export succeeded, file: %s", arg.c_str());
+      } else {
+        NSLog(@"export failed");
+        status = 1;
+      }
+    } else {
+      NSLog(@"unknown command.");
+      status = 1;
     }
 
-    // ignore other strange arguments...
+    // Give the distributed notifications a moment to flush.
+    [[NSRunLoop currentRunLoop]
+           runMode:NSDefaultRunLoopMode
+        beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+
+    [pool drain];
+    return status;
   }
 
   OVInputMethodServer =

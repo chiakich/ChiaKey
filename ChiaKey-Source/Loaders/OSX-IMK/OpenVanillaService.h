@@ -86,8 +86,3 @@
                         atRow:(int)row
                         reply:(void (^)(void))reply;
 @end
-
-@interface ChiaKeyServiceClient : NSObject <OpenVanillaService>
-+ (instancetype)sharedClient;
-- (BOOL)isAvailable;
-@end

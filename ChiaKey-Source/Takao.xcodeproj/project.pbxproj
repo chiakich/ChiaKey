@@ -247,7 +247,6 @@
 		6A4773180D5C607200C6C744 /* OpenVanillaLoader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */; };
 		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
-		5BC0A1032C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
 		CE00000000000000000000B1 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
 		CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
 		CE00000000000000000000B7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
@@ -1003,7 +1002,6 @@
 		6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OpenVanillaLoader.mm; path = "Loaders/OSX-IMK/OpenVanillaLoader.mm"; sourceTree = "<group>"; wrapsLines = 1; };
 		5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVCapsLockDelayOverride.h; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.h"; sourceTree = "<group>"; };
 		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
-		5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ChiaKeyServiceClient.m; path = "Loaders/OSX-IMK/ChiaKeyServiceClient.m"; sourceTree = "<group>"; };
 		CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyUserPhraseCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyUserPhraseCoordination.h"; sourceTree = "<group>"; };
 		CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyServiceCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyServiceCoordination.h"; sourceTree = "<group>"; };
 		6A4773760D5C621400C6C744 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
@@ -2184,7 +2182,6 @@
 				children = (
 					D459B7960D925BD300CBDE76 /* UI Components */,
 					D484CEDA0EC218170051B6CA /* UIControllers */,
-					5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */,
 					CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */,
 					CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */,
 					6A4772FD0D5C607200C6C744 /* main.mm */,
@@ -3524,7 +3521,6 @@
 			buildActionMask = 2147483647;
 			files = (
 					D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
-					5BC0A1032C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */,
 					6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
 				6A4773070D5C607200C6C744 /* CVBubbleTextView.m in Sources */,
 				6A4773080D5C607200C6C744 /* CVBubbleTextWindow.m in Sources */,
