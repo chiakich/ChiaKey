@@ -96,7 +96,7 @@
 }
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                          row:(int)rowIndex {
+                          row:(NSInteger)rowIndex {
   id obj = [_array objectAtIndex:rowIndex];
   if ([obj isKindOfClass:[NSString class]]) return obj;
 

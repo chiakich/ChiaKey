@@ -329,7 +329,7 @@
 - (void)tableView:(NSTableView *)aTableView
     willDisplayCell:(id)aCell
      forTableColumn:(NSTableColumn *)aTableColumn
-                row:(int)rowIndex {
+                row:(NSInteger)rowIndex {
   NSInteger selectedRow = [_tableView selectedRow];
   if ([[aTableColumn identifier] isEqualToString:@"candidate"]) {
     if (rowIndex == selectedRow)
@@ -340,15 +340,15 @@
 }
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                          row:(int)rowIndex {
+                          row:(NSInteger)rowIndex {
   if ([[aTableColumn identifier] isEqualToString:@"key"])
     return [[_candidateArray objectAtIndex:rowIndex] objectForKey:@"key"];
   else if ([[aTableColumn identifier] isEqualToString:@"candidate"])
     return [[_candidateArray objectAtIndex:rowIndex] objectForKey:@"candidate"];
   return nil;
 }
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView {
-  return (int)[_candidateArray count];
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
+  return (NSInteger)[_candidateArray count];
 }
 
 @end
