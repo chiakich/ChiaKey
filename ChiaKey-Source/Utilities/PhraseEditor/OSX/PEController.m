@@ -526,6 +526,8 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
       [textField setEditable:YES];
       [textField setTarget:self];
       [textField setAction:@selector(phraseFieldEdited:)];
+      // Commit on blur too, not only on Return.
+      [[textField cell] setSendsActionOnEndEditing:YES];
     } else {
       [textField setEditable:NO];
       [textField setSelectable:NO];
@@ -686,6 +688,19 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     [item setTarget:self];
     [item setAction:@selector(reloadData)];
   } else if ([identifier isEqualToString:searchToolbarItemIdentifier]) {
+    if (@available(macOS 11, *)) {
+      // A plain custom-view item loses the field's bezel under the modern
+      // toolbar styles; the dedicated item draws correctly.
+      NSSearchToolbarItem *searchItem = [[[NSSearchToolbarItem alloc]
+          initWithItemIdentifier:identifier] autorelease];
+      [searchItem setLabel:LFLSTR(searchToolbarItemIdentifier)];
+      [_searchField release];
+      _searchField = [[searchItem searchField] retain];
+      [_searchField setTarget:self];
+      [_searchField setAction:@selector(searchFieldChanged:)];
+      [[_searchField cell] setSendsSearchStringImmediately:NO];
+      return searchItem;
+    }
     if (!_searchField) {
       _searchField =
           [[NSSearchField alloc] initWithFrame:NSMakeRect(0, 0, 180, 22)];
