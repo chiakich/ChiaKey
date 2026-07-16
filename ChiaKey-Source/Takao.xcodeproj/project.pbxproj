@@ -391,7 +391,7 @@
 		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
 		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
-		D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */; };
+		CE00000000000000000000BC /* Contacts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000BB /* Contacts.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
 		D43E2DED0EBF312A00557B95 /* PhraseEditor.icns in Resources */ = {isa = PBXBuildFile; fileRef = D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */; };
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
@@ -1126,7 +1126,7 @@
 		D42B0A090EBDD3BE00AB5B7A /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D42C002D0E1912CD002CD18F /* NSStringExtension.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NSStringExtension.h; path = "Loaders/OSX-IMK/NSStringExtension.h"; sourceTree = "<group>"; };
 		D42C002E0E1912CD002CD18F /* NSStringExtension.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = NSStringExtension.mm; path = "Loaders/OSX-IMK/NSStringExtension.mm"; sourceTree = "<group>"; };
-		D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBook.framework; path = /System/Library/Frameworks/AddressBook.framework; sourceTree = "<absolute>"; };
+		CE00000000000000000000BB /* Contacts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Contacts.framework; path = /System/Library/Frameworks/Contacts.framework; sourceTree = "<absolute>"; };
 		D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = PhraseEditor.icns; path = Utilities/PhraseEditor/OSX/Images/PhraseEditor.icns; sourceTree = "<group>"; };
 		D4447D600E346C5D00BE7D9E /* stopSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = stopSound.tiff; path = PreferenceApplications/OSX/Images/stopSound.tiff; sourceTree = "<group>"; };
 		D4447D610E346C5D00BE7D9E /* playSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = playSound.tiff; path = PreferenceApplications/OSX/Images/playSound.tiff; sourceTree = "<group>"; };
@@ -1434,7 +1434,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */,
+				CE00000000000000000000BC /* Contacts.framework in Frameworks */,
 				CE00000000000000000000A4 /* libsqlite3.tbd in Frameworks */,
 				CE00000000000000000000B1 /* libFormosa.a in Frameworks */,
 			);
@@ -1831,7 +1831,7 @@
 			children = (
 				D493E9D6167775BE00BA9368 /* libsqlite3.tbd */,
 				D455A7FF106267A200CC2B47 /* Security.framework */,
-				D430EE3A0EC30F7C006B7EF9 /* AddressBook.framework */,
+				CE00000000000000000000BB /* Contacts.framework */,
 				6A7E657E0E1BB2F30071ED92 /* libSystem.B.tbd */,
 				6AF6B7890DD08DE400A0C8FD /* libz.1.tbd */,
 				D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */,

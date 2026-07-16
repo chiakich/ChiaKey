@@ -8,7 +8,7 @@
 
 #import "PEController.h"
 
-#import <AddressBook/AddressBook.h>
+#import <Contacts/Contacts.h>
 
 // Rows are fetched from SQLite in fixed-size windows so the table stays
 // responsive with tens of thousands of phrases.
@@ -304,10 +304,10 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 }
 
 - (void)importAddressBook {
-  // sharedAddressBook triggers the contacts permission prompt on first use
-  // and returns nil when access is denied.
-  ABAddressBook *addressBook = [ABAddressBook sharedAddressBook];
-  if (!addressBook) {
+  // The legacy AddressBook API no longer triggers the TCC prompt on modern
+  // macOS; go through CNContactStore, which does.
+  if ([CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts] ==
+      CNAuthorizationStatusDenied) {
     PEPresentSheetAlert(
         [self window], LFLSTR(@"Unable to access your contacts."),
         LFLSTR(@"Allow the Phrase Editor to access contacts in System "
@@ -316,6 +316,26 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     return;
   }
 
+  CNContactStore *store = [[[CNContactStore alloc] init] autorelease];
+  [store requestAccessForEntityType:CNEntityTypeContacts
+                  completionHandler:^(BOOL granted, NSError *error) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                      if (!granted) {
+                        PEPresentSheetAlert(
+                            [self window],
+                            LFLSTR(@"Unable to access your contacts."),
+                            LFLSTR(@"Allow the Phrase Editor to access "
+                                   @"contacts in System Settings > Privacy & "
+                                   @"Security > Contacts, then try again."),
+                            NSAlertStyleWarning);
+                        return;
+                      }
+                      [self _importContactNames];
+                    });
+                  }];
+}
+
+- (void)_importContactNames {
   [_progressIndicator setUsesThreadedAnimation:YES];
   [_progressIndicator startAnimation:self];
   [_progressTextField setStringValue:LFLSTR(@"Progressing...")];
@@ -323,36 +343,49 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [[self window] beginSheet:_progressWindow completionHandler:nil];
 
   BOOL skipExisting = ![_importAlreadyExistCheckBox intValue];
+  BOOL wantFullName = [_importLastAndFirstNameCheckBox intValue] != 0;
+  BOOL wantFirstName = [_importFirstNameCheckBox intValue] != 0;
 
-  NSArray *people = [addressBook people];
   NSMutableArray *array = [NSMutableArray array];
   NSMutableSet *batchSeen = [NSMutableSet set];
-  NSEnumerator *enumerator = [people objectEnumerator];
-  ABPerson *person;
-  while (person = [enumerator nextObject]) {
-    NSString *lastName =
-        [self validatedString:[person valueForProperty:kABLastNameProperty]];
-    if (!lastName) lastName = @"";
 
-    NSString *firstName =
-        [self validatedString:[person valueForProperty:kABFirstNameProperty]];
-    if (!firstName) firstName = @"";
+  CNContactStore *store = [[[CNContactStore alloc] init] autorelease];
+  CNContactFetchRequest *request = [[[CNContactFetchRequest alloc]
+      initWithKeysToFetch:[NSArray arrayWithObjects:CNContactFamilyNameKey,
+                                                    CNContactGivenNameKey,
+                                                    nil]] autorelease];
+  [store
+      enumerateContactsWithFetchRequest:request
+                                  error:NULL
+                             usingBlock:^(CNContact *contact, BOOL *stop) {
+                               NSString *lastName =
+                                   [self validatedString:[contact familyName]];
+                               if (!lastName) lastName = @"";
+                               NSString *firstName =
+                                   [self validatedString:[contact givenName]];
+                               if (!firstName) firstName = @"";
+                               NSString *name =
+                                   [NSString stringWithFormat:@"%@%@",
+                                                              lastName,
+                                                              firstName];
 
-    NSString *name = [NSString stringWithFormat:@"%@%@", lastName, firstName];
-
-    if ([_importLastAndFirstNameCheckBox intValue] && [name length] < 5 &&
-        [name length] > 1 && ![batchSeen containsObject:name] &&
-        !(skipExisting && [_store containsPhrase:name])) {
-      [batchSeen addObject:name];
-      [array addObject:name];
-    }
-    if ([_importFirstNameCheckBox intValue] && [firstName length] < 5 &&
-        [firstName length] > 1 && ![batchSeen containsObject:firstName] &&
-        !(skipExisting && [_store containsPhrase:firstName])) {
-      [batchSeen addObject:firstName];
-      [array addObject:firstName];
-    }
-  }
+                               if (wantFullName && [name length] < 5 &&
+                                   [name length] > 1 &&
+                                   ![batchSeen containsObject:name] &&
+                                   !(skipExisting &&
+                                     [_store containsPhrase:name])) {
+                                 [batchSeen addObject:name];
+                                 [array addObject:name];
+                               }
+                               if (wantFirstName && [firstName length] < 5 &&
+                                   [firstName length] > 1 &&
+                                   ![batchSeen containsObject:firstName] &&
+                                   !(skipExisting &&
+                                     [_store containsPhrase:firstName])) {
+                                 [batchSeen addObject:firstName];
+                                 [array addObject:firstName];
+                               }
+                             }];
 
   if ([array count]) {
     NSArray *records = [_store addPhrases:array];
