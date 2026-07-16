@@ -7,6 +7,7 @@
 #import "OpenVanillaController.h"
 
 static const CGFloat CVSymbolWindowScreenPadding = 20.0;
+static const CGFloat CVSymbolWindowCaretGap = 150.0;
 
 @implementation CVSymbolController
 
@@ -98,13 +99,11 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
 
   NSRect screenRect = [[NSScreen mainScreen] visibleFrame];
   NSRect windowRect = [[self window] frame];
-  int x =
-      screenRect.origin.x + screenRect.size.width - windowRect.size.width - 10;
-  int y = screenRect.origin.y + 200;
+  windowRect.origin.x =
+      NSMaxX(screenRect) - windowRect.size.width - CVSymbolWindowScreenPadding;
+  windowRect.origin.y = NSMinY(screenRect) + CVSymbolWindowScreenPadding;
 
-  [[self window]
-      setFrame:NSMakeRect(x, y, windowRect.size.width, windowRect.size.height)
-       display:YES];
+  [[self window] setFrame:windowRect display:YES];
 
   // NSLog(@"addObserver");
   [[NSNotificationCenter defaultCenter]
@@ -133,6 +132,9 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
     _isTemporarilyHidden = NO;
   }
 
+  // Follow the client we are coming back to; falls through to the frame
+  // restored above when it reports no caret.
+  [self positionWindowNextToCaret];
   [[self window] orderFront:self];
 }
 - (BOOL)isVisible {
@@ -165,6 +167,29 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
     windowRect.origin.y = NSMinY(screenFrame) + CVSymbolWindowScreenPadding;
 
   return windowRect;
+}
+- (void)positionWindowNextToCaret {
+  NSRect caretRect = [OpenVanillaController currentCaretLineRect];
+  // A caret is zero-width, so only the line height tells us whether the client
+  // actually reported anything. Keep wherever the window already is if not.
+  if (caretRect.size.height <= 0.0) return;
+
+  NSRect windowRect = [[self window] frame];
+  NSRect screenFrame = [self screenVisibleFrameForPoint:caretRect.origin];
+
+  // Sit beside the caret instead of on top of what is being typed, flipping to
+  // the left when the right has no room.
+  CGFloat x = NSMaxX(caretRect) + CVSymbolWindowCaretGap;
+  if (x + windowRect.size.width >
+      NSMaxX(screenFrame) - CVSymbolWindowScreenPadding) {
+    x = NSMinX(caretRect) - CVSymbolWindowCaretGap - windowRect.size.width;
+  }
+  windowRect.origin.x = x;
+  windowRect.origin.y = NSMaxY(caretRect) - windowRect.size.height;
+
+  [[self window] setFrame:[self constrainedWindowFrame:windowRect
+                                              forPoint:caretRect.origin]
+                  display:NO];
 }
 - (void)toggleActiveView:(NSView *)view {
   if ([[_symbolContentView subviews] count]) {
@@ -216,6 +241,7 @@ static const CGFloat CVSymbolWindowScreenPadding = 20.0;
 - (IBAction)show:(id)sender {
   [[OpenVanillaLoader sharedInstance] mergeCannedMessagesData];
   _isTemporarilyHidden = NO;
+  [self positionWindowNextToCaret];
   [self showWindow:sender];
   _isVisible = YES;
 }

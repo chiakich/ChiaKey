@@ -187,6 +187,15 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   [tmp release];
 }
 
++ (NSRect)currentCaretLineRect {
+  if (!OVCActiveContextSender) return NSZeroRect;
+
+  NSRect lineHeightRect = NSZeroRect;
+  [OVCActiveContextSender attributesForCharacterIndex:0
+                                  lineHeightRectangle:&lineHeightRect];
+  return lineHeightRect;
+}
+
 #pragma mark Send string to client
 
 + (void)sendComposedStringToCurrentlyActiveContext:(NSString *)text {
@@ -416,9 +425,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
   _context->activate();
 
+  // Must precede restoreWindowStatus: the symbol window asks the active context
+  // for the caret to place itself, and would otherwise read the outgoing client.
+  [OpenVanillaController setActiveContext:self sender:sender];
   [[(CVApplicationController *)[NSApp delegate] symbolController]
       restoreWindowStatus];
-  [OpenVanillaController setActiveContext:self sender:sender];
 }
 - (void)deactivateServer:(id)sender {
   // NSLog(@"deactivateServer (client %08x), identifier: %@", sender, [sender

@@ -21,6 +21,8 @@ using namespace OpenVanilla;
   BOOL _updateCommitStringBeforeCommit;
 }
 + (void)setActiveContext:(OpenVanillaController*)context sender:(id)sender;
+// Screen rect of the line being typed on, or NSZeroRect when unavailable.
++ (NSRect)currentCaretLineRect;
 #pragma mark Send string to client.
 + (void)sendComposedStringToCurrentlyActiveContext:(NSString*)text;
 - (void)sendComposedStringToClient:(NSString*)text sender:(id)sender;
