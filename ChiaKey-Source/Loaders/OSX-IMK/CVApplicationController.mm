@@ -3,6 +3,7 @@
 #import "CVApplicationController.h"
 
 #import "CVNotifyController.h"
+#import "ChiaKeyServiceCoordination.h"
 #import "ChiaKeyUserPhraseCoordination.h"
 #import "OpenVanillaLoader.h"
 
@@ -752,6 +753,29 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
                              repeats:YES] retain];
 }
 
+#pragma mark Preferences app requests (see ChiaKeyServiceCoordination.h)
+
+- (void)_reloadRequested:(NSNotification *)notification {
+  [self reloadOpenVanilla];
+}
+
+- (void)_moduleBlacklistDidChange:(NSNotification *)notification {
+  [_loader applyPendingModuleBlacklistAndPublish];
+}
+
+- (void)_startObservingPreferencesRequests {
+  NSDistributedNotificationCenter *center =
+      [NSDistributedNotificationCenter defaultCenter];
+  [center addObserver:self
+             selector:@selector(_reloadRequested:)
+                 name:ChiaKeyReloadRequestedNotification
+               object:nil];
+  [center addObserver:self
+             selector:@selector(_moduleBlacklistDidChange:)
+                 name:ChiaKeyModuleBlacklistDidChangeNotification
+               object:nil];
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self
@@ -760,6 +784,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
            andEventID:kAEGetURL];
 
   [self _startObservingPhraseEditor];
+  [self _startObservingPreferencesRequests];
   [self _runSilentLexiconUpdateIfNeeded];
 }
 

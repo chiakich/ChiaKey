@@ -103,28 +103,15 @@ static BOOL TakaoRemoveItemAtPathWithAdministratorPrivileges(NSString *path) {
   }
 }
 - (void)reloadServer {
-  id ovService;
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-    if ([ovService isAvailable]) {
-      [ovService reloadOpenVanilla];
-    }
-  } @catch (NSException *e) {
-    // NSLog(@"Exceptions raise on retreiving version info");
-    // return;
-  }
+  // Fire-and-forget; the running IME observes this and reloads. It then
+  // republishes the status file, which reloadData reads.
+  ChiaKeyPostServiceNotification(ChiaKeyReloadRequestedNotification);
 }
 - (void)reloadData {
-  id ovService;
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-    if ([ovService isAvailable]) {
-      NSArray *info = [ovService dynamicallyLoadedModulePackageInfo];
-      [self setModules:info];
-    }
-  } @catch (NSException *e) {
-    // NSLog(@"Exceptions raise on retreiving version info");
-    // return;
+  NSArray *info =
+      [ChiaKeyReadServiceStatus() objectForKey:ChiaKeyStatusPackagesKey];
+  if (info) {
+    [self setModules:info];
   }
   [self setUIEnabled:YES];
 }
@@ -257,19 +244,15 @@ static BOOL TakaoRemoveItemAtPathWithAdministratorPrivileges(NSString *path) {
         [a addObject:[d valueForKey:OVServiceLoadedModulePackageIdentifierKey]];
       }
     }
-    id ovService;
-    @try {
-      ovService = [ChiaKeyServiceClient sharedClient];
-      if ([ovService isAvailable]) {
-        [ovService setBlackListOfPackageIdentifers:a];
-      }
-    } @catch (NSException *e) {
-      // NSLog(@"Exceptions raise on retreiving version info");
-      // return;
-    }
+    // Persist the desired blacklist to the pending file, then ask the IME
+    // to pick it up. If the IME is not running, it applies it at startup.
+    [a writeToFile:ChiaKeyPendingModuleBlacklistPath() atomically:YES];
+    ChiaKeyPostServiceNotification(ChiaKeyModuleBlacklistDidChangeNotification);
   }
-  [self reloadData];
   [self reloadServer];
+  // The table already shows the toggled state; re-sync from the status file
+  // once the IME has had a moment to apply and republish.
+  [self performSelector:@selector(reloadData) withObject:nil afterDelay:3.0];
 }
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4

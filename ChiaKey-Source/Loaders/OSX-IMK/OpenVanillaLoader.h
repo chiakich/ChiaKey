@@ -75,6 +75,13 @@ using namespace CareService;
 - (void)userPhraseDBAddNewRows:(NSArray *)array;
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row;
 
+#pragma mark Preferences app coordination
+// Writes IMEStatus.plist (module list, package info, versions) so the
+// Preferences app can read it without a mach service.
+- (void)publishServiceStatus;
+// Applies PendingModuleBlacklist.plist if present, persists it, republishes.
+- (void)applyPendingModuleBlacklistAndPublish;
+
 #pragma mark Phrase Editor coordination
 - (NSString *)userDataDirectory;
 - (BOOL)userPhraseEditingSessionActive;

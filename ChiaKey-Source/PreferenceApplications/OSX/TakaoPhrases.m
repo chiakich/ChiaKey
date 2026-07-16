@@ -7,6 +7,10 @@ file for terms.
 
 #import "TakaoPhrases.h"
 
+// Import/export talk to the user phrase DB directly, coordinated with the
+// running IME via the editing-lock/dirty-flag protocol -- no XPC.
+#import "PEUserPhraseStore.h"
+
 static void CKBeginAlertSheet(NSWindow *window, NSString *message,
                               NSString *informativeText, NSAlertStyle style) {
   NSAlert *alert = [[[NSAlert alloc] init] autorelease];
@@ -23,26 +27,14 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
 
 // Export database into a text file.
 - (IBAction)exportDatabase:(id)sender {
-  id ovService;
-
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-  } @catch (NSException *e) {
-    // NSLog(@"Exceptions raise on retreiving version info");
+  PEUserPhraseStore *store = [PEUserPhraseStore sharedStore];
+  if (![store isAvailable]) {
     CKBeginAlertSheet(window, LFLSTR(@"Unable to export database."),
                       LFLSTR(@"Uknow errors happend."),
                       NSAlertStyleWarning);
     return;
   }
 
-  if (![ovService isAvailable]) {
-    CKBeginAlertSheet(
-        window, LFLSTR(@"Unable to export database."),
-        LFLSTR(@"If you are not runnung ChiaKey, you are not "
-               @"able to export your database."),
-        NSAlertStyleWarning);
-    return;
-  }
   NSSavePanel *panel = [NSSavePanel savePanel];
   [panel setAllowedFileTypes:[NSArray arrayWithObjects:@"txt", nil]];
   [panel setExtensionHidden:NO];
@@ -53,42 +45,28 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
   [panel setPrompt:LFLSTR(@"Export")];
   if ([panel runModal] == NSModalResponseOK) {
     NSString *path = [[panel URL] path];
-    if ([ovService isAvailable]) {
-      bool rtn = [ovService exportUserPhraseDBToFile:path];
-      if (rtn) {
-        CKBeginAlertSheet(window, LFLSTR(@"Done!"),
-                          LFLSTR(@"Your phrases are successfully exported."),
-                          NSAlertStyleInformational);
-      } else {
-        CKBeginAlertSheet(window, LFLSTR(@"Error"),
-                          LFLSTR(@"Unable to export database."),
-                          NSAlertStyleWarning);
-      }
+    if ([store exportUserPhraseDBToFile:path]) {
+      CKBeginAlertSheet(window, LFLSTR(@"Done!"),
+                        LFLSTR(@"Your phrases are successfully exported."),
+                        NSAlertStyleInformational);
+    } else {
+      CKBeginAlertSheet(window, LFLSTR(@"Error"),
+                        LFLSTR(@"Unable to export database."),
+                        NSAlertStyleWarning);
     }
-  } else {
-    // NSLog(@"Cancel");
   }
 }
 
 // Import database from a text file.
 - (IBAction)importDatabase:(id)sender {
-  id ovService;
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-  } @catch (NSException *e) {
+  PEUserPhraseStore *store = [PEUserPhraseStore sharedStore];
+  if (![store isAvailable]) {
     CKBeginAlertSheet(window, LFLSTR(@"Unable to import database."),
                       LFLSTR(@"Unknown errors happened."),
                       NSAlertStyleWarning);
     return;
   }
-  if (![ovService isAvailable]) {
-    CKBeginAlertSheet(
-        window, LFLSTR(@"Unable to import database."),
-        LFLSTR(@"If you are not runnung ChiaKey, you are not "
-               @"able to import your database."),
-        NSAlertStyleWarning);
-    return;
-  }
+
   NSOpenPanel *panel = [NSOpenPanel openPanel];
   [panel setAllowedFileTypes:[NSArray arrayWithObjects:@"txt", nil]];
   [panel setExtensionHidden:NO];
@@ -98,21 +76,20 @@ static void CKBeginAlertSheet(NSWindow *window, NSString *message,
   [panel setPrompt:LFLSTR(@"Choose")];
   if ([panel runModal] == NSModalResponseOK) {
     NSString *path = [[panel URL] path];
-    if ([ovService isAvailable]) {
-      bool rtn = [ovService importUserPhraseDBFromFile:path];
-      if (rtn) {
-        CKBeginAlertSheet(window, LFLSTR(@"Done!"),
-                          LFLSTR(@"Your phrases are successfully imported."),
-                          NSAlertStyleInformational);
-
-      } else {
-        CKBeginAlertSheet(window, LFLSTR(@"Error"),
-                          LFLSTR(@"Unable to import database."),
-                          NSAlertStyleWarning);
-      }
+    // Take the editing lock for the duration of the write so the running
+    // IME suspends its own writes; ending the session makes it reload.
+    [store beginEditingSession];
+    BOOL rtn = [store importUserPhraseDBFromFile:path];
+    [store endEditingSession];
+    if (rtn) {
+      CKBeginAlertSheet(window, LFLSTR(@"Done!"),
+                        LFLSTR(@"Your phrases are successfully imported."),
+                        NSAlertStyleInformational);
+    } else {
+      CKBeginAlertSheet(window, LFLSTR(@"Error"),
+                        LFLSTR(@"Unable to import database."),
+                        NSAlertStyleWarning);
     }
-  } else {
-    // NSLog(@"Cancel");
   }
 }
 

@@ -117,18 +117,13 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 }
 
 - (NSString *)_runningDatabaseVersion {
-  id ovService = nil;
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-    if ([ovService isAvailable]) {
-      NSString *version = [ovService databaseVersion];
-      if ([version length]) return version;
-    }
-  } @catch (NSException *e) {
-    return nil;
-  }
+  // The status file may be stale when the IME is not running; only trust it
+  // as the "running" version while the process exists.
+  if (!ChiaKeyIMEIsRunning()) return nil;
 
-  return nil;
+  NSString *version = [ChiaKeyReadServiceStatus()
+      objectForKey:ChiaKeyStatusDatabaseVersionKey];
+  return [version length] ? version : nil;
 }
 
 - (NSString *)_currentLexiconDisplayVersion {
@@ -671,17 +666,9 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 }
 
 - (BOOL)_reloadOpenVanillaServer {
-  id ovService = nil;
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-    if ([ovService isAvailable]) {
-      [ovService reloadOpenVanilla];
-      return YES;
-    }
-  } @catch (NSException *e) {
-    return NO;
-  }
-  return NO;
+  if (!ChiaKeyIMEIsRunning()) return NO;
+  ChiaKeyPostServiceNotification(ChiaKeyReloadRequestedNotification);
+  return YES;
 }
 
 - (void)_showAlertWithTitle:(NSString *)title message:(NSString *)message {

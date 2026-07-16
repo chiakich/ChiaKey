@@ -249,7 +249,9 @@
 		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		5BC0A1032C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
 		CE00000000000000000000B1 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
-		5BC0A1052C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
+		CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
+		CE00000000000000000000B7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
+		CE00000000000000000000B8 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
 		6A47735B0D5C60D300C6C744 /* OpenVanilla.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A47735C0D5C60D300C6C744 /* LFExtensions.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A4771630D5C5E3900C6C744 /* LFExtensions.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A4773730D5C61E600C6C744 /* NSBezierPathAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771560D5C5DF400C6C744 /* NSBezierPathAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -642,6 +644,13 @@
 			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
 			remoteInfo = "Formosa (Library)";
 		};
+		CE00000000000000000000BA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
+			remoteInfo = "Formosa (Library)";
+		};
 		6AE354B60E8F8415003160A0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
@@ -996,6 +1005,7 @@
 		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
 		5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ChiaKeyServiceClient.m; path = "Loaders/OSX-IMK/ChiaKeyServiceClient.m"; sourceTree = "<group>"; };
 		CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyUserPhraseCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyUserPhraseCoordination.h"; sourceTree = "<group>"; };
+		CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyServiceCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyServiceCoordination.h"; sourceTree = "<group>"; };
 		6A4773760D5C621400C6C744 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		6A4773770D5C621400C6C744 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		6A4773780D5C621400C6C744 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = /System/Library/Frameworks/InputMethodKit.framework; sourceTree = "<absolute>"; };
@@ -1438,6 +1448,8 @@
 			files = (
 				D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */,
 				D4132C3010A858A0002C7E2F /* Security.framework in Frameworks */,
+				CE00000000000000000000B7 /* libsqlite3.tbd in Frameworks */,
+				CE00000000000000000000B8 /* libFormosa.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2174,6 +2186,7 @@
 					D484CEDA0EC218170051B6CA /* UIControllers */,
 					5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */,
 					CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */,
+					CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */,
 					6A4772FD0D5C607200C6C744 /* main.mm */,
 					6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,
@@ -3191,6 +3204,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				CE00000000000000000000B9 /* PBXTargetDependency */,
 			);
 			name = Preferences;
 			productName = Preferences;
@@ -3663,7 +3677,7 @@
 			buildActionMask = 2147483647;
 			files = (
 					D47D5E550D5EDDC40093524C /* main.m in Sources */,
-					5BC0A1052C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */,
+					CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */,
 					D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */,
 				D47D5E570D5EDDC40093524C /* TakaoGeneric.m in Sources */,
 				D47D5E580D5EDDC40093524C /* TakaoGenericSettings.m in Sources */,
@@ -3818,6 +3832,11 @@
 			isa = PBXTargetDependency;
 			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
 			targetProxy = CE00000000000000000000B2 /* PBXContainerItemProxy */;
+		};
+		CE00000000000000000000B9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
+			targetProxy = CE00000000000000000000BA /* PBXContainerItemProxy */;
 		};
 		6AE3FAE40D7677AB00C7D18D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

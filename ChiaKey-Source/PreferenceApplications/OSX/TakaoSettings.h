@@ -59,5 +59,6 @@ file for terms.
 #error Must define OPENVANILLA_DO_CONNECTION_NAME
 #endif
 
+#import "ChiaKeyServiceCoordination.h"
 #import "LFUtilities.h"
 #import "OpenVanillaService.h"

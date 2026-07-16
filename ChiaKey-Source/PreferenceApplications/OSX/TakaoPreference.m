@@ -19,45 +19,37 @@ file for terms.
 
   _defaultApplicationImage = [[NSApp applicationIconImage] copy];
 
-  NSArray *fetchedModules = nil;
+  // Module info comes from the status file the IME publishes on every
+  // start/reload (see ChiaKeyServiceCoordination.h), not from XPC.
   NSMutableArray *genericModules = [NSMutableArray array];
-  NSArray *loadedModules = nil;
+  NSDictionary *status = ChiaKeyReadServiceStatus();
 
-  id ovService;
-  @try {
-    ovService = [ChiaKeyServiceClient sharedClient];
-    if ([ovService isAvailable]) {
-      fetchedModules =
-          [ovService identifiersAndLocalizedNamesWithPattern:@"Generic-*"];
+  NSEnumerator *moduleEnumerator =
+      [[status objectForKey:ChiaKeyStatusModulesKey] objectEnumerator];
+  NSArray *itemArray = nil;
+  while (itemArray = [moduleEnumerator nextObject]) {
+    if (![itemArray isKindOfClass:[NSArray class]] || ![itemArray count])
+      continue;
+    NSString *name = [itemArray objectAtIndex:0];
+    if ([name hasPrefix:@"Generic-"] &&
+        ![name isEqualToString:@"Generic-cj-cin"] &&
+        ![name isEqualToString:@"Generic-simplex-cin"])
+      [genericModules addObject:itemArray];
+  }
 
-      NSEnumerator *moduleEnumerator = [fetchedModules objectEnumerator];
-      NSArray *itemArray = nil;
-      while (itemArray = [moduleEnumerator nextObject]) {
-        NSString *name = [itemArray objectAtIndex:0];
-        if (![name isEqualToString:@"Generic-cj-cin"] &&
-            ![name isEqualToString:@"Generic-simplex-cin"])
-          [genericModules addObject:itemArray];
-      }
+  NSArray *loadedModules = [status objectForKey:ChiaKeyStatusPackagesKey];
 
-      NSArray *info = [ovService dynamicallyLoadedModulePackageInfo];
-      loadedModules = [NSArray arrayWithArray:info];
-    }
+  if ([genericModules count]) {
+    _hasGenericInputMethods = YES;
+    [_takaoGenericController setModules:genericModules];
+    [_takaoGlobalController setInputMethods:genericModules];
+  } else {
+    [_takaoGlobalController setInputMethods:nil];
+  }
 
-    if ([genericModules count]) {
-      _hasGenericInputMethods = YES;
-      [_takaoGenericController setModules:genericModules];
-      [_takaoGlobalController setInputMethods:genericModules];
-    } else {
-      [_takaoGlobalController setInputMethods:nil];
-    }
-
-    if ([loadedModules count]) {
-      _hasLoadedModules = YES;
-      [_takaoLoadedModuleController setModules:loadedModules];
-    }
-  } @catch (NSException *e) {
-    // NSLog(@"Exceptions raise on retreiving version info");
-    // return;
+  if ([loadedModules count]) {
+    _hasLoadedModules = YES;
+    [_takaoLoadedModuleController setModules:loadedModules];
   }
 
   id toolbar = [[[NSToolbar alloc] initWithIdentifier:@"preferences toolbar"]

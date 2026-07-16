@@ -7,6 +7,7 @@
 
 #import "BPMFUserPhraseHelper.h"
 #import "CVCapsLockDelayOverride.h"
+#import "ChiaKeyServiceCoordination.h"
 #import "ChiaKeyUserPhraseCoordination.h"
 #import "LFCrossDevelopmentTools.h"
 #import "LFUtilities.h"
@@ -552,6 +553,8 @@ using namespace OpenVanilla;
   // NSLog(@"loaded: %@", [self dynamicallyLoadedModulePackageInfo]);
 
   [[OpenVanillaLoader sharedLock] unlock];
+
+  [self publishServiceStatus];
 }
 - (bool)start:(NSArray *)loadPaths {
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
@@ -684,6 +687,14 @@ using namespace OpenVanilla;
   sleep(1);
 
   // NSLog(@"loaded: %@", [self dynamicallyLoadedModulePackageInfo]);
+
+  // A blacklist queued while the IME was not running is persisted here and
+  // takes effect at the next reload; the interactive path (Preferences with
+  // the IME running) posts an explicit reload request right after.
+  [self performSelectorOnMainThread:@selector(
+                                        applyPendingModuleBlacklistAndPublish)
+                         withObject:nil
+                      waitUntilDone:NO];
 
   [pool drain];
   return true;
@@ -1348,6 +1359,48 @@ using namespace OpenVanilla;
   }
 
   _loader->setExcludedModulePackages(list);
+}
+
+#pragma mark Preferences app coordination
+
+- (void)publishServiceStatus {
+  if (!_loader) return;
+
+  NSString *bundleVersion = [[NSBundle mainBundle]
+      objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey];
+
+  NSMutableDictionary *status = [NSMutableDictionary dictionary];
+  [status setObject:(bundleVersion ? bundleVersion : @"")
+             forKey:ChiaKeyStatusVersionKey];
+  [status setObject:(_databaseVersion ? _databaseVersion : @"")
+             forKey:ChiaKeyStatusDatabaseVersionKey];
+  [status setObject:[NSDate date] forKey:ChiaKeyStatusUpdatedAtKey];
+  [status setObject:[self identifiersAndLocalizedNamesWithPattern:@"*"]
+             forKey:ChiaKeyStatusModulesKey];
+  [status setObject:[self dynamicallyLoadedModulePackageInfo]
+             forKey:ChiaKeyStatusPackagesKey];
+
+  [[NSFileManager defaultManager]
+            createDirectoryAtPath:ChiaKeyServiceUserDataDirectory()
+      withIntermediateDirectories:YES
+                       attributes:nil
+                            error:NULL];
+  if ([status writeToFile:ChiaKeyServiceStatusPath() atomically:YES]) {
+    ChiaKeyPostServiceNotification(ChiaKeyServiceStatusDidUpdateNotification);
+  }
+}
+
+- (void)applyPendingModuleBlacklistAndPublish {
+  if (!_loader) return;
+
+  NSString *path = ChiaKeyPendingModuleBlacklistPath();
+  NSArray *identifiers = [NSArray arrayWithContentsOfFile:path];
+  if (identifiers) {
+    [self setBlackListOfPackageIdentifers:identifiers];
+    _loader->syncLoaderConfig(true);
+    [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+  }
+  [self publishServiceStatus];
 }
 
 @end
