@@ -58,11 +58,14 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   NSToolbar *toolbar =
       [[[NSToolbar alloc] initWithIdentifier:@"toolbar"] autorelease];
   [toolbar setDelegate:(id)self];
+  // Icon-only + unified: the preference style stacks a text label under
+  // every item, which breaks the search field's layout.
+  [toolbar setDisplayMode:NSToolbarDisplayModeIconOnly];
   [[self window] setToolbar:toolbar];
   [[self window] setDelegate:(id)self];
   [[self window] center];
   if (@available(macOS 11, *)) {
-    [[self window] setToolbarStyle:NSWindowToolbarStylePreference];
+    [[self window] setToolbarStyle:NSWindowToolbarStyleUnified];
   }
 
   [_tableView
@@ -694,6 +697,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
       NSSearchToolbarItem *searchItem = [[[NSSearchToolbarItem alloc]
           initWithItemIdentifier:identifier] autorelease];
       [searchItem setLabel:LFLSTR(searchToolbarItemIdentifier)];
+      [searchItem setPreferredWidthForSearchField:180.0];
       [_searchField release];
       _searchField = [[searchItem searchField] retain];
       [_searchField setTarget:self];
@@ -715,6 +719,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   } else {
     item = nil;
   }
+  [item setToolTip:[item label]];
   return item;
 }
 
