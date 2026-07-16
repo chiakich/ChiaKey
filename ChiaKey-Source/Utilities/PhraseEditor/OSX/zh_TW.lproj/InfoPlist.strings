@@ -3,3 +3,4 @@
 CFBundleName = "千秋詞彙編輯器";
 CFBundleDisplayName = "千秋詞彙編輯器";
 NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";
+NSContactsUsageDescription = "詞彙編輯器需要讀取聯絡人姓名，才能將人名加入您的自訂詞庫。";

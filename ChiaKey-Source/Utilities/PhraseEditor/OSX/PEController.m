@@ -304,6 +304,18 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 }
 
 - (void)importAddressBook {
+  // sharedAddressBook triggers the contacts permission prompt on first use
+  // and returns nil when access is denied.
+  ABAddressBook *addressBook = [ABAddressBook sharedAddressBook];
+  if (!addressBook) {
+    PEPresentSheetAlert(
+        [self window], LFLSTR(@"Unable to access your contacts."),
+        LFLSTR(@"Allow the Phrase Editor to access contacts in System "
+               @"Settings > Privacy & Security > Contacts, then try again."),
+        NSAlertStyleWarning);
+    return;
+  }
+
   [_progressIndicator setUsesThreadedAnimation:YES];
   [_progressIndicator startAnimation:self];
   [_progressTextField setStringValue:LFLSTR(@"Progressing...")];
@@ -312,7 +324,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 
   BOOL skipExisting = ![_importAlreadyExistCheckBox intValue];
 
-  NSArray *people = [[ABAddressBook sharedAddressBook] people];
+  NSArray *people = [addressBook people];
   NSMutableArray *array = [NSMutableArray array];
   NSMutableSet *batchSeen = [NSMutableSet set];
   NSEnumerator *enumerator = [people objectEnumerator];

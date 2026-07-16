@@ -40,3 +40,6 @@
 "Search" = "搜尋";
 "%lu user phrase(s)" = "%lu 筆使用者自定詞";
 "%lu of %lu user phrase(s)" = "符合 %lu 筆，共 %lu 筆使用者自定詞";
+
+"Unable to access your contacts." = "無法存取您的聯絡人";
+"Allow the Phrase Editor to access contacts in System Settings > Privacy & Security > Contacts, then try again." = "請在「系統設定 > 隱私權與安全性 > 聯絡人」允許詞彙編輯器存取聯絡人後再試一次。";

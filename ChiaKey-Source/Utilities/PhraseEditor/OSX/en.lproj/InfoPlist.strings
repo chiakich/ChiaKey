@@ -3,3 +3,4 @@
 CFBundleName = "Phrase Editor";
 CFBundleDisplayName = "ChiaKey Phrase Editor";
 NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";
+NSContactsUsageDescription = "The Phrase Editor reads names in your contacts so it can add them to your phrase database.";
