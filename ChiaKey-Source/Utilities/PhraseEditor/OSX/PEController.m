@@ -90,6 +90,13 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                      sortDescriptorWithKey:@"reading"
                                                  ascending:YES]];
 
+  // Large window corner radius on recent macOS clips the bottom-left
+  // status text; nudge it inward.
+  NSRect statusFrame = [_statusTextField frame];
+  statusFrame.origin.x += 16.0;
+  statusFrame.size.width -= 16.0;
+  [_statusTextField setFrame:statusFrame];
+
   [_phraseWindow setDefaultButtonCell:[_okButton cell]];
 
   [_store beginEditingSession];
