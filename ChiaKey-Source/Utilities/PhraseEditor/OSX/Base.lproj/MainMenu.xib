@@ -186,7 +186,7 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <scrollView fixedFrame="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="450">
-                        <rect key="frame" x="-1" y="20" width="634" height="574"/>
+                        <rect key="frame" x="-1" y="20" width="634" height="572"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <clipView key="contentView" id="JOa-xf-10G">
                             <rect key="frame" x="1" y="1" width="617" height="557"/>

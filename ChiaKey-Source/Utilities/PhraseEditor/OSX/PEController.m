@@ -102,6 +102,12 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
   [_tableView setDelegate:self];
   [_tableView setRowHeight:20.0];
   [_tableView setUsesAlternatingRowBackgroundColors:YES];
+  // The 2008-era xib's hardcoded header cell colors leave the column header
+  // row without a background fill on modern macOS; the explicit plain style
+  // restores it.
+  if (@available(macOS 11, *)) {
+    [_tableView setStyle:NSTableViewStylePlain];
+  }
   // The ancient xib hardcodes a white table background, which fights dark
   // mode (white rows with light text); use semantic colors instead.
   [_tableView setBackgroundColor:[NSColor controlBackgroundColor]];
