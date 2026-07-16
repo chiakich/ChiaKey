@@ -73,6 +73,11 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [_tableView setDelegate:self];
   [_tableView setRowHeight:20.0];
   [_tableView setUsesAlternatingRowBackgroundColors:YES];
+  // The ancient xib hardcodes a white table background, which fights dark
+  // mode (white rows with light text); use semantic colors instead.
+  [_tableView setBackgroundColor:[NSColor controlBackgroundColor]];
+  [[_tableView enclosingScrollView]
+      setBackgroundColor:[NSColor controlBackgroundColor]];
 
   [[_tableView tableColumnWithIdentifier:@"phrase"]
       setSortDescriptorPrototype:[NSSortDescriptor sortDescriptorWithKey:@"phrase"
@@ -105,7 +110,10 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     [_pageCache setObject:page forKey:pageKey];
   }
   NSUInteger offset = (NSUInteger)row % kPageSize;
-  return offset < [page count] ? [page objectAtIndex:offset] : nil;
+  if (offset >= [page count]) return nil;
+  // The page array is the record's only owner and reloadData empties the
+  // cache; keep returned records alive for the current cycle.
+  return [[[page objectAtIndex:offset] retain] autorelease];
 }
 
 - (void)reloadData {
@@ -562,9 +570,12 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     return;
   }
 
-  [_store setPhrase:string forRowid:record.rowid];
+  // reloadData empties the page cache that owns `record`; don't touch the
+  // record after it.
+  long long rowid = record.rowid;
+  [_store setPhrase:string forRowid:rowid];
   [self reloadData];
-  [self editReadingForRecord:[_store phraseForRowid:record.rowid]];
+  [self editReadingForRecord:[_store phraseForRowid:rowid]];
 }
 
 - (void)tableView:(NSTableView *)tableView
