@@ -29,6 +29,10 @@ using namespace CareService;
 
   OVSQLiteConnection *_userPhraseDB;
 
+  // Phrase Editor coordination (see ChiaKeyUserPhraseCoordination.h)
+  BOOL _userPhraseEditingSessionActive;
+  NSMutableArray *_pendingUserPhraseAdditions;
+
   OVLoaderUserPersistence *_userPersistence;
   NSMutableArray *_mergedCannedMessagesArray;
 
@@ -70,6 +74,13 @@ using namespace CareService;
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;
 - (void)userPhraseDBAddNewRows:(NSArray *)array;
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row;
+
+#pragma mark Phrase Editor coordination
+- (NSString *)userDataDirectory;
+- (BOOL)userPhraseEditingSessionActive;
+- (void)userPhraseEditingSessionDidBegin;
+- (void)userPhraseEditingSessionDidEnd;
+- (void)userPhraseDBDidChangeExternally;
 
 - (void)mergeCannedMessagesData;
 - (NSArray *)mergedCannedMessagesArray;

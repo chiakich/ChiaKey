@@ -3,7 +3,10 @@
 #import "CVApplicationController.h"
 
 #import "CVNotifyController.h"
+#import "ChiaKeyUserPhraseCoordination.h"
 #import "OpenVanillaLoader.h"
+
+static const NSTimeInterval kChiaKeyUserPhrasePollInterval = 5.0;
 
 static NSString *const ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey =
     @"ChiaKeyLexiconAutoUpdateLastCheck";
@@ -64,6 +67,10 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [_inputMethodToggleWindowController release];
   [_serviceListener invalidate];
   [_serviceListener release];
+  [[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
+  [_userPhrasePollTimer invalidate];
+  [_userPhrasePollTimer release];
+  [_lastSeenUserPhraseDirtyDate release];
   [super dealloc];
 }
 - (void)setLoader:(OpenVanillaLoader *)aLoader {
@@ -667,6 +674,84 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   });
 }
 
+#pragma mark Phrase Editor coordination
+
+// The distributed notifications give immediacy; the poll timer below is the
+// authoritative fallback (missed notifications, editor crash, IME started
+// mid-session), driven by the lock/dirty files next to the user DB.
+
+- (void)_phraseEditorSessionDidBegin:(NSNotification *)notification {
+  if (_observedEditorSessionActive) return;
+  _observedEditorSessionActive = YES;
+  [_loader userPhraseEditingSessionDidBegin];
+}
+
+- (void)_phraseEditorSessionDidEnd:(NSNotification *)notification {
+  if (!_observedEditorSessionActive) return;
+  _observedEditorSessionActive = NO;
+  [_loader userPhraseEditingSessionDidEnd];
+}
+
+- (void)_userPhraseDidChange:(NSNotification *)notification {
+  [_loader userPhraseDBDidChangeExternally];
+}
+
+- (void)_pollUserPhraseCoordinationFiles:(NSTimer *)timer {
+  if (!_loader) return;
+
+  NSString *dir = [_loader userDataDirectory];
+
+  BOOL lockActive = ChiaKeyUserPhraseEditingLockIsActive(dir);
+  if (lockActive != _observedEditorSessionActive) {
+    _observedEditorSessionActive = lockActive;
+    if (lockActive) {
+      [_loader userPhraseEditingSessionDidBegin];
+    } else {
+      [_loader userPhraseEditingSessionDidEnd];
+    }
+  }
+
+  NSDate *dirtyDate =
+      ChiaKeyCoordinationFileDate(ChiaKeyUserPhraseDirtyFlagPath(dir));
+  if (dirtyDate &&
+      (!_lastSeenUserPhraseDirtyDate ||
+       [dirtyDate compare:_lastSeenUserPhraseDirtyDate] ==
+           NSOrderedDescending)) {
+    BOOL firstObservation = (_lastSeenUserPhraseDirtyDate == nil);
+    [_lastSeenUserPhraseDirtyDate release];
+    _lastSeenUserPhraseDirtyDate = [dirtyDate retain];
+    // The first poll only records the baseline; the DB was loaded at start.
+    if (!firstObservation) {
+      [_loader userPhraseDBDidChangeExternally];
+    }
+  }
+}
+
+- (void)_startObservingPhraseEditor {
+  NSDistributedNotificationCenter *center =
+      [NSDistributedNotificationCenter defaultCenter];
+  [center addObserver:self
+             selector:@selector(_phraseEditorSessionDidBegin:)
+                 name:ChiaKeyPhraseEditorDidBeginEditingNotification
+               object:nil];
+  [center addObserver:self
+             selector:@selector(_phraseEditorSessionDidEnd:)
+                 name:ChiaKeyPhraseEditorDidEndEditingNotification
+               object:nil];
+  [center addObserver:self
+             selector:@selector(_userPhraseDidChange:)
+                 name:ChiaKeyUserPhraseDidChangeNotification
+               object:nil];
+
+  _userPhrasePollTimer = [[NSTimer
+      scheduledTimerWithTimeInterval:kChiaKeyUserPhrasePollInterval
+                              target:self
+                            selector:@selector(
+                                         _pollUserPhraseCoordinationFiles:)
+                            userInfo:nil
+                             repeats:YES] retain];
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self
@@ -674,6 +759,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
         forEventClass:kInternetEventClass
            andEventID:kAEGetURL];
 
+  [self _startObservingPhraseEditor];
   [self _runSilentLexiconUpdateIfNeeded];
 }
 

@@ -10,9 +10,9 @@
 
 #import <AddressBook/AddressBook.h>
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-typedef unsigned int NSUInteger;
-#endif
+// Rows are fetched from SQLite in fixed-size windows so the table stays
+// responsive with tens of thousands of phrases.
+static const NSUInteger kPageSize = 256;
 
 static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                 NSString *informativeText,
@@ -28,24 +28,31 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 @implementation PEController
 
 - (void)dealloc {
-  [[NSNotificationCenter defaultCenter]
-      removeObserver:@"NSPopUpButtonCellWillPopUpNotification"];
+  [_pageCache release];
+  [_filter release];
+  [_store release];
   [super dealloc];
 }
+
 - (void)awakeFromNib {
   [NSApp setDelegate:(id)self];
-  _loader = [[ChiaKeyServiceClient sharedClient] retain];
-  if ([_loader isAvailable]) {
-  } else {
+  _store = [[PEUserPhraseStore sharedStore] retain];
+  if (![_store isAvailable]) {
     NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-    [alert setMessageText:LFLSTR(@"ChiaKey is not running.")];
+    [alert setMessageText:LFLSTR(@"Unable to open the phrase database.")];
     [alert setInformativeText:
-               LFLSTR(@"Since ChiaKey is not running, you cannot use "
-                      @"the Phrase Editor to alter your phrases.")];
+               LFLSTR(@"The Phrase Editor cannot open your user phrase "
+                      @"database. Check the permissions of the ChiaKey "
+                      @"folder in Application Support.")];
     [alert addButtonWithTitle:LFLSTR(@"OK")];
     [alert runModal];
     [NSApp terminate:self];
   }
+
+  _pageCache = [NSMutableDictionary new];
+  _sortKey = PEPhraseSortKeyInsertion;
+  _sortAscending = YES;
+  _editingRowid = -1;
 
   NSToolbar *toolbar =
       [[[NSToolbar alloc] initWithIdentifier:@"toolbar"] autorelease];
@@ -57,12 +64,6 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     [[self window] setToolbarStyle:NSWindowToolbarStylePreference];
   }
 
-  [NSApp setDelegate:(id)self];
-
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-  NSTokenFieldCell *cell = [[[NSTokenFieldCell alloc] init] autorelease];
-  [[_tableView tableColumnWithIdentifier:@"reading"] setDataCell:cell];
-#endif
   [_tableView
       registerForDraggedTypes:[NSArray arrayWithObject:NSPasteboardTypeString]];
   [_tableView setDraggingSourceOperationMask:NSDragOperationEvery forLocal:NO];
@@ -70,16 +71,63 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [_tableView setDataSource:self];
   [_tableView setDelegate:self];
   [_tableView setRowHeight:20.0];
+  [_tableView setUsesAlternatingRowBackgroundColors:YES];
+
+  [[_tableView tableColumnWithIdentifier:@"phrase"]
+      setSortDescriptorPrototype:[NSSortDescriptor sortDescriptorWithKey:@"phrase"
+                                                               ascending:YES]];
+  [[_tableView tableColumnWithIdentifier:@"reading"]
+      setSortDescriptorPrototype:[NSSortDescriptor
+                                     sortDescriptorWithKey:@"reading"
+                                                 ascending:YES]];
 
   [_phraseWindow setDefaultButtonCell:[_okButton cell]];
+
+  [_store beginEditingSession];
+  [self reloadData];
+}
+
+#pragma mark Windowed data source
+
+- (PEPhraseRecord *)recordForRow:(NSInteger)row {
+  if (row < 0 || (NSUInteger)row >= _rowCount) return nil;
+
+  NSNumber *pageKey = [NSNumber numberWithUnsignedInteger:row / kPageSize];
+  NSArray *page = [_pageCache objectForKey:pageKey];
+  if (!page) {
+    page = [_store
+        phrasesInRange:NSMakeRange([pageKey unsignedIntegerValue] * kPageSize,
+                                   kPageSize)
+                filter:_filter
+               sortKey:_sortKey
+             ascending:_sortAscending];
+    [_pageCache setObject:page forKey:pageKey];
+  }
+  NSUInteger offset = (NSUInteger)row % kPageSize;
+  return offset < [page count] ? [page objectAtIndex:offset] : nil;
+}
+
+- (void)reloadData {
+  [_pageCache removeAllObjects];
+  _rowCount = [_store numberOfPhrasesMatchingFilter:_filter];
+  [_tableView reloadData];
   [self updateStatus];
 }
+
 - (void)updateStatus {
-  int count = [_loader userPhraseDBNumberOfRow];
-  if (count) {
-    NSString *message =
-        [NSString stringWithFormat:LFLSTR(@"%d user phrase(s)"), count];
-    [_statusTextField setStringValue:message];
+  NSUInteger total = [_filter length]
+                         ? [_store numberOfPhrasesMatchingFilter:nil]
+                         : _rowCount;
+  if ([_filter length]) {
+    [_statusTextField setStringValue:
+                          [NSString stringWithFormat:
+                                        LFLSTR(@"%lu of %lu user phrase(s)"),
+                                        (unsigned long)_rowCount,
+                                        (unsigned long)total]];
+  } else if (total) {
+    [_statusTextField
+        setStringValue:[NSString stringWithFormat:LFLSTR(@"%lu user phrase(s)"),
+                                                  (unsigned long)total]];
   } else {
     [_statusTextField setStringValue:LFLSTR(@"No user phrases")];
   }
@@ -89,12 +137,12 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   NSString *string = [originalString
       stringByTrimmingCharactersInSet:[NSCharacterSet
                                           whitespaceAndNewlineCharacterSet]];
+  if (![string length]) return nil;
 
-  if (!string && ![string length]) return nil;
-  int i;
   NSMutableString *validatedString = [NSMutableString string];
+  NSUInteger i;
   for (i = 0; i < [string length]; i++) {
-    unichar aChar = [originalString characterAtIndex:i];
+    unichar aChar = [string characterAtIndex:i];
     if (aChar >= 0x2E80 && aChar < 0xFF00) {
       [validatedString appendFormat:@"%C", aChar];
     }
@@ -102,76 +150,92 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   return validatedString;
 }
 
+#pragma mark Search
+
+- (void)searchFieldChanged:(id)sender {
+  NSString *value = [[sender stringValue]
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]];
+  NSString *newFilter = [value length] ? value : nil;
+  if (newFilter == _filter || [newFilter isEqualToString:_filter]) return;
+
+  [_filter release];
+  _filter = [newFilter copy];
+  [self reloadData];
+}
+
+- (void)clearSearch {
+  if (![_filter length] && ![[_searchField stringValue] length]) return;
+  [_searchField setStringValue:@""];
+  [_filter release];
+  _filter = nil;
+}
+
 #pragma mark Interface Builder actions
 
-- (void)reloadData {
-  [_tableView reloadData];
-  [self updateStatus];
+- (IBAction)add:(id)sender {
+  // New rows always show up at the bottom of the unfiltered list.
+  [self clearSearch];
+  _sortKey = PEPhraseSortKeyInsertion;
+  _sortAscending = YES;
+  [_tableView setSortDescriptors:[NSArray array]];
+
+  PEPhraseRecord *record =
+      [_store addPhrase:[NSString stringWithUTF8String:"新詞"]];
+  [self reloadData];
+  if (!record || !_rowCount) return;
+
+  [_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:_rowCount - 1]
+          byExtendingSelection:NO];
+  [_tableView scrollRowToVisible:_rowCount - 1];
+  [self editPhrase:self];
 }
 
-- (IBAction)add:(id)sender {
-  [_loader userPhraseDBAddNewRow:[NSString stringWithUTF8String:"新詞"]];
-  [_tableView reloadData];
-  NSInteger count = [self numberOfRowsInTableView:_tableView];
-  [_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:count - 1]
-          byExtendingSelection:NO];
-  [self editPhrase:self];
-  [self updateStatus];
-}
 - (IBAction)delete:(id)sender {
   NSIndexSet *rowIndexes = [_tableView selectedRowIndexes];
-  if (![rowIndexes count]) {
-    return;
-  }
+  if (![rowIndexes count]) return;
 
-  NSUInteger currentIndex = [rowIndexes lastIndex];
-
+  NSMutableArray *rowids = [NSMutableArray array];
+  NSUInteger currentIndex = [rowIndexes firstIndex];
   while (currentIndex != NSNotFound) {
-    [_loader userPhraseDBDeleteRow:(int)currentIndex];
-    currentIndex = [rowIndexes indexLessThanIndex:currentIndex];
+    PEPhraseRecord *record = [self recordForRow:(NSInteger)currentIndex];
+    if (record) {
+      [rowids addObject:[NSNumber numberWithLongLong:record.rowid]];
+    }
+    currentIndex = [rowIndexes indexGreaterThanIndex:currentIndex];
   }
-  [_tableView reloadData];
-  [self updateStatus];
+  [_store deletePhrasesWithRowids:rowids];
+  [self reloadData];
 }
+
 - (NSString *)stringForCopying {
   NSIndexSet *rowIndexes = [_tableView selectedRowIndexes];
   NSMutableString *s = [NSMutableString string];
 
+  BOOL prependType =
+      ([[NSApp currentEvent] modifierFlags] & NSEventModifierFlagOption) != 0;
   NSUInteger currentIndex = [rowIndexes firstIndex];
-
   while (currentIndex != NSNotFound) {
-    NSDictionary *dataDict =
-        [_loader userPhraseDBDictionaryAtRow:(int)currentIndex];
-
-    NSString *phrase = [dataDict objectForKey:@"Text"];
-    NSString *reading = [dataDict objectForKey:@"BPMF"];
-
-    NSString *string = [NSString stringWithFormat:@"%@ %@", phrase, reading];
-    NSEvent *e = [NSApp currentEvent];
-    if ([e modifierFlags] & NSEventModifierFlagOption) {
-      string = [NSString stringWithFormat:@"+bpmf %@", string];
-    }
+    PEPhraseRecord *record = [self recordForRow:(NSInteger)currentIndex];
     currentIndex = [rowIndexes indexGreaterThanIndex:currentIndex];
-    if (currentIndex != NSNotFound) {
-      [s appendFormat:@"%@\n", string];
-    } else {
-      [s appendString:string];
-    }
+    if (!record) continue;
+
+    if ([s length]) [s appendString:@"\n"];
+    if (prependType) [s appendString:@"+bpmf "];
+    [s appendFormat:@"%@ %@", record.phrase, record.reading];
   }
   return s;
 }
 
 - (IBAction)copy:(id)sender {
-  NSIndexSet *rowIndexes = [_tableView selectedRowIndexes];
-  if (![rowIndexes count]) {
-    return;
-  }
+  if (![[_tableView selectedRowIndexes] count]) return;
 
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-  NSArray *types = [NSArray arrayWithObjects:NSPasteboardTypeString, nil];
-  [pasteboard declareTypes:types owner:self];
+  [pasteboard declareTypes:[NSArray arrayWithObject:NSPasteboardTypeString]
+                     owner:self];
   [pasteboard setString:[self stringForCopying] forType:NSPasteboardTypeString];
 }
+
 - (IBAction)editPhrase:(id)sender {
   NSInteger selectedRow = [_tableView selectedRow];
   if (selectedRow < 0) return;
@@ -181,77 +245,57 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                withEvent:nil
                   select:YES];
 }
+
 - (IBAction)editReading:(id)sender {
   NSInteger selectedRow = [_tableView selectedRow];
   if (selectedRow < 0) return;
+  [self editReadingForRecord:[self recordForRow:selectedRow]];
+}
 
-  _editingRow = (int)selectedRow;
-  NSDictionary *dataDict =
-      [_loader userPhraseDBDictionaryAtRow:(int)selectedRow];
-  NSString *phrase = [dataDict objectForKey:@"Text"];
+- (void)editReadingForRecord:(PEPhraseRecord *)record {
+  if (![record.phrase length]) return;
 
-  if (![phrase length]) return;
+  _editingRowid = record.rowid;
 
-  NSArray *bpmfArray =
-      [[dataDict objectForKey:@"BPMF"] componentsSeparatedByString:@","];
-  int i = 0;
+  NSArray *bpmfArray = [record.reading componentsSeparatedByString:@","];
   NSMutableArray *a = [NSMutableArray array];
-  for (i = 0; i < [phrase length]; i++) {
+  NSUInteger idx = 0;
+  NSUInteger charIndex = 0;
+  NSString *phrase = record.phrase;
+  while (idx < [phrase length]) {
+    NSRange r = [phrase rangeOfComposedCharacterSequenceAtIndex:idx];
+    NSString *ch = [phrase substringWithRange:r];
+    idx = r.location + r.length;
+
+    NSArray *readings = [_store readingsForCharacter:ch];
+    NSString *current = charIndex < [bpmfArray count]
+                            ? [bpmfArray objectAtIndex:charIndex]
+                            : [readings objectAtIndex:0];
+
     NSMutableDictionary *d = [NSMutableDictionary dictionary];
-    unichar aChar = [phrase characterAtIndex:i];
-    NSString *s = [NSString stringWithCharacters:&aChar length:1];
-    [d setValue:s forKey:@"Text"];
-    NSArray *readings = [_loader userPhraseDBReadingsForPhrase:s];
-    [d setValue:[bpmfArray objectAtIndex:i] forKey:@"CurrentBPMF"];
+    [d setValue:ch forKey:@"Text"];
+    [d setValue:current forKey:@"CurrentBPMF"];
     [d setValue:readings forKey:@"BPMF"];
     [a addObject:d];
+    charIndex++;
   }
   [_phraseTableView setArray:a];
 
   [[self window] beginSheet:_phraseWindow completionHandler:nil];
 }
-- (void)fixReadingForAddressBookImportFromIndex:(int)index {
-  int i = index;
-  for (i = index; i < [_loader userPhraseDBNumberOfRow]; i++) {
-    NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:i];
-    NSString *phrase = [dataDict valueForKey:@"Text"];
-    NSString *reading = [dataDict valueForKey:@"BPMF"];
-    if ([phrase hasPrefix:[NSString stringWithUTF8String:"沈"]]) {
-      NSArray *a = [reading componentsSeparatedByString:@","];
-      NSMutableString *string = [NSMutableString stringWithUTF8String:"ㄕㄣˇ,"];
-      int j = 1;
-      for (j = 1; j < [a count]; j++) {
-        [string appendString:[a objectAtIndex:j]];
-        if (j < [a count] - 1) [string appendString:@","];
-      }
-      [_loader userPhraseDBSetNewReading:string forPhraseAtRow:i];
-    }
-  }
-}
+
 - (void)importAddressBook {
   [_progressIndicator setUsesThreadedAnimation:YES];
   [_progressIndicator startAnimation:self];
   [_progressTextField setStringValue:LFLSTR(@"Progressing...")];
 
-  int currentRows = [_loader userPhraseDBNumberOfRow];
-
   [[self window] beginSheet:_progressWindow completionHandler:nil];
 
-  NSMutableArray *dictArray = [NSMutableArray array];
-  if (![_importAlreadyExistCheckBox intValue]) {
-    int count = [_loader userPhraseDBNumberOfRow];
-    int i = 0;
-    for (i = 0; i < count; i++) {
-      NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:i];
-      NSString *phrase = [dataDict objectForKey:@"Text"];
-      if (![dictArray containsObject:phrase]) [dictArray addObject:phrase];
-    }
-  }
+  BOOL skipExisting = ![_importAlreadyExistCheckBox intValue];
 
   NSArray *people = [[ABAddressBook sharedAddressBook] people];
-  NSUInteger count = [people count];
-
   NSMutableArray *array = [NSMutableArray array];
+  NSMutableSet *batchSeen = [NSMutableSet set];
   NSEnumerator *enumerator = [people objectEnumerator];
   ABPerson *person;
   while (person = [enumerator nextObject]) {
@@ -265,39 +309,43 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 
     NSString *name = [NSString stringWithFormat:@"%@%@", lastName, firstName];
 
-    if ([_importLastAndFirstNameCheckBox intValue] &&
-        [name length]<5 && [name length]> 1) {
-      if (![_importAlreadyExistCheckBox intValue]) {
-        if (![dictArray containsObject:name]) {
-          [array addObject:name];
-        }
-      } else {
-        [array addObject:name];
-      }
+    if ([_importLastAndFirstNameCheckBox intValue] && [name length] < 5 &&
+        [name length] > 1 && ![batchSeen containsObject:name] &&
+        !(skipExisting && [_store containsPhrase:name])) {
+      [batchSeen addObject:name];
+      [array addObject:name];
     }
-    if ([_importFirstNameCheckBox intValue] &&
-        [firstName length]<5 && [firstName length]> 1) {
-      if (![_importAlreadyExistCheckBox intValue]) {
-        if (![dictArray containsObject:firstName]) {
-          [array addObject:firstName];
-        }
-      } else {
-        [array addObject:firstName];
-      }
+    if ([_importFirstNameCheckBox intValue] && [firstName length] < 5 &&
+        [firstName length] > 1 && ![batchSeen containsObject:firstName] &&
+        !(skipExisting && [_store containsPhrase:firstName])) {
+      [batchSeen addObject:firstName];
+      [array addObject:firstName];
     }
   }
+
   if ([array count]) {
-    [_loader userPhraseDBAddNewRows:array];
-    [self fixReadingForAddressBookImportFromIndex:currentRows];
+    NSArray *records = [_store addPhrases:array];
+    // 沈 as a surname reads ㄕㄣˇ, not the default ㄔㄣˊ.
+    for (PEPhraseRecord *record in records) {
+      if (![record.phrase hasPrefix:[NSString stringWithUTF8String:"沈"]])
+        continue;
+      NSMutableArray *parts = [[[record.reading
+          componentsSeparatedByString:@","] mutableCopy] autorelease];
+      if (![parts count]) continue;
+      [parts replaceObjectAtIndex:0
+                       withObject:[NSString stringWithUTF8String:"ㄕㄣˇ"]];
+      [_store setReading:[parts componentsJoinedByString:@","]
+                forRowid:record.rowid];
+    }
   }
 
   [[self window] endSheet:_progressWindow];
   [_progressIndicator stopAnimation:self];
   [_progressWindow orderOut:self];
 
-  [_tableView reloadData];
-  [self updateStatus];
+  [self reloadData];
 }
+
 - (IBAction)continueImportAction:(id)sender {
   if (![_importLastAndFirstNameCheckBox intValue] &&
       ![_importFirstNameCheckBox intValue]) {
@@ -313,10 +361,12 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [[[self window] attachedSheet] orderOut:self];
   [self importAddressBook];
 }
+
 - (IBAction)cancelImportAction:(id)sender {
   [[self window] endSheet:[[self window] attachedSheet]];
   [[[self window] attachedSheet] orderOut:self];
 }
+
 - (IBAction)importAddressBook:(id)sender {
   if ([[self window] attachedSheet]) {
     [[self window] endSheet:[[self window] attachedSheet]];
@@ -325,10 +375,12 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [_importOptionWindow setDefaultButtonCell:[_continueImportButton cell]];
   [[self window] beginSheet:_importOptionWindow completionHandler:nil];
 }
-- (void)importUserPhraseDatabaseFromURL:(NSURL *)url {
-  if (!url || !_loader) return;
 
-  bool rtn = [_loader importUserPhraseDBFromFile:[url path]];
+- (void)importUserPhraseDatabaseFromURL:(NSURL *)url {
+  if (!url || !_store) return;
+
+  BOOL rtn = [_store importUserPhraseDBFromFile:[url path]];
+  [self reloadData];
   if (rtn) {
     PEPresentSheetAlert([self window], LFLSTR(@"Done"),
                         LFLSTR(@"Your phrases are successfully imported."),
@@ -340,17 +392,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   }
 }
 
-- (IBAction)importAction:(id)sender;
-{
-  if (!_loader) {
-    PEPresentSheetAlert([self window],
-                        LFLSTR(@"Unable to import database."),
-                        LFLSTR(@"If you are not runnung ChiaKey, you are not "
-                               @"able to import your database."),
-                        NSAlertStyleWarning);
-    return;
-  }
-
+- (IBAction)importAction:(id)sender {
   NSOpenPanel *panel = [NSOpenPanel openPanel];
   [panel setAllowedFileTypes:[NSArray arrayWithObjects:@"txt", nil]];
   [panel setExtensionHidden:NO];
@@ -368,9 +410,9 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 }
 
 - (void)exportUserPhraseDatabaseToURL:(NSURL *)url {
-  if (!url || !_loader) return;
+  if (!url || !_store) return;
 
-  bool rtn = [_loader exportUserPhraseDBToFile:[url path]];
+  BOOL rtn = [_store exportUserPhraseDBToFile:[url path]];
   if (rtn) {
     PEPresentSheetAlert([self window], LFLSTR(@"Done"),
                         LFLSTR(@"Your phrases are successfully exported."),
@@ -383,15 +425,6 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 }
 
 - (IBAction)exportAction:(id)sender {
-  if (!_loader) {
-    PEPresentSheetAlert([self window],
-                        LFLSTR(@"Unable to export database."),
-                        LFLSTR(@"If you are not runnung ChiaKey, you are not "
-                               @"able to export your database."),
-                        NSAlertStyleWarning);
-    return;
-  }
-
   NSSavePanel *panel = [NSSavePanel savePanel];
   [panel setAllowedFileTypes:[NSArray arrayWithObjects:@"txt", nil]];
   [panel setExtensionHidden:NO];
@@ -406,19 +439,25 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                   [self exportUserPhraseDatabaseToURL:[panel URL]];
                 }];
 }
+
 - (IBAction)okAction:(id)sender {
-  NSString *s = [_phraseTableView currentReading];
-  [_loader userPhraseDBSetNewReading:s forPhraseAtRow:_editingRow];
-  [_tableView reloadData];
-  [self updateStatus];
+  if (_editingRowid >= 0) {
+    [_store setReading:[_phraseTableView currentReading]
+              forRowid:_editingRowid];
+    _editingRowid = -1;
+    [self reloadData];
+  }
 
   [[self window] endSheet:_phraseWindow];
   [_phraseWindow orderOut:self];
 }
+
 - (IBAction)cancelAction:(id)sender {
+  _editingRowid = -1;
   [[self window] endSheet:_phraseWindow];
   [_phraseWindow orderOut:self];
 }
+
 - (IBAction)launchOnlineHelp:(id)sender {
   NSURL *url = [NSURL URLWithString:HELP_URL];
   [[NSWorkspace sharedWorkspace] openURL:url];
@@ -444,74 +483,107 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 #pragma mark NSApplication delegate methods.
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-  if (_loader != nil) [_loader userPhraseDBSave];
+  [_store endEditingSession];
 }
 
-#pragma mark NSTableView datasource methods
+#pragma mark NSTableView data source / delegate (view-based, windowed)
 
-- (void)tableView:(NSTableView *)aTableView
-    willDisplayCell:(id)aCell
-     forTableColumn:(NSTableColumn *)aTableColumn
-                row:(NSInteger)rowIndex {
-  NSString *identifier = [aTableColumn identifier];
-  if ([identifier isEqualToString:@"phrase"]) {
-    NSFont *font = [NSFont fontWithName:@"LiHeiPro" size:16.0];
-    [aCell setFont:font];
-  } else {
-    NSFont *font = [NSFont fontWithName:@"LiHeiPro" size:12.0];
-    [aCell setFont:font];
-  }
-}
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
-  return [_loader userPhraseDBNumberOfRow];
+  return (NSInteger)_rowCount;
 }
 
-- (id)tableView:(NSTableView *)aTableView
-    objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                          row:(NSInteger)rowIndex {
-  NSString *identifier = [aTableColumn identifier];
-  NSDictionary *dataDict =
-      [_loader userPhraseDBDictionaryAtRow:(int)rowIndex];
+- (NSView *)tableView:(NSTableView *)tableView
+    viewForTableColumn:(NSTableColumn *)tableColumn
+                   row:(NSInteger)row {
+  NSString *identifier = [tableColumn identifier];
+  BOOL isPhrase = [identifier isEqualToString:@"phrase"];
 
-  if ([identifier isEqualToString:@"phrase"]) {
-    return [dataDict objectForKey:@"Text"];
-  } else if ([identifier isEqualToString:@"reading"]) {
-    NSString *reading = [dataDict objectForKey:@"BPMF"];
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-    return reading;
-#else
-    NSArray *array = [reading componentsSeparatedByString:@","];
-    NSMutableString *string = [NSMutableString string];
-    NSEnumerator *enumerator = [array objectEnumerator];
-    NSString *part;
-    while (part = [enumerator nextObject]) [string appendFormat:@"%@ ", part];
-    return string;
-#endif
-  }
-  return nil;
-}
+  NSTableCellView *cellView = [tableView makeViewWithIdentifier:identifier
+                                                          owner:self];
+  if (!cellView) {
+    cellView = [[[NSTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
+    [cellView setIdentifier:identifier];
 
-- (void)tableView:(NSTableView *)aTableView
-    setObjectValue:(id)anObject
-    forTableColumn:(NSTableColumn *)aTableColumn
-               row:(NSInteger)rowIndex {
-  NSString *identifier = [aTableColumn identifier];
-
-  if ([identifier isEqualToString:@"phrase"]) {
-    NSString *string = [self validatedString:(NSString *)anObject];
-    if (![string length]) return;
-
-    if ([string length] > 7) string = [string substringToIndex:7];
-
-    NSDictionary *dataDict =
-        [_loader userPhraseDBDictionaryAtRow:(int)rowIndex];
-    if (![[dataDict objectForKey:@"Text"] isEqualToString:string]) {
-      [_loader userPhraseDBSetPhrase:string atRow:(int)rowIndex];
-      [aTableView reloadData];
-      [self editReading:self];
-      [self updateStatus];
+    NSTextField *textField =
+        [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
+    [textField setBordered:NO];
+    [textField setDrawsBackground:NO];
+    [textField setLineBreakMode:NSLineBreakByTruncatingTail];
+    NSFont *font = [NSFont fontWithName:@"LiHeiPro" size:isPhrase ? 16.0 : 12.0];
+    if (!font)
+      font = [NSFont systemFontOfSize:isPhrase ? 16.0 : 12.0];
+    [textField setFont:font];
+    if (isPhrase) {
+      [textField setEditable:YES];
+      [textField setTarget:self];
+      [textField setAction:@selector(phraseFieldEdited:)];
+    } else {
+      [textField setEditable:NO];
+      [textField setSelectable:NO];
+      [textField setTextColor:[NSColor secondaryLabelColor]];
     }
+    [textField setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [cellView addSubview:textField];
+    [cellView setTextField:textField];
+
+    [NSLayoutConstraint activateConstraints:[NSArray arrayWithObjects:
+        [[textField leadingAnchor]
+            constraintEqualToAnchor:[cellView leadingAnchor] constant:2.0],
+        [[textField trailingAnchor]
+            constraintEqualToAnchor:[cellView trailingAnchor] constant:-2.0],
+        [[textField centerYAnchor]
+            constraintEqualToAnchor:[cellView centerYAnchor]],
+        nil]];
   }
+
+  PEPhraseRecord *record = [self recordForRow:row];
+  [[cellView textField]
+      setStringValue:(isPhrase ? record.phrase : record.reading) ?: @""];
+  return cellView;
+}
+
+- (void)phraseFieldEdited:(id)sender {
+  NSInteger row = [_tableView rowForView:sender];
+  if (row < 0) return;
+
+  PEPhraseRecord *record = [self recordForRow:row];
+  if (!record) return;
+
+  NSString *string = [self validatedString:[sender stringValue]];
+  if (![string length]) {
+    [sender setStringValue:record.phrase ?: @""];
+    return;
+  }
+  if ([string length] > 7) string = [string substringToIndex:7];
+
+  if ([record.phrase isEqualToString:string]) {
+    [sender setStringValue:string];
+    return;
+  }
+
+  [_store setPhrase:string forRowid:record.rowid];
+  [self reloadData];
+  [self editReadingForRecord:[_store phraseForRowid:record.rowid]];
+}
+
+- (void)tableView:(NSTableView *)tableView
+    sortDescriptorsDidChange:(NSArray *)oldDescriptors {
+  NSArray *descriptors = [tableView sortDescriptors];
+  if ([descriptors count]) {
+    NSSortDescriptor *descriptor = [descriptors objectAtIndex:0];
+    if ([[descriptor key] isEqualToString:@"phrase"]) {
+      _sortKey = PEPhraseSortKeyPhrase;
+    } else if ([[descriptor key] isEqualToString:@"reading"]) {
+      _sortKey = PEPhraseSortKeyReading;
+    } else {
+      _sortKey = PEPhraseSortKeyInsertion;
+    }
+    _sortAscending = [descriptor ascending];
+  } else {
+    _sortKey = PEPhraseSortKeyInsertion;
+    _sortAscending = YES;
+  }
+  [self reloadData];
 }
 
 - (BOOL)tableView:(NSTableView *)tv
@@ -522,6 +594,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [pboard setString:[self stringForCopying] forType:NSPasteboardTypeString];
   return YES;
 }
+
 - (NSDragOperation)tableView:(NSTableView *)tv
                 validateDrop:(id<NSDraggingInfo>)info
                  proposedRow:(NSInteger)row
@@ -544,7 +617,9 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                    editPhraseToolbarItemIdentifier,
                                    editReaingToolbarItemIdentifier,
                                    reloadToolbarItemIdentifier,
-                                   importAddressBookToolbarItemIdentifier, nil];
+                                   importAddressBookToolbarItemIdentifier,
+                                   NSToolbarFlexibleSpaceItemIdentifier,
+                                   searchToolbarItemIdentifier, nil];
 }
 
 - (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar {
@@ -553,7 +628,9 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                    editPhraseToolbarItemIdentifier,
                                    editReaingToolbarItemIdentifier,
                                    importAddressBookToolbarItemIdentifier,
-                                   reloadToolbarItemIdentifier, nil];
+                                   reloadToolbarItemIdentifier,
+                                   NSToolbarFlexibleSpaceItemIdentifier,
+                                   searchToolbarItemIdentifier, nil];
 }
 
 - (NSArray *)toolbarSelectableItemIdentifiers:(NSToolbar *)toolbar {
@@ -596,6 +673,18 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
     [item setLabel:LFLSTR(reloadToolbarItemIdentifier)];
     [item setTarget:self];
     [item setAction:@selector(reloadData)];
+  } else if ([identifier isEqualToString:searchToolbarItemIdentifier]) {
+    if (!_searchField) {
+      _searchField =
+          [[NSSearchField alloc] initWithFrame:NSMakeRect(0, 0, 180, 22)];
+      [_searchField setTarget:self];
+      [_searchField setAction:@selector(searchFieldChanged:)];
+      [[_searchField cell] setSendsSearchStringImmediately:NO];
+    }
+    [item setView:_searchField];
+    [item setLabel:LFLSTR(searchToolbarItemIdentifier)];
+    [item setMinSize:NSMakeSize(120, 22)];
+    [item setMaxSize:NSMakeSize(260, 22)];
   } else {
     item = nil;
   }

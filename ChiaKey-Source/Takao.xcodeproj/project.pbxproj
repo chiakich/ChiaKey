@@ -248,7 +248,7 @@
 		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		5BC0A1032C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
-		5BC0A1042C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
+		CE00000000000000000000B1 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
 		5BC0A1052C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */; };
 		6A47735B0D5C60D300C6C744 /* OpenVanilla.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A47735C0D5C60D300C6C744 /* LFExtensions.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A4771630D5C5E3900C6C744 /* LFExtensions.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -381,6 +381,8 @@
 		D427E5870D63A7B700A9E73A /* OVAFAssociatedPhrase.h in Headers */ = {isa = PBXBuildFile; fileRef = D427E5850D63A7B700A9E73A /* OVAFAssociatedPhrase.h */; };
 		D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09E60EBDD36900AB5B7A /* PEPhraseTableView.m */; };
 		D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09E80EBDD36900AB5B7A /* PEController.m */; };
+		CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
+		CE00000000000000000000A4 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
 		D42B09F30EBDD36900AB5B7A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09EB0EBDD36900AB5B7A /* main.m */; };
 		D42B09F40EBDD36900AB5B7A /* PESettingTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09EC0EBDD36900AB5B7A /* PESettingTableView.m */; };
 		D42B09FD0EBDD37B00AB5B7A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F70EBDD37B00AB5B7A /* InfoPlist.strings */; };
@@ -632,6 +634,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 6AD322580D76DA3E005083D4;
 			remoteInfo = Keyring;
+		};
+		CE00000000000000000000B2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
+			remoteInfo = "Formosa (Library)";
 		};
 		6AE354B60E8F8415003160A0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -986,6 +995,7 @@
 		5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVCapsLockDelayOverride.h; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.h"; sourceTree = "<group>"; };
 		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
 		5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ChiaKeyServiceClient.m; path = "Loaders/OSX-IMK/ChiaKeyServiceClient.m"; sourceTree = "<group>"; };
+		CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyUserPhraseCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyUserPhraseCoordination.h"; sourceTree = "<group>"; };
 		6A4773760D5C621400C6C744 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		6A4773770D5C621400C6C744 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		6A4773780D5C621400C6C744 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = /System/Library/Frameworks/InputMethodKit.framework; sourceTree = "<absolute>"; };
@@ -1098,6 +1108,8 @@
 		D42B09E60EBDD36900AB5B7A /* PEPhraseTableView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PEPhraseTableView.m; path = Utilities/PhraseEditor/OSX/PEPhraseTableView.m; sourceTree = "<group>"; };
 		D42B09E70EBDD36900AB5B7A /* PEPhraseTableView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEPhraseTableView.h; path = Utilities/PhraseEditor/OSX/PEPhraseTableView.h; sourceTree = "<group>"; };
 		D42B09E80EBDD36900AB5B7A /* PEController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PEController.m; path = Utilities/PhraseEditor/OSX/PEController.m; sourceTree = "<group>"; wrapsLines = 1; };
+		CE00000000000000000000A1 /* PEUserPhraseStore.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = PEUserPhraseStore.mm; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.mm; sourceTree = "<group>"; };
+		CE00000000000000000000A2 /* PEUserPhraseStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEUserPhraseStore.h; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.h; sourceTree = "<group>"; };
 		D42B09E90EBDD36900AB5B7A /* PESettingTableView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PESettingTableView.h; path = Utilities/PhraseEditor/OSX/PESettingTableView.h; sourceTree = "<group>"; };
 		D42B09EA0EBDD36900AB5B7A /* PEController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEController.h; path = Utilities/PhraseEditor/OSX/PEController.h; sourceTree = "<group>"; };
 		D42B09EB0EBDD36900AB5B7A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = Utilities/PhraseEditor/OSX/main.m; sourceTree = "<group>"; };
@@ -1415,6 +1427,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D430EE3B0EC30F7C006B7EF9 /* AddressBook.framework in Frameworks */,
+				CE00000000000000000000A4 /* libsqlite3.tbd in Frameworks */,
+				CE00000000000000000000B1 /* libFormosa.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2131,6 +2145,8 @@
 				D42B09E60EBDD36900AB5B7A /* PEPhraseTableView.m */,
 				D42B09EA0EBDD36900AB5B7A /* PEController.h */,
 				D42B09E80EBDD36900AB5B7A /* PEController.m */,
+				CE00000000000000000000A2 /* PEUserPhraseStore.h */,
+				CE00000000000000000000A1 /* PEUserPhraseStore.mm */,
 				D42B09E90EBDD36900AB5B7A /* PESettingTableView.h */,
 				D42B09EC0EBDD36900AB5B7A /* PESettingTableView.m */,
 				D42B09EB0EBDD36900AB5B7A /* main.m */,
@@ -2157,6 +2173,7 @@
 					D459B7960D925BD300CBDE76 /* UI Components */,
 					D484CEDA0EC218170051B6CA /* UIControllers */,
 					5BC0A1062C2F000100C0D3A1 /* ChiaKeyServiceClient.m */,
+					CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */,
 					6A4772FD0D5C607200C6C744 /* main.mm */,
 					6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,
@@ -3155,6 +3172,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				CE00000000000000000000B4 /* PBXTargetDependency */,
 			);
 			name = PhraseEditor;
 			productName = PhraseEditor;
@@ -3631,8 +3649,8 @@
 			buildActionMask = 2147483647;
 			files = (
 					D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */,
-					5BC0A1042C2F000100C0D3A1 /* ChiaKeyServiceClient.m in Sources */,
 					D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */,
+					CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */,
 				D42B09F30EBDD36900AB5B7A /* main.m in Sources */,
 				D42B09F40EBDD36900AB5B7A /* PESettingTableView.m in Sources */,
 				D47D76000ED0409400386753 /* PEDialogWindow.m in Sources */,
@@ -3795,6 +3813,11 @@
 			isa = PBXTargetDependency;
 			target = 6A2D56110D5D889400E710D6 /* Manjusri (Library) */;
 			targetProxy = 6AE354BA0E8F841F003160A0 /* PBXContainerItemProxy */;
+		};
+		CE00000000000000000000B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
+			targetProxy = CE00000000000000000000B2 /* PBXContainerItemProxy */;
 		};
 		6AE3FAE40D7677AB00C7D18D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

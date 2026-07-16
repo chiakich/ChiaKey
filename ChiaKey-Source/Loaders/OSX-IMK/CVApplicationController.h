@@ -30,6 +30,11 @@
 
   NSXPCListener *_serviceListener;
 
+  // Phrase Editor coordination (see ChiaKeyUserPhraseCoordination.h)
+  NSTimer *_userPhrasePollTimer;
+  BOOL _observedEditorSessionActive;
+  NSDate *_lastSeenUserPhraseDirtyDate;
+
   // <lithoglyph>
   OVSQLiteConnection *_userPhraseDB;
   // </lithoglyph>

@@ -7,6 +7,9 @@ file for terms.
 #ifndef LanguageModel_h
 #define LanguageModel_h
 
+#include <sys/stat.h>
+#include <time.h>
+
 #include <deque>
 #include <iostream>
 #include <map>
@@ -190,6 +193,13 @@ class LanguageModel {
   virtual bool saveUserBigramCacheAndCandidateOverrideCache(
       bool useTransaction = true, bool forced = false);
 
+  // While the Phrase Editor holds its editing-lock file, all writes to the
+  // user tables are suspended (see ChiaKeyUserPhraseCoordination.h for the
+  // protocol). The lock path is set by the module after it resolves the user
+  // data directory.
+  virtual void setUserPhraseEditingLockPath(const string& path);
+  virtual bool userPhraseWritesSuspended();
+
  protected:
   virtual double cachedMaxUnigramProbability();
 
@@ -227,7 +237,24 @@ class LanguageModel {
   OVBenchmark m_userCacheTimer;
 
   string m_unigramTableName;
+  string m_userPhraseEditingLockPath;
 };
+
+inline void LanguageModel::setUserPhraseEditingLockPath(const string& path) {
+  m_userPhraseEditingLockPath = path;
+}
+
+inline bool LanguageModel::userPhraseWritesSuspended() {
+  if (!m_userPhraseEditingLockPath.length()) return false;
+
+  struct stat st;
+  if (stat(m_userPhraseEditingLockPath.c_str(), &st)) return false;
+
+  // A stale lock means the editor crashed; never suspend writes forever.
+  // Keep in sync with ChiaKeyPhraseEditorSessionTimeout.
+  const time_t kEditingLockTimeout = 30 * 60;
+  return (time(NULL) - st.st_mtime) < kEditingLockTimeout;
+}
 
 inline void LanguageModel::loadUserBigramCache() {
   if (!m_cfgUseUserBigramCache) return;
@@ -315,6 +342,10 @@ inline void LanguageModel::saveUserCandidateOverrideCache(bool useTransaction) {
 inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
     bool useTransaction, bool forced) {
   if (!m_cfgUseUserCandidateOverrideCache) return false;
+
+  // Editor session in progress: keep the caches in memory; they will be
+  // written at the first save after the session ends.
+  if (userPhraseWritesSuspended()) return false;
 
   if (m_userCacheTimer.elapsedSeconds() < 3.5 && !forced) return false;
 
@@ -657,6 +688,7 @@ inline size_t LanguageModel::cachedQueryCount() { return m_cachedQueryCount; }
 inline bool LanguageModel::addUserUnigram(const string& qstring,
                                           const string& current) {
   if (!m_cfgUseUserTable) return false;
+  if (userPhraseWritesSuspended()) return false;
 
   // check if it's already in either unigram table
   // this is a time-consuming operation anyway, so we'll prepare a statement

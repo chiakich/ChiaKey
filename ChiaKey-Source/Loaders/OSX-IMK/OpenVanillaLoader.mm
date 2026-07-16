@@ -7,6 +7,7 @@
 
 #import "BPMFUserPhraseHelper.h"
 #import "CVCapsLockDelayOverride.h"
+#import "ChiaKeyUserPhraseCoordination.h"
 #import "LFCrossDevelopmentTools.h"
 #import "LFUtilities.h"
 #import "OVAFBopomofoCorrectionPackage.h"
@@ -238,6 +239,9 @@ using namespace OpenVanilla;
 
     _mergedCannedMessagesArray = [NSMutableArray new];
 
+    _userPhraseEditingSessionActive = NO;
+    _pendingUserPhraseAdditions = [NSMutableArray new];
+
     _userCannedMessagePlist = 0;
     _userFreeCannedMessageFileTimestamp = new OVFileTimestamp;
 
@@ -250,6 +254,7 @@ using namespace OpenVanilla;
   [self shutDown];
 
   [_mergedCannedMessagesArray release];
+  [_pendingUserPhraseAdditions release];
 
   if (_userCannedMessagePlist) {
     delete _userCannedMessagePlist;
@@ -940,7 +945,10 @@ using namespace OpenVanilla;
   return results;
 }
 - (void)userPhraseDBSave {
-  if ([self _userPhraseDBConnection]) {
+  // VACUUM renumbers rowids; never run it while the Phrase Editor session
+  // relies on stable rowids.
+  if (![self userPhraseEditingSessionActive] &&
+      [self _userPhraseDBConnection]) {
     _userPhraseDB->execute("VACUUM");
     delete _userPhraseDB;
     _userPhraseDB = 0;
@@ -961,6 +969,11 @@ using namespace OpenVanilla;
   return newReading;
 }
 - (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row {
+  // Positional updates cannot be replayed meaningfully after an editor
+  // session; drop them while one is active.
+  if ([self userPhraseEditingSessionActive]) {
+    return;
+  }
   if (![self _userPhraseDBConnection]) {
     return;
   }
@@ -972,6 +985,9 @@ using namespace OpenVanilla;
 }
 
 - (void)userPhraseDBDeleteRow:(int)row {
+  if ([self userPhraseEditingSessionActive]) {
+    return;
+  }
   if (![self _userPhraseDBConnection]) {
     return;
   }
@@ -987,6 +1003,13 @@ using namespace OpenVanilla;
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 - (void)userPhraseDBAddNewRow:(NSString *)phrase {
+  // Queue additions while the Phrase Editor owns the DB; replayed on end.
+  if ([self userPhraseEditingSessionActive]) {
+    @synchronized(_pendingUserPhraseAdditions) {
+      [_pendingUserPhraseAdditions addObject:phrase];
+    }
+    return;
+  }
   if (![self _userPhraseDBConnection]) {
     return;
   }
@@ -1002,6 +1025,12 @@ using namespace OpenVanilla;
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 - (void)userPhraseDBAddNewRows:(NSArray *)array {
+  if ([self userPhraseEditingSessionActive]) {
+    @synchronized(_pendingUserPhraseAdditions) {
+      [_pendingUserPhraseAdditions addObjectsFromArray:array];
+    }
+    return;
+  }
   if (![self _userPhraseDBConnection]) {
     return;
   }
@@ -1031,6 +1060,9 @@ using namespace OpenVanilla;
 }
 
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row {
+  if ([self userPhraseEditingSessionActive]) {
+    return;
+  }
   if (![self _userPhraseDBConnection]) {
     return;
   }
@@ -1040,6 +1072,52 @@ using namespace OpenVanilla;
   _userPhraseDB->execute(
       "UPDATE user_unigrams SET qstring = %Q, current = %Q WHERE rowid = %d",
       [self _qstringFromReading:reading].c_str(), [phrase UTF8String], row + 1);
+  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+}
+
+#pragma mark Phrase Editor coordination
+
+- (NSString *)userDataDirectory {
+  OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
+  return [NSString stringWithUTF8String:pathInfo.writablePath.c_str()];
+}
+
+- (BOOL)userPhraseEditingSessionActive {
+  // The lock file is authoritative; the flag only makes notification
+  // delivery take effect without waiting for the next poll.
+  return _userPhraseEditingSessionActive ||
+         ChiaKeyUserPhraseEditingLockIsActive([self userDataDirectory]);
+}
+
+- (void)userPhraseEditingSessionDidBegin {
+  _userPhraseEditingSessionActive = YES;
+
+  // Release our own connection so the editor session starts from a clean
+  // slate; it is lazily reopened after the session.
+  if (_userPhraseDB) {
+    delete _userPhraseDB;
+    _userPhraseDB = 0;
+  }
+}
+
+- (void)userPhraseEditingSessionDidEnd {
+  _userPhraseEditingSessionActive = NO;
+
+  NSArray *pending = nil;
+  @synchronized(_pendingUserPhraseAdditions) {
+    if ([_pendingUserPhraseAdditions count]) {
+      pending = [[_pendingUserPhraseAdditions copy] autorelease];
+      [_pendingUserPhraseAdditions removeAllObjects];
+    }
+  }
+  if (pending) {
+    [self userPhraseDBAddNewRows:pending];
+  }
+
+  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+}
+
+- (void)userPhraseDBDidChangeExternally {
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 

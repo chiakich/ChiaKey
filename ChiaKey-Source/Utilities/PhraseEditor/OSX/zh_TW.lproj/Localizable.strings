@@ -34,3 +34,9 @@
 
 "Your phrases are successfully imported." = "成功匯入資料庫";
 "Unable to import database." = "無法匯入資料庫";
+
+"Unable to open the phrase database." = "無法開啟自訂詞資料庫";
+"The Phrase Editor cannot open your user phrase database. Check the permissions of the ChiaKey folder in Application Support." = "詞彙編輯器無法開啟您的自訂詞資料庫，請檢查 Application Support 中 ChiaKey 資料夾的權限。";
+"Search" = "搜尋";
+"%lu user phrase(s)" = "%lu 筆使用者自定詞";
+"%lu of %lu user phrase(s)" = "符合 %lu 筆，共 %lu 筆使用者自定詞";

@@ -10,14 +10,9 @@
 
 #import "LFUtilities.h"
 #import "PESettingTableView.h"
+#import "PEUserPhraseStore.h"
 
 #define HELP_URL @"https://github.com/akira02/ChiaKey"
-
-#ifndef OPENVANILLA_DO_CONNECTION_NAME
-#error Must define OPENVANILLA_DO_CONNECTION_NAME
-#endif
-
-#import "OpenVanillaService.h"
 
 static NSString *addToolbarItemIdentifier = @"Add";
 static NSString *deleteToolbarItemIdentifier = @"Delete";
@@ -26,27 +21,12 @@ static NSString *editReaingToolbarItemIdentifier = @"Edit Reading";
 static NSString *importAddressBookToolbarItemIdentifier =
     @"Import Address Book";
 static NSString *reloadToolbarItemIdentifier = @"Reload";
-
-@protocol TakaoPhraseEditorService
-- (BOOL)userPhraseDBCanProvideService;
-- (int)userPhraseDBNumberOfRow;
-- (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row;
-- (NSArray *)userPhraseDBReadingsForPhrase:(NSString *)phrase;
-- (void)userPhraseDBSave;
-- (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row;
-- (void)userPhraseDBDeleteRow:(int)row;
-- (void)userPhraseDBAddNewRow:(NSString *)phrase;
-- (void)userPhraseDBAddNewRows:(NSArray *)array;
-- (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row;
-
-- (bool)exportUserPhraseDBToFile:(NSString *)path;
-- (bool)importUserPhraseDBFromFile:(NSString *)path;
-@end
+static NSString *searchToolbarItemIdentifier = @"Search";
 
 #pragma mark -
 
 @interface PEController : NSWindowController <NSTableViewDataSource, NSTableViewDelegate> {
-  id _loader;
+  PEUserPhraseStore *_store;
   IBOutlet NSTableView *_tableView;
   IBOutlet NSTextField *_statusTextField;
 
@@ -64,11 +44,21 @@ static NSString *reloadToolbarItemIdentifier = @"Reload";
   IBOutlet NSProgressIndicator *_progressIndicator;
   IBOutlet NSTextField *_progressTextField;
 
-  int _editingRow;
+  NSSearchField *_searchField;
+
+  // Windowed data source state
+  NSMutableDictionary *_pageCache;  // page index -> NSArray<PEPhraseRecord *>
+  NSUInteger _rowCount;
+  NSString *_filter;
+  PEPhraseSortKey _sortKey;
+  BOOL _sortAscending;
+
+  long long _editingRowid;  // row being edited in the reading sheet
 }
 
 - (void)updateStatus;
 - (NSString *)validatedString:(NSString *)originalString;
+- (void)reloadData;
 
 #pragma mark Interface Builder actions
 

@@ -1311,6 +1311,11 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
   m_LM = new LanguageModel(lmdb, externalBPMFTable, useUserTable, false, false,
                            useUserTable, useUserTable);
 
+  // Suspend user-DB writes while the Phrase Editor holds its editing lock
+  // (see ChiaKeyUserPhraseCoordination.h).
+  m_LM->setUserPhraseEditingLockPath(OVPathHelper::PathCat(
+      pathInfo->writablePath, "SmartMandarinUserData.editing"));
+
   // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "loading user bigram
   // cache" << endl;
   m_LM->loadUserBigramCache();
