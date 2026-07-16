@@ -108,10 +108,14 @@ static BOOL TakaoRemoveItemAtPathWithAdministratorPrivileges(NSString *path) {
   ChiaKeyPostServiceNotification(ChiaKeyReloadRequestedNotification);
 }
 - (void)reloadData {
-  NSArray *info =
-      [ChiaKeyReadServiceStatus() objectForKey:ChiaKeyStatusPackagesKey];
-  if (info) {
-    [self setModules:info];
+  // When the IME is not running the status file is stale; re-syncing from
+  // it would visually revert toggles the user just made.
+  if (ChiaKeyIMEIsRunning()) {
+    NSArray *info =
+        [ChiaKeyReadServiceStatus() objectForKey:ChiaKeyStatusPackagesKey];
+    if (info) {
+      [self setModules:info];
+    }
   }
   [self setUIEnabled:YES];
 }
@@ -245,11 +249,12 @@ static BOOL TakaoRemoveItemAtPathWithAdministratorPrivileges(NSString *path) {
       }
     }
     // Persist the desired blacklist to the pending file, then ask the IME
-    // to pick it up. If the IME is not running, it applies it at startup.
+    // to pick it up (its handler applies AND reloads, so no separate reload
+    // request that could race). If the IME is not running, the pending file
+    // is applied at its next startup.
     [a writeToFile:ChiaKeyPendingModuleBlacklistPath() atomically:YES];
     ChiaKeyPostServiceNotification(ChiaKeyModuleBlacklistDidChangeNotification);
   }
-  [self reloadServer];
   // The table already shows the toggled state; re-sync from the status file
   // once the IME has had a moment to apply and republish.
   [self performSelector:@selector(reloadData) withObject:nil afterDelay:3.0];

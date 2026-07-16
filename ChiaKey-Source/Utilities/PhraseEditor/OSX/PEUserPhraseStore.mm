@@ -205,9 +205,7 @@ static std::string PEEscapeForLike(const std::string &s) {
   if (_sessionActive || !_userDB) return;
   _sessionActive = YES;
 
-  NSString *lockPath =
-      ChiaKeyUserPhraseEditingLockPath([self _userDataDirectory]);
-  ChiaKeyTouchCoordinationFile(lockPath);
+  ChiaKeyClaimUserPhraseEditingLock([self _userDataDirectory]);
   _lockRefreshTimer =
       [[NSTimer scheduledTimerWithTimeInterval:kEditingLockRefreshInterval
                                         target:self
@@ -220,8 +218,7 @@ static std::string PEEscapeForLike(const std::string &s) {
 }
 
 - (void)_refreshEditingLock:(NSTimer *)timer {
-  ChiaKeyTouchCoordinationFile(
-      ChiaKeyUserPhraseEditingLockPath([self _userDataDirectory]));
+  ChiaKeyRefreshUserPhraseEditingLock([self _userDataDirectory]);
 }
 
 - (void)endEditingSession {
@@ -240,13 +237,13 @@ static std::string PEEscapeForLike(const std::string &s) {
     ChiaKeyPostUserPhraseNotification(ChiaKeyUserPhraseDidChangeNotification);
   }
 
-  // Remove the lock before posting End so the IME's own check agrees.
-  [[NSFileManager defaultManager]
-      removeItemAtPath:ChiaKeyUserPhraseEditingLockPath(
-                           [self _userDataDirectory])
-                 error:NULL];
-  ChiaKeyPostUserPhraseNotification(
-      ChiaKeyPhraseEditorDidEndEditingNotification);
+  // Remove the lock before posting End so the IME's own check agrees. If
+  // another live session owns the lock, leave it (and the End notification)
+  // to that owner -- the IME must stay suspended for it.
+  if (ChiaKeyReleaseUserPhraseEditingLockIfOwner([self _userDataDirectory])) {
+    ChiaKeyPostUserPhraseNotification(
+        ChiaKeyPhraseEditorDidEndEditingNotification);
+  }
 }
 
 - (void)_markDirtyAndScheduleChangeNotification {

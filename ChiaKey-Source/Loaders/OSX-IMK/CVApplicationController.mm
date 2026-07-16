@@ -718,13 +718,13 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       (!_lastSeenUserPhraseDirtyDate ||
        [dirtyDate compare:_lastSeenUserPhraseDirtyDate] ==
            NSOrderedDescending)) {
-    BOOL firstObservation = (_lastSeenUserPhraseDirtyDate == nil);
     [_lastSeenUserPhraseDirtyDate release];
     _lastSeenUserPhraseDirtyDate = [dirtyDate retain];
-    // The first poll only records the baseline; the DB was loaded at start.
-    if (!firstObservation) {
-      [_loader userPhraseDBDidChangeExternally];
-    }
+    // Also fires on the first sighting: an editor commit between DB load and
+    // the first poll must not be folded into the baseline (the notification
+    // for it may have been dropped). Costs one spurious cache flush at
+    // startup, which is cheap.
+    [_loader userPhraseDBDidChangeExternally];
   }
 }
 
@@ -760,7 +760,10 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 }
 
 - (void)_moduleBlacklistDidChange:(NSNotification *)notification {
+  // Apply first, then reload, in one handler: two separate notifications
+  // would have no delivery-order guarantee.
   [_loader applyPendingModuleBlacklistAndPublish];
+  [self reloadOpenVanilla];
 }
 
 - (void)_startObservingPreferencesRequests {

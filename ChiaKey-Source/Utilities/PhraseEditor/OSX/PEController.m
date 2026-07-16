@@ -31,6 +31,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [_pageCache release];
   [_filter release];
   [_store release];
+  [_searchField release];
   [super dealloc];
 }
 

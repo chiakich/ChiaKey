@@ -31,6 +31,8 @@
 
 #import <Foundation/Foundation.h>
 
+#include <unistd.h>
+
 #define ChiaKeyPhraseEditorDidBeginEditingNotification \
   @"org.chiakey.inputmethod.PhraseEditorDidBeginEditing"
 #define ChiaKeyPhraseEditorDidEndEditingNotification \
@@ -83,6 +85,56 @@ static inline BOOL ChiaKeyUserPhraseEditingLockIsActive(
   if (!date) return NO;
   return [[NSDate date] timeIntervalSinceDate:date] <
          ChiaKeyPhraseEditorSessionTimeout;
+}
+
+// The lock carries its owner's PID so that overlapping editing sessions
+// (e.g. Phrase Editor open while Preferences runs an import) do not tear
+// down each other's lock: the first claimer owns it, later sessions just
+// keep the mtime fresh, and only the owner's end removes the file. The IME
+// only ever looks at existence + mtime, never at the contents.
+
+static inline NSString *ChiaKeyEditingLockOwnerTag(void) {
+  return [NSString stringWithFormat:@"%d", (int)getpid()];
+}
+
+static inline void ChiaKeyClaimUserPhraseEditingLock(
+    NSString *userDataDirectory) {
+  NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
+  if (ChiaKeyUserPhraseEditingLockIsActive(userDataDirectory)) {
+    ChiaKeyTouchCoordinationFile(path);  // piggyback on the current owner
+  } else {
+    [[ChiaKeyEditingLockOwnerTag() dataUsingEncoding:NSUTF8StringEncoding]
+        writeToFile:path
+         atomically:YES];
+  }
+}
+
+static inline void ChiaKeyRefreshUserPhraseEditingLock(
+    NSString *userDataDirectory) {
+  NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
+  if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+    ChiaKeyTouchCoordinationFile(path);
+  } else {
+    // Someone removed it (e.g. another session's end); reclaim.
+    [[ChiaKeyEditingLockOwnerTag() dataUsingEncoding:NSUTF8StringEncoding]
+        writeToFile:path
+         atomically:YES];
+  }
+}
+
+// Returns YES if this process owned (and removed) the lock; NO if another
+// live session still holds it.
+static inline BOOL ChiaKeyReleaseUserPhraseEditingLockIfOwner(
+    NSString *userDataDirectory) {
+  NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
+  NSString *owner = [[[NSString alloc] initWithData:[NSData dataWithContentsOfFile:path]
+                                           encoding:NSUTF8StringEncoding]
+      autorelease];
+  if ([owner length] && ![owner isEqualToString:ChiaKeyEditingLockOwnerTag()]) {
+    return NO;
+  }
+  [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+  return YES;
 }
 
 static inline void ChiaKeyPostUserPhraseNotification(NSString *name) {
