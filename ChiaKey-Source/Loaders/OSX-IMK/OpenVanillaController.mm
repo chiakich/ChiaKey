@@ -439,7 +439,12 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _shiftKeyPressedForTemporaryEnglish = NO;
   _shiftKeyTapCanceled = NO;
 
-  [OpenVanillaController setActiveContext:nil sender:nil];
+  // IMK does not guarantee this arrives before the incoming client's
+  // activateServer:, so clearing unconditionally can wipe out a context that
+  // now belongs to someone else.
+  if (OVCActiveContext == self) {
+    [OpenVanillaController setActiveContext:nil sender:nil];
+  }
 
   // force commit
   _commitFromOurselves = YES;
