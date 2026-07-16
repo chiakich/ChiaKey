@@ -480,10 +480,8 @@ using namespace OpenVanilla;
 }
 
 - (void)_firstTimeUpdateUserData {
+  // mergeCannedMessagesData posts CVLoaderUpdateCannedMessagesNotification.
   [self mergeCannedMessagesData];
-  [[NSNotificationCenter defaultCenter]
-      postNotificationName:CVLoaderUpdateCannedMessagesNotification
-                    object:self];
 }
 
 - (void)_addInitializedStaticMoudlePackages {
