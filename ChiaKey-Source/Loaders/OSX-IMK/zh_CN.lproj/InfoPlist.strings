@@ -1,4 +1,5 @@
 CFBundleName = "千秋輸入法";
 CFBundleDisplayName = "千秋輸入法";
 NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";
+NSContactsUsageDescription = "千秋输入法需要读取联系人姓名，才能让词汇编辑器将人名加入您的自定词库。";
 com.chiakey.inputmethod.ChiaKey = "千秋輸入法";

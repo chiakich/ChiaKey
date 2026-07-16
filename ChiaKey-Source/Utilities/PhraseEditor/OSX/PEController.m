@@ -25,6 +25,32 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
   [alert beginSheetModalForWindow:window completionHandler:nil];
 }
 
+static void PEOpenContactsPrivacySettings(void) {
+  NSURL *url = [NSURL URLWithString:@"x-apple.systempreferences:com.apple."
+                                    @"preference.security?Privacy_Contacts"];
+  [[NSWorkspace sharedWorkspace] openURL:url];
+}
+
+// Contacts access can only be granted by the user in System Settings once it
+// has been denied, so offer to jump straight there instead of just an OK.
+static void PEPresentContactsDeniedAlert(NSWindow *window) {
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setMessageText:LFLSTR(@"Unable to access your contacts.")];
+  [alert
+      setInformativeText:
+          LFLSTR(@"Allow the Phrase Editor to access contacts in System "
+                 @"Settings > Privacy & Security > Contacts, then try again.")];
+  [alert addButtonWithTitle:LFLSTR(@"Open System Settings")];
+  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
+  [alert setAlertStyle:NSAlertStyleWarning];
+  [alert beginSheetModalForWindow:window
+                completionHandler:^(NSModalResponse returnCode) {
+                  if (returnCode == NSAlertFirstButtonReturn) {
+                    PEOpenContactsPrivacySettings();
+                  }
+                }];
+}
+
 @implementation PEController
 
 - (void)dealloc {
@@ -306,13 +332,14 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
 - (void)importAddressBook {
   // The legacy AddressBook API no longer triggers the TCC prompt on modern
   // macOS; go through CNContactStore, which does.
-  if ([CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts] ==
-      CNAuthorizationStatusDenied) {
-    PEPresentSheetAlert(
-        [self window], LFLSTR(@"Unable to access your contacts."),
-        LFLSTR(@"Allow the Phrase Editor to access contacts in System "
-               @"Settings > Privacy & Security > Contacts, then try again."),
-        NSAlertStyleWarning);
+  CNAuthorizationStatus status =
+      [CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts];
+  // requestAccess only presents the system prompt while the status is
+  // NotDetermined. Once denied or restricted it returns NO without prompting,
+  // so send the user straight to the privacy pane instead.
+  if (status == CNAuthorizationStatusDenied ||
+      status == CNAuthorizationStatusRestricted) {
+    PEPresentContactsDeniedAlert([self window]);
     return;
   }
 
@@ -321,13 +348,7 @@ static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                   completionHandler:^(BOOL granted, NSError *error) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                       if (!granted) {
-                        PEPresentSheetAlert(
-                            [self window],
-                            LFLSTR(@"Unable to access your contacts."),
-                            LFLSTR(@"Allow the Phrase Editor to access "
-                                   @"contacts in System Settings > Privacy & "
-                                   @"Security > Contacts, then try again."),
-                            NSAlertStyleWarning);
+                        PEPresentContactsDeniedAlert([self window]);
                         return;
                       }
                       [self _importContactNames];

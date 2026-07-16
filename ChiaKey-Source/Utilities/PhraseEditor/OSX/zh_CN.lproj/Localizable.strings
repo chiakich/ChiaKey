@@ -43,3 +43,5 @@
 
 "Unable to access your contacts." = "无法访问您的联系人";
 "Allow the Phrase Editor to access contacts in System Settings > Privacy & Security > Contacts, then try again." = "请在「系统设置 > 隐私与安全性 > 联系人」允许词汇编辑器访问联系人后重试。";
+"Open System Settings" = "打开系统设置";
+"Cancel" = "取消";

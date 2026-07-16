@@ -366,6 +366,16 @@ fi
 
 run /usr/bin/ditto "${BUILT_APP}" "${INSTALL_APP}"
 apply_dev_identity
+# The `--deep` sign below does not descend into Contents/SharedSupport, so the
+# nested PhraseEditor would otherwise keep the linker's ad-hoc signature whose
+# identifier is the bare executable name ("PhraseEditor"). Sign it first, with
+# its real bundle id as the identifier, so TCC (e.g. the Contacts prompt)
+# attributes it correctly; the outer `--deep` sign then seals it in. Signing
+# inside-out matters: re-signing the nested app after the outer bundle would
+# invalidate the outer signature's seal over SharedSupport.
+run /usr/bin/codesign --force --sign - \
+  --identifier com.chiakey.inputmethod.ChiaKey.PhraseEditor \
+  "${INSTALL_APP}/Contents/SharedSupport/PhraseEditor.app"
 run /usr/bin/codesign --force --deep --sign - "${INSTALL_APP}"
 
 # Register the dev input source so it appears without a logout/login.
