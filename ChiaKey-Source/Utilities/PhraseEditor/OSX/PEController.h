@@ -48,6 +48,7 @@ static NSString *searchToolbarItemIdentifier = @"Search";
 
   // Windowed data source state
   NSMutableDictionary *_pageCache;  // page index -> NSArray<PEPhraseRecord *>
+  NSMutableArray *_pageCacheRecency;  // least recently used -> most recent
   NSUInteger _rowCount;
   NSString *_filter;
   PEPhraseSortKey _sortKey;

@@ -116,9 +116,8 @@ static std::string PEEscapeForLike(const std::string &s) {
   NSTimer *_lockRefreshTimer;
   NSTimer *_changeNotificationTimer;
 
-  // Cached count for the current (filter, generation); -1 when invalid.
-  NSInteger _cachedCount;
-  NSString *_cachedCountFilter;
+  // Cached counts for the current generation, keyed by normalized filter.
+  NSMutableDictionary *_countCache;
 }
 
 + (instancetype)sharedStore {
@@ -132,7 +131,7 @@ static std::string PEEscapeForLike(const std::string &s) {
 - (id)init {
   self = [super init];
   if (self) {
-    _cachedCount = -1;
+    _countCache = [NSMutableDictionary new];
     [self _openUserDB];
   }
   return self;
@@ -142,7 +141,7 @@ static std::string PEEscapeForLike(const std::string &s) {
   [self endEditingSession];
   if (_userDB) sqlite3_close(_userDB);
   if (_lexDB) sqlite3_close(_lexDB);
-  [_cachedCountFilter release];
+  [_countCache release];
   [super dealloc];
 }
 
@@ -273,9 +272,16 @@ static std::string PEEscapeForLike(const std::string &s) {
 }
 
 - (void)_markDirtyAndScheduleChangeNotification {
-  _cachedCount = -1;
+  [self invalidateCachedCounts];
   ChiaKeyTouchCoordinationFile(
       ChiaKeyUserPhraseDirtyFlagPath([self _userDataDirectory]));
+
+  // A background import owns a separate store instance and has no run loop
+  // for NSTimer. Its dirty file is already durable, so post immediately.
+  if (![NSThread isMainThread]) {
+    ChiaKeyPostUserPhraseNotification(ChiaKeyUserPhraseDidChangeNotification);
+    return;
+  }
 
   if (_changeNotificationTimer) return;  // already scheduled
   _changeNotificationTimer =
@@ -293,6 +299,10 @@ static std::string PEEscapeForLike(const std::string &s) {
 }
 
 #pragma mark Query building
+
+- (void)invalidateCachedCounts {
+  [_countCache removeAllObjects];
+}
 
 // WHERE clause for a filter; appends bound parameter values to `params`.
 static std::string PEFilterClause(NSString *filter,
@@ -335,10 +345,8 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
   if (!_userDB) return 0;
 
   NSString *normalizedFilter = filter ? filter : @"";
-  if (_cachedCount >= 0 &&
-      [_cachedCountFilter isEqualToString:normalizedFilter]) {
-    return (NSUInteger)_cachedCount;
-  }
+  NSNumber *cachedCount = [_countCache objectForKey:normalizedFilter];
+  if (cachedCount) return [cachedCount unsignedIntegerValue];
 
   std::vector<std::string> params;
   std::string sql = "SELECT COUNT(*) FROM user_unigrams " +
@@ -357,9 +365,8 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
     sqlite3_finalize(st);
   }
 
-  _cachedCount = (NSInteger)count;
-  [_cachedCountFilter release];
-  _cachedCountFilter = [normalizedFilter copy];
+  [_countCache setObject:[NSNumber numberWithUnsignedInteger:count]
+                  forKey:normalizedFilter];
   return count;
 }
 

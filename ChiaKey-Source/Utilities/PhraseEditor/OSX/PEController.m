@@ -13,6 +13,9 @@
 // Rows are fetched from SQLite in fixed-size windows so the table stays
 // responsive with tens of thousands of phrases.
 static const NSUInteger kPageSize = 256;
+// Keep enough nearby pages for smooth back-and-forth scrolling without
+// retaining a model object for every row the user has ever visited.
+static const NSUInteger kMaximumCachedPages = 32;
 
 static void PEPresentSheetAlert(NSWindow *window, NSString *messageText,
                                 NSString *informativeText,
@@ -55,6 +58,7 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
 
 - (void)dealloc {
   [_pageCache release];
+  [_pageCacheRecency release];
   [_filter release];
   [_store release];
   [_searchField release];
@@ -77,6 +81,7 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
   }
 
   _pageCache = [NSMutableDictionary new];
+  _pageCacheRecency = [NSMutableArray new];
   _sortKey = PEPhraseSortKeyInsertion;
   _sortAscending = YES;
   _editingRowid = -1;
@@ -151,6 +156,21 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
 
 #pragma mark Windowed data source
 
+- (void)_touchCachedPageKey:(NSNumber *)pageKey {
+  [_pageCacheRecency removeObject:pageKey];
+  [_pageCacheRecency addObject:pageKey];
+}
+
+- (void)_cachePage:(NSArray *)page forKey:(NSNumber *)pageKey {
+  [_pageCache setObject:page forKey:pageKey];
+  [self _touchCachedPageKey:pageKey];
+  while ([_pageCacheRecency count] > kMaximumCachedPages) {
+    NSNumber *leastRecentKey = [_pageCacheRecency objectAtIndex:0];
+    [_pageCache removeObjectForKey:leastRecentKey];
+    [_pageCacheRecency removeObjectAtIndex:0];
+  }
+}
+
 - (PEPhraseRecord *)recordForRow:(NSInteger)row {
   if (row < 0 || (NSUInteger)row >= _rowCount) return nil;
 
@@ -160,10 +180,12 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
     page = [_store
         phrasesInRange:NSMakeRange([pageKey unsignedIntegerValue] * kPageSize,
                                    kPageSize)
-                filter:_filter
-               sortKey:_sortKey
+               filter:_filter
+              sortKey:_sortKey
              ascending:_sortAscending];
-    [_pageCache setObject:page forKey:pageKey];
+    [self _cachePage:page forKey:pageKey];
+  } else {
+    [self _touchCachedPageKey:pageKey];
   }
   NSUInteger offset = (NSUInteger)row % kPageSize;
   if (offset >= [page count]) return nil;
@@ -174,6 +196,7 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
 
 - (void)reloadData {
   [_pageCache removeAllObjects];
+  [_pageCacheRecency removeAllObjects];
   _rowCount = [_store numberOfPhrasesMatchingFilter:_filter];
   [_tableView reloadData];
   [self updateStatus];
@@ -387,68 +410,100 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
   BOOL wantFullName = [_importLastAndFirstNameCheckBox intValue] != 0;
   BOOL wantFirstName = [_importFirstNameCheckBox intValue] != 0;
 
-  NSMutableArray *array = [NSMutableArray array];
-  NSMutableSet *batchSeen = [NSMutableSet set];
+  // Give the import its own SQLite connections. The UI store stays on the
+  // main thread while this worker enumerates contacts, derives readings, and
+  // writes one transaction; WAL makes the two connections coexist cleanly.
+  PEUserPhraseStore *backgroundStore = [[PEUserPhraseStore alloc] init];
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+                 ^{
+                   NSAutoreleasePool *pool = [NSAutoreleasePool new];
+                   NSMutableArray *array = [NSMutableArray array];
+                   NSMutableSet *batchSeen = [NSMutableSet set];
 
-  CNContactStore *store = [[[CNContactStore alloc] init] autorelease];
-  CNContactFetchRequest *request = [[[CNContactFetchRequest alloc]
-      initWithKeysToFetch:[NSArray arrayWithObjects:CNContactFamilyNameKey,
-                                                    CNContactGivenNameKey,
-                                                    nil]] autorelease];
-  [store
-      enumerateContactsWithFetchRequest:request
-                                  error:NULL
-                             usingBlock:^(CNContact *contact, BOOL *stop) {
-                               NSString *lastName =
-                                   [self validatedString:[contact familyName]];
-                               if (!lastName) lastName = @"";
-                               NSString *firstName =
-                                   [self validatedString:[contact givenName]];
-                               if (!firstName) firstName = @"";
-                               NSString *name =
-                                   [NSString stringWithFormat:@"%@%@",
-                                                              lastName,
-                                                              firstName];
+                   CNContactStore *contacts =
+                       [[[CNContactStore alloc] init] autorelease];
+                   CNContactFetchRequest *request =
+                       [[[CNContactFetchRequest alloc]
+                           initWithKeysToFetch:
+                               [NSArray arrayWithObjects:
+                                            CNContactFamilyNameKey,
+                                            CNContactGivenNameKey, nil]]
+                           autorelease];
+                   [contacts
+                       enumerateContactsWithFetchRequest:request
+                                                   error:NULL
+                                              usingBlock:^(CNContact *contact,
+                                                           BOOL *stop) {
+                                                NSString *lastName =
+                                                    [self validatedString:
+                                                              [contact familyName]];
+                                                if (!lastName) lastName = @"";
+                                                NSString *firstName =
+                                                    [self validatedString:
+                                                              [contact givenName]];
+                                                if (!firstName) firstName = @"";
+                                                NSString *name =
+                                                    [NSString stringWithFormat:
+                                                                  @"%@%@", lastName,
+                                                                  firstName];
 
-                               if (wantFullName && [name length] < 5 &&
-                                   [name length] > 1 &&
-                                   ![batchSeen containsObject:name] &&
-                                   !(skipExisting &&
-                                     [_store containsPhrase:name])) {
-                                 [batchSeen addObject:name];
-                                 [array addObject:name];
-                               }
-                               if (wantFirstName && [firstName length] < 5 &&
-                                   [firstName length] > 1 &&
-                                   ![batchSeen containsObject:firstName] &&
-                                   !(skipExisting &&
-                                     [_store containsPhrase:firstName])) {
-                                 [batchSeen addObject:firstName];
-                                 [array addObject:firstName];
-                               }
-                             }];
+                                                if (wantFullName &&
+                                                    [name length] < 5 &&
+                                                    [name length] > 1 &&
+                                                    ![batchSeen
+                                                        containsObject:name] &&
+                                                    !(skipExisting &&
+                                                      [backgroundStore
+                                                          containsPhrase:name])) {
+                                                  [batchSeen addObject:name];
+                                                  [array addObject:name];
+                                                }
+                                                if (wantFirstName &&
+                                                    [firstName length] < 5 &&
+                                                    [firstName length] > 1 &&
+                                                    ![batchSeen
+                                                        containsObject:firstName] &&
+                                                    !(skipExisting &&
+                                                      [backgroundStore
+                                                          containsPhrase:
+                                                              firstName])) {
+                                                  [batchSeen addObject:firstName];
+                                                  [array addObject:firstName];
+                                                }
+                                              }];
 
-  if ([array count]) {
-    NSArray *records = [_store addPhrases:array];
-    // 沈 as a surname reads ㄕㄣˇ, not the default ㄔㄣˊ.
-    for (PEPhraseRecord *record in records) {
-      if (![record.phrase hasPrefix:[NSString stringWithUTF8String:"沈"]])
-        continue;
-      NSMutableArray *parts = [[[record.reading
-          componentsSeparatedByString:@","] mutableCopy] autorelease];
-      if (![parts count]) continue;
-      [parts replaceObjectAtIndex:0
-                       withObject:[NSString stringWithUTF8String:"ㄕㄣˇ"]];
-      [_store setReading:[parts componentsJoinedByString:@","]
-                forRowid:record.rowid];
-    }
-  }
+                   if ([array count]) {
+                     NSArray *records = [backgroundStore addPhrases:array];
+                     // 沈 as a surname reads ㄕㄣˇ, not the default ㄔㄣˊ.
+                     for (PEPhraseRecord *record in records) {
+                       if (![record.phrase
+                               hasPrefix:[NSString
+                                             stringWithUTF8String:"沈"]])
+                         continue;
+                       NSMutableArray *parts =
+                           [[[record.reading componentsSeparatedByString:@","]
+                               mutableCopy] autorelease];
+                       if (![parts count]) continue;
+                       [parts replaceObjectAtIndex:0
+                                        withObject:[NSString
+                                                       stringWithUTF8String:
+                                                           "ㄕㄣˇ"]];
+                       [backgroundStore
+                           setReading:[parts componentsJoinedByString:@","]
+                            forRowid:record.rowid];
+                     }
+                   }
 
-  [[self window] endSheet:_progressWindow];
-  [_progressIndicator stopAnimation:self];
-  [_progressWindow orderOut:self];
-
-  [self reloadData];
+                   dispatch_async(dispatch_get_main_queue(), ^{
+                     [[self window] endSheet:_progressWindow];
+                     [_progressIndicator stopAnimation:self];
+                     [_progressWindow orderOut:self];
+                     [_store invalidateCachedCounts];
+                     [self reloadData];
+                   });
+                   [pool drain];
+                 });
+  [backgroundStore release];
 }
 
 - (IBAction)continueImportAction:(id)sender {

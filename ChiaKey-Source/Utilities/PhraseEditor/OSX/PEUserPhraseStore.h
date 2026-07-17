@@ -47,6 +47,7 @@ typedef NS_ENUM(NSInteger, PEPhraseSortKey) {
 // filter: nil/empty for all rows; otherwise substring match on the phrase,
 // plus reading-prefix match when the filter parses as composed Bopomofo.
 - (NSUInteger)numberOfPhrasesMatchingFilter:(NSString *)filter;
+- (void)invalidateCachedCounts;
 - (NSArray *)phrasesInRange:(NSRange)range
                      filter:(NSString *)filter
                     sortKey:(PEPhraseSortKey)sortKey
