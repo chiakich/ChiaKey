@@ -4,10 +4,6 @@
 #define OPENVANILLA_CONNECTION_NAME @"OpenVanilla_1_Connection"
 #endif
 
-#ifndef OPENVANILLA_DO_CONNECTION_NAME
-#define OPENVANILLA_DO_CONNECTION_NAME @"OpenVanillaService"
-#endif
-
 #ifndef OPENVANILLA_CEROD_DATABASE_FILE
 #define OPENVANILLA_CEROD_DATABASE_FILE @"KeyKey.db"
 #endif

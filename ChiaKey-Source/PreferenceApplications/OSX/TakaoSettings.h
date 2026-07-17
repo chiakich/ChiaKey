@@ -50,15 +50,5 @@ file for terms.
         @abstract The name of the cache folder
 */
 #define CACHE_FOLDER @"com.chiakey.ChiaKey"
-/*!
-        @define OPENVANILLA_DO_CONNECTION_NAME
-        @abstract The identifer of the DO connection between OpenVanilla
-        server and the preference tool.
-*/
-#ifndef OPENVANILLA_DO_CONNECTION_NAME
-#error Must define OPENVANILLA_DO_CONNECTION_NAME
-#endif
-
 #import "ChiaKeyServiceCoordination.h"
 #import "LFUtilities.h"
-#import "OpenVanillaService.h"

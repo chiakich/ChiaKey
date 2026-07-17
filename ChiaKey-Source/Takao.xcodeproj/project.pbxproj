@@ -1213,7 +1213,6 @@
 		D4A1F1A90EE30AF20064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D4A1F1B00EE30DB60064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D4BAC6140DA96585008E90A4 /* speak.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = speak.gif; path = WebResources/speak.gif; sourceTree = "<group>"; };
-		D4C2FF84106230A9005DB6AF /* OpenVanillaService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OpenVanillaService.h; path = "Loaders/OSX-IMK/OpenVanillaService.h"; sourceTree = "<group>"; };
 		D4C2FFB410623345005DB6AF /* TakaoLoadedModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoLoadedModule.h; path = PreferenceApplications/OSX/TakaoLoadedModule.h; sourceTree = "<group>"; };
 		D4C2FFB510623345005DB6AF /* TakaoLoadedModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoLoadedModule.m; path = PreferenceApplications/OSX/TakaoLoadedModule.m; sourceTree = "<group>"; wrapsLines = 1; };
 		D4D0BC6F0EEDAB06007CACEA /* PEMainWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEMainWindow.h; path = Utilities/PhraseEditor/OSX/PEMainWindow.h; sourceTree = "<group>"; };
@@ -2196,7 +2195,6 @@
 				6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */,
 				5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */,
 				5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */,
-				D4C2FF84106230A9005DB6AF /* OpenVanillaService.h */,
 				D4F7DB030D9B8D6500AA67B9 /* CVSendKey.h */,
 				D4F7DB040D9B8D6500AA67B9 /* CVSendKey.m */,
 				D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */,
@@ -4561,7 +4559,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 					GCC_PREPROCESSOR_DEFINITIONS = (
-						"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
 						"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
 						OVLOADER_USE_SQLITE_CRYPTO,
 						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
@@ -4605,7 +4602,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 					GCC_PREPROCESSOR_DEFINITIONS = (
-						"OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"",
 						"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
 						OVLOADER_USE_SQLITE_CRYPTO,
 						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
@@ -5098,7 +5094,6 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = Utilities/PhraseEditor/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5130,7 +5125,6 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = Utilities/PhraseEditor/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5165,7 +5159,6 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -5200,7 +5193,6 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-				GCC_PREPROCESSOR_DEFINITIONS = "OPENVANILLA_DO_CONNECTION_NAME=@\\\"ChiaKeyService\\\"";
 				GCC_VERSION = "";
 				INFOPLIST_FILE = PreferenceApplications/OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";

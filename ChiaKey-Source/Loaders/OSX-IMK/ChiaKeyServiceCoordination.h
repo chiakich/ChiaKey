@@ -2,9 +2,8 @@
 //  ChiaKeyServiceCoordination.h
 //
 //  File + distributed-notification replacement for the Preferences app's
-//  broken NSXPCConnection channel (the "OpenVanillaService" mach service was
-//  never advertised to launchd, see ChiaKeyUserPhraseCoordination.h for the
-//  same story on the phrase editor side).
+//  legacy IPC channel (see ChiaKeyUserPhraseCoordination.h for the same story
+//  on the phrase editor side).
 //
 //  Mechanism:
 //  - The IME PUBLISHES a status plist (module list, package info, versions)
@@ -41,8 +40,16 @@
 #define ChiaKeyStatusUpdatedAtKey @"UpdatedAt"
 // Array of [identifier, localizedName] pairs, all modules
 #define ChiaKeyStatusModulesKey @"Modules"
-// Array of dictionaries using the OVServiceLoadedModulePackage* keys
+// Array of dictionaries using the following package keys.
 #define ChiaKeyStatusPackagesKey @"Packages"
+#define OVServiceLoadedModulePackageIdentifierKey \
+  @"OVServiceLoadedModulePackageIdentifierKey"
+#define OVServiceLoadedModulePackageLocalizedNameKey \
+  @"OVServiceLoadedModulePackageLocalizedNameKey"
+#define OVServiceLoadedModulePackageBundlePathKey \
+  @"OVServiceLoadedModulePackageBundlePathKey"
+#define OVServiceLoadedModulePackageEnabledKey \
+  @"OVServiceLoadedModulePackageEnabledKey"
 
 // Same directory that holds SmartMandarinUserData.db; "ChiaKey" is the
 // loader name (PVLOADERPOLICY_LOADER_NAME).

@@ -63,17 +63,9 @@ using namespace CareService;
 - (bool)importUserPhraseDBFromFile:(NSString *)path;
 - (NSString *)databaseVersion;
 
-#pragma mark User Phrase DO methods
-- (BOOL)userPhraseDBCanProvideService;
-- (int)userPhraseDBNumberOfRow;
-- (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row;
-- (NSArray *)userPhraseDBReadingsForPhrase:(NSString *)phrase;
-- (void)userPhraseDBSave;
-- (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row;
-- (void)userPhraseDBDeleteRow:(int)row;
+#pragma mark User Phrase additions
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;
-- (void)userPhraseDBAddNewRows:(NSArray *)array;
-- (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row;
+- (void)userPhraseDBAddNewRow:(NSString *)phrase reading:(NSString *)reading;
 
 #pragma mark Preferences app coordination
 // Writes IMEStatus.plist (module list, package info, versions) so the

@@ -10,13 +10,10 @@
 #import "CVSymbolController.h"
 #import "CVToolTipController.h"
 #import "CVVerticalCandidateController.h"
-#import "OpenVanillaConfig.h"
 #import "OpenVanillaLoader.h"
-#import "OpenVanillaService.h"
 
 @interface CVApplicationController
-    : NSObject <NSApplicationDelegate, NSXPCListenerDelegate, OpenVanillaService,
-                OpenVanillaXPCService> {
+    : NSObject <NSApplicationDelegate> {
   CVPlainTextCandidateController *_plainTextCandidateController;
   CVVerticalCandidateController *_verticalCandidateController;
   CVHorizontalCandidateController *_horizontalCandidateController;
@@ -27,8 +24,6 @@
   CVInputMethodToggleWindowController *_inputMethodToggleWindowController;
 
   OpenVanillaLoader *_loader;
-
-  NSXPCListener *_serviceListener;
 
   // Phrase Editor coordination (see ChiaKeyUserPhraseCoordination.h)
   NSTimer *_userPhrasePollTimer;
@@ -54,6 +49,7 @@
 - (IBAction)showAboutWindow:(id)sender;
 - (NSArray *)inputMethodsArray;
 - (NSString *)primaryInputMethod;
+- (NSArray *)dynamicallyLoadedModulePackageInfo;
 @end
 
 @interface CVApplicationController (AppDelegate)

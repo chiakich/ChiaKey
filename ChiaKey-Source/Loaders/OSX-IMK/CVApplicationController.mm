@@ -29,7 +29,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 @implementation CVApplicationController
 
 - (void)_initializeControllerIfNeeded {
-  if (_serviceListener) return;
+  if (_plainTextCandidateController) return;
 
   _loader = nil;
 
@@ -43,10 +43,6 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   _inputMethodToggleWindowController =
       [CVInputMethodToggleWindowController new];
 
-  _serviceListener = [[NSXPCListener alloc]
-      initWithMachServiceName:OPENVANILLA_DO_CONNECTION_NAME];
-  [_serviceListener setDelegate:self];
-  [_serviceListener resume];
 }
 
 - (id)init {
@@ -66,8 +62,6 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [_tooltipController release];
   [_aboutController release];
   [_inputMethodToggleWindowController release];
-  [_serviceListener invalidate];
-  [_serviceListener release];
   [[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
   [_userPhrasePollTimer invalidate];
   [_userPhrasePollTimer release];
@@ -130,15 +124,6 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [[self aboutController] showWindow:sender];
 }
 
-- (BOOL)listener:(NSXPCListener *)listener
-    shouldAcceptNewConnection:(NSXPCConnection *)newConnection {
-  [newConnection setExportedInterface:
-                     [NSXPCInterface
-                         interfaceWithProtocol:@protocol(OpenVanillaXPCService)]];
-  [newConnection setExportedObject:self];
-  [newConnection resume];
-  return YES;
-}
 - (NSDictionary *)_dictionaryWithIdentifier:(string)identifier
                               localizedName:(NSString *)localizedName {
   NSString *identifierString =
@@ -218,249 +203,22 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   return a;
 }
 
-#pragma mark -
-#pragma mark Distributed Object Methods
-
-- (oneway void)reloadOpenVanilla {
+// These are local UI/notification helpers, not exported IPC entry points.
+- (void)reloadOpenVanilla {
   NSLog(@"Reloading OpenVanilla");
   [[OpenVanillaLoader sharedInstance] reload];
   NSLog(@"Finished reloading OpenVanilla");
 }
+
 - (NSString *)primaryInputMethod {
-  NSString *primaryInputMethod =
-      [NSString stringWithUTF8String:[OpenVanillaLoader sharedLoader]
-                                         ->primaryInputMethod()
-                                         .c_str()];
-  return primaryInputMethod;
-}
-- (NSArray *)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern {
-  // NSLog(@"calling remote stuff");
-  return [_loader identifiersAndLocalizedNamesWithPattern:pattern];
-}
-- (bool)exportUserPhraseDBToFile:(NSString *)path {
-  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-  [alert setMessageText:LFLSTR(@"Confirm User Phrase Export")];
-  [alert setInformativeText:[NSString
-                                stringWithFormat:
-                                    LFLSTR(@"Allow ChiaKey to export your user "
-                                           @"phrase dictionary to this file?\n%@"),
-                                    path]];
-  [alert addButtonWithTitle:LFLSTR(@"Export")];
-  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
-  if ([alert runModal] != NSAlertFirstButtonReturn) return false;
-
-  return [_loader exportUserPhraseDBToFile:path];
-}
-- (bool)importUserPhraseDBFromFile:(NSString *)path {
-  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-  [alert setMessageText:LFLSTR(@"Confirm User Phrase Import")];
-  [alert setInformativeText:[NSString
-                                stringWithFormat:
-                                    LFLSTR(@"Allow ChiaKey to import user "
-                                           @"phrases from this file?\n%@"),
-                                    path]];
-  [alert addButtonWithTitle:LFLSTR(@"Import")];
-  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
-  if ([alert runModal] != NSAlertFirstButtonReturn) return false;
-
-  return [_loader importUserPhraseDBFromFile:path];
-}
-
-- (NSString *)version {
-  return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
-}
-
-- (NSString *)userInformationForCareService {
-  stringstream sst;
-  PVPlistValue *allPlists =
-      [_loader loader]->loaderAndModulePropertyListsCombined();
-  sst << *allPlists << endl;
-  delete allPlists;
-  return [NSString stringWithUTF8String:sst.str().c_str()];
-}
-
-- (oneway void)sendString:(NSString *)text {
-}
-- (oneway void)sendKey:(NSString *)key {
-}
-
-- (BOOL)userPhraseDBCanProvideService {
-  return [_loader userPhraseDBCanProvideService];
-}
-- (int)userPhraseDBNumberOfRow {
-  return [_loader userPhraseDBNumberOfRow];
-}
-- (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row {
-  return [_loader userPhraseDBDictionaryAtRow:row];
-}
-- (NSArray *)userPhraseDBReadingsForPhrase:(NSString *)phrase {
-  return [_loader userPhraseDBReadingsForPhrase:phrase];
-}
-- (void)userPhraseDBSave {
-  [_loader userPhraseDBSave];
-}
-- (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row {
-  [_loader userPhraseDBSetNewReading:reading forPhraseAtRow:row];
-}
-- (void)userPhraseDBDeleteRow:(int)row {
-  [_loader userPhraseDBDeleteRow:row];
-}
-- (void)userPhraseDBAddNewRow:(NSString *)phrase {
-  [_loader userPhraseDBAddNewRow:phrase];
-}
-- (void)userPhraseDBAddNewRows:(NSArray *)array {
-  [_loader userPhraseDBAddNewRows:array];
-}
-
-- (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row {
-  [_loader userPhraseDBSetPhrase:phrase atRow:row];
-}
-
-- (NSString *)databaseVersion {
-  return [_loader databaseVersion];
+  return [NSString
+      stringWithUTF8String:[OpenVanillaLoader sharedLoader]
+                               ->primaryInputMethod()
+                               .c_str()];
 }
 
 - (NSArray *)dynamicallyLoadedModulePackageInfo {
   return [_loader dynamicallyLoadedModulePackageInfo];
-}
-
-- (void)setBlackListOfPackageIdentifers:(NSArray *)inIdentifiers {
-  [_loader setBlackListOfPackageIdentifers:inIdentifiers];
-}
-
-#pragma mark XPC Service Methods
-
-- (void)reloadOpenVanillaWithReply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self reloadOpenVanilla];
-    reply();
-  });
-}
-- (void)sendString:(NSString *)text withReply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self sendString:text];
-    reply();
-  });
-}
-- (void)sendKey:(NSString *)key withReply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self sendKey:key];
-    reply();
-  });
-}
-- (void)primaryInputMethodWithReply:(void (^)(NSString *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self primaryInputMethod]);
-  });
-}
-- (void)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern
-                                          reply:(void (^)(NSArray *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self identifiersAndLocalizedNamesWithPattern:pattern]);
-  });
-}
-- (void)exportUserPhraseDBToFile:(NSString *)path
-                            reply:(void (^)(BOOL value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self exportUserPhraseDBToFile:path]);
-  });
-}
-- (void)importUserPhraseDBFromFile:(NSString *)path
-                              reply:(void (^)(BOOL value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self importUserPhraseDBFromFile:path]);
-  });
-}
-- (void)versionWithReply:(void (^)(NSString *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self version]);
-  });
-}
-- (void)databaseVersionWithReply:(void (^)(NSString *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self databaseVersion]);
-  });
-}
-- (void)dynamicallyLoadedModulePackageInfoWithReply:
-    (void (^)(NSArray *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self dynamicallyLoadedModulePackageInfo]);
-  });
-}
-- (void)setBlackListOfPackageIdentifers:(NSArray *)inIdentifiers
-                                  reply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self setBlackListOfPackageIdentifers:inIdentifiers];
-    reply();
-  });
-}
-- (void)userInformationForCareServiceWithReply:
-    (void (^)(NSString *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self userInformationForCareService]);
-  });
-}
-- (void)userPhraseDBCanProvideServiceWithReply:(void (^)(BOOL value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self userPhraseDBCanProvideService]);
-  });
-}
-- (void)userPhraseDBNumberOfRowWithReply:(void (^)(int value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self userPhraseDBNumberOfRow]);
-  });
-}
-- (void)userPhraseDBDictionaryAtRow:(int)row
-                              reply:(void (^)(NSDictionary *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self userPhraseDBDictionaryAtRow:row]);
-  });
-}
-- (void)userPhraseDBReadingsForPhrase:(NSString *)phrase
-                                reply:(void (^)(NSArray *value))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    reply([self userPhraseDBReadingsForPhrase:phrase]);
-  });
-}
-- (void)userPhraseDBSaveWithReply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self userPhraseDBSave];
-    reply();
-  });
-}
-- (void)userPhraseDBSetNewReading:(NSString *)reading
-                    forPhraseAtRow:(int)row
-                             reply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self userPhraseDBSetNewReading:reading forPhraseAtRow:row];
-    reply();
-  });
-}
-- (void)userPhraseDBDeleteRow:(int)row reply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self userPhraseDBDeleteRow:row];
-    reply();
-  });
-}
-- (void)userPhraseDBAddNewRow:(NSString *)phrase reply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self userPhraseDBAddNewRow:phrase];
-    reply();
-  });
-}
-- (void)userPhraseDBAddNewRows:(NSArray *)array reply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self userPhraseDBAddNewRows:array];
-    reply();
-  });
-}
-- (void)userPhraseDBSetPhrase:(NSString *)phrase
-                        atRow:(int)row
-                        reply:(void (^)(void))reply {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self userPhraseDBSetPhrase:phrase atRow:row];
-    reply();
-  });
 }
 
 @end
@@ -528,7 +286,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       if (![self _confirmAddPhrase:phrase]) {
         return;
       }
-      [self userPhraseDBAddNewRow:phrase];
+      [_loader userPhraseDBAddNewRow:phrase];
       NSString *msg = [NSString
           stringWithFormat:@"%@%@", LFLSTR(@"Add new phrase: "), phrase];
       [CVNotifyController notify:msg];
@@ -544,10 +302,10 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       if (![self _confirmAddPhrase:phrase]) {
         return;
       }
-      [self userPhraseDBAddNewRow:phrase];
-      int lastRow = [self userPhraseDBNumberOfRow] - 1;
-      [self userPhraseDBSetPhrase:phrase atRow:lastRow];
-      [self userPhraseDBSetNewReading:reading forPhraseAtRow:lastRow];
+      // Insert phrase + reading in one shot by rowid; the old add-then-set-by
+      // -position path landed the reading on the wrong row once rowid holes
+      // existed, and dropped it entirely during an editor session.
+      [_loader userPhraseDBAddNewRow:phrase reading:reading];
 
       NSString *msg = [NSString
           stringWithFormat:@"%@%@", LFLSTR(@"Add new phrase: "), phrase];

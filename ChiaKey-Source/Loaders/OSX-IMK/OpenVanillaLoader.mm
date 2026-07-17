@@ -18,7 +18,6 @@
 #import "OVOFFullWidthCharacterPackage.h"
 #import "OVOFHanConvertPackage.h"
 #import "OpenVanillaConfig.h"
-#import "OpenVanillaService.h"
 #import "Version.h"
 #import "YKSignedModuleLoadingSystem.h"
 
@@ -831,54 +830,7 @@ using namespace OpenVanilla;
 
   return _userPhraseDB;
 }
-- (BOOL)userPhraseDBCanProvideService {
-  return !![self _userPhraseDBConnection];
-}
-- (int)userPhraseDBNumberOfRow {
-  int count = 0;
-
-  if (![self _userPhraseDBConnection]) {
-    return count;
-  }
-
-  OVSQLiteStatement *st =
-      _userPhraseDB->prepare("SELECT count(*) FROM user_unigrams");
-  if (st) {
-    while (st->step() == SQLITE_ROW) {
-      count = st->intOfColumn(0);
-    }
-    delete st;
-  }
-
-  return count;
-}
-- (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row {
-  NSMutableDictionary *result = [NSMutableDictionary dictionary];
-  if (![self _userPhraseDBConnection]) {
-    return result;
-  }
-
-  OVSQLiteStatement *select = _userPhraseDB->prepare(
-      "SELECT * FROM user_unigrams WHERE rowid = %d", row + 1);
-  while (select->step() == SQLITE_ROW) {
-    // string qstring = select->textOfColumn(0);
-    // string current = select->textOfColumn(1);
-    // string probability = select->textOfColumn(2);
-    // string backoff = select->textOfColumn(3);
-
-    [result setObject:[NSString stringWithUTF8String:select->textOfColumn(1)]
-               forKey:@"Text"];
-    [result
-        setObject:[NSString
-                      stringWithUTF8String:BPMFUserPhraseHelper::BPMFString(
-                                               string(select->textOfColumn(0)))
-                                               .c_str()]
-           forKey:@"BPMF"];
-  }
-
-  return result;
-}
-- (NSArray *)userPhraseDBReadingsForPhrase:(NSString *)phrase {
+- (NSArray *)_readingsForPhrase:(NSString *)phrase {
   NSMutableArray *results = [NSMutableArray array];
   vector<string> codepoints =
       OVUTF8Helper::SplitStringByCodePoint([phrase UTF8String]);
@@ -955,17 +907,6 @@ using namespace OpenVanilla;
 
   return results;
 }
-- (void)userPhraseDBSave {
-  // VACUUM renumbers rowids; never run it while the Phrase Editor session
-  // relies on stable rowids.
-  if (![self userPhraseEditingSessionActive] &&
-      [self _userPhraseDBConnection]) {
-    _userPhraseDB->execute("VACUUM");
-    delete _userPhraseDB;
-    _userPhraseDB = 0;
-  }
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
-}
 - (string)_qstringFromReading:(NSString *)reading {
   vector<string> readings = OVStringHelper::Split([reading UTF8String], ',');
   string newReading;
@@ -979,113 +920,51 @@ using namespace OpenVanilla;
   }
   return newReading;
 }
-- (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row {
-  // Positional updates cannot be replayed meaningfully after an editor
-  // session; drop them while one is active.
-  if ([self userPhraseEditingSessionActive]) {
-    return;
-  }
-  if (![self _userPhraseDBConnection]) {
-    return;
-  }
-
-  _userPhraseDB->execute(
-      "UPDATE user_unigrams SET qstring = %Q WHERE rowid = %d",
-      [self _qstringFromReading:reading].c_str(), row + 1);
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
-}
-
-- (void)userPhraseDBDeleteRow:(int)row {
-  if ([self userPhraseEditingSessionActive]) {
-    return;
-  }
-  if (![self _userPhraseDBConnection]) {
-    return;
-  }
-
-  _userPhraseDB->execute("BEGIN");
-  _userPhraseDB->execute("CREATE TEMP TABLE uu_temp(a, b, c, d)");
-  _userPhraseDB->execute("INSERT INTO uu_temp SELECT * from user_unigrams");
-  _userPhraseDB->execute("DELETE FROM uu_temp WHERE rowid = %d", row + 1);
-  _userPhraseDB->execute("DELETE FROM user_unigrams");
-  _userPhraseDB->execute("INSERT INTO user_unigrams SELECT * from uu_temp");
-  _userPhraseDB->execute("DROP TABLE uu_temp");
-  _userPhraseDB->execute("END");
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
-}
-- (void)userPhraseDBAddNewRow:(NSString *)phrase {
-  // Queue additions while the Phrase Editor owns the DB; replayed on end.
-  if ([self userPhraseEditingSessionActive]) {
-    @synchronized(_pendingUserPhraseAdditions) {
-      [_pendingUserPhraseAdditions addObject:phrase];
-    }
-    return;
-  }
-  if (![self _userPhraseDBConnection]) {
-    return;
-  }
-
-  NSString *reading =
-      [[self userPhraseDBReadingsForPhrase:phrase] objectAtIndex:0];
+// Insert one phrase. reading is a composed, comma-separated Bopomofo string;
+// nil/empty derives the most probable reading. The rowid is assigned by
+// SQLite -- never computed positionally. Assumes _userPhraseDB is open.
+- (void)_insertUserPhrase:(NSString *)phrase reading:(NSString *)reading {
+  if (![phrase length]) return;
+  NSString *composed =
+      [reading length]
+          ? reading
+          : [[self _readingsForPhrase:phrase] objectAtIndex:0];
   _userPhraseDB->execute(
       "INSERT INTO user_unigrams (qstring, current, probability, backoff) "
       "VALUES (%Q, %Q, %f, %f)",
-      [self _qstringFromReading:reading].c_str(), [phrase UTF8String], -1.0,
+      [self _qstringFromReading:composed].c_str(), [phrase UTF8String], -1.0,
       0.0);
-
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
-- (void)userPhraseDBAddNewRows:(NSArray *)array {
+
+// Each pending entry is a dictionary {@"phrase", optional @"reading"} so a
+// custom reading survives the replay after an editor session ends.
+- (void)_queuePendingPhrase:(NSString *)phrase reading:(NSString *)reading {
+  if (![phrase length]) return;
+  NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+  [entry setObject:phrase forKey:@"phrase"];
+  if ([reading length]) [entry setObject:reading forKey:@"reading"];
+  @synchronized(_pendingUserPhraseAdditions) {
+    [_pendingUserPhraseAdditions addObject:entry];
+  }
+}
+
+- (void)userPhraseDBAddNewRow:(NSString *)phrase {
+  [self userPhraseDBAddNewRow:phrase reading:nil];
+}
+- (void)userPhraseDBAddNewRow:(NSString *)phrase reading:(NSString *)reading {
+  if (![phrase length]) return;
+  // Queue additions while the Phrase Editor owns the DB; replayed on end.
   if ([self userPhraseEditingSessionActive]) {
-    @synchronized(_pendingUserPhraseAdditions) {
-      [_pendingUserPhraseAdditions addObjectsFromArray:array];
-    }
+    [self _queuePendingPhrase:phrase reading:reading];
     return;
   }
   if (![self _userPhraseDBConnection]) {
     return;
   }
 
-  // in theory we need to lock the loader (stop user action) otherwise Manjusri
-  // would not be able to write in the cache, but let's not do that for now
-
-  _userPhraseDB->execute("BEGIN");
-
-  NSString *phrase;
-  NSEnumerator *enumerator = [array objectEnumerator];
-  while (phrase = [enumerator nextObject]) {
-    // NSLog(@"before looking for reading");
-    NSString *reading =
-        [[self userPhraseDBReadingsForPhrase:phrase] objectAtIndex:0];
-    // NSLog(@"before insert");
-    _userPhraseDB->execute(
-        "INSERT INTO user_unigrams (qstring, current, probability, backoff) "
-        "VALUES (%Q, %Q, %f, %f)",
-        [self _qstringFromReading:reading].c_str(), [phrase UTF8String], -1.0,
-        0.0);
-  }
-
-  _userPhraseDB->execute("COMMIT");
-
+  [self _insertUserPhrase:phrase reading:reading];
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
-
-- (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row {
-  if ([self userPhraseEditingSessionActive]) {
-    return;
-  }
-  if (![self _userPhraseDBConnection]) {
-    return;
-  }
-
-  NSString *reading =
-      [[self userPhraseDBReadingsForPhrase:phrase] objectAtIndex:0];
-  _userPhraseDB->execute(
-      "UPDATE user_unigrams SET qstring = %Q, current = %Q WHERE rowid = %d",
-      [self _qstringFromReading:reading].c_str(), [phrase UTF8String], row + 1);
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
-}
-
 #pragma mark Phrase Editor coordination
 
 - (NSString *)userDataDirectory {
@@ -1121,8 +1000,15 @@ using namespace OpenVanilla;
       [_pendingUserPhraseAdditions removeAllObjects];
     }
   }
-  if (pending) {
-    [self userPhraseDBAddNewRows:pending];
+  // Insert directly (not via userPhraseDBAddNewRow:, which would re-queue if
+  // the lock still looks active) so each entry keeps its custom reading.
+  if ([pending count] && [self _userPhraseDBConnection]) {
+    _userPhraseDB->execute("BEGIN");
+    for (NSDictionary *entry in pending) {
+      [self _insertUserPhrase:[entry objectForKey:@"phrase"]
+                      reading:[entry objectForKey:@"reading"]];
+    }
+    _userPhraseDB->execute("COMMIT");
   }
 
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
