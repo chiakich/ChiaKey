@@ -26,6 +26,9 @@ static OVSQLiteConnection *ChiaKeyOpenUserPhraseDBForCLI() {
       [dir stringByAppendingPathComponent:@"SmartMandarinUserData.db"];
   OVSQLiteConnection *db = OVSQLiteConnection::Open([path UTF8String]);
   if (!db) return 0;
+  // Keep CLI access compatible with the editor and running IME, even when
+  // this is the first process to create or open the user phrase database.
+  db->execute("PRAGMA journal_mode=WAL");
 
   if (!db->hasTable("user_unigrams")) {
     db->createTable("user_unigrams", "qstring, current, probability, backoff");

@@ -11,6 +11,8 @@
 
 #import "PEUserPhraseStore.h"
 
+#import <AppKit/AppKit.h>
+
 #import "ChiaKeyUserPhraseCoordination.h"
 
 #include <sqlite3.h>
@@ -23,6 +25,10 @@
 using Formosa::Mandarin::BPMF;
 
 static NSString *const kChiaKeyLoaderName = @"ChiaKey";
+// Used only to locate the lexicon bundled inside the running IME app as a
+// last-resort source for reading derivation (see -_lexiconDB).
+static NSString *const kChiaKeyIMEBundleIdentifier =
+    @"com.chiakey.inputmethod.ChiaKey";
 static const NSTimeInterval kChangeNotificationThrottle = 0.5;
 // Keep the editing lock visibly fresh, well within the staleness timeout.
 static const NSTimeInterval kEditingLockRefreshInterval = 60.0;
@@ -106,6 +112,7 @@ static std::string PEEscapeForLike(const std::string &s) {
   BOOL _lexTried;
 
   BOOL _sessionActive;
+  id _editingActivity;
   NSTimer *_lockRefreshTimer;
   NSTimer *_changeNotificationTimer;
 
@@ -184,6 +191,12 @@ static std::string PEEscapeForLike(const std::string &s) {
       "(qstring, current, probability, backoff);"
       "CREATE INDEX IF NOT EXISTS user_unigrams_index "
       "ON user_unigrams (qstring);"
+      // Lets ORDER BY current serve phrase-sorted pages from the index
+      // instead of re-sorting the whole table on every window fetch. An
+      // index is safe (it adds no column, so the IME's positional imports
+      // are unaffected).
+      "CREATE INDEX IF NOT EXISTS user_unigrams_current_index "
+      "ON user_unigrams (current);"
       "CREATE TABLE IF NOT EXISTS user_bigram_cache "
       "(qstring, previous, current, probability);"
       "CREATE INDEX IF NOT EXISTS user_bigram_cache_index "
@@ -204,6 +217,13 @@ static std::string PEEscapeForLike(const std::string &s) {
 - (void)beginEditingSession {
   if (_sessionActive || !_userDB) return;
   _sessionActive = YES;
+
+  // The lock is refreshed from the main run loop. Keep this lightweight
+  // editor process out of App Nap for the session so an otherwise-open
+  // editor cannot let its lock look stale while the user is away.
+  _editingActivity = [[[NSProcessInfo processInfo]
+      beginActivityWithOptions:NSActivityUserInitiated
+                         reason:@"Editing ChiaKey user phrases"] retain];
 
   ChiaKeyClaimUserPhraseEditingLock([self _userDataDirectory]);
   _lockRefreshTimer =
@@ -228,6 +248,12 @@ static std::string PEEscapeForLike(const std::string &s) {
   [_lockRefreshTimer invalidate];
   [_lockRefreshTimer release];
   _lockRefreshTimer = nil;
+
+  if (_editingActivity) {
+    [[NSProcessInfo processInfo] endActivity:_editingActivity];
+    [_editingActivity release];
+    _editingActivity = nil;
+  }
 
   // Flush any pending change notification before ending.
   if (_changeNotificationTimer) {
@@ -528,14 +554,29 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
   if (_lexTried) return _lexDB;
   _lexTried = YES;
 
-  NSArray *candidates = [NSArray
-      arrayWithObjects:[[self _userDataDirectory]
-                           stringByAppendingPathComponent:
-                               @"Lexicons/active/ChiaKeySource.db"],
-                       [[self _userDataDirectory]
-                           stringByAppendingPathComponent:
-                               @"Lexicons/active/KeyKeySource.db"],
-                       nil];
+  NSMutableArray *candidates = [NSMutableArray array];
+  // The lexicon auto-updater installs here; prefer it.
+  NSString *activeDir = [[self _userDataDirectory]
+      stringByAppendingPathComponent:@"Lexicons/active"];
+  [candidates
+      addObject:[activeDir stringByAppendingPathComponent:@"ChiaKeySource.db"]];
+  [candidates
+      addObject:[activeDir stringByAppendingPathComponent:@"KeyKeySource.db"]];
+
+  // Fall back to the lexicon bundled inside the IME app, which the IME itself
+  // uses before one is installed. Without this, a fresh or offline install
+  // would derive every reading as the "ㄅ" placeholder.
+  NSURL *imeURL = [[NSWorkspace sharedWorkspace]
+      URLForApplicationWithBundleIdentifier:kChiaKeyIMEBundleIdentifier];
+  if (imeURL) {
+    NSString *bundledDir = [[imeURL path]
+        stringByAppendingPathComponent:@"Contents/Resources/Databases"];
+    [candidates addObject:[bundledDir
+                              stringByAppendingPathComponent:@"ChiaKeySource.db"]];
+    [candidates addObject:[bundledDir
+                              stringByAppendingPathComponent:@"KeyKeySource.db"]];
+  }
+
   NSFileManager *fm = [NSFileManager defaultManager];
   for (NSString *path in candidates) {
     if (![fm fileExistsAtPath:path]) continue;
@@ -553,6 +594,10 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
     if (db) sqlite3_close(db);
   }
   return _lexDB;
+}
+
+- (BOOL)isLexiconAvailable {
+  return [self _lexiconDB] != NULL;
 }
 
 - (NSArray *)readingsForCharacter:(NSString *)character {

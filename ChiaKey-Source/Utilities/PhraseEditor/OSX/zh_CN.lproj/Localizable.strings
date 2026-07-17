@@ -45,3 +45,6 @@
 "Allow the Phrase Editor to access contacts in System Settings > Privacy & Security > Contacts, then try again." = "请在「系统设置 > 隐私与安全性 > 联系人」允许词汇编辑器访问联系人后重试。";
 "Open System Settings" = "打开系统设置";
 "Cancel" = "取消";
+
+"The pronunciation dictionary is unavailable." = "找不到注音辞典";
+"New phrases will get a placeholder reading until a lexicon is installed. Open ChiaKey to download the latest lexicon, then reopen the Phrase Editor." = "在安装辞典之前，新增的词会使用默认的替代读音。请打开千秋输入法下载最新辞典后，再重新打开词汇编辑器。";

@@ -254,6 +254,11 @@ OVSQLiteConnection* BPMFUserPhraseHelper::OpenUserPhraseDB(
   loaderService->logger("BPMFUserPhraseHelper")
       << "attempting to open " << filename << endl;
   OVSQLiteConnection* userDB = OVSQLiteConnection::Open(filename);
+  if (userDB) {
+    // WAL is persistent but must be enabled by the IME as well as by the
+    // Phrase Editor: the editor may not have opened a newly created DB yet.
+    userDB->execute("PRAGMA journal_mode=WAL");
+  }
 
   //	#ifdef OVIMSMARTMANDARIN_USE_SQLITE_CRYPTO
   //    pair<char*, size_t> cle = ObtenirUserDonneCle();

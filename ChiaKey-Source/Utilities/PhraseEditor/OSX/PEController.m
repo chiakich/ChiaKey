@@ -133,6 +133,20 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
 
   [_store beginEditingSession];
   [self reloadData];
+
+  if (![_store isLexiconAvailable]) {
+    // Derived readings degrade to a placeholder without a lexicon. Warn once,
+    // on the next runloop so the sheet attaches to the on-screen window.
+    dispatch_async(dispatch_get_main_queue(), ^{
+      PEPresentSheetAlert(
+          [self window],
+          LFLSTR(@"The pronunciation dictionary is unavailable."),
+          LFLSTR(@"New phrases will get a placeholder reading until a lexicon "
+                 @"is installed. Open ChiaKey to download the latest lexicon, "
+                 @"then reopen the Phrase Editor."),
+          NSAlertStyleWarning);
+    });
+  }
 }
 
 #pragma mark Windowed data source

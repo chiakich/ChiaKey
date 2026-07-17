@@ -33,6 +33,10 @@ typedef NS_ENUM(NSInteger, PEPhraseSortKey) {
 
 - (BOOL)isAvailable;
 
+// NO when no main lexicon can be reached; derived readings then fall back to
+// a placeholder, so callers may want to warn the user.
+- (BOOL)isLexiconAvailable;
+
 // Editing session; posts the coordination notifications. Begin on window
 // open, end on app termination.
 - (void)beginEditingSession;
