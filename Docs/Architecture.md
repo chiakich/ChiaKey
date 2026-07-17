@@ -114,6 +114,6 @@ Cleanup 用小 commit 進行，且保持 `Takao-All` 可編譯。
 
 ## AI coding agent 資訊揭露
 
-2026-07 的詞彙編輯器（PhraseEditor）改寫由 AI coding agent（Fable 5）主導完成，動機與細節見 [PhraseEditorRewrite.md](PhraseEditorRewrite.md)。這次改動也順手把偏好設定與 CLI 的溝通機制從失效的 XPC 換成檔案 + distributed notification，並移除了 `ChiaKeyServiceClient`。
+2026-07 的詞彙編輯器（PhraseEditor）改寫由 AI coding agent（Fable 5）主導完成，動機與細節見 [PhraseEditorRewrite.md](PhraseEditorRewrite.md)。評估認為 PhraseEditor 是邊緣組件（使用者詞庫管理工具，不在核心輸入路徑上），不影響輸入法主線行為，所以用 AI 改寫的風險可控。改動範圍內我已盡可能逐項 review，包含 rowid 穩定性假設、WAL 並行讀寫、以及 MJSR 匯入匯出格式相容性。
 
-評估認為 PhraseEditor 是邊緣組件（使用者詞庫管理工具，不在核心輸入路徑上），不影響輸入法主線行為，所以用 AI 改寫的風險可控。改動範圍內我已盡可能逐項 review 過，包含 rowid 穩定性假設、WAL 並行讀寫、以及 MJSR 匯入匯出格式相容性。
+這次改動把偏好設定與 CLI 的溝通機制從失效的 XPC 換成檔案 + 分散式通知，並移除了 `ChiaKeyServiceClient`。

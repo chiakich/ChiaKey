@@ -14,7 +14,7 @@
 
 ## 為什麼現在不需要連線
 
-現在使用者詞庫（`SmartMandarinUserData.db`）和主辭典（`ChiaKeySource.db`）都是明文 SQLite，編輯器自己開就好。真正需要跟運行中的 IME 講話的只剩兩件事：「我要開始編輯了，你先別寫」和「我改完了，你重讀一下」。這種單向、低頻的訊息用不著雙向連線，檔案加廣播就夠了：
+現在使用者詞庫（`SmartMandarinUserData.db`）和主辭典（`ChiaKeySource.db`）都是明文 SQLite，編輯器自己開就好。真正需要跟運行中的 IME 交流的只剩「編輯器編輯時鎖定輸入法寫表」和「編輯完成解除鎖定」。這種單向、低頻的訊息，用不著連線，檔案加廣播就夠了：
 
 - **editing lock 檔**：編輯器開著就存在並定期刷新 mtime，IME 看到就暫停自己的詞庫寫入（自動學習先跳過、`chiakey://` 加詞先排隊）。設 30 分鐘過期，編輯器 crash 也不會把 IME 卡死。
 - **dirty 檔**：每次 commit 就 touch，IME 發現 mtime 變新就重讀語言模型快取。
