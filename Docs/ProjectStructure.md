@@ -1,6 +1,6 @@
 # 專案目錄結構
 
-最後更新：2026-06-23
+最後更新：2026-07-17
 
 這份文件固定 ChiaKey repo 的資料夾分工。整理原則是：現有 macOS
 InputMethodKit target 先不做破壞性搬移；新的跨平台核心與 iOS repo
@@ -78,6 +78,10 @@ ChiaKey-Source/Frameworks/ChiaKeyCore/
 
 智慧注音 module 仍維持在 OpenVanilla module package 位置。短期內不要搬動；
 `ChiaKeyCore` 應包住它，而不是把 module source 併進 core。
+
+### `Utilities/PhraseEditor`
+
+詞彙編輯器（PhraseEditor），2026-07 改寫為直連使用者詞庫 SQLite（`SmartMandarinUserData.db`），不再透過 XPC 跟執行中的 IME 要資料。跟 IME 之間只剩兩件事要協調（開始編輯先暫停 IME 寫入、改完通知 IME 重讀），走檔案 + distributed notification。前因後果與地雷（rowid 穩定性、WAL、`user_unigrams` 欄位限制）記在 [PhraseEditorRewrite.md](PhraseEditorRewrite.md)。
 
 ### `Loaders`
 
