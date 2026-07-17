@@ -58,7 +58,14 @@ jobs:
 
           case "${{ inputs.release_type }}" in
             beta)
-              if [[ -n "${beta}" ]]; then beta=$((beta + 1)); else beta=1; fi
+              if [[ -n "${beta}" ]]; then
+                beta=$((beta + 1))
+              else
+                # Latest tag was a stable release; bump patch before starting a new beta
+                # series so the prerelease sorts above it under SemVer precedence.
+                patch=$((patch + 1))
+                beta=1
+              fi
               suffix="-beta.${beta}"
               prerelease=true
               ;;
