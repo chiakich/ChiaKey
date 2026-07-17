@@ -42,7 +42,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          latest="$(git tag --sort=-v:refname | head -n1 || true)"
+          latest="$(git -c versionsort.suffix=-beta tag --sort=-v:refname | head -n1 || true)"
           echo "Latest tag: ${latest:-<none>}"
           base="${latest#v}"
 
