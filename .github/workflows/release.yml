@@ -94,15 +94,23 @@ jobs:
         id: bump
         run: |
           set -euo pipefail
-          plist="ChiaKey-Source/Loaders/OSX-IMK/Takao-Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.version.outputs.core }}" "$plist"
-          if git diff --quiet -- "$plist"; then
+          # Both plists must move together: Takao-Info.plist is the IME loader
+          # (ChiaKey.app) and Preferences.app reads its own bundle's
+          # CFBundleVersion to show the "current version" in the UI.
+          plists=(
+            "ChiaKey-Source/Loaders/OSX-IMK/Takao-Info.plist"
+            "ChiaKey-Source/PreferenceApplications/OSX/Info.plist"
+          )
+          for plist in "${plists[@]}"; do
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.version.outputs.core }}" "$plist"
+          done
+          if git diff --quiet -- "${plists[@]}"; then
             echo "CFBundleVersion already ${{ steps.version.outputs.core }}; nothing to commit."
             echo "committed=false" >>"$GITHUB_OUTPUT"
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: bump version to ${{ steps.version.outputs.core }}" -- "$plist"
+            git commit -m "chore: bump version to ${{ steps.version.outputs.core }}" -- "${plists[@]}"
             echo "committed=true" >>"$GITHUB_OUTPUT"
           fi
 
