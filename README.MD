@@ -1,4 +1,5 @@
 # 千秋輸入法 ChiaKey
+<img width="256" height="256" alt="chiakey-icon-macOS-Default-512x512@1x" src="https://github.com/user-attachments/assets/eeb86e62-e442-4839-a5fa-454d931e4bcd" />
 
 <img height="600" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />  
 
