@@ -95,7 +95,7 @@ static void CVApplyAboutTextStyle(NSView *view) {
 - (IBAction)launchCustomerCare:(id)sender {
   [[NSWorkspace sharedWorkspace]
       openURL:[NSURL URLWithString:
-                         @"https://github.com/akira02/ChiaKey/issues"]];
+                         @"https://github.com/chiakich/ChiaKey/issues"]];
   [[self window] orderOut:self];
 }
 

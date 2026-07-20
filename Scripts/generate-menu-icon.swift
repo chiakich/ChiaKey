@@ -4,8 +4,8 @@ import CoreGraphics
 
 // Generates the menu bar template icon (native IME style: a solid rounded field
 // with the 千 glyph knocked out). Drawn directly with CoreGraphics so the wide
-// 22x16 aspect is independent of the square app icon (ChiaKey.svg / .icns).
-// The glyph path below mirrors ChiaKey.svg's 千 silhouette.
+// 22x16 aspect is independent of the square app icon artwork / .icns.
+// The glyph path below mirrors the input method's 千 silhouette.
 // Usage: ./Scripts/generate-menu-icon.swift [output-dir]
 
 let pathData = "M 454 909 C 485 909 499 891 499 852 L 499 463 L 856 463 C 892 463 910 450 910 420 C 910 391 891 377 856 377 L 499 377 L 499 135 C 650 120 738 105 766 96 C 807 82 816 47 795 21 C 778 0 743 8 711 17 C 596 49 316 76 119 77 C 84 77 57 91 57 120 C 57 149 74 163 108 163 C 154 163 254 158 408 145 L 408 377 L 53 377 C 17 377 0 390 0 419 C 0 449 18 463 53 463 L 408 463 L 408 852 C 408 891 423 909 454 909 Z"

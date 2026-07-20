@@ -25,6 +25,9 @@
 		5B1CFB2E299210AA00835F8C /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
 		5B3CE69429914F7800641F53 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
 		5B3CE69629914FC100641F53 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69529914FB900641F53 /* libz.tbd */; };
+		5B9C1A002C06000000ABCD01 /* chiaki.gif in Resources */ = {isa = PBXBuildFile; fileRef = 5B9C1A012C06000000ABCD01 /* chiaki.gif */; };
+		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
+		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		6A0138F50ED1D47900715577 /* YKAFWordCount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */; };
 		6A0139040ED1D4A000715577 /* PackageMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0139030ED1D4A000715577 /* PackageMain.cpp */; };
 		6A01390F0ED1D50500715577 /* OpenVanilla.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; };
@@ -245,12 +248,6 @@
 		6A4773150D5C607200C6C744 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4772FD0D5C607200C6C744 /* main.mm */; };
 		6A4773170D5C607200C6C744 /* OpenVanillaController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4773010D5C607200C6C744 /* OpenVanillaController.mm */; };
 		6A4773180D5C607200C6C744 /* OpenVanillaLoader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */; };
-		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
-		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
-		CE00000000000000000000B1 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
-		CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
-		CE00000000000000000000B7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
-		CE00000000000000000000B8 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
 		6A47735B0D5C60D300C6C744 /* OpenVanilla.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A47735C0D5C60D300C6C744 /* LFExtensions.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6A4771630D5C5E3900C6C744 /* LFExtensions.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		6A4773730D5C61E600C6C744 /* NSBezierPathAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A4771560D5C5DF400C6C744 /* NSBezierPathAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -361,6 +358,15 @@
 		6AFC445310623A6A000CECB4 /* LFUtilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AFC445010623A6A000CECB4 /* LFUtilities.h */; };
 		6AFC800D0D98F1C8007588D8 /* libPlainVanilla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AE3FA950D76776200C7D18D /* libPlainVanilla.a */; };
 		6AFDF3D7113261C700AE32D6 /* Minotaur.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AD322220D76D793005083D4 /* Minotaur.cpp */; };
+		C1B000020F00000100000002 /* ChiaKeyMenuIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */; };
+		C1B000040F00000100000004 /* ChiaKeyMenuIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000030F00000100000003 /* ChiaKeyMenuIcon@2x.png */; };
+		CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
+		CE00000000000000000000A4 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
+		CE00000000000000000000B1 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
+		CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
+		CE00000000000000000000B7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
+		CE00000000000000000000B8 /* libFormosa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AEBD0050D5D7E0D00ABF19D /* libFormosa.a */; };
+		CE00000000000000000000BC /* Contacts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000BB /* Contacts.framework */; };
 		D4041FF10F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.m in Sources */ = {isa = PBXBuildFile; fileRef = D4041FF00F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.m */; };
 		D407A1B70EC4B9D4004F434D /* addressBook.png in Resources */ = {isa = PBXBuildFile; fileRef = D407A1B60EC4B9D4004F434D /* addressBook.png */; };
 		D4112E860D631738001475CB /* FontSmaller.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4112E840D631738001475CB /* FontSmaller.tiff */; };
@@ -382,16 +388,12 @@
 		D427E5870D63A7B700A9E73A /* OVAFAssociatedPhrase.h in Headers */ = {isa = PBXBuildFile; fileRef = D427E5850D63A7B700A9E73A /* OVAFAssociatedPhrase.h */; };
 		D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09E60EBDD36900AB5B7A /* PEPhraseTableView.m */; };
 		D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09E80EBDD36900AB5B7A /* PEController.m */; };
-		CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
-		CE00000000000000000000A4 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B3CE69229914F3900641F53 /* libsqlite3.tbd */; };
 		D42B09F30EBDD36900AB5B7A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09EB0EBDD36900AB5B7A /* main.m */; };
 		D42B09F40EBDD36900AB5B7A /* PESettingTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = D42B09EC0EBDD36900AB5B7A /* PESettingTableView.m */; };
 		D42B09FD0EBDD37B00AB5B7A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F70EBDD37B00AB5B7A /* InfoPlist.strings */; };
 		D42B09FE0EBDD37B00AB5B7A /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D42B09F90EBDD37B00AB5B7A /* MainMenu.xib */; };
-		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
 		D42C00300E1912CD002CD18F /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
-		D42EEF5C0D924B7B00C6053C /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
-		CE00000000000000000000BC /* Contacts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000BB /* Contacts.framework */; };
+		D42E848E0E08B5B70024DCCB /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
 		D43CC14D0EE413920032096E /* PhraseEditor.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = D42B09D30EBDD31C00AB5B7A /* PhraseEditor.app */; };
 		D43E2DED0EBF312A00557B95 /* PhraseEditor.icns in Resources */ = {isa = PBXBuildFile; fileRef = D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */; };
 		D4447D620E346C5D00BE7D9E /* stopSound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D4447D600E346C5D00BE7D9E /* stopSound.tiff */; };
@@ -399,10 +401,6 @@
 		D4466AAE0D912A6800A530D4 /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		D44DB8D5106F0A3C001308F8 /* reload.png in Resources */ = {isa = PBXBuildFile; fileRef = D44DB8D4106F0A3C001308F8 /* reload.png */; };
 		D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
-		D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */; };
-		D450DE5F0D5F1117009A9C2A /* ChiaKey32.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */; };
-		C1B000020F00000100000002 /* ChiaKeyMenuIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */; };
-		C1B000040F00000100000004 /* ChiaKeyMenuIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000030F00000100000003 /* ChiaKeyMenuIcon@2x.png */; };
 		D455A6391062575F00CC2B47 /* plugin.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D455A6371062575F00CC2B47 /* plugin.tiff */; };
 		D45A178C0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */ = {isa = PBXBuildFile; fileRef = D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */; };
 		D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */; };
@@ -453,7 +451,6 @@
 		D4987D1F0E17FB37001D4197 /* CVKeyboardHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */; };
 		D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */; };
 		D49CAECD0D8ECE3500738634 /* About.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D49CAECC0D8ECE3500738634 /* About.jpg */; };
-		5B9C1A002C06000000ABCD01 /* chiaki.gif in Resources */ = {isa = PBXBuildFile; fileRef = 5B9C1A012C06000000ABCD01 /* chiaki.gif */; };
 		D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */ = {isa = PBXBuildFile; fileRef = D42C002E0E1912CD002CD18F /* NSStringExtension.mm */; };
 		D4BAC6150DA9659C008E90A4 /* speak.gif in Copy Files (WebUI) */ = {isa = PBXBuildFile; fileRef = D4BAC6140DA96585008E90A4 /* speak.gif */; };
 		D4C2FFB710623345005DB6AF /* TakaoLoadedModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4C2FFB510623345005DB6AF /* TakaoLoadedModule.m */; };
@@ -636,20 +633,6 @@
 			remoteGlobalIDString = 6AD322580D76DA3E005083D4;
 			remoteInfo = Keyring;
 		};
-		CE00000000000000000000B2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
-			remoteInfo = "Formosa (Library)";
-		};
-		CE00000000000000000000BA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
-			remoteInfo = "Formosa (Library)";
-		};
 		6AE354B60E8F8415003160A0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
@@ -712,6 +695,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = 6AE3FA940D76776200C7D18D;
 			remoteInfo = "PlainVanilla (Library)";
+		};
+		CE00000000000000000000B2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
+			remoteInfo = "Formosa (Library)";
+		};
+		CE00000000000000000000BA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A476ED90D5C48AB00C6C744 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6AEBD0040D5D7E0D00ABF19D;
+			remoteInfo = "Formosa (Library)";
 		};
 		D43CC14B0EE413750032096E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -822,7 +819,10 @@
 		5B3CE6DF2991588400641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = PreferenceApplications/OSX/en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5B3CE6E42991588400641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Utilities/PhraseEditor/OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5B3CE6E52991588500641F53 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Utilities/PhraseEditor/OSX/en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5B9C1A012C06000000ABCD01 /* chiaki.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = chiaki.gif; path = "Loaders/OSX-IMK/Images/chiaki.gif"; sourceTree = "<group>"; };
 		5BAD29D02B7E14410013D695 /* PhraseEditorRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseEditorRelease.entitlements; sourceTree = "<group>"; };
+		5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVCapsLockDelayOverride.h; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.h"; sourceTree = "<group>"; };
+		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
 		5BE8931729915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = "Loaders/OSX-IMK/Base.lproj/AboutWindow.xib"; sourceTree = "<group>"; };
 		5BE8931829915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		5BE8931929915D2600A3F6CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = PreferenceApplications/OSX/Base.lproj/TakaoReverseLookup.xib; sourceTree = "<group>"; };
@@ -1000,10 +1000,6 @@
 		6A4773010D5C607200C6C744 /* OpenVanillaController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OpenVanillaController.mm; path = "Loaders/OSX-IMK/OpenVanillaController.mm"; sourceTree = "<group>"; };
 		6A4773020D5C607200C6C744 /* OpenVanillaLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OpenVanillaLoader.h; path = "Loaders/OSX-IMK/OpenVanillaLoader.h"; sourceTree = "<group>"; };
 		6A4773030D5C607200C6C744 /* OpenVanillaLoader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = OpenVanillaLoader.mm; path = "Loaders/OSX-IMK/OpenVanillaLoader.mm"; sourceTree = "<group>"; wrapsLines = 1; };
-		5BC0A0FF2C2F000100C0D3A1 /* CVCapsLockDelayOverride.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVCapsLockDelayOverride.h; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.h"; sourceTree = "<group>"; };
-		5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVCapsLockDelayOverride.m; path = "Loaders/OSX-IMK/CVCapsLockDelayOverride.m"; sourceTree = "<group>"; };
-		CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyUserPhraseCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyUserPhraseCoordination.h"; sourceTree = "<group>"; };
-		CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyServiceCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyServiceCoordination.h"; sourceTree = "<group>"; };
 		6A4773760D5C621400C6C744 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		6A4773770D5C621400C6C744 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		6A4773780D5C621400C6C744 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = /System/Library/Frameworks/InputMethodKit.framework; sourceTree = "<absolute>"; };
@@ -1092,6 +1088,14 @@
 		6AED2FB70D8BCF5600E6D3F8 /* UUIDHelper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = UUIDHelper.mm; path = Frameworks/CareService/Source/OSX/UUIDHelper.mm; sourceTree = "<group>"; };
 		6AF6B7890DD08DE400A0C8FD /* libz.1.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.tbd; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libz.1.tbd; sourceTree = "<absolute>"; };
 		6AFC445010623A6A000CECB4 /* LFUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LFUtilities.h; path = Frameworks/LFExtensions/LFUtilities.h; sourceTree = "<group>"; };
+		C1A1F0010F00000100000001 /* install-lexicon-release.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = "install-lexicon-release.sh"; path = "../Scripts/install-lexicon-release.sh"; sourceTree = SOURCE_ROOT; };
+		C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ChiaKeyMenuIcon.png; path = "Loaders/OSX-IMK/Images/ChiaKeyMenuIcon.png"; sourceTree = "<group>"; };
+		C1B000030F00000100000003 /* ChiaKeyMenuIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ChiaKeyMenuIcon@2x.png"; path = "Loaders/OSX-IMK/Images/ChiaKeyMenuIcon@2x.png"; sourceTree = "<group>"; };
+		CE00000000000000000000A1 /* PEUserPhraseStore.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = PEUserPhraseStore.mm; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.mm; sourceTree = "<group>"; };
+		CE00000000000000000000A2 /* PEUserPhraseStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEUserPhraseStore.h; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.h; sourceTree = "<group>"; };
+		CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyUserPhraseCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyUserPhraseCoordination.h"; sourceTree = "<group>"; };
+		CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyServiceCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyServiceCoordination.h"; sourceTree = "<group>"; };
+		CE00000000000000000000BB /* Contacts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Contacts.framework; path = /System/Library/Frameworks/Contacts.framework; sourceTree = "<absolute>"; };
 		D4041FEF0F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoKeyboardLayoutPopUpButton.h; path = PreferenceApplications/OSX/TakaoKeyboardLayoutPopUpButton.h; sourceTree = "<group>"; };
 		D4041FF00F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoKeyboardLayoutPopUpButton.m; path = PreferenceApplications/OSX/TakaoKeyboardLayoutPopUpButton.m; sourceTree = "<group>"; };
 		D407A1B60EC4B9D4004F434D /* addressBook.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = addressBook.png; path = Utilities/PhraseEditor/OSX/Images/addressBook.png; sourceTree = "<group>"; };
@@ -1116,8 +1120,6 @@
 		D42B09E60EBDD36900AB5B7A /* PEPhraseTableView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PEPhraseTableView.m; path = Utilities/PhraseEditor/OSX/PEPhraseTableView.m; sourceTree = "<group>"; };
 		D42B09E70EBDD36900AB5B7A /* PEPhraseTableView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEPhraseTableView.h; path = Utilities/PhraseEditor/OSX/PEPhraseTableView.h; sourceTree = "<group>"; };
 		D42B09E80EBDD36900AB5B7A /* PEController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PEController.m; path = Utilities/PhraseEditor/OSX/PEController.m; sourceTree = "<group>"; wrapsLines = 1; };
-		CE00000000000000000000A1 /* PEUserPhraseStore.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = PEUserPhraseStore.mm; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.mm; sourceTree = "<group>"; };
-		CE00000000000000000000A2 /* PEUserPhraseStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEUserPhraseStore.h; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.h; sourceTree = "<group>"; };
 		D42B09E90EBDD36900AB5B7A /* PESettingTableView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PESettingTableView.h; path = Utilities/PhraseEditor/OSX/PESettingTableView.h; sourceTree = "<group>"; };
 		D42B09EA0EBDD36900AB5B7A /* PEController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEController.h; path = Utilities/PhraseEditor/OSX/PEController.h; sourceTree = "<group>"; };
 		D42B09EB0EBDD36900AB5B7A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = Utilities/PhraseEditor/OSX/main.m; sourceTree = "<group>"; };
@@ -1126,16 +1128,11 @@
 		D42B0A090EBDD3BE00AB5B7A /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D42C002D0E1912CD002CD18F /* NSStringExtension.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NSStringExtension.h; path = "Loaders/OSX-IMK/NSStringExtension.h"; sourceTree = "<group>"; };
 		D42C002E0E1912CD002CD18F /* NSStringExtension.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = NSStringExtension.mm; path = "Loaders/OSX-IMK/NSStringExtension.mm"; sourceTree = "<group>"; };
-		CE00000000000000000000BB /* Contacts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Contacts.framework; path = /System/Library/Frameworks/Contacts.framework; sourceTree = "<absolute>"; };
 		D43E2DEC0EBF312A00557B95 /* PhraseEditor.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = PhraseEditor.icns; path = Utilities/PhraseEditor/OSX/Images/PhraseEditor.icns; sourceTree = "<group>"; };
 		D4447D600E346C5D00BE7D9E /* stopSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = stopSound.tiff; path = PreferenceApplications/OSX/Images/stopSound.tiff; sourceTree = "<group>"; };
 		D4447D610E346C5D00BE7D9E /* playSound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = playSound.tiff; path = PreferenceApplications/OSX/Images/playSound.tiff; sourceTree = "<group>"; };
-		C1A1F0010F00000100000001 /* install-lexicon-release.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = "install-lexicon-release.sh"; path = "../Scripts/install-lexicon-release.sh"; sourceTree = SOURCE_ROOT; };
 		D44DB8D4106F0A3C001308F8 /* reload.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = reload.png; path = Utilities/PhraseEditor/OSX/Images/reload.png; sourceTree = "<group>"; };
 		D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey.icns; path = "Loaders/OSX-IMK/Images/ChiaKey.icns"; sourceTree = "<group>"; };
-		D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey16.icns; path = "Loaders/OSX-IMK/Images/ChiaKey16.icns"; sourceTree = "<group>"; };
-		D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ChiaKey32.icns; path = "Loaders/OSX-IMK/Images/ChiaKey32.icns"; sourceTree = "<group>"; };
-		C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ChiaKeyMenuIcon.png; path = "Loaders/OSX-IMK/Images/ChiaKeyMenuIcon.png"; sourceTree = "<group>"; };
 		D455A6371062575F00CC2B47 /* plugin.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = plugin.tiff; path = PreferenceApplications/OSX/Images/plugin.tiff; sourceTree = "<group>"; };
 		D455A7FF106267A200CC2B47 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVSymbolController.h; path = "Loaders/OSX-IMK/CVSymbolController.h"; sourceTree = "<group>"; };
@@ -1208,8 +1205,6 @@
 		D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVKeyboardHelper.h; path = "Loaders/OSX-IMK/CVKeyboardHelper.h"; sourceTree = "<group>"; };
 		D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVKeyboardHelper.m; path = "Loaders/OSX-IMK/CVKeyboardHelper.m"; sourceTree = "<group>"; };
 		D49CAECC0D8ECE3500738634 /* About.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = About.jpg; path = "Loaders/OSX-IMK/Images/About.jpg"; sourceTree = "<group>"; };
-		5B9C1A012C06000000ABCD01 /* chiaki.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = chiaki.gif; path = "Loaders/OSX-IMK/Images/chiaki.gif"; sourceTree = "<group>"; };
-		C1B000030F00000100000003 /* ChiaKeyMenuIcon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "ChiaKeyMenuIcon@2x.png"; path = "Loaders/OSX-IMK/Images/ChiaKeyMenuIcon@2x.png"; sourceTree = "<group>"; };
 		D4A1F1A90EE30AF20064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D4A1F1B00EE30DB60064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D4BAC6140DA96585008E90A4 /* speak.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = speak.gif; path = WebResources/speak.gif; sourceTree = "<group>"; };
@@ -1227,6 +1222,7 @@
 		D4F7A56B0D82E699004AFC38 /* CVSearchController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVSearchController.m; path = "Loaders/OSX-IMK/CVSearchController.m"; sourceTree = "<group>"; wrapsLines = 1; };
 		D4F7DB030D9B8D6500AA67B9 /* CVSendKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVSendKey.h; path = "Loaders/OSX-IMK/CVSendKey.h"; sourceTree = "<group>"; };
 		D4F7DB040D9B8D6500AA67B9 /* CVSendKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVSendKey.m; path = "Loaders/OSX-IMK/CVSendKey.m"; sourceTree = "<group>"; };
+		D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		D4FC914A0EC896210087648C /* CVHorizontalCandidateController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVHorizontalCandidateController.h; path = "Loaders/OSX-IMK/CVHorizontalCandidateController.h"; sourceTree = "<group>"; };
 		D4FC914B0EC896210087648C /* CVHorizontalCandidateController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVHorizontalCandidateController.mm; path = "Loaders/OSX-IMK/CVHorizontalCandidateController.mm"; sourceTree = "<group>"; wrapsLines = 1; };
 		D4FC916F0EC89A470087648C /* CVHorizontalCandidateControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVHorizontalCandidateControl.h; path = "Loaders/OSX-IMK/CVHorizontalCandidateControl.h"; sourceTree = "<group>"; };
@@ -1242,7 +1238,6 @@
 		D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSColor+LFColorExtensions.h"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.h"; sourceTree = "<group>"; };
 		D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "NSColor+LFColorExtensions.mm"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.mm"; sourceTree = "<group>"; };
 		D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = InputMethodToggleWindowController.xib; path = "Loaders/OSX-IMK/Interface/InputMethodToggleWindowController.xib"; sourceTree = "<group>"; };
-		D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2120,8 +2115,6 @@
 				D4112E840D631738001475CB /* FontSmaller.tiff */,
 				D4112E850D631738001475CB /* FontBigger.tiff */,
 				D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */,
-				D450DE5B0D5F1117009A9C2A /* ChiaKey16.icns */,
-				D450DE5C0D5F1117009A9C2A /* ChiaKey32.icns */,
 				C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */,
 				C1B000030F00000100000003 /* ChiaKeyMenuIcon@2x.png */,
 			);
@@ -2178,13 +2171,13 @@
 		};
 		D459B7950D925BBE00CBDE76 /* Source */ = {
 			isa = PBXGroup;
-				children = (
-					D459B7960D925BD300CBDE76 /* UI Components */,
-					D484CEDA0EC218170051B6CA /* UIControllers */,
-					CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */,
-					CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */,
-					6A4772FD0D5C607200C6C744 /* main.mm */,
-					6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
+			children = (
+				D459B7960D925BD300CBDE76 /* UI Components */,
+				D484CEDA0EC218170051B6CA /* UIControllers */,
+				CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */,
+				CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */,
+				6A4772FD0D5C607200C6C744 /* main.mm */,
+				6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,
 				6A4772E60D5C607200C6C744 /* CVEncodingService.h */,
 				6A4772E70D5C607200C6C744 /* CVEncodingService.mm */,
@@ -2205,13 +2198,13 @@
 		};
 		D459B7960D925BD300CBDE76 /* UI Components */ = {
 			isa = PBXGroup;
-				children = (
-					D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */,
-					D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */,
-					6A4772E40D5C607200C6C744 /* CVFloatingPanelWindow.h */,
-					6A4772E50D5C607200C6C744 /* CVFloatingPanelWindow.m */,
-					6A4772EC0D5C607200C6C744 /* CVFloatingWindow.h */,
-					6A4772ED0D5C607200C6C744 /* CVFloatingWindow.mm */,
+			children = (
+				D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */,
+				D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */,
+				6A4772E40D5C607200C6C744 /* CVFloatingPanelWindow.h */,
+				6A4772E50D5C607200C6C744 /* CVFloatingPanelWindow.m */,
+				6A4772EC0D5C607200C6C744 /* CVFloatingWindow.h */,
+				6A4772ED0D5C607200C6C744 /* CVFloatingWindow.mm */,
 				6A4772F40D5C607200C6C744 /* CVTextDecoration.h */,
 				6A4772F50D5C607200C6C744 /* CVTextDecoration.m */,
 				6A4772E80D5C607200C6C744 /* CVFloatingBackground.h */,
@@ -3293,8 +3286,6 @@
 				6AB5B3080D5C8D350040CD26 /* InfoPlist.strings in Resources */,
 				D47D5F2A0D5EEB0A0093524C /* Localizable.strings in Resources */,
 				D450DE5D0D5F1117009A9C2A /* ChiaKey.icns in Resources */,
-				D450DE5E0D5F1117009A9C2A /* ChiaKey16.icns in Resources */,
-				D450DE5F0D5F1117009A9C2A /* ChiaKey32.icns in Resources */,
 				C1B000020F00000100000002 /* ChiaKeyMenuIcon.png in Resources */,
 				C1B000040F00000100000004 /* ChiaKeyMenuIcon@2x.png in Resources */,
 				D4112E860D631738001475CB /* FontSmaller.tiff in Resources */,
@@ -3390,7 +3381,7 @@
 			files = (
 			);
 			inputPaths = (
-				"$TARGET_BUILD_DIR/$WRAPPER_NAME/Contents/Frameworks",
+				$TARGET_BUILD_DIR/$WRAPPER_NAME/Contents/Frameworks,
 			);
 			outputPaths = (
 				"$DERIVED_FILE_DIR/bundle-clean.stamp",
@@ -3518,8 +3509,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-					D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
-					6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
+				D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
+				6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
 				6A4773070D5C607200C6C744 /* CVBubbleTextView.m in Sources */,
 				6A4773080D5C607200C6C744 /* CVBubbleTextWindow.m in Sources */,
 				6A47730A0D5C607200C6C744 /* CVFloatingPanelWindow.m in Sources */,
@@ -3656,9 +3647,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-					D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */,
-					D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */,
-					CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */,
+				D42B09F10EBDD36900AB5B7A /* PEPhraseTableView.m in Sources */,
+				D42B09F20EBDD36900AB5B7A /* PEController.m in Sources */,
+				CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */,
 				D42B09F30EBDD36900AB5B7A /* main.m in Sources */,
 				D42B09F40EBDD36900AB5B7A /* PESettingTableView.m in Sources */,
 				D47D76000ED0409400386753 /* PEDialogWindow.m in Sources */,
@@ -3670,9 +3661,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-					D47D5E550D5EDDC40093524C /* main.m in Sources */,
-					CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */,
-					D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */,
+				D47D5E550D5EDDC40093524C /* main.m in Sources */,
+				CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */,
+				D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */,
 				D47D5E570D5EDDC40093524C /* TakaoGeneric.m in Sources */,
 				D47D5E580D5EDDC40093524C /* TakaoGenericSettings.m in Sources */,
 				D47D5E590D5EDDC40093524C /* TakaoGlobal.m in Sources */,
@@ -3822,16 +3813,6 @@
 			target = 6A2D56110D5D889400E710D6 /* Manjusri (Library) */;
 			targetProxy = 6AE354BA0E8F841F003160A0 /* PBXContainerItemProxy */;
 		};
-		CE00000000000000000000B4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
-			targetProxy = CE00000000000000000000B2 /* PBXContainerItemProxy */;
-		};
-		CE00000000000000000000B9 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
-			targetProxy = CE00000000000000000000BA /* PBXContainerItemProxy */;
-		};
 		6AE3FAE40D7677AB00C7D18D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 6A47702A0D5C521600C6C744 /* OpenVanilla (Library) */;
@@ -3861,6 +3842,16 @@
 			isa = PBXTargetDependency;
 			target = 6AE3FA940D76776200C7D18D /* PlainVanilla (Library) */;
 			targetProxy = 6AFC7FF00D98F198007588D8 /* PBXContainerItemProxy */;
+		};
+		CE00000000000000000000B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
+			targetProxy = CE00000000000000000000B2 /* PBXContainerItemProxy */;
+		};
+		CE00000000000000000000B9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6AEBD0040D5D7E0D00ABF19D /* Formosa (Library) */;
+			targetProxy = CE00000000000000000000BA /* PBXContainerItemProxy */;
 		};
 		D43CC14C0EE413750032096E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4381,9 +4372,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_VERSION = "";
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				PRODUCT_NAME = TestOpenVanilla;
 				SDKROOT = macosx;
@@ -4402,9 +4391,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_VERSION = "";
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				PRODUCT_NAME = TestOpenVanilla;
 				SDKROOT = macosx;
@@ -4558,20 +4545,18 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-					GCC_PREPROCESSOR_DEFINITIONS = (
-						"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
-						OVLOADER_USE_SQLITE_CRYPTO,
-						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
-						"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
-						"SQLITE_HAS_CODEC=1",
-						OV_USE_SQLITE,
-					);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
+					OVLOADER_USE_SQLITE_CRYPTO,
+					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
+					"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
+					"SQLITE_HAS_CODEC=1",
+					OV_USE_SQLITE,
+				);
 				GCC_VERSION = "";
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
@@ -4601,20 +4586,18 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
-					GCC_PREPROCESSOR_DEFINITIONS = (
-						"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
-						OVLOADER_USE_SQLITE_CRYPTO,
-						"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
-						"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
-						"SQLITE_HAS_CODEC=1",
-						OV_USE_SQLITE,
-					);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"OPENVANILLA_CONNECTION_NAME=@\\\"com.chiakey.inputmethod.ChiaKey_Connection\\\"",
+					OVLOADER_USE_SQLITE_CRYPTO,
+					"PVLOADERPOLICY_LOADER_IDENTIFIER=\\\"com.chiakey.ChiaKey\\\"",
+					"PVLOADERPOLICY_LOADER_NAME=\\\"ChiaKey\\\"",
+					"SQLITE_HAS_CODEC=1",
+					OV_USE_SQLITE,
+				);
 				GCC_VERSION = "";
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
@@ -4827,9 +4810,7 @@
 				);
 				GCC_VERSION = "";
 				INSTALL_PATH = /usr/local/lib;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				PRODUCT_NAME = TakaoModulePackages;
@@ -4862,9 +4843,7 @@
 				);
 				GCC_VERSION = "";
 				INSTALL_PATH = /usr/local/lib;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				PRODUCT_NAME = TakaoModulePackages;

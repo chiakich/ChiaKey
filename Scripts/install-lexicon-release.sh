@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="akira02/ChiaKey-Lexicon"
+REPO="chiakich/ChiaKey-Lexicon"
 TAG=""
 MANIFEST_URL=""
 INSTALL_ROOT="${HOME}/Library/Application Support/ChiaKey/Lexicons"

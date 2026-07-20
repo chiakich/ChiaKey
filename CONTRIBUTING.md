@@ -148,26 +148,6 @@ artifacts/release/
 
 公開 release 應提供 Developer ID Application / Installer signing identities，並跑 notarization。細節請見 [Release packaging](Docs/ReleasePackaging.md)。
 
-GitHub Release 發佈時會上傳版本化 `.pkg`，並同時提供固定檔名 `ChiaKey.pkg` 作為 latest release 的直接下載 alias：
-
-```text
-https://github.com/akira02/ChiaKey/releases/latest/download/ChiaKey.pkg
-```
-
-## 圖示
-
-重新從 SVG 產生 app 與 input source `.icns`：
-
-```sh
-Scripts/generate-icon-assets.sh
-```
-
-目前圖示來源是：
-
-```text
-ChiaKey-Source/Loaders/OSX-IMK/Images/ChiaKey.svg
-```
-
 ## 目錄概覽
 
 - `ChiaKey-Source/Frameworks/ChiaKeyCore/`：host-neutral engine facade，未來 macOS / iOS 共用輸入核心邊界。
@@ -189,4 +169,3 @@ ChiaKey-Source/Loaders/OSX-IMK/Images/ChiaKey.svg
 千秋輸入法 app repo 不維護語料來源，也不決定詞庫產製策略；這些工作由 ChiaKey-Lexicon repo 負責。app repo 只負責定義 runtime 需要的 DB contract、驗證 release artifact、安裝 / 更新 active lexicon，以及提供 bundled DB fallback。
 
 歷史 KeyKey `DataSource` raw files 不再保存在 app repo。其 provenance 與 bootstrap DB 由 ChiaKey-Lexicon repo 管理；需要 bundled fallback DB 時，請使用詞庫 repo 產出的 release artifact 或本機 DB。詞庫格式與更新契約請見 [Docs/LexiconContract.md](Docs/LexiconContract.md)。
-

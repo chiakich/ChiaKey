@@ -10,7 +10,7 @@ file for terms.
 #import "TakaoHelper.h"
 
 static NSString *const ChiaKeyApplicationReleasesURL =
-    @"https://api.github.com/repos/akira02/ChiaKey/releases";
+    @"https://api.github.com/repos/chiakich/ChiaKey/releases";
 static NSString *const ChiaKeyApplicationLatestReleaseURLDefaultsKey =
     @"ChiaKeyLatestApplicationReleaseURL";
 static NSString *const ChiaKeyApplicationLatestPackageNameDefaultsKey =
@@ -27,7 +27,7 @@ static NSString *const ChiaKeyLatestApplicationCheckDefaultsKey =
     @"ChiaKeyLatestApplicationCheck";
 
 static NSString *const ChiaKeyLexiconLatestURL =
-    @"https://github.com/akira02/ChiaKey-Lexicon/releases/latest";
+    @"https://github.com/chiakich/ChiaKey-Lexicon/releases/latest";
 static NSString *const ChiaKeyLatestLexiconDefaultsKey =
     @"ChiaKeyLatestLexiconVersion";
 static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =

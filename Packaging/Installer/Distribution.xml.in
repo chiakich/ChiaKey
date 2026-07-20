@@ -3,7 +3,9 @@
   <title>ChiaKey</title>
   <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
   <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="true"/>
-  <welcome file="Welcome.txt" mime-type="text/plain"/>
+  <background file="InstallerBackground.png" mime-type="image/png" alignment="bottomleft" scaling="tofit"/>
+  <background-darkAqua file="InstallerBackgroundDark.png" mime-type="image/png" alignment="bottomleft" scaling="tofit"/>
+  <welcome file="Welcome.html" mime-type="text/html"/>
   <license file="License.txt" mime-type="text/plain"/>
   <conclusion file="Conclusion.txt" mime-type="text/plain"/>
   <choices-outline>

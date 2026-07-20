@@ -1080,7 +1080,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   }
 }
 - (void)helpAction:(id)sender {
-  NSString *urlString = @"https://github.com/akira02/ChiaKey";
+  NSString *urlString = @"https://github.com/chiakich/ChiaKey";
   NSURL *url = [NSURL URLWithString:urlString];
   [[NSWorkspace sharedWorkspace] openURL:url];
   [self _resetUI];

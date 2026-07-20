@@ -13,7 +13,7 @@ App 必須能下載、驗證、安裝、拒絕與 fallback 詞庫 release，且�
 詞庫 release 發佈位置：
 
 ```text
-https://github.com/akira02/ChiaKey-Lexicon/releases
+https://github.com/chiakich/ChiaKey-Lexicon/releases
 ```
 
 每個 release 必須提供：

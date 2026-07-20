@@ -12,7 +12,7 @@
 #import "PESettingTableView.h"
 #import "PEUserPhraseStore.h"
 
-#define HELP_URL @"https://github.com/akira02/ChiaKey"
+#define HELP_URL @"https://github.com/chiakich/ChiaKey"
 
 static NSString *addToolbarItemIdentifier = @"Add";
 static NSString *deleteToolbarItemIdentifier = @"Delete";
