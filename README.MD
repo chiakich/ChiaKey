@@ -1,7 +1,7 @@
 # 千秋輸入法 ChiaKey
 <img width="256" height="256" alt="chiakey-icon-macOS-Default-512x512@1x" src="https://github.com/user-attachments/assets/eeb86e62-e442-4839-a5fa-454d931e4bcd" />
 
-<img height="600" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />  
+<img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />  
 
 千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。
 
