@@ -57,8 +57,44 @@ static void CVApplyAboutTextStyle(NSView *view) {
       setStringValue:[NSString stringWithFormat:@"%@ v%@", name, version]];
 }
 
+// Turn the "chiaki.ch" substring of the credit line into a clickable link.
+// The rest of the label keeps the nib's localized author name untouched.
+- (void)_linkifyAuthorLabel {
+  if (![_authorLabel respondsToSelector:@selector(setAttributedStringValue:)])
+    return;
+
+  NSString *text = [_authorLabel stringValue];
+  NSRange range = [text rangeOfString:@"chiaki.ch"];
+  if (range.location == NSNotFound) return;
+
+  NSMutableAttributedString *attributed =
+      [[[NSMutableAttributedString alloc] initWithString:text] autorelease];
+  [attributed addAttribute:NSForegroundColorAttributeName
+                     value:[NSColor whiteColor]
+                     range:NSMakeRange(0, [text length])];
+  [attributed addAttribute:NSLinkAttributeName
+                     value:@"https://chiaki.ch"
+                     range:range];
+  // The default link color is dark blue, unreadable on the near-black
+  // background, so give it a light tint and an underline.
+  [attributed addAttribute:NSForegroundColorAttributeName
+                     value:[NSColor colorWithCalibratedRed:0.4
+                                                     green:0.7
+                                                      blue:1.0
+                                                     alpha:1.0]
+                     range:range];
+  [attributed addAttribute:NSUnderlineStyleAttributeName
+                     value:[NSNumber numberWithInt:NSUnderlineStyleSingle]
+                     range:range];
+
+  [_authorLabel setAllowsEditingTextAttributes:YES];
+  [_authorLabel setSelectable:YES];
+  [_authorLabel setAttributedStringValue:attributed];
+}
+
 - (void)awakeFromNib {
   [self _applyVersionToTitle];
+  [self _linkifyAuthorLabel];
   [[self window] setLevel:NSFloatingWindowLevel];
   [[self window] setBackgroundColor:[NSColor colorWithCalibratedWhite:0.05
                                                                 alpha:1.0]];

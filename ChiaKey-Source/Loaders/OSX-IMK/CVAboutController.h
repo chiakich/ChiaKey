@@ -6,6 +6,7 @@
 
 @interface CVAboutController : NSWindowController {
   IBOutlet id _aboutTextField;
+  IBOutlet id _authorLabel;
   BOOL init;
   TakaoWordCount *_wordCountController;
   NSSize defaultWindowSize;
