@@ -198,7 +198,6 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           files: |
             ${{ steps.build.outputs.pkg }}
-            ${{ steps.build.outputs.latest_pkg }}
 
       # The updater reads this manifest instead of the GitHub API, whose
       # unauthenticated limit is 60 requests/hour per IP -- shared by everyone
@@ -247,9 +246,23 @@ jobs:
           sha256="$(shasum -a 256 "${PKG}" | awk '{print $1}')"
           published_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+          # Immutable: the manifest pins a SHA-256 against this exact object,
+          # so it must never be overwritten.
           r2 PUT "releases/${pkg_name}" \
             --upload-file "${PKG}" \
-            -H "Content-Type: application/octet-stream"
+            -H "Content-Type: application/octet-stream" \
+            -H "Cache-Control: public, max-age=31536000, immutable"
+
+          # A stable download link for the README and the website. Humans only:
+          # the updater always fetches the versioned object, because this one
+          # can change between reading the manifest and finishing the download,
+          # which would break the digest check. Betas never claim it.
+          if [[ "${PRERELEASE}" == "false" ]]; then
+            r2 PUT "ChiaKey.pkg" \
+              --upload-file "${PKG}" \
+              -H "Content-Type: application/octet-stream" \
+              -H "Cache-Control: public, max-age=300"
+          fi
 
           # Read-modify-write: publishing a beta must not erase the stable
           # entry that non-beta users are still following.
@@ -282,6 +295,10 @@ jobs:
 
           echo "Published manifest for ${TAG} to ${R2_PUBLIC_BASE_URL}/${prefix}/appcast.json" \
             >>"$GITHUB_STEP_SUMMARY"
+          if [[ "${PRERELEASE}" == "false" ]]; then
+            echo "Updated ${R2_PUBLIC_BASE_URL}/${prefix}/ChiaKey.pkg" \
+              >>"$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Dry run summary
         if: ${{ inputs.dry_run == true }}
