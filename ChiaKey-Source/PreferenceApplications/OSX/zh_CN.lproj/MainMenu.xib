@@ -1307,9 +1307,9 @@
                                 </connections>
                             </button>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconAutoUpdateCheckbox">
-                                <rect key="frame" x="276" y="5" width="142" height="18"/>
+                                <rect key="frame" x="15" y="5" width="180" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <buttonCell key="cell" type="check" title="自動更新詞庫" bezelStyle="regularSquare" imagePosition="leading" alignment="right" inset="2" id="lexiconAutoUpdateCheckboxCell">
+                                <buttonCell key="cell" type="check" title="自動更新詞庫" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="lexiconAutoUpdateCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="smallSystem"/>
                                 </buttonCell>
