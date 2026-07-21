@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<!-- Under Hardened Runtime, tccd refuses to even prompt for Contacts unless
+	     the requesting binary carries this entitlement. Without it the Address
+	     Book import is auto-denied ("Policy disallows prompt ... kTCCServiceAddressBook
+	     denied"). Ad-hoc/dev builds have no Hardened Runtime, so they are not
+	     subject to this policy and prompt normally. -->
+	<key>com.apple.security.personal-information.addressbook</key>
+	<true/>
+</dict>
 </plist>

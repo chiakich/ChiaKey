@@ -564,25 +564,53 @@ run /usr/bin/find "${BUILT_APP}" -name "._*" -delete
 run /usr/bin/find "${BUILT_APP}" -name ".DS_Store" -delete
 run /usr/bin/xattr -cr "${BUILT_APP}"
 
+PHRASE_EDITOR_APP="${BUILT_APP}/Contents/SharedSupport/PhraseEditor.app"
+PHRASE_EDITOR_IDENTIFIER="com.chiakey.inputmethod.ChiaKey.PhraseEditor"
+PHRASE_EDITOR_ENTITLEMENTS="${ROOT_DIR}/ChiaKey-Source/PhraseEditorRelease.entitlements"
+
 sign_app_bundle() {
   local app_bundle="$1"
+  shift
+  local extra_args=("$@")
 
   if [[ "${APP_SIGN_IDENTITY}" == "-" ]]; then
-    run /usr/bin/codesign --force --deep --sign - "${app_bundle}"
+    run /usr/bin/codesign --force --deep --sign - \
+      ${extra_args[@]+"${extra_args[@]}"} "${app_bundle}"
   else
     run /usr/bin/codesign --force --deep --options runtime --timestamp \
-      --sign "${APP_SIGN_IDENTITY}" "${app_bundle}"
+      --sign "${APP_SIGN_IDENTITY}" ${extra_args[@]+"${extra_args[@]}"} "${app_bundle}"
   fi
 }
 
-if [[ "${APP_SIGN_IDENTITY}" == "-" ]]; then
-  sign_app_bundle "${BUILT_APP}"
-else
+# Re-sign the nested PhraseEditor (in Contents/SharedSupport) FIRST, forcing its
+# real bundle id as the code identifier. `codesign --deep` on the outer bundle
+# does not descend into Contents/SharedSupport, so without this the editor keeps
+# the linker's ad-hoc signature whose identifier is the bare executable name
+# ("PhraseEditor"), and TCC (e.g. the Contacts import prompt) fails to attribute
+# it. Sign inside-out: re-signing the nested app after the outer bundle would
+# invalidate the outer signature's seal over SharedSupport.
+#
+# The --entitlements grants com.apple.security.personal-information.addressbook.
+# Under Hardened Runtime (added with --options runtime for Developer ID builds),
+# tccd refuses to prompt for Contacts unless the requesting binary carries that
+# entitlement, so the Address Book import is silently denied without it. The
+# build itself is CODE_SIGNING_ALLOWED=NO, so entitlements must be applied here.
+phrase_editor_extra_args=(--identifier "${PHRASE_EDITOR_IDENTIFIER}")
+if [[ -f "${PHRASE_EDITOR_ENTITLEMENTS}" ]]; then
+  phrase_editor_extra_args+=(--entitlements "${PHRASE_EDITOR_ENTITLEMENTS}")
+fi
+if [[ -d "${PHRASE_EDITOR_APP}" ]]; then
+  sign_app_bundle "${PHRASE_EDITOR_APP}" "${phrase_editor_extra_args[@]}"
+fi
+
+if [[ "${APP_SIGN_IDENTITY}" != "-" ]]; then
   while IFS= read -r nested_app; do
+    [[ "${nested_app}" == "${PHRASE_EDITOR_APP}" ]] && continue
     sign_app_bundle "${nested_app}"
   done < <(/usr/bin/find "${BUILT_APP}/Contents" -type d -name "*.app" -print | /usr/bin/sort -r)
-  sign_app_bundle "${BUILT_APP}"
 fi
+
+sign_app_bundle "${BUILT_APP}"
 
 run /usr/bin/xattr -cr "${BUILT_APP}"
 run /usr/bin/codesign --verify --deep --strict "${BUILT_APP}"
