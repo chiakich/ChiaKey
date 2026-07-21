@@ -1186,7 +1186,7 @@
                                 </connections>
                             </button>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationAutoUpdateCheckbox">
-                                <rect key="frame" x="15" y="6" width="220" height="18"/>
+                                <rect key="frame" x="15" y="6" width="135" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="check" title="自動檢查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="applicationAutoUpdateCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -1197,9 +1197,9 @@
                                 </connections>
                             </button>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationIncludeBetaCheckbox">
-                                <rect key="frame" x="274" y="6" width="144" height="18"/>
+                                <rect key="frame" x="150" y="6" width="120" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <buttonCell key="cell" type="check" title="接受 Beta 版" bezelStyle="regularSquare" imagePosition="leading" alignment="right" inset="2" id="applicationIncludeBetaCheckboxCell">
+                                <buttonCell key="cell" type="check" title="接受 Beta 版" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="applicationIncludeBetaCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="smallSystem"/>
                                 </buttonCell>
