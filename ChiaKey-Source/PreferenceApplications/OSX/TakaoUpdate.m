@@ -7,10 +7,9 @@ file for terms.
 
 #import "TakaoUpdate.h"
 
+#import "ChiaKeyUpdateService.h"
 #import "TakaoHelper.h"
 
-static NSString *const ChiaKeyApplicationReleasesURL =
-    @"https://api.github.com/repos/chiakich/ChiaKey/releases";
 static NSString *const ChiaKeyApplicationLatestReleaseURLDefaultsKey =
     @"ChiaKeyLatestApplicationReleaseURL";
 static NSString *const ChiaKeyApplicationLatestPackageNameDefaultsKey =
@@ -34,6 +33,8 @@ static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
     @"ChiaKeyLatestLexiconCheck";
 static NSString *const ChiaKeyLexiconAutoUpdateEnabledPreferenceKey =
     @"ShouldAutoUpdateLexicon";
+static NSString *const ChiaKeyApplicationAutoUpdateEnabledPreferenceKey =
+    @"ShouldAutoUpdateApplication";
 static NSString *const ChiaKeySourceDatabaseArtifactKind =
     @"chiakey-source-db";
 static NSString *const ChiaKeySourceDatabaseArtifactFilename =
@@ -44,12 +45,19 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 - (void)dealloc {
   if (_task) [_task terminate];
   [_task release];
-  [_availableApplicationPackageName release];
-  [_availableApplicationPackageSHA256 release];
-  [_availableApplicationPackageURL release];
-  [_availableApplicationTag release];
+  [_availableApplicationRelease release];
   [_availableLexiconTag release];
+  [_updateService release];
   [super dealloc];
+}
+
+- (ChiaKeyUpdateService *)_updateService {
+  if (!_updateService) _updateService = [[ChiaKeyUpdateService alloc] init];
+  return _updateService;
+}
+
+- (ChiaKeyUpdateRelease *)_availableRelease {
+  return (ChiaKeyUpdateRelease *)_availableApplicationRelease;
 }
 
 - (NSDictionary *)_jsonDictionaryFromData:(NSData *)data
@@ -169,64 +177,8 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   return [formatter stringFromDate:date];
 }
 
-- (NSString *)_baseVersionString:(NSString *)version {
-  if (![version length]) return nil;
-
-  NSString *trimmed = [version
-      stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-  NSCharacterSet *digits = [NSCharacterSet decimalDigitCharacterSet];
-  NSUInteger firstDigit = NSNotFound;
-  for (NSUInteger index = 0; index < [trimmed length]; index++) {
-    unichar character = [trimmed characterAtIndex:index];
-    if ([digits characterIsMember:character]) {
-      firstDigit = index;
-      break;
-    }
-  }
-  if (firstDigit == NSNotFound) return trimmed;
-
-  NSString *base = [trimmed substringFromIndex:firstDigit];
-  NSRange hyphenRange = [base rangeOfString:@"-"];
-  if (hyphenRange.location != NSNotFound)
-    base = [base substringToIndex:hyphenRange.location];
-
-  NSRange metadataRange = [base rangeOfString:@"+"];
-  if (metadataRange.location != NSNotFound)
-    base = [base substringToIndex:metadataRange.location];
-
-  return base;
-}
-
-- (NSArray *)_numericVersionParts:(NSString *)version {
-  NSString *base = [self _baseVersionString:version];
-  if (![base length]) return [NSArray array];
-
-  NSArray *rawParts = [base
-      componentsSeparatedByCharactersInSet:
-          [[NSCharacterSet decimalDigitCharacterSet] invertedSet]];
-  NSMutableArray *parts = [NSMutableArray array];
-  for (NSString *part in rawParts) {
-    if (![part length]) continue;
-    [parts addObject:[NSNumber numberWithInteger:[part integerValue]]];
-  }
-  return parts;
-}
-
 - (NSComparisonResult)_compareVersion:(NSString *)lhs toVersion:(NSString *)rhs {
-  NSArray *leftParts = [self _numericVersionParts:lhs];
-  NSArray *rightParts = [self _numericVersionParts:rhs];
-  NSUInteger count = MAX([leftParts count], [rightParts count]);
-
-  for (NSUInteger index = 0; index < count; index++) {
-    NSInteger leftValue =
-        (index < [leftParts count]) ? [[leftParts objectAtIndex:index] integerValue] : 0;
-    NSInteger rightValue =
-        (index < [rightParts count]) ? [[rightParts objectAtIndex:index] integerValue] : 0;
-    if (leftValue < rightValue) return NSOrderedAscending;
-    if (leftValue > rightValue) return NSOrderedDescending;
-  }
-
-  return NSOrderedSame;
+  return [ChiaKeyUpdateService compareVersion:lhs toVersion:rhs];
 }
 
 - (BOOL)_isDevelopmentLexiconVersion:(NSString *)version {
@@ -244,32 +196,18 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 }
 
 - (void)_refreshApplicationInstallButton {
-  BOOL hasAvailablePackage = [_availableApplicationTag length] > 0 &&
-                             [_availableApplicationPackageURL length] > 0;
+  ChiaKeyUpdateRelease *release = [self _availableRelease];
+  BOOL hasAvailablePackage =
+      [[release tag] length] > 0 && [[release packageURL] length] > 0;
   [_applicationInstallButton setHidden:!hasAvailablePackage];
   [_applicationInstallButton setEnabled:hasAvailablePackage &&
                                         ![self _isApplicationBusy]];
 }
 
-- (void)_setAvailableApplicationTag:(NSString *)tag
-                         packageURL:(NSString *)packageURL
-                        packageName:(NSString *)packageName
-                      packageSHA256:(NSString *)packageSHA256 {
-  if (_availableApplicationTag != tag) {
-    [_availableApplicationTag release];
-    _availableApplicationTag = [tag copy];
-  }
-  if (_availableApplicationPackageURL != packageURL) {
-    [_availableApplicationPackageURL release];
-    _availableApplicationPackageURL = [packageURL copy];
-  }
-  if (_availableApplicationPackageName != packageName) {
-    [_availableApplicationPackageName release];
-    _availableApplicationPackageName = [packageName copy];
-  }
-  if (_availableApplicationPackageSHA256 != packageSHA256) {
-    [_availableApplicationPackageSHA256 release];
-    _availableApplicationPackageSHA256 = [packageSHA256 copy];
+- (void)_setAvailableRelease:(ChiaKeyUpdateRelease *)release {
+  if (_availableApplicationRelease != release) {
+    [_availableApplicationRelease release];
+    _availableApplicationRelease = [release retain];
   }
   [self _refreshApplicationInstallButton];
 }
@@ -300,6 +238,7 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 
   [_applicationCheckButton setEnabled:!busy];
   [_applicationIncludeBetaCheckBox setEnabled:!busy];
+  [_applicationAutoUpdateCheckBox setEnabled:!busy];
   [self _refreshApplicationInstallButton];
 }
 
@@ -317,26 +256,36 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   [self _refreshLexiconInstallButton];
 }
 
-- (BOOL)_isAutomaticLexiconUpdateEnabled {
+// These live in the shared ChiaKey plist rather than NSUserDefaults because
+// the IME reads them from its own process to decide whether to check at all.
+- (BOOL)_isGlobalPreferenceEnabled:(NSString *)key {
   NSDictionary *preferences =
       [NSDictionary dictionaryWithContentsOfFile:
                         [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]];
-  NSString *value =
-      [preferences objectForKey:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+  NSString *value = [preferences objectForKey:key];
   if (![value length]) return YES;
 
   return [value isEqualToString:@"true"];
 }
 
-- (void)_setAutomaticLexiconUpdateEnabled:(BOOL)enabled {
+- (void)_setGlobalPreference:(NSString *)key enabled:(BOOL)enabled {
   NSString *path = [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME];
   NSMutableDictionary *preferences =
       [NSMutableDictionary dictionaryWithContentsOfFile:path];
   if (!preferences) preferences = [NSMutableDictionary dictionary];
 
-  [preferences setObject:(enabled ? @"true" : @"false")
-                  forKey:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+  [preferences setObject:(enabled ? @"true" : @"false") forKey:key];
   [preferences writeToFile:path atomically:YES];
+}
+
+- (BOOL)_isAutomaticLexiconUpdateEnabled {
+  return [self
+      _isGlobalPreferenceEnabled:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+}
+
+- (void)_setAutomaticLexiconUpdateEnabled:(BOOL)enabled {
+  [self _setGlobalPreference:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey
+                     enabled:enabled];
 }
 
 - (void)_getApplicationVersionInfo {
@@ -388,12 +337,12 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   [_applicationIncludeBetaCheckBox
       setIntValue:[defaults boolForKey:ChiaKeyApplicationIncludeBetaDefaultsKey]];
+  [_applicationAutoUpdateCheckBox
+      setIntValue:[self _isGlobalPreferenceEnabled:
+                            ChiaKeyApplicationAutoUpdateEnabledPreferenceKey]];
   [_lexiconAutoUpdateCheckBox
       setIntValue:[self _isAutomaticLexiconUpdateEnabled]];
-  [self _setAvailableApplicationTag:nil
-                         packageURL:nil
-                        packageName:nil
-                      packageSHA256:nil];
+  [self _setAvailableRelease:nil];
   [self _setAvailableLexiconTag:nil];
   [self _getVersionInfo];
   [self _setApplicationBusy:NO];
@@ -408,166 +357,6 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   return [NSError errorWithDomain:@"ChiaKeyUpdate"
                              code:code
                          userInfo:userInfo];
-}
-
-- (NSDictionary *)_packageAssetFromRelease:(NSDictionary *)release {
-  NSArray *assets = [release objectForKey:@"assets"];
-  if (![assets isKindOfClass:[NSArray class]]) return nil;
-
-  NSDictionary *fallbackAsset = nil;
-  for (id item in assets) {
-    if (![item isKindOfClass:[NSDictionary class]]) continue;
-    NSDictionary *asset = (NSDictionary *)item;
-    NSString *name = [asset objectForKey:@"name"];
-    NSString *downloadURL = [asset objectForKey:@"browser_download_url"];
-    if (![name isKindOfClass:[NSString class]] ||
-        ![downloadURL isKindOfClass:[NSString class]] ||
-        ![downloadURL length])
-      continue;
-    if ([[name pathExtension] caseInsensitiveCompare:@"pkg"] != NSOrderedSame)
-      continue;
-
-    BOOL isUnsigned =
-        [[name lowercaseString] rangeOfString:@"unsigned"].location !=
-        NSNotFound;
-    if (isUnsigned) continue;
-
-    if (!fallbackAsset) fallbackAsset = asset;
-    if ([[name lowercaseString] hasPrefix:@"chiakey-"]) return asset;
-  }
-
-  return fallbackAsset;
-}
-
-- (NSString *)_sha256FromPackageAsset:(NSDictionary *)asset {
-  NSString *digest = [asset objectForKey:@"digest"];
-  if (![digest isKindOfClass:[NSString class]] || ![digest length])
-    digest = [asset objectForKey:@"sha256"];
-  if (![digest isKindOfClass:[NSString class]]) return nil;
-
-  NSString *lowercaseDigest = [digest lowercaseString];
-  if ([lowercaseDigest hasPrefix:@"sha256:"])
-    lowercaseDigest = [lowercaseDigest substringFromIndex:7];
-
-  NSCharacterSet *nonHexCharacters =
-      [[NSCharacterSet characterSetWithCharactersInString:
-                           @"0123456789abcdef"] invertedSet];
-  if ([lowercaseDigest length] != 64 ||
-      [lowercaseDigest rangeOfCharacterFromSet:nonHexCharacters].location !=
-          NSNotFound)
-    return nil;
-
-  return lowercaseDigest;
-}
-
-- (void)_latestApplicationReleaseIncludingBeta:(BOOL)includeBeta
-                                    completion:
-                                        (void (^)(NSString *tag,
-                                                  NSString *releaseURL,
-                                                  NSString *packageURL,
-                                                  NSString *packageName,
-                                                  NSString *packageSHA256,
-                                                  BOOL prerelease,
-                                                  NSError *error))completion {
-  NSURL *url = [NSURL URLWithString:ChiaKeyApplicationReleasesURL];
-  NSMutableURLRequest *request =
-      [NSMutableURLRequest requestWithURL:url
-                              cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
-                          timeoutInterval:20.0];
-  [request setValue:@"ChiaKey Preferences" forHTTPHeaderField:@"User-Agent"];
-  [request setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
-
-  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-      dataTaskWithRequest:request
-        completionHandler:^(NSData *data, NSURLResponse *response,
-                            NSError *requestError) {
-          NSError *completionError = requestError;
-          NSInteger statusCode = 0;
-          if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
-            statusCode = [(NSHTTPURLResponse *)response statusCode];
-          }
-          if (!completionError && statusCode >= 400) {
-            completionError =
-                [self _updateErrorWithDescription:LFLSTR(@"GitHub returned an error.")
-                                             code:statusCode];
-          }
-
-          NSString *tag = nil;
-          NSString *releaseURL = nil;
-          NSString *packageURL = nil;
-          NSString *packageName = nil;
-          NSString *packageSHA256 = nil;
-          BOOL prerelease = NO;
-          if (!completionError) {
-            NSError *jsonError = nil;
-            id object = [NSJSONSerialization JSONObjectWithData:data
-                                                        options:0
-                                                          error:&jsonError];
-            if (![object isKindOfClass:[NSArray class]]) {
-              completionError = jsonError ? jsonError
-                                          : [self _updateErrorWithDescription:
-                                                      @"GitHub returned an unexpected response."
-                                                                     code:0];
-            } else {
-              NSString *bestTag = nil;
-              NSString *bestReleaseURL = nil;
-              NSString *bestPackageURL = nil;
-              NSString *bestPackageName = nil;
-              NSString *bestPackageSHA256 = nil;
-              BOOL bestPrerelease = NO;
-              for (id item in (NSArray *)object) {
-                if (![item isKindOfClass:[NSDictionary class]]) continue;
-                NSDictionary *release = (NSDictionary *)item;
-                if ([[release objectForKey:@"draft"] boolValue]) continue;
-                BOOL itemPrerelease =
-                    [[release objectForKey:@"prerelease"] boolValue];
-                if (itemPrerelease && !includeBeta) continue;
-
-                NSString *itemTag = [release objectForKey:@"tag_name"];
-                if (![itemTag isKindOfClass:[NSString class]] ||
-                    ![itemTag length])
-                  continue;
-
-                NSString *itemURL = [release objectForKey:@"html_url"];
-                if (![bestTag length] ||
-                    [self _compareVersion:bestTag toVersion:itemTag] ==
-                        NSOrderedAscending) {
-                  NSDictionary *packageAsset =
-                      [self _packageAssetFromRelease:release];
-                  NSString *itemPackageURL =
-                      [packageAsset objectForKey:@"browser_download_url"];
-                  NSString *itemPackageName = [packageAsset objectForKey:@"name"];
-                  NSString *itemPackageSHA256 =
-                      [self _sha256FromPackageAsset:packageAsset];
-                  bestTag = itemTag;
-                  bestReleaseURL =
-                      [itemURL isKindOfClass:[NSString class]] ? itemURL : nil;
-                  bestPackageURL =
-                      [itemPackageURL isKindOfClass:[NSString class]]
-                          ? itemPackageURL
-                          : nil;
-                  bestPackageName =
-                      [itemPackageName isKindOfClass:[NSString class]]
-                          ? itemPackageName
-                          : nil;
-                  bestPackageSHA256 = itemPackageSHA256;
-                  bestPrerelease = itemPrerelease;
-                }
-              }
-              tag = bestTag;
-              releaseURL = bestReleaseURL;
-              packageURL = bestPackageURL;
-              packageName = bestPackageName;
-              packageSHA256 = bestPackageSHA256;
-              prerelease = bestPrerelease;
-            }
-          }
-
-          if (completion)
-            completion(tag, releaseURL, packageURL, packageName, packageSHA256,
-                       prerelease, completionError);
-        }];
-  [task resume];
 }
 
 - (void)_latestLexiconReleaseTagWithCompletion:
@@ -679,57 +468,47 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   [alert beginSheetModalForWindow:_window completionHandler:nil];
 }
 
-- (void)_handleLatestApplicationTag:(NSString *)latestTag
-                         releaseURL:(NSString *)releaseURL
-                         packageURL:(NSString *)packageURL
-                        packageName:(NSString *)packageName
-                      packageSHA256:(NSString *)packageSHA256
-                          prerelease:(BOOL)prerelease
-                              error:(NSError *)error
-                         showAlerts:(BOOL)showAlerts {
+- (void)_storeOrClear:(NSString *)value forKey:(NSString *)key {
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  if ([value length]) {
+    [defaults setObject:value forKey:key];
+  } else {
+    [defaults removeObjectForKey:key];
+  }
+}
+
+- (void)_handleLatestRelease:(ChiaKeyUpdateRelease *)release
+                       error:(NSError *)error
+                  showAlerts:(BOOL)showAlerts {
   NSString *checkTime = [self _formatDate:[NSDate date]];
+  NSString *latestTag = [release tag];
 
   if ([latestTag length]) {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:latestTag forKey:ChiaKeyLatestApplicationDefaultsKey];
     [defaults setObject:checkTime
                  forKey:ChiaKeyLatestApplicationCheckDefaultsKey];
-    if ([releaseURL length]) {
-      [defaults setObject:releaseURL
+    if ([[release releaseURL] length]) {
+      [defaults setObject:[release releaseURL]
                    forKey:ChiaKeyApplicationLatestReleaseURLDefaultsKey];
     }
-    if ([packageURL length]) {
-      [defaults setObject:packageURL
-                   forKey:ChiaKeyApplicationLatestPackageURLDefaultsKey];
-    } else {
-      [defaults removeObjectForKey:ChiaKeyApplicationLatestPackageURLDefaultsKey];
-    }
-    if ([packageName length]) {
-      [defaults setObject:packageName
-                   forKey:ChiaKeyApplicationLatestPackageNameDefaultsKey];
-    } else {
-      [defaults removeObjectForKey:ChiaKeyApplicationLatestPackageNameDefaultsKey];
-    }
-    if ([packageSHA256 length]) {
-      [defaults setObject:packageSHA256
-                   forKey:ChiaKeyApplicationLatestPackageSHA256DefaultsKey];
-    } else {
-      [defaults
-          removeObjectForKey:ChiaKeyApplicationLatestPackageSHA256DefaultsKey];
-    }
+    [self _storeOrClear:[release packageURL]
+                 forKey:ChiaKeyApplicationLatestPackageURLDefaultsKey];
+    [self _storeOrClear:[release packageName]
+                 forKey:ChiaKeyApplicationLatestPackageNameDefaultsKey];
+    [self _storeOrClear:[release packageSHA256]
+                 forKey:ChiaKeyApplicationLatestPackageSHA256DefaultsKey];
     [defaults synchronize];
   }
 
   [self _setApplicationBusy:NO];
 
   if (![latestTag length]) {
-    [self _setAvailableApplicationTag:nil
-                           packageURL:nil
-                          packageName:nil
-                        packageSHA256:nil];
+    [self _setAvailableRelease:nil];
     if (showAlerts) {
       [self _showAlertWithTitle:LFLSTR(@"Unable to check for update via the Internet.")
-                        message:LFLSTR(@"Please check your Internet connection and try again.")];
+                        message:[self _displayString:[error localizedDescription]
+                                            fallback:LFLSTR(@"Please check your Internet connection and try again.")]];
     }
     [self _getVersionInfo];
     return;
@@ -739,10 +518,7 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   if ([currentVersion length] &&
       [self _compareVersion:currentVersion toVersion:latestTag] !=
           NSOrderedAscending) {
-    [self _setAvailableApplicationTag:nil
-                           packageURL:nil
-                          packageName:nil
-                        packageSHA256:nil];
+    [self _setAvailableRelease:nil];
     if (showAlerts) {
       [self _showAlertWithTitle:LFLSTR(@"You are now using the newest version.")
                         message:LFLSTR(@"You need not to update your software")];
@@ -751,10 +527,7 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
     return;
   }
 
-  [self _setAvailableApplicationTag:latestTag
-                         packageURL:packageURL
-                        packageName:packageName
-                      packageSHA256:packageSHA256];
+  [self _setAvailableRelease:release];
   [_applicationLatestVersionTextField setStringValue:latestTag];
   [_applicationLatestCheckTextField setStringValue:checkTime];
 
@@ -762,16 +535,16 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 
   NSString *message = [NSString
       stringWithFormat:LFLSTR(@"Latest input method version: %@"), latestTag];
-  if (prerelease) {
+  if ([release prerelease]) {
     message = [message stringByAppendingFormat:@"\n%@",
                                            LFLSTR(@"This is a beta release.")];
   }
-  if (![packageURL length]) {
+  if (![[release packageURL] length]) {
     message = [message stringByAppendingFormat:@"\n%@",
                                            LFLSTR(@"Input method package was not found in the release.")];
   }
-  if ([releaseURL length]) {
-    message = [message stringByAppendingFormat:@"\n%@", releaseURL];
+  if ([[release releaseURL] length]) {
+    message = [message stringByAppendingFormat:@"\n%@", [release releaseURL]];
   }
 
   [self _showAlertWithTitle:LFLSTR(@"A newer version is available.")
@@ -829,234 +602,23 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
                                     latestTag]];
 }
 
-- (NSString *)_safePackageFileName:(NSString *)packageName
-                        fallbackTag:(NSString *)tag {
-  NSString *fileName = [packageName length]
-                           ? packageName
-                           : [NSString stringWithFormat:@"ChiaKey-%@.pkg",
-                                                        [self _displayString:tag
-                                                                    fallback:@"Update"]];
-  NSCharacterSet *unsafeCharacters =
-      [NSCharacterSet characterSetWithCharactersInString:@"/:"];
-  fileName = [[fileName componentsSeparatedByCharactersInSet:unsafeCharacters]
-      componentsJoinedByString:@"-"];
-  if ([[fileName pathExtension] caseInsensitiveCompare:@"pkg"] !=
-      NSOrderedSame)
-    fileName = [fileName stringByAppendingPathExtension:@"pkg"];
-  return fileName;
-}
-
-- (BOOL)_runValidationTool:(NSString *)launchPath
-                 arguments:(NSArray *)arguments
-                    output:(NSString **)output {
-  NSTask *task = [[[NSTask alloc] init] autorelease];
-  NSPipe *pipe = [NSPipe pipe];
-  [task setLaunchPath:launchPath];
-  [task setArguments:arguments];
-  [task setStandardOutput:pipe];
-  [task setStandardError:pipe];
-
-  @try {
-    [task launch];
-    [task waitUntilExit];
-  } @catch (NSException *exception) {
-    if (output) *output = [exception description];
-    return NO;
-  }
-
-  NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
-  NSString *toolOutput =
-      [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
-          autorelease];
-  if (output) *output = toolOutput ? toolOutput : @"";
-
-  return [task terminationStatus] == 0;
-}
-
-- (BOOL)_verifySHA256OfFileAtPath:(NSString *)path
-                          expected:(NSString *)expectedSHA256
-                             error:(NSError **)error {
-  if (![expectedSHA256 length]) return YES;
-
-  NSString *shaOutput = nil;
-  BOOL hasSHAOutput =
-      [self _runValidationTool:@"/usr/bin/shasum"
-                     arguments:[NSArray arrayWithObjects:@"-a",
-                                                          @"256",
-                                                          path,
-                                                          nil]
-                        output:&shaOutput];
-  NSArray *components =
-      [shaOutput componentsSeparatedByCharactersInSet:
-                     [NSCharacterSet whitespaceAndNewlineCharacterSet]];
-  NSString *actualSHA256 = [components count] ? [components objectAtIndex:0] : nil;
-  if (!hasSHAOutput ||
-      [actualSHA256 caseInsensitiveCompare:expectedSHA256] != NSOrderedSame) {
-    if (error) {
-      *error = [self _updateErrorWithDescription:
-                         LFLSTR(@"Downloaded package SHA-256 did not match "
-                                @"the release metadata.")
-                                             code:0];
-    }
-    return NO;
-  }
-
-  return YES;
-}
-
-- (BOOL)_validateApplicationPackageAtPath:(NSString *)path
-                                    error:(NSError **)error {
-  NSString *signatureOutput = nil;
-  BOOL hasDeveloperIDSignature =
-      [self _runValidationTool:@"/usr/sbin/pkgutil"
-                     arguments:[NSArray arrayWithObjects:@"--check-signature",
-                                                          path, nil]
-                        output:&signatureOutput] &&
-      [signatureOutput rangeOfString:@"Developer ID Installer"
-                              options:NSCaseInsensitiveSearch].location !=
-          NSNotFound;
-  if (!hasDeveloperIDSignature) {
-    if (error) {
-      *error = [self _updateErrorWithDescription:
-                         LFLSTR(@"Downloaded package is not signed with a "
-                                @"Developer ID Installer certificate.")
-                                             code:0];
-    }
-    return NO;
-  }
-
-  NSString *gatekeeperOutput = nil;
-  BOOL acceptedByGatekeeper =
-      [self _runValidationTool:@"/usr/sbin/spctl"
-                     arguments:[NSArray arrayWithObjects:@"--assess",
-                                                          @"--type",
-                                                          @"install",
-                                                          @"--verbose=4",
-                                                          path,
-                                                          nil]
-                        output:&gatekeeperOutput] &&
-      [gatekeeperOutput rangeOfString:@"Notarized Developer ID"
-                              options:NSCaseInsensitiveSearch].location !=
-          NSNotFound;
-  if (!acceptedByGatekeeper) {
-    if (error) {
-      *error = [self _updateErrorWithDescription:
-                         LFLSTR(@"Downloaded package was rejected by Gatekeeper "
-                                @"or is not notarized.")
-                                             code:0];
-    }
-    return NO;
-  }
-
-  return YES;
-}
-
-- (void)_downloadApplicationPackageFromURL:(NSString *)packageURL
-                               packageName:(NSString *)packageName
-                            expectedSHA256:(NSString *)expectedSHA256
-                                completion:
-                                    (void (^)(NSString *path,
-                                              NSError *error))completion {
-  NSURL *url = [NSURL URLWithString:packageURL];
-  if (!url) {
-    if (completion) {
-      completion(nil,
-                 [self _updateErrorWithDescription:LFLSTR(@"Invalid package URL.")
-                                              code:0]);
-    }
-    return;
-  }
-
-  NSString *directory =
-      [NSTemporaryDirectory() stringByAppendingPathComponent:@"ChiaKeyUpdates"];
-  NSString *fileName =
-      [self _safePackageFileName:packageName fallbackTag:_availableApplicationTag];
-  NSString *destinationPath = [directory stringByAppendingPathComponent:fileName];
-  NSURL *destinationURL = [NSURL fileURLWithPath:destinationPath];
-
-  NSURLSessionDownloadTask *task = [[NSURLSession sharedSession]
-      downloadTaskWithURL:url
-        completionHandler:^(NSURL *location, NSURLResponse *response,
-                            NSError *requestError) {
-          NSError *completionError = requestError;
-          NSInteger statusCode = 0;
-          if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
-            statusCode = [(NSHTTPURLResponse *)response statusCode];
-          }
-          if (!completionError && statusCode >= 400) {
-            completionError =
-                [self _updateErrorWithDescription:LFLSTR(@"GitHub returned an error.")
-                                             code:statusCode];
-          }
-
-          if (!completionError && !location) {
-            completionError =
-                [self _updateErrorWithDescription:LFLSTR(@"Downloaded package was not found.")
-                                             code:0];
-          }
-
-          if (!completionError) {
-            NSFileManager *fileManager = [NSFileManager defaultManager];
-            [fileManager createDirectoryAtPath:directory
-                   withIntermediateDirectories:YES
-                                    attributes:nil
-                                         error:&completionError];
-            if (!completionError) {
-              [fileManager removeItemAtURL:destinationURL error:nil];
-              [fileManager moveItemAtURL:location
-                                   toURL:destinationURL
-                                   error:&completionError];
-            }
-            if (!completionError) {
-              [self _verifySHA256OfFileAtPath:destinationPath
-                                      expected:expectedSHA256
-                                         error:&completionError];
-            }
-            if (!completionError) {
-              [self _validateApplicationPackageAtPath:destinationPath
-                                                error:&completionError];
-            }
-            if (completionError) {
-              [fileManager removeItemAtURL:destinationURL error:nil];
-            }
-          }
-
-          if (completion)
-            completion(completionError ? nil : destinationPath,
-                       completionError);
-        }];
-  [task resume];
-}
-
 - (void)_checkApplicationUpdateShowingAlerts:(BOOL)showAlerts {
   if ([self _isApplicationBusy]) return;
 
-  [self _setAvailableApplicationTag:nil
-                         packageURL:nil
-                        packageName:nil
-                      packageSHA256:nil];
+  [self _setAvailableRelease:nil];
   [self _setApplicationBusy:YES];
   BOOL includeBeta = [_applicationIncludeBetaCheckBox intValue] == 1;
 
-  [self _latestApplicationReleaseIncludingBeta:includeBeta
-                                    completion:^(NSString *latestTag,
-                                                 NSString *releaseURL,
-                                                 NSString *packageURL,
-                                                 NSString *packageName,
-                                                 NSString *packageSHA256,
-                                                 BOOL prerelease,
-                                                 NSError *error) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self _handleLatestApplicationTag:latestTag
-                             releaseURL:releaseURL
-                             packageURL:packageURL
-                            packageName:packageName
-                          packageSHA256:packageSHA256
-                              prerelease:prerelease
-                                  error:error
-                             showAlerts:showAlerts];
-    });
-  }];
+  [[self _updateService]
+      fetchLatestReleaseIncludingBeta:includeBeta
+                           completion:^(ChiaKeyUpdateRelease *release,
+                                        NSError *error) {
+                             dispatch_async(dispatch_get_main_queue(), ^{
+                               [self _handleLatestRelease:release
+                                                    error:error
+                                               showAlerts:showAlerts];
+                             });
+                           }];
 }
 
 - (void)_checkLexiconUpdateShowingAlerts:(BOOL)showAlerts {
@@ -1095,39 +657,34 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 - (IBAction)installApplicationUpdate:(id)sender {
   if ([self _isApplicationBusy]) return;
 
-  NSString *packageURL = [[_availableApplicationPackageURL copy] autorelease];
-  NSString *packageName = [[_availableApplicationPackageName copy] autorelease];
-  NSString *packageSHA256 =
-      [[_availableApplicationPackageSHA256 copy] autorelease];
-  if (![packageURL length]) {
+  ChiaKeyUpdateRelease *release =
+      [[[self _availableRelease] retain] autorelease];
+  if (![[release packageURL] length]) {
     [self _showAlertWithTitle:LFLSTR(@"No input method update selected")
                       message:LFLSTR(@"Please check for input method updates first.")];
     return;
   }
 
   [self _setApplicationBusy:YES];
-  [self _downloadApplicationPackageFromURL:packageURL
-                               packageName:packageName
-                            expectedSHA256:packageSHA256
-                                completion:^(NSString *path, NSError *error) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self _setApplicationBusy:NO];
+  [[self _updateService] downloadPackageForRelease:release
+      progress:nil
+      completion:^(NSString *path, NSError *error) {
+        [self _setApplicationBusy:NO];
 
-      if (error || ![path length]) {
-        [self _showAlertWithTitle:LFLSTR(@"Unable to download input method update.")
-                          message:[self _displayString:[error localizedDescription]
-                                              fallback:LFLSTR(@"Please check your Internet connection and try again.")]];
-        return;
-      }
+        if (error || ![path length]) {
+          [self _showAlertWithTitle:LFLSTR(@"Unable to download input method update.")
+                            message:[self _displayString:[error localizedDescription]
+                                                fallback:LFLSTR(@"Please check your Internet connection and try again.")]];
+          return;
+        }
 
-      BOOL opened =
-          [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
-      if (!opened) {
-        [self _showAlertWithTitle:LFLSTR(@"Unable to open installer.")
-                          message:path];
-      }
-    });
-  }];
+        BOOL opened =
+            [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
+        if (!opened) {
+          [self _showAlertWithTitle:LFLSTR(@"Unable to open installer.")
+                            message:path];
+        }
+      }];
 }
 
 - (IBAction)installLexiconUpdate:(id)sender {
@@ -1179,15 +736,17 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   });
 }
 
+- (IBAction)toggleAutomaticApplicationUpdates:(id)sender {
+  [self _setGlobalPreference:ChiaKeyApplicationAutoUpdateEnabledPreferenceKey
+                     enabled:([_applicationAutoUpdateCheckBox intValue] == 1)];
+}
+
 - (IBAction)toggleIncludeBetaReleases:(id)sender {
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   [defaults setBool:([_applicationIncludeBetaCheckBox intValue] == 1)
              forKey:ChiaKeyApplicationIncludeBetaDefaultsKey];
   [defaults synchronize];
-  [self _setAvailableApplicationTag:nil
-                         packageURL:nil
-                        packageName:nil
-                      packageSHA256:nil];
+  [self _setAvailableRelease:nil];
   _didAutoCheckOnShow = NO;
 }
 

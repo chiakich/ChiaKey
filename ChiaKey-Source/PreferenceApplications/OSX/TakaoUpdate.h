@@ -20,6 +20,7 @@ file for terms.
 */
 
 @interface TakaoUpdate : NSObject {
+  IBOutlet id _applicationAutoUpdateCheckBox;
   IBOutlet id _applicationCheckButton;
   IBOutlet id _applicationCurrentVersionTextField;
   IBOutlet id _applicationIncludeBetaCheckBox;
@@ -35,11 +36,9 @@ file for terms.
   IBOutlet id _lexiconLatestCheckTextField;
   IBOutlet id _lexiconProgressIndicator;
   IBOutlet id _window;
-  NSString *_availableApplicationPackageName;
-  NSString *_availableApplicationPackageSHA256;
-  NSString *_availableApplicationPackageURL;
-  NSString *_availableApplicationTag;
+  id _availableApplicationRelease;
   NSString *_availableLexiconTag;
+  id _updateService;
   BOOL _didAutoCheckOnShow;
   NSTask *_task;
 }
@@ -53,6 +52,7 @@ file for terms.
 - (IBAction)checkLexiconUpdateNow:(id)sender;
 - (IBAction)installApplicationUpdate:(id)sender;
 - (IBAction)installLexiconUpdate:(id)sender;
+- (IBAction)toggleAutomaticApplicationUpdates:(id)sender;
 - (IBAction)toggleIncludeBetaReleases:(id)sender;
 - (IBAction)toggleAutomaticLexiconUpdates:(id)sender;
 - (void)updatePaneDidBecomeActive;
