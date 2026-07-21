@@ -24,14 +24,37 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <imageView id="17">
-                        <rect key="frame" x="70" y="289" width="220" height="220"/>
+                        <rect key="frame" x="105" y="356" width="150" height="150"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="center" imageScaling="proportionallyUpOrDown" image="ChiaKey" id="18"/>
                     </imageView>
                     <textField verticalHuggingPriority="750" id="7">
-                        <rect key="frame" x="23" y="257" width="314" height="14"/>
+                        <rect key="frame" x="23" y="326" width="314" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="Build by 凉风千秋 Chiaki.C" id="10">
+                        <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="center" title="千秋输入法" id="10">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField verticalHuggingPriority="750" id="aboutCreditsHeading">
+                        <rect key="frame" x="23" y="298" width="314" height="14"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="编译&amp;维护" id="aboutCreditsHeadingCell">
+                            <font key="font" metaFont="smallSystem"/>
+                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <imageView id="aboutMascotImageView">
+                        <rect key="frame" x="88" y="264" width="24" height="24"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" animates="YES" imageScaling="proportionallyUpOrDown" image="chiaki" id="aboutMascotCell"/>
+                    </imageView>
+                    <textField verticalHuggingPriority="750" id="aboutAuthorLabel">
+                        <rect key="frame" x="118" y="268" width="190" height="16"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="left" title="凉风千秋 Chiaki.C, chiaki.ch" id="aboutAuthorLabelCell">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -78,11 +101,6 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <imageView id="chiakiEasterEggImageView">
-                        <rect key="frame" x="16" y="13" width="36" height="36"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" animates="YES" imageScaling="proportionallyUpOrDown" image="chiaki" id="chiakiEasterEggCell"/>
-                    </imageView>
                     <button verticalHuggingPriority="750" imageHugsTitle="YES" id="5">
                         <rect key="frame" x="93" y="15" width="173" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>

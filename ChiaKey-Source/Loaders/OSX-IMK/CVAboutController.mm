@@ -34,7 +34,31 @@ static void CVApplyAboutTextStyle(NSView *view) {
   return self;
 }
 
+// The nib carries the localized product name; the version is appended from the
+// bundle so it cannot drift out of date. Written to be idempotent in case the
+// nib is ever loaded more than once.
+- (void)_applyVersionToTitle {
+  if (![_aboutTextField respondsToSelector:@selector(setStringValue:)]) return;
+
+  NSString *version =
+      [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  if (![version length]) {
+    version = [[NSBundle mainBundle]
+        objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+  }
+  if (![version length]) return;
+
+  NSString *name = [_aboutTextField stringValue];
+  NSRange existing = [name rangeOfString:@" v"];
+  if (existing.location != NSNotFound)
+    name = [name substringToIndex:existing.location];
+
+  [_aboutTextField
+      setStringValue:[NSString stringWithFormat:@"%@ v%@", name, version]];
+}
+
 - (void)awakeFromNib {
+  [self _applyVersionToTitle];
   [[self window] setLevel:NSFloatingWindowLevel];
   [[self window] setBackgroundColor:[NSColor colorWithCalibratedWhite:0.05
                                                                 alpha:1.0]];
