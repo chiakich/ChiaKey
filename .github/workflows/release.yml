@@ -200,6 +200,89 @@ jobs:
             ${{ steps.build.outputs.pkg }}
             ${{ steps.build.outputs.latest_pkg }}
 
+      # The updater reads this manifest instead of the GitHub API, whose
+      # unauthenticated limit is 60 requests/hour per IP -- shared by everyone
+      # behind one NAT. R2 also keeps the response small: one channel entry
+      # rather than every release's full JSON.
+      - name: Publish update manifest to R2
+        if: ${{ inputs.dry_run == false }}
+        env:
+          R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_PUBLIC_BASE_URL: ${{ vars.R2_PUBLIC_BASE_URL || 'https://cdn.chiaki.ch' }}
+          PKG: ${{ steps.build.outputs.pkg }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          # Guarded here rather than in `if:`, where the step's own env block is
+          # not reliably in scope.
+          if [[ -z "${R2_S3_ENDPOINT}" || -z "${R2_ACCESS_KEY_ID}" ]]; then
+            echo "R2 secrets not configured; skipping manifest publish."
+            exit 0
+          fi
+
+          case "${PRERELEASE}" in
+            true|false) ;;
+            *) echo "Unexpected prerelease value: ${PRERELEASE}" >&2; exit 1 ;;
+          esac
+
+          # Everything lives under one prefix so the bucket stays usable for
+          # other projects.
+          prefix="chiakey"
+
+          r2() {
+            local method="$1" key="$2"; shift 2
+            curl --fail --silent --show-error \
+              --aws-sigv4 "aws:amz:auto:s3" \
+              --user "${R2_ACCESS_KEY_ID}:${R2_SECRET_ACCESS_KEY}" \
+              -X "${method}" "$@" \
+              "${R2_S3_ENDPOINT}/${R2_BUCKET}/${prefix}/${key}"
+          }
+
+          pkg_name="$(basename "${PKG}")"
+          sha256="$(shasum -a 256 "${PKG}" | awk '{print $1}')"
+          published_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          r2 PUT "releases/${pkg_name}" \
+            --upload-file "${PKG}" \
+            -H "Content-Type: application/octet-stream"
+
+          # Read-modify-write: publishing a beta must not erase the stable
+          # entry that non-beta users are still following.
+          if ! r2 GET appcast.json -o current.json; then
+            echo '{"schema":1}' >current.json
+          fi
+
+          entry="$(jq -n \
+            --arg tag "${TAG}" \
+            --arg published_at "${published_at}" \
+            --arg package_name "${pkg_name}" \
+            --arg package_url "${R2_PUBLIC_BASE_URL}/${prefix}/releases/${pkg_name}" \
+            --arg sha256 "${sha256}" \
+            --argjson prerelease "${PRERELEASE}" \
+            '{tag:$tag, published_at:$published_at, package_name:$package_name,
+              package_url:$package_url, sha256:$sha256, prerelease:$prerelease}')"
+
+          # A stable build is also the newest thing a beta follower should see,
+          # so it lands in both channels.
+          if [[ "${PRERELEASE}" == "true" ]]; then
+            jq --argjson e "${entry}" '.schema=1 | .beta=$e' current.json >appcast.json
+          else
+            jq --argjson e "${entry}" '.schema=1 | .stable=$e | .beta=$e' current.json >appcast.json
+          fi
+
+          r2 PUT appcast.json \
+            --upload-file appcast.json \
+            -H "Content-Type: application/json" \
+            -H "Cache-Control: max-age=300"
+
+          echo "Published manifest for ${TAG} to ${R2_PUBLIC_BASE_URL}/${prefix}/appcast.json" \
+            >>"$GITHUB_STEP_SUMMARY"
+
       - name: Dry run summary
         if: ${{ inputs.dry_run == true }}
         run: |
