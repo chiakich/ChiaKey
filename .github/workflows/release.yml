@@ -22,6 +22,11 @@ on:
         type: boolean
         required: false
         default: false
+      verbose:
+        description: 'Show full xcodebuild output (for diagnosing build failures)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -129,6 +134,10 @@ jobs:
           NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          # When the 'verbose' input is set, surface full xcodebuild output so a
+          # CompileXIB/ibtool failure shows the actual error instead of being
+          # hidden by the script's default quiet mode.
+          VERBOSE: ${{ inputs.verbose && '1' || '0' }}
         run: |
           set -euo pipefail
 
