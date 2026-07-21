@@ -21,6 +21,13 @@ static const NSTimeInterval kChiaKeyLexiconAutoUpdateCheckInterval =
     24.0 * 60.0 * 60.0;
 static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 3;
 
+static NSString *const ChiaKeyApplicationAutoUpdateLastCheckDefaultsKey =
+    @"ChiaKeyApplicationAutoUpdateLastCheck";
+static NSString *const ChiaKeyApplicationAutoUpdateEnabledPreferenceKey =
+    @"ShouldAutoUpdateApplication";
+static const NSTimeInterval kChiaKeyApplicationAutoUpdateCheckInterval =
+    24.0 * 60.0 * 60.0;
+
 static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   return (codePoint >= 0x2E80 && codePoint < 0xFF00) ||
          (codePoint >= 0x20000 && codePoint <= 0x323AF);
@@ -338,15 +345,19 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       stringByAppendingPathComponent:ChiaKeyGlobalPreferencesFilename];
 }
 
-- (BOOL)_isSilentLexiconUpdateEnabled {
-  NSString *path = [self _globalPreferencesPath];
+// Opt-out, not opt-in: an absent key means the feature is on.
+- (BOOL)_isBooleanPreferenceEnabled:(NSString *)key {
   NSDictionary *preferences =
-      [NSDictionary dictionaryWithContentsOfFile:path];
-  NSString *value =
-      [preferences objectForKey:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
+      [NSDictionary dictionaryWithContentsOfFile:[self _globalPreferencesPath]];
+  NSString *value = [preferences objectForKey:key];
   if (![value length]) return YES;
 
   return [value isEqualToString:@"true"];
+}
+
+- (BOOL)_isSilentLexiconUpdateEnabled {
+  return [self
+      _isBooleanPreferenceEnabled:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
 }
 
 - (BOOL)_shouldRunSilentLexiconUpdate {
@@ -431,6 +442,74 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
     [task release];
     [pool drain];
   });
+}
+
+#pragma mark Application update check
+
+// The IME's whole role in updating itself is deciding "it is time to look" and
+// spawning the Updater app. Fetching, prompting and installing all happen in
+// that separate process: an IMK bundle can be torn down at any input-source
+// switch, and nothing on the input path may block on the network or a modal.
+
+- (NSURL *)_bundledUpdaterURL {
+  NSString *sharedSupportPath = [[NSBundle mainBundle] sharedSupportPath];
+  if (![sharedSupportPath length]) return nil;
+
+  NSString *updaterPath =
+      [sharedSupportPath stringByAppendingPathComponent:@"Updater.app"];
+  if (![[NSFileManager defaultManager] fileExistsAtPath:updaterPath])
+    return nil;
+
+  return [NSURL fileURLWithPath:updaterPath];
+}
+
+- (BOOL)_shouldRunApplicationUpdateCheck {
+  if (![self _isBooleanPreferenceEnabled:
+                 ChiaKeyApplicationAutoUpdateEnabledPreferenceKey]) {
+    return NO;
+  }
+
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSDate *lastCheck =
+      [defaults objectForKey:ChiaKeyApplicationAutoUpdateLastCheckDefaultsKey];
+  if ([lastCheck isKindOfClass:[NSDate class]] &&
+      [[NSDate date] timeIntervalSinceDate:lastCheck] <
+          kChiaKeyApplicationAutoUpdateCheckInterval) {
+    return NO;
+  }
+
+  // Stamp before launching, not after: a check that crashes or is declined
+  // must still cost a full day, otherwise every restart re-prompts.
+  [defaults setObject:[NSDate date]
+               forKey:ChiaKeyApplicationAutoUpdateLastCheckDefaultsKey];
+  [defaults synchronize];
+  return YES;
+}
+
+- (void)_runApplicationUpdateCheckIfNeeded {
+  if (![self _shouldRunApplicationUpdateCheck]) return;
+
+  NSURL *updaterURL = [self _bundledUpdaterURL];
+  if (!updaterURL) {
+    NSLog(@"ChiaKey application update check skipped: Updater.app not found.");
+    return;
+  }
+
+  NSWorkspaceOpenConfiguration *configuration =
+      [NSWorkspaceOpenConfiguration configuration];
+  [configuration setActivates:NO];
+  [configuration setAddsToRecentItems:NO];
+
+  [[NSWorkspace sharedWorkspace]
+      openApplicationAtURL:updaterURL
+             configuration:configuration
+         completionHandler:^(NSRunningApplication *application,
+                             NSError *error) {
+           if (error) {
+             NSLog(@"ChiaKey application update check failed to launch: %@",
+                   error);
+           }
+         }];
 }
 
 #pragma mark Phrase Editor coordination
@@ -547,6 +626,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [self _startObservingPhraseEditor];
   [self _startObservingPreferencesRequests];
   [self _runSilentLexiconUpdateIfNeeded];
+  [self _runApplicationUpdateCheckIfNeeded];
 }
 
 @end

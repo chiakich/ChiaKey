@@ -1185,6 +1185,17 @@
                                     <action selector="installApplicationUpdate:" target="695" id="applicationInstallAction"/>
                                 </connections>
                             </button>
+                            <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationAutoUpdateCheckbox">
+                                <rect key="frame" x="15" y="13" width="220" height="18"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <buttonCell key="cell" type="check" title="自動檢查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="applicationAutoUpdateCheckboxCell">
+                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                    <font key="font" metaFont="smallSystem"/>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="toggleAutomaticApplicationUpdates:" target="695" id="applicationAutoUpdateAction"/>
+                                </connections>
+                            </button>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationIncludeBetaCheckbox">
                                 <rect key="frame" x="274" y="13" width="144" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1566,6 +1577,7 @@
             <connections>
                 <outlet property="_applicationCheckButton" destination="applicationCheckButton" id="applicationCheckButtonOutlet"/>
                 <outlet property="_applicationCurrentVersionTextField" destination="applicationCurrentVersionField" id="applicationCurrentVersionOutlet"/>
+                <outlet property="_applicationAutoUpdateCheckBox" destination="applicationAutoUpdateCheckbox" id="applicationAutoUpdateOutlet"/>
                 <outlet property="_applicationIncludeBetaCheckBox" destination="applicationIncludeBetaCheckbox" id="applicationIncludeBetaOutlet"/>
                 <outlet property="_applicationInstallButton" destination="applicationInstallButton" id="applicationInstallButtonOutlet"/>
                 <outlet property="_applicationLatestCheckTextField" destination="applicationLatestCheckField" id="applicationLatestCheckOutlet"/>
