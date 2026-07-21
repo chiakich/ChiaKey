@@ -29,6 +29,7 @@
 		5BC0A1012C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		5BC0A1022C2F000100C0D3A1 /* CVCapsLockDelayOverride.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC0A1002C2F000100C0D3A1 /* CVCapsLockDelayOverride.m */; };
 		63D55976855B25C8D036E0F4 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 204CCC3B9B257E240F738062 /* Cocoa.framework */; };
+		67765F9C14C91E474B516D7C /* ChiaKey.icns in Resources */ = {isa = PBXBuildFile; fileRef = D450DE5A0D5F1117009A9C2A /* ChiaKey.icns */; };
 		6A0138F50ED1D47900715577 /* YKAFWordCount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */; };
 		6A0139040ED1D4A000715577 /* PackageMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0139030ED1D4A000715577 /* PackageMain.cpp */; };
 		6A01390F0ED1D50500715577 /* OpenVanilla.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; };
@@ -3335,6 +3336,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				67765F9C14C91E474B516D7C /* ChiaKey.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
