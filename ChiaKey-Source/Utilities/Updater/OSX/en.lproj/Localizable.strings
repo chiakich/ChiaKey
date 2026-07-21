@@ -1,0 +1,15 @@
+/* Updater UI strings */
+"ChiaKey %@ is available" = "ChiaKey %@ is available";
+"ChiaKey Update" = "ChiaKey Update";
+"Downloading ChiaKey %@…" = "Downloading ChiaKey %@…";
+"Installing the update. Your password is required to finish." = "Installing the update. Your password is required to finish.";
+"Later" = "Later";
+"OK" = "OK";
+"Please try again later, or download the update manually." = "Please try again later, or download the update manually.";
+"Skip This Version" = "Skip This Version";
+"The installer could not complete the update. Please try again later, or download the update manually." = "The installer could not complete the update. Please try again later, or download the update manually.";
+"Unable to determine the installed ChiaKey version." = "Unable to determine the installed ChiaKey version.";
+"Update" = "Update";
+"Update cancelled." = "Update cancelled.";
+"Update failed" = "Update failed";
+"You are using %@. Updating restarts the input method, so finish what you are typing first." = "You are using %@. Updating restarts the input method, so finish what you are typing first.";

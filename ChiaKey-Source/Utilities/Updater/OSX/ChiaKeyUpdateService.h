@@ -42,6 +42,10 @@ extern NSString *const ChiaKeyUpdateErrorDomain;
   int _installLockDescriptor;
 }
 
+// Filesystem path of the installed input method bundle, or nil. Used to decide
+// the install domain (a path under the home directory is a per-user install).
++ (NSString *)installedApplicationBundlePath;
+
 // Version of the installed input method, not of whatever bundle is running
 // this code (the Updater lives inside the IME bundle's SharedSupport).
 + (NSString *)installedApplicationVersion;

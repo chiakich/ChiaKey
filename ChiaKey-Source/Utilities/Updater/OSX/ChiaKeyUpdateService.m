@@ -120,7 +120,7 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
 
 #pragma mark Version policy
 
-+ (NSString *)_installedApplicationBundlePath {
++ (NSString *)installedApplicationBundlePath {
   NSArray *running = [NSRunningApplication
       runningApplicationsWithBundleIdentifier:ChiaKeyIMEBundleIdentifierString];
   for (NSRunningApplication *application in running) {
@@ -140,7 +140,7 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
 }
 
 + (NSString *)installedApplicationVersion {
-  NSString *path = [self _installedApplicationBundlePath];
+  NSString *path = [self installedApplicationBundlePath];
   NSBundle *bundle = [path length] ? [NSBundle bundleWithPath:path] : nil;
   if (!bundle) return nil;
 

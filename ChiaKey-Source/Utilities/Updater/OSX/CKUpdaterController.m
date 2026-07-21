@@ -139,25 +139,127 @@ static BOOL CKFrontmostApplicationIsFullScreen(void) {
 
 #pragma mark Install
 
+// Wrap a string as a single-quoted POSIX shell word: the only metacharacter
+// left to handle is the single quote itself.
+static NSString *CKShellSingleQuote(NSString *value) {
+  NSString *escaped = [value stringByReplacingOccurrencesOfString:@"'"
+                                                       withString:@"'\\''"];
+  return [NSString stringWithFormat:@"'%@'", escaped];
+}
+
+// Wrap a string as an AppleScript string literal (backslash and double quote
+// are the metacharacters). The shell command we embed is already single-quoted,
+// so its single quotes need no further escaping here.
+static NSString *CKAppleScriptStringLiteral(NSString *value) {
+  NSString *escaped =
+      [value stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
+  escaped = [escaped stringByReplacingOccurrencesOfString:@"\""
+                                               withString:@"\\\""];
+  return [NSString stringWithFormat:@"\"%@\"", escaped];
+}
+
+// The install target domain follows the existing install: a bundle under the
+// home directory is a per-user install and stays there; anything else lands in
+// the system domain.
+- (NSString *)_installTargetForInstalledBundle {
+  NSString *bundlePath = [ChiaKeyUpdateService installedApplicationBundlePath];
+  if (![bundlePath length]) return @"/";
+
+  NSString *home = NSHomeDirectory();
+  if ([bundlePath isEqualToString:home] ||
+      [bundlePath hasPrefix:[home stringByAppendingString:@"/"]]) {
+    return @"CurrentUserHomeDirectory";
+  }
+  return @"/";
+}
+
+// Run /usr/sbin/installer as root behind one Authorization Services prompt.
+// Returns NO and fills *outError on cancellation or installer failure.
+- (BOOL)_runInstallerForPackage:(NSString *)pkgPath
+                         target:(NSString *)target
+                          error:(NSError **)outError {
+  NSString *command =
+      [NSString stringWithFormat:@"/usr/sbin/installer -pkg %@ -target %@",
+                                 CKShellSingleQuote(pkgPath),
+                                 CKShellSingleQuote(target)];
+  NSString *script =
+      [NSString stringWithFormat:@"do shell script %@ with administrator "
+                                 @"privileges",
+                                 CKAppleScriptStringLiteral(command)];
+
+  NSTask *task = [[[NSTask alloc] init] autorelease];
+  [task setLaunchPath:@"/usr/bin/osascript"];
+  [task setArguments:[NSArray arrayWithObjects:@"-e", script, nil]];
+  NSPipe *errorPipe = [NSPipe pipe];
+  [task setStandardError:errorPipe];
+  [task setStandardOutput:[NSPipe pipe]];
+
+  @try {
+    [task launch];
+  } @catch (NSException *exception) {
+    if (outError)
+      *outError = [NSError errorWithDomain:ChiaKeyUpdateErrorDomain
+                                      code:-1
+                                  userInfo:nil];
+    return NO;
+  }
+
+  NSData *errorData = [[errorPipe fileHandleForReading] readDataToEndOfFile];
+  [task waitUntilExit];
+  if ([task terminationStatus] == 0) return YES;
+
+  NSString *stderrText =
+      [[[NSString alloc] initWithData:errorData
+                             encoding:NSUTF8StringEncoding] autorelease];
+  // osascript reports a user-cancelled authorization as AppleScript error -128.
+  BOOL cancelled = [stderrText rangeOfString:@"-128"].location != NSNotFound;
+  NSString *message =
+      cancelled ? NSLocalizedString(@"Update cancelled.", nil)
+                : NSLocalizedString(@"The installer could not complete the "
+                                    @"update. Please try again later, or "
+                                    @"download the update manually.",
+                                    nil);
+  if (outError)
+    *outError = [NSError
+        errorWithDomain:ChiaKeyUpdateErrorDomain
+                   code:(cancelled ? -128 : -1)
+               userInfo:[NSDictionary
+                            dictionaryWithObject:message
+                                          forKey:NSLocalizedDescriptionKey]];
+  return NO;
+}
+
 - (void)_installPackageAtPath:(NSString *)path {
   [_progressLabel
       setStringValue:NSLocalizedString(
-                         @"Opening the installer. Your password is required "
+                         @"Installing the update. Your password is required "
                          @"to finish.",
                          nil)];
-  [_progressIndicator stopAnimation:nil];
+  [_progressIndicator setIndeterminate:YES];
+  [_progressIndicator startAnimation:nil];
 
-  // Hand off to Installer.app rather than installing in-process: it owns the
-  // authorization prompt, and the package's postinstall restarts the IME.
-  BOOL opened =
-      [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
-  if (!opened) {
-    [self _showErrorWithMessage:
-              NSLocalizedString(@"Unable to open the installer.", nil)];
-    return;
-  }
-
-  [self _quit];
+  // Install with /usr/sbin/installer behind one authorization prompt instead of
+  // handing off to Installer.app's multi-step window. The component package is
+  // auth="Root" (its postinstall prunes machine-wide copies and re-registers
+  // the input source), so root is required in every domain; the package's
+  // postinstall restarts the IME.
+  NSString *target = [self _installTargetForInstalledBundle];
+  dispatch_async(
+      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = nil;
+        BOOL installed = [self _runInstallerForPackage:path
+                                                target:target
+                                                 error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+          if (!installed) {
+            [_progressWindow orderOut:nil];
+            [self _showErrorWithMessage:[error localizedDescription]];
+            return;
+          }
+          // installer's postinstall restarts the IME; nothing left to do.
+          [self _quit];
+        });
+      });
 }
 
 - (void)_downloadAndInstall {

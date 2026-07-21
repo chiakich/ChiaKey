@@ -364,6 +364,7 @@
 		794A573DF45C21BAC84EE183 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 0255B6D529F94269944D637C /* main.m */; };
 		9464EA44BF909BE19B10E94C /* Updater.app in Copy Files (support) */ = {isa = PBXBuildFile; fileRef = 9B8937348231D70AD9393A57 /* Updater.app */; };
 		B9E85A106900ABE46A4864BF /* CKUpdaterController.m in Sources */ = {isa = PBXBuildFile; fileRef = BCAB20EB063A0A04218BAA6A /* CKUpdaterController.m */; };
+		CE0000000000000000000B05 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CE0000000000000000000F04 /* Localizable.strings */; };
 		C1B000020F00000100000002 /* ChiaKeyMenuIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000010F00000100000001 /* ChiaKeyMenuIcon.png */; };
 		C1B000040F00000100000004 /* ChiaKeyMenuIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C1B000030F00000100000003 /* ChiaKeyMenuIcon@2x.png */; };
 		CE00000000000000000000A3 /* PEUserPhraseStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000A1 /* PEUserPhraseStore.mm */; };
@@ -1261,6 +1262,9 @@
 		D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "NSColor+LFColorExtensions.mm"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.mm"; sourceTree = "<group>"; };
 		D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = InputMethodToggleWindowController.xib; path = "Loaders/OSX-IMK/Interface/InputMethodToggleWindowController.xib"; sourceTree = "<group>"; };
 		E7EB260362783E910ACA6001 /* ChiaKeyUpdateService.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = ChiaKeyUpdateService.m; path = Utilities/Updater/OSX/ChiaKeyUpdateService.m; sourceTree = "<group>"; };
+		CE0000000000000000000E01 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Utilities/Updater/OSX/en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CE0000000000000000000A02 /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_TW; path = Utilities/Updater/OSX/zh_TW.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CE0000000000000000000C03 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = Utilities/Updater/OSX/zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1488,6 +1492,7 @@
 				BCAB20EB063A0A04218BAA6A /* CKUpdaterController.m */,
 				0255B6D529F94269944D637C /* main.m */,
 				99F5CC77DBCF0A4984CDCD15 /* Info.plist */,
+				CE0000000000000000000F04 /* Localizable.strings */,
 			);
 			name = OSX;
 			sourceTree = SOURCE_ROOT;
@@ -3337,6 +3342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				67765F9C14C91E474B516D7C /* ChiaKey.icns in Resources */,
+				CE0000000000000000000B05 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3973,6 +3979,16 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		CE0000000000000000000F04 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CE0000000000000000000A02 /* zh_TW */,
+				CE0000000000000000000C03 /* zh_CN */,
+				CE0000000000000000000E01 /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 		6A52DB771095CB9000788A09 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
