@@ -26,7 +26,7 @@
                     <imageView id="17">
                         <rect key="frame" x="70" y="289" width="220" height="220"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" animates="YES" imageScaling="proportionallyUpOrDown" image="chiaki" id="18"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" imageScaling="proportionallyUpOrDown" image="ChiaKey" id="18"/>
                     </imageView>
                     <textField verticalHuggingPriority="750" id="7">
                         <rect key="frame" x="23" y="257" width="314" height="14"/>
@@ -78,6 +78,11 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
+                    <imageView id="chiakiEasterEggImageView">
+                        <rect key="frame" x="16" y="13" width="36" height="36"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" animates="YES" imageScaling="proportionallyUpOrDown" image="chiaki" id="chiakiEasterEggCell"/>
+                    </imageView>
                     <button verticalHuggingPriority="750" imageHugsTitle="YES" id="5">
                         <rect key="frame" x="93" y="15" width="173" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -95,6 +100,7 @@
     </objects>
     <resources>
         <image name="About" width="275" height="90"/>
+        <image name="ChiaKey" width="1024" height="1024"/>
         <image name="chiaki" width="926" height="926"/>
     </resources>
 </document>
