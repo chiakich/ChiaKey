@@ -526,7 +526,7 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
 }
 
 - (NSString *)_installedApplicationTeamIdentifier {
-  NSString *path = [[self class] _installedApplicationBundlePath];
+  NSString *path = [[self class] installedApplicationBundlePath];
   if (![path length]) return nil;
 
   NSString *output = nil;
