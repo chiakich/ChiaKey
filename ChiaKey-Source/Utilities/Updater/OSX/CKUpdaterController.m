@@ -173,26 +173,38 @@ static NSString *CKAppleScriptStringLiteral(NSString *value) {
   return @"/";
 }
 
-// Run /usr/sbin/installer as root behind one Authorization Services prompt.
+// Install the package. A per-user install (target CurrentUserHomeDirectory)
+// writes only under the home directory, so installer runs as the current user
+// with no authorization prompt — and escalating would be wrong, because as root
+// "CurrentUserHomeDirectory" resolves to root's home, not the user's. A
+// system-domain install needs root, raised through one authorization prompt.
 // Returns NO and fills *outError on cancellation or installer failure.
 - (BOOL)_runInstallerForPackage:(NSString *)pkgPath
                          target:(NSString *)target
                           error:(NSError **)outError {
-  NSString *command =
-      [NSString stringWithFormat:@"/usr/sbin/installer -pkg %@ -target %@",
-                                 CKShellSingleQuote(pkgPath),
-                                 CKShellSingleQuote(target)];
-  NSString *script =
-      [NSString stringWithFormat:@"do shell script %@ with administrator "
-                                 @"privileges",
-                                 CKAppleScriptStringLiteral(command)];
+  BOOL needsRoot = ![target isEqualToString:@"CurrentUserHomeDirectory"];
 
   NSTask *task = [[[NSTask alloc] init] autorelease];
-  [task setLaunchPath:@"/usr/bin/osascript"];
-  [task setArguments:[NSArray arrayWithObjects:@"-e", script, nil]];
   NSPipe *errorPipe = [NSPipe pipe];
   [task setStandardError:errorPipe];
   [task setStandardOutput:[NSPipe pipe]];
+
+  if (needsRoot) {
+    NSString *command =
+        [NSString stringWithFormat:@"/usr/sbin/installer -pkg %@ -target %@",
+                                   CKShellSingleQuote(pkgPath),
+                                   CKShellSingleQuote(target)];
+    NSString *script =
+        [NSString stringWithFormat:@"do shell script %@ with administrator "
+                                   @"privileges",
+                                   CKAppleScriptStringLiteral(command)];
+    [task setLaunchPath:@"/usr/bin/osascript"];
+    [task setArguments:[NSArray arrayWithObjects:@"-e", script, nil]];
+  } else {
+    [task setLaunchPath:@"/usr/sbin/installer"];
+    [task setArguments:[NSArray arrayWithObjects:@"-pkg", pkgPath, @"-target",
+                                                 target, nil]];
+  }
 
   @try {
     [task launch];
@@ -231,10 +243,7 @@ static NSString *CKAppleScriptStringLiteral(NSString *value) {
 
 - (void)_installPackageAtPath:(NSString *)path {
   [_progressLabel
-      setStringValue:NSLocalizedString(
-                         @"Installing the update. Your password is required "
-                         @"to finish.",
-                         nil)];
+      setStringValue:NSLocalizedString(@"Installing the update…", nil)];
   [_progressIndicator setIndeterminate:YES];
   [_progressIndicator startAnimation:nil];
 

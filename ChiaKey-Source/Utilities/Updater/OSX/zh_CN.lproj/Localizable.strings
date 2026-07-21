@@ -2,7 +2,7 @@
 "ChiaKey %@ is available" = "ChiaKey %@ 可供更新";
 "ChiaKey Update" = "ChiaKey 更新";
 "Downloading ChiaKey %@…" = "正在下载 ChiaKey %@…";
-"Installing the update. Your password is required to finish." = "正在安装更新，需要输入密码才能完成。";
+"Installing the update…" = "正在安装更新…";
 "Later" = "稍后";
 "OK" = "好";
 "Please try again later, or download the update manually." = "请稍后再试，或手动下载更新。";

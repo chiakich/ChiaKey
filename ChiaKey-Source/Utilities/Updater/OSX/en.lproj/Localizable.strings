@@ -2,7 +2,7 @@
 "ChiaKey %@ is available" = "ChiaKey %@ is available";
 "ChiaKey Update" = "ChiaKey Update";
 "Downloading ChiaKey %@…" = "Downloading ChiaKey %@…";
-"Installing the update. Your password is required to finish." = "Installing the update. Your password is required to finish.";
+"Installing the update…" = "Installing the update…";
 "Later" = "Later";
 "OK" = "OK";
 "Please try again later, or download the update manually." = "Please try again later, or download the update manually.";
