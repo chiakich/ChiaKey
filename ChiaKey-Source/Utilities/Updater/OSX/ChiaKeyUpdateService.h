@@ -76,4 +76,11 @@ extern NSString *const ChiaKeyUpdateErrorDomain;
                        completion:(void (^)(NSString *path,
                                             NSError *error))completion;
 
+// Install a downloaded package to the domain the current install lives in: a
+// per-user install (bundle under the home directory) runs as the current user
+// with no prompt; a legacy system-domain install raises one admin authorization
+// prompt. Blocks until installer exits, so call it off the main thread. Returns
+// NO and fills *error on cancellation (code -128) or installer failure.
+- (BOOL)installDownloadedPackageAtPath:(NSString *)path error:(NSError **)error;
+
 @end

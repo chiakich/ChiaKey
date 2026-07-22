@@ -44,6 +44,9 @@
 "Unknown" = "未知";
 "Lexicon updated" = "詞庫已更新";
 "Lexicon update failed" = "詞庫更新失敗";
+"Input method updated" = "輸入法已更新";
+"Input method update failed" = "輸入法更新失敗";
+"ChiaKey has been updated." = "千秋輸入法已更新。";
 "Lexicon installer was not found." = "找不到詞庫安裝工具。";
 "Installed lexicon %@. ChiaKey has reloaded it." = "已安裝詞庫 %@。千秋輸入法已重新載入詞庫。";
 "Installed lexicon %@. Switch away from and back to ChiaKey to reload it." = "已安裝詞庫 %@。請切換離開再切回千秋輸入法，讓輸入法重新載入詞庫。";

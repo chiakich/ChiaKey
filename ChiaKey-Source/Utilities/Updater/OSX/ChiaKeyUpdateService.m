@@ -788,4 +788,107 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
   if (error) [self _finishDownloadWithPath:nil error:error];
 }
 
+#pragma mark Install
+
+// Wrap a string as a single-quoted POSIX shell word: the only metacharacter
+// left to handle is the single quote itself.
+static NSString *CKShellSingleQuote(NSString *value) {
+  NSString *escaped = [value stringByReplacingOccurrencesOfString:@"'"
+                                                       withString:@"'\\''"];
+  return [NSString stringWithFormat:@"'%@'", escaped];
+}
+
+// Wrap a string as an AppleScript string literal (backslash and double quote
+// are the metacharacters). The shell command we embed is already single-quoted,
+// so its single quotes need no further escaping here.
+static NSString *CKAppleScriptStringLiteral(NSString *value) {
+  NSString *escaped =
+      [value stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
+  escaped = [escaped stringByReplacingOccurrencesOfString:@"\""
+                                               withString:@"\\\""];
+  return [NSString stringWithFormat:@"\"%@\"", escaped];
+}
+
+// The install target follows the existing install: a bundle under the home
+// directory is a per-user install and stays there; anything else lands in the
+// system domain.
++ (NSString *)_installTargetForInstalledBundle {
+  NSString *bundlePath = [self installedApplicationBundlePath];
+  if (![bundlePath length]) return @"/";
+
+  NSString *home = NSHomeDirectory();
+  if ([bundlePath isEqualToString:home] ||
+      [bundlePath hasPrefix:[home stringByAppendingString:@"/"]]) {
+    return @"CurrentUserHomeDirectory";
+  }
+  return @"/";
+}
+
+- (BOOL)installDownloadedPackageAtPath:(NSString *)path error:(NSError **)error {
+  NSString *target = [[self class] _installTargetForInstalledBundle];
+  // A per-user install (target CurrentUserHomeDirectory) writes only under the
+  // home directory, so installer runs as the current user with no authorization
+  // prompt — and escalating would be wrong, because as root
+  // "CurrentUserHomeDirectory" resolves to root's home, not the user's. A
+  // system-domain install needs root, raised through one authorization prompt.
+  BOOL needsRoot = ![target isEqualToString:@"CurrentUserHomeDirectory"];
+
+  NSTask *task = [[[NSTask alloc] init] autorelease];
+  NSPipe *errorPipe = [NSPipe pipe];
+  [task setStandardError:errorPipe];
+  [task setStandardOutput:[NSPipe pipe]];
+
+  if (needsRoot) {
+    NSString *command =
+        [NSString stringWithFormat:@"/usr/sbin/installer -pkg %@ -target %@",
+                                   CKShellSingleQuote(path),
+                                   CKShellSingleQuote(target)];
+    NSString *script =
+        [NSString stringWithFormat:@"do shell script %@ with administrator "
+                                   @"privileges",
+                                   CKAppleScriptStringLiteral(command)];
+    [task setLaunchPath:@"/usr/bin/osascript"];
+    [task setArguments:[NSArray arrayWithObjects:@"-e", script, nil]];
+  } else {
+    [task setLaunchPath:@"/usr/sbin/installer"];
+    [task setArguments:[NSArray arrayWithObjects:@"-pkg", path, @"-target",
+                                                 target, nil]];
+  }
+
+  @try {
+    [task launch];
+  } @catch (NSException *exception) {
+    if (error)
+      *error = [NSError errorWithDomain:ChiaKeyUpdateErrorDomain
+                                   code:-1
+                               userInfo:nil];
+    return NO;
+  }
+
+  NSData *errorData = [[errorPipe fileHandleForReading] readDataToEndOfFile];
+  [task waitUntilExit];
+  if ([task terminationStatus] == 0) return YES;
+
+  NSString *stderrText =
+      [[[NSString alloc] initWithData:errorData
+                             encoding:NSUTF8StringEncoding] autorelease];
+  // osascript reports a user-cancelled authorization as AppleScript error -128.
+  // Report only a code (-128 cancelled, -1 failure) plus an English fallback;
+  // this class is shared by two apps with separate strings files, so each UI
+  // layer localizes off the code rather than trusting a message from here.
+  BOOL cancelled = [stderrText rangeOfString:@"-128"].location != NSNotFound;
+  if (error)
+    *error = [NSError
+        errorWithDomain:ChiaKeyUpdateErrorDomain
+                   code:(cancelled ? -128 : -1)
+               userInfo:[NSDictionary
+                            dictionaryWithObject:(cancelled
+                                                      ? @"Update cancelled."
+                                                      : @"The installer could "
+                                                        @"not complete the "
+                                                        @"update.")
+                                          forKey:NSLocalizedDescriptionKey]];
+  return NO;
+}
+
 @end

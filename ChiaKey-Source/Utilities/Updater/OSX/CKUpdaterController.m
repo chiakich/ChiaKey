@@ -139,130 +139,32 @@ static BOOL CKFrontmostApplicationIsFullScreen(void) {
 
 #pragma mark Install
 
-// Wrap a string as a single-quoted POSIX shell word: the only metacharacter
-// left to handle is the single quote itself.
-static NSString *CKShellSingleQuote(NSString *value) {
-  NSString *escaped = [value stringByReplacingOccurrencesOfString:@"'"
-                                                       withString:@"'\\''"];
-  return [NSString stringWithFormat:@"'%@'", escaped];
-}
-
-// Wrap a string as an AppleScript string literal (backslash and double quote
-// are the metacharacters). The shell command we embed is already single-quoted,
-// so its single quotes need no further escaping here.
-static NSString *CKAppleScriptStringLiteral(NSString *value) {
-  NSString *escaped =
-      [value stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
-  escaped = [escaped stringByReplacingOccurrencesOfString:@"\""
-                                               withString:@"\\\""];
-  return [NSString stringWithFormat:@"\"%@\"", escaped];
-}
-
-// The install target domain follows the existing install: a bundle under the
-// home directory is a per-user install and stays there; anything else lands in
-// the system domain.
-- (NSString *)_installTargetForInstalledBundle {
-  NSString *bundlePath = [ChiaKeyUpdateService installedApplicationBundlePath];
-  if (![bundlePath length]) return @"/";
-
-  NSString *home = NSHomeDirectory();
-  if ([bundlePath isEqualToString:home] ||
-      [bundlePath hasPrefix:[home stringByAppendingString:@"/"]]) {
-    return @"CurrentUserHomeDirectory";
-  }
-  return @"/";
-}
-
-// Install the package. A per-user install (target CurrentUserHomeDirectory)
-// writes only under the home directory, so installer runs as the current user
-// with no authorization prompt — and escalating would be wrong, because as root
-// "CurrentUserHomeDirectory" resolves to root's home, not the user's. A
-// system-domain install needs root, raised through one authorization prompt.
-// Returns NO and fills *outError on cancellation or installer failure.
-- (BOOL)_runInstallerForPackage:(NSString *)pkgPath
-                         target:(NSString *)target
-                          error:(NSError **)outError {
-  BOOL needsRoot = ![target isEqualToString:@"CurrentUserHomeDirectory"];
-
-  NSTask *task = [[[NSTask alloc] init] autorelease];
-  NSPipe *errorPipe = [NSPipe pipe];
-  [task setStandardError:errorPipe];
-  [task setStandardOutput:[NSPipe pipe]];
-
-  if (needsRoot) {
-    NSString *command =
-        [NSString stringWithFormat:@"/usr/sbin/installer -pkg %@ -target %@",
-                                   CKShellSingleQuote(pkgPath),
-                                   CKShellSingleQuote(target)];
-    NSString *script =
-        [NSString stringWithFormat:@"do shell script %@ with administrator "
-                                   @"privileges",
-                                   CKAppleScriptStringLiteral(command)];
-    [task setLaunchPath:@"/usr/bin/osascript"];
-    [task setArguments:[NSArray arrayWithObjects:@"-e", script, nil]];
-  } else {
-    [task setLaunchPath:@"/usr/sbin/installer"];
-    [task setArguments:[NSArray arrayWithObjects:@"-pkg", pkgPath, @"-target",
-                                                 target, nil]];
-  }
-
-  @try {
-    [task launch];
-  } @catch (NSException *exception) {
-    if (outError)
-      *outError = [NSError errorWithDomain:ChiaKeyUpdateErrorDomain
-                                      code:-1
-                                  userInfo:nil];
-    return NO;
-  }
-
-  NSData *errorData = [[errorPipe fileHandleForReading] readDataToEndOfFile];
-  [task waitUntilExit];
-  if ([task terminationStatus] == 0) return YES;
-
-  NSString *stderrText =
-      [[[NSString alloc] initWithData:errorData
-                             encoding:NSUTF8StringEncoding] autorelease];
-  // osascript reports a user-cancelled authorization as AppleScript error -128.
-  BOOL cancelled = [stderrText rangeOfString:@"-128"].location != NSNotFound;
-  NSString *message =
-      cancelled ? NSLocalizedString(@"Update cancelled.", nil)
-                : NSLocalizedString(@"The installer could not complete the "
-                                    @"update. Please try again later, or "
-                                    @"download the update manually.",
-                                    nil);
-  if (outError)
-    *outError = [NSError
-        errorWithDomain:ChiaKeyUpdateErrorDomain
-                   code:(cancelled ? -128 : -1)
-               userInfo:[NSDictionary
-                            dictionaryWithObject:message
-                                          forKey:NSLocalizedDescriptionKey]];
-  return NO;
-}
-
 - (void)_installPackageAtPath:(NSString *)path {
   [_progressLabel
       setStringValue:NSLocalizedString(@"Installing the update…", nil)];
   [_progressIndicator setIndeterminate:YES];
   [_progressIndicator startAnimation:nil];
 
-  // Install with /usr/sbin/installer instead of handing off to Installer.app's
-  // multi-step window. A per-user install writes only under the home directory
-  // and runs as the current user with no authorization prompt; only a legacy
-  // system-domain install (bundle under "/") still needs root. The package's
-  // postinstall restarts the IME.
-  NSString *target = [self _installTargetForInstalledBundle];
+  // The shared service installs to the domain the current install lives in
+  // (per-user with no prompt, system-domain behind one admin prompt) and
+  // returns an error carrying only a code; localize the message off that code.
   dispatch_async(
       dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSError *error = nil;
-        BOOL installed = [self _runInstallerForPackage:path
-                                                target:target
-                                                 error:&error];
+        BOOL installed = [_service installDownloadedPackageAtPath:path
+                                                            error:&error];
         dispatch_async(dispatch_get_main_queue(), ^{
           if (!installed) {
+            NSString *message =
+                ([error code] == -128)
+                    ? NSLocalizedString(@"Update cancelled.", nil)
+                    : NSLocalizedString(
+                          @"The installer could not complete the update. "
+                          @"Please try again later, or download the update "
+                          @"manually.",
+                          nil);
             [_progressWindow orderOut:nil];
-            [self _showErrorWithMessage:[error localizedDescription]];
+            [self _showErrorWithMessage:message];
             return;
           }
           // installer's postinstall restarts the IME; nothing left to do.

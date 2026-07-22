@@ -44,6 +44,9 @@
 "Unknown" = "Unknown";
 "Lexicon updated" = "Lexicon updated";
 "Lexicon update failed" = "Lexicon update failed";
+"Input method updated" = "Input method updated";
+"Input method update failed" = "Input method update failed";
+"ChiaKey has been updated." = "ChiaKey has been updated.";
 "Lexicon installer was not found." = "The lexicon installer was not found.";
 "Installed lexicon %@. ChiaKey has reloaded it." = "Installed lexicon %@. ChiaKey has reloaded it.";
 "Installed lexicon %@. Switch away from and back to ChiaKey to reload it." = "Installed lexicon %@. Switch away from and back to ChiaKey to reload it.";

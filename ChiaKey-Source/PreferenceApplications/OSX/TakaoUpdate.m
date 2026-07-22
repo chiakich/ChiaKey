@@ -669,21 +669,40 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   [[self _updateService] downloadPackageForRelease:release
       progress:nil
       completion:^(NSString *path, NSError *error) {
-        [self _setApplicationBusy:NO];
-
         if (error || ![path length]) {
+          [self _setApplicationBusy:NO];
           [self _showAlertWithTitle:LFLSTR(@"Unable to download input method update.")
                             message:[self _displayString:[error localizedDescription]
                                                 fallback:LFLSTR(@"Please check your Internet connection and try again.")]];
           return;
         }
 
-        BOOL opened =
-            [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
-        if (!opened) {
-          [self _showAlertWithTitle:LFLSTR(@"Unable to open installer.")
-                            message:path];
-        }
+        // Install to the domain the current install lives in — same target
+        // logic as the background updater — rather than handing the package to
+        // Installer.app, whose per-user-only GUI would leave a legacy
+        // system-domain install behind as a duplicate.
+        dispatch_async(
+            dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+              NSError *installError = nil;
+              BOOL installed =
+                  [[self _updateService] installDownloadedPackageAtPath:path
+                                                                  error:&installError];
+              NSInteger code = [installError code];
+              dispatch_async(dispatch_get_main_queue(), ^{
+                [self _setApplicationBusy:NO];
+                if (installed) {
+                  [self _setAvailableRelease:nil];
+                  [self _showAlertWithTitle:LFLSTR(@"Input method updated")
+                                    message:LFLSTR(@"ChiaKey has been updated.")];
+                  [self _getVersionInfo];
+                  return;
+                }
+                // -128 is a user-cancelled admin prompt: no error to report.
+                if (code == -128) return;
+                [self _showAlertWithTitle:LFLSTR(@"Input method update failed")
+                                  message:LFLSTR(@"Unknown errors happened, please try again.")];
+              });
+            });
       }];
 }
 
