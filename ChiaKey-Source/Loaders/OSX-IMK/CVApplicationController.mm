@@ -495,21 +495,35 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
     return;
   }
 
-  NSWorkspaceOpenConfiguration *configuration =
-      [NSWorkspaceOpenConfiguration configuration];
-  [configuration setActivates:NO];
-  [configuration setAddsToRecentItems:NO];
+  if (@available(macOS 10.15, *)) {
+    NSWorkspaceOpenConfiguration *configuration =
+        [NSWorkspaceOpenConfiguration configuration];
+    [configuration setActivates:NO];
+    [configuration setAddsToRecentItems:NO];
 
-  [[NSWorkspace sharedWorkspace]
-      openApplicationAtURL:updaterURL
-             configuration:configuration
-         completionHandler:^(NSRunningApplication *application,
-                             NSError *error) {
-           if (error) {
-             NSLog(@"ChiaKey application update check failed to launch: %@",
-                   error);
-           }
-         }];
+    [[NSWorkspace sharedWorkspace]
+        openApplicationAtURL:updaterURL
+               configuration:configuration
+           completionHandler:^(NSRunningApplication *application,
+                               NSError *error) {
+             if (error) {
+               NSLog(@"ChiaKey application update check failed to launch: %@",
+                     error);
+             }
+           }];
+  } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    NSError *error = nil;
+    if (![[NSWorkspace sharedWorkspace]
+            launchApplicationAtURL:updaterURL
+                           options:NSWorkspaceLaunchWithoutActivation
+                     configuration:@{}
+                             error:&error]) {
+      NSLog(@"ChiaKey application update check failed to launch: %@", error);
+    }
+#pragma clang diagnostic pop
+  }
 }
 
 #pragma mark Phrase Editor coordination

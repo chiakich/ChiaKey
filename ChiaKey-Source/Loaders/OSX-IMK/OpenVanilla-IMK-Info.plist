@@ -35,6 +35,6 @@
 	<key>tsInputMethodIconFileKey</key>
 	<string>Renaissance.icns</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>11.0</string>
+	<string>10.13</string>
 </dict>
 </plist>

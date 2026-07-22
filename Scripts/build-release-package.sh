@@ -46,7 +46,7 @@ INSTALLER_SIGN_IDENTITY="${INSTALLER_SIGN_IDENTITY:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 PACKAGE_IDENTIFIER="${PACKAGE_IDENTIFIER:-com.chiakey.inputmethod.ChiaKey.pkg}"
 COMPONENT_IDENTIFIER="${COMPONENT_IDENTIFIER:-com.chiakey.inputmethod.ChiaKey.component}"
-MIN_OS_VERSION="${MIN_OS_VERSION:-11.0}"
+MIN_OS_VERSION="${MIN_OS_VERSION:-10.13}"
 
 # Keep macOS resource forks out of the installer payload as AppleDouble files.
 export COPYFILE_DISABLE=1
@@ -510,7 +510,9 @@ if [[ "${SKIP_BUILD}" != "1" ]]; then
     -configuration "${CONFIGURATION}"
     -derivedDataPath "${DERIVED_DATA_PATH}"
     CODE_SIGNING_ALLOWED=NO
-    ONLY_ACTIVE_ARCH=YES
+    # Universal binary so the pkg runs on Intel Macs too.
+    ONLY_ACTIVE_ARCH=NO
+    'ARCHS=x86_64 arm64'
   )
   if [[ "${VERBOSE}" == "1" ]]; then
     # Full output and warnings.
