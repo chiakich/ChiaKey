@@ -85,6 +85,23 @@ static BOOL ChiaKeyEnableInputSourceWithID(NSString *inputSourceID) {
   return YES;
 }
 
+static BOOL ChiaKeyDisableInputSourceWithID(NSString *inputSourceID) {
+  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
+  if (!source) {
+    // Never registered or already removed; nothing to disable.
+    return YES;
+  }
+
+  OSStatus disableStatus = TISDisableInputSource(source);
+  CFRelease(source);
+  if (disableStatus != noErr) {
+    NSLog(@"failed to disable input source %@: %d", inputSourceID,
+          disableStatus);
+    return NO;
+  }
+  return YES;
+}
+
 static BOOL ChiaKeyHasInputSourceWithID(NSString *inputSourceID) {
   TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
   if (!source) {
@@ -95,14 +112,19 @@ static BOOL ChiaKeyHasInputSourceWithID(NSString *inputSourceID) {
   return YES;
 }
 
-static int ChiaKeyRegisterInputMethod() {
+static NSString *ChiaKeyInputSourceID() {
   NSBundle *mainBundle = [NSBundle mainBundle];
-  NSURL *bundleURL = [mainBundle bundleURL];
   NSString *inputSourceID =
       [mainBundle objectForInfoDictionaryKey:@"TISInputSourceID"];
   if (![inputSourceID length]) {
     inputSourceID = [mainBundle bundleIdentifier];
   }
+  return inputSourceID;
+}
+
+static int ChiaKeyRegisterInputMethod() {
+  NSURL *bundleURL = [[NSBundle mainBundle] bundleURL];
+  NSString *inputSourceID = ChiaKeyInputSourceID();
 
   if (!ChiaKeyHasInputSourceWithID(inputSourceID)) {
     OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
@@ -126,6 +148,14 @@ int main(int argc, char *argv[]) {
     string cmd = argv[1];
     if (cmd == "install") {
       int status = ChiaKeyRegisterInputMethod();
+      [pool drain];
+      return status;
+    }
+
+    if (cmd == "uninstall") {
+      // Used by Scripts/uninstall.sh to take the input source out of the
+      // system list before the bundle is deleted.
+      int status = ChiaKeyDisableInputSourceWithID(ChiaKeyInputSourceID()) ? 0 : 1;
       [pool drain];
       return status;
     }
