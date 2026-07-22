@@ -195,6 +195,52 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
   return parts;
 }
 
+// A pre-release identifier made only of digits, e.g. the "3" in "beta.3".
+static BOOL CKIdentifierIsNumeric(NSString *identifier) {
+  if (![identifier length]) return NO;
+  return [identifier
+             rangeOfCharacterFromSet:[[NSCharacterSet decimalDigitCharacterSet]
+                                         invertedSet]]
+             .location == NSNotFound;
+}
+
+// Semver precedence for one pre-release identifier: all-numeric identifiers
+// compare numerically and rank below alphanumeric ones; the rest compare ASCII.
+static NSComparisonResult CKCompareIdentifier(NSString *lhs, NSString *rhs) {
+  BOOL lhsNumeric = CKIdentifierIsNumeric(lhs);
+  BOOL rhsNumeric = CKIdentifierIsNumeric(rhs);
+  if (lhsNumeric && rhsNumeric) {
+    NSInteger leftValue = [lhs integerValue];
+    NSInteger rightValue = [rhs integerValue];
+    if (leftValue < rightValue) return NSOrderedAscending;
+    if (leftValue > rightValue) return NSOrderedDescending;
+    return NSOrderedSame;
+  }
+  if (lhsNumeric != rhsNumeric)
+    return lhsNumeric ? NSOrderedAscending : NSOrderedDescending;
+  return [lhs compare:rhs options:NSLiteralSearch];
+}
+
+// The dot-separated pre-release identifiers (after the first "-", before any
+// "+build"), or nil when there are none. Per semver, a version with pre-release
+// identifiers ranks below the same numeric version without them.
++ (NSArray *)_prereleaseIdentifiers:(NSString *)version {
+  if (![version length]) return nil;
+  NSString *trimmed = [version
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]];
+  NSRange hyphen = [trimmed rangeOfString:@"-"];
+  if (hyphen.location == NSNotFound) return nil;
+
+  NSString *prerelease = [trimmed substringFromIndex:hyphen.location + 1];
+  NSRange metadata = [prerelease rangeOfString:@"+"];
+  if (metadata.location != NSNotFound)
+    prerelease = [prerelease substringToIndex:metadata.location];
+  if (![prerelease length]) return nil;
+
+  return [prerelease componentsSeparatedByString:@"."];
+}
+
 + (NSComparisonResult)compareVersion:(NSString *)lhs
                            toVersion:(NSString *)rhs {
   NSArray *leftParts = [self _numericVersionParts:lhs];
@@ -212,6 +258,23 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
     if (leftValue > rightValue) return NSOrderedDescending;
   }
 
+  // Equal numeric core: fall back to semver pre-release precedence so an
+  // accepted beta channel actually advances between betas of one version
+  // ("1.2.1-beta.3" < "1.2.1-beta.4" < "1.2.1").
+  NSArray *leftPre = [self _prereleaseIdentifiers:lhs];
+  NSArray *rightPre = [self _prereleaseIdentifiers:rhs];
+  if (!leftPre && !rightPre) return NSOrderedSame;
+  if (leftPre && !rightPre) return NSOrderedAscending;
+  if (!leftPre && rightPre) return NSOrderedDescending;
+
+  NSUInteger shared = MIN([leftPre count], [rightPre count]);
+  for (NSUInteger index = 0; index < shared; index++) {
+    NSComparisonResult result = CKCompareIdentifier(
+        [leftPre objectAtIndex:index], [rightPre objectAtIndex:index]);
+    if (result != NSOrderedSame) return result;
+  }
+  if ([leftPre count] < [rightPre count]) return NSOrderedAscending;
+  if ([leftPre count] > [rightPre count]) return NSOrderedDescending;
   return NSOrderedSame;
 }
 
