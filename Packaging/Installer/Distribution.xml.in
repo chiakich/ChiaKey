@@ -2,7 +2,9 @@
 <installer-gui-script minSpecVersion="2">
   <title>ChiaKey</title>
   <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
-  <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="true"/>
+  <!-- Per-user only: installs into ~/Library/Input Methods with no admin prompt.
+       System-wide installs go through the CLI (see README), not this GUI. -->
+  <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="false"/>
   <background file="InstallerBackground.png" mime-type="image/png" alignment="bottomleft" scaling="tofit"/>
   <background-darkAqua file="InstallerBackgroundDark.png" mime-type="image/png" alignment="bottomleft" scaling="tofit"/>
   <welcome file="Welcome.html" mime-type="text/html"/>
@@ -14,5 +16,7 @@
   <choice id="default" title="ChiaKey Input Method" description="Install the ChiaKey input method.">
     <pkg-ref id="__COMPONENT_IDENTIFIER__"/>
   </choice>
-  <pkg-ref id="__COMPONENT_IDENTIFIER__" version="__VERSION__" auth="Root">__CLEAN_COMPONENT_PKG_NAME__</pkg-ref>
+  <!-- No auth attribute: authorization follows the install domain, so the
+       per-user home install needs no root. -->
+  <pkg-ref id="__COMPONENT_IDENTIFIER__" version="__VERSION__">__CLEAN_COMPONENT_PKG_NAME__</pkg-ref>
 </installer-gui-script>

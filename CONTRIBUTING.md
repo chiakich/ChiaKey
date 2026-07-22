@@ -126,11 +126,13 @@ iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接�
 
 ## Release package
 
-正式發佈使用 macOS Installer `.pkg`，安裝目的地是：
+正式發佈使用 macOS Installer `.pkg`，預設走 per-user domain，安裝目的地是：
 
 ```text
-/Library/Input Methods/ChiaKey.app
+~/Library/Input Methods/ChiaKey.app
 ```
+
+若需系統全域安裝，請使用 CLI 命令：`sudo installer -pkg ChiaKey.pkg -target /`
 
 建立本機 unsigned package：
 

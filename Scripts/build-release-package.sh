@@ -67,8 +67,8 @@ Usage: Scripts/build-release-package.sh [options]
 
 Build a release installer package for ChiaKey.
 
-The generated package installs:
-  /Library/Input Methods/${APP_NAME}
+The generated package installs (per-user, no admin prompt):
+  ~/Library/Input Methods/${APP_NAME}
 
 Options:
   --configuration Debug|Release      Build configuration. Default: ${CONFIGURATION}
@@ -693,10 +693,11 @@ cat <<EOF
 Built installer package:
   ${OUTPUT_PKG}
 
-Install target:
-  /Library/Input Methods/${APP_NAME}
-  or ~/Library/Input Methods/${APP_NAME}, depending on the Installer domain
-  selected by the user.
+Install target (per-user, no admin prompt):
+  ~/Library/Input Methods/${APP_NAME}
+
+For a system-wide install (all users), run:
+  sudo installer -pkg "${PKG_NAME}" -target /
 
 EOF
 

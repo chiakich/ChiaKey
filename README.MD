@@ -21,7 +21,16 @@
 - [下載最新版 macOS 安裝包（.pkg）](https://github.com/chiakich/ChiaKey/releases/latest/)
 - [查看所有歷史版本](https://github.com/chiakich/ChiaKey/releases/)
 
-下載後開啟 `.pkg`，依照安裝程式指示完成安裝。第一次安裝後若未自動啟動，請到「系統設定 > 鍵盤 > 文字輸入」新增「千秋輸入法」。若安裝後系統仍顯示舊版本或找不到輸入法，登出再登入一次通常可以解決。
+安裝包會裝到目前使用者的 `~/Library/Input Methods`。
+第一次安裝後若未自動啟動，請到「系統設定 > 鍵盤 > 文字輸入」新增「千秋輸入法」。若安裝後系統仍顯示舊版本或找不到輸入法，登出再登入一次通常可以解決。
+
+備註：若需要全域安裝（讓同一台 Mac 上所有帳號都能使用），或用 MDM 批次部署，請使用命令列：
+
+```sh
+sudo installer -pkg ChiaKey.pkg -target /
+```
+
+請把 `ChiaKey.pkg` 換成實際下載的檔名。此命令將會安裝到 `/Library/Input Methods`，需要管理員權限。
 
 ## 適合誰使用
 

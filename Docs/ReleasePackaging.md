@@ -1,22 +1,7 @@
 # Release packaging
 
-千秋輸入法正式發佈的主要 artifact 應是 macOS Installer `.pkg`。
+千秋輸入法正式發佈的主要 artifact 為 macOS Installer `.pkg`。
 
-## 為什麼先做 `.pkg`
-
-輸入法不是一般 drag-and-drop app。正式安裝需要把 app bundle 放到 macOS 會掃描的 input method 位置：
-
-```text
-/Library/Input Methods/ChiaKey.app
-```
-
-`.pkg` 可以直接描述這個安裝目的地，並透過 Installer 取得必要權限。`.dmg` 比較適合作為外層下載容器，或放一個 `.pkg` 與 README；它不適合當唯一安裝流程，因為使用者必須手動拖到 `Input Methods`，這比拖到 `/Applications` 更不直覺。
-
-目前策略：
-
-1. dev build：`Scripts/dev-install-local.sh`，安裝到 `~/Library/Input Methods`。
-2. release build：`Scripts/build-release-package.sh`，產生安裝到 `/Library/Input Methods` 的 `.pkg`。
-3. future polish：需要更完整的下載體驗時，再把 notarized `.pkg` 包進 `.dmg`。
 
 ## 建立本機測試 package
 

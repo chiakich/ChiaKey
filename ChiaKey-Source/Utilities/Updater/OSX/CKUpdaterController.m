@@ -247,10 +247,10 @@ static NSString *CKAppleScriptStringLiteral(NSString *value) {
   [_progressIndicator setIndeterminate:YES];
   [_progressIndicator startAnimation:nil];
 
-  // Install with /usr/sbin/installer behind one authorization prompt instead of
-  // handing off to Installer.app's multi-step window. The component package is
-  // auth="Root" (its postinstall prunes machine-wide copies and re-registers
-  // the input source), so root is required in every domain; the package's
+  // Install with /usr/sbin/installer instead of handing off to Installer.app's
+  // multi-step window. A per-user install writes only under the home directory
+  // and runs as the current user with no authorization prompt; only a legacy
+  // system-domain install (bundle under "/") still needs root. The package's
   // postinstall restarts the IME.
   NSString *target = [self _installTargetForInstalledBundle];
   dispatch_async(
