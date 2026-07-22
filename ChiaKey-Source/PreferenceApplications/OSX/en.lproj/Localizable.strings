@@ -84,3 +84,10 @@
 "Do you really want to remove the plugin '%@'?" = "Do you really want to remove the plugin '%@'?";
 "Compose in secure fields (no learning)" = "Compose in secure fields (no learning)";
 "Remove Caps Lock delay" = "Remove Caps Lock delay";
+"Uninstall ChiaKey…" = "Uninstall ChiaKey…";
+"Uninstall ChiaKey?" = "Uninstall ChiaKey?";
+"ChiaKey will be removed from Input Sources and deleted. This window will close. Log out and back in to finish the removal." = "ChiaKey will be removed from Input Sources and deleted. This window will close. Log out and back in to finish the removal.";
+"Also delete user phrases and settings" = "Also delete user phrases and settings";
+"Uninstall" = "Uninstall";
+"Unable to uninstall ChiaKey." = "Unable to uninstall ChiaKey.";
+"The uninstaller script was not found." = "The uninstaller script was not found.";

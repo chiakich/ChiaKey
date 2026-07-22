@@ -86,3 +86,10 @@
 "Do you really want to remove the plugin '%@'?" = "您确定要删除“%@”这个插件模块吗？";
 "Compose in secure fields (no learning)" = "允许在安全输入框中组字（不学习）";
 "Remove Caps Lock delay" = "移除 Caps Lock 延迟";
+"Uninstall ChiaKey…" = "卸载 ChiaKey…";
+"Uninstall ChiaKey?" = "要卸载 ChiaKey 吗？";
+"ChiaKey will be removed from Input Sources and deleted. This window will close. Log out and back in to finish the removal." = "ChiaKey 将从“输入法”列表中移除并删除，此窗口也会关闭。注销后重新登录即可完成卸载。";
+"Also delete user phrases and settings" = "同时删除用户自定义词与设置";
+"Uninstall" = "卸载";
+"Unable to uninstall ChiaKey." = "无法卸载 ChiaKey。";
+"The uninstaller script was not found." = "找不到卸载程序。";

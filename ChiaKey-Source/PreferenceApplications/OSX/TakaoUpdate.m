@@ -7,6 +7,8 @@ file for terms.
 
 #import "TakaoUpdate.h"
 
+#include <unistd.h>
+
 #import "ChiaKeyUpdateService.h"
 #import "TakaoHelper.h"
 
@@ -402,7 +404,7 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   [task resume];
 }
 
-- (NSString *)_bundledLexiconInstallerPath {
+- (NSString *)_bundledScriptNamed:(NSString *)name {
   NSString *preferencesPath = [[NSBundle mainBundle] bundlePath];
   NSString *sharedSupportPath =
       [preferencesPath stringByDeletingLastPathComponent];
@@ -410,17 +412,21 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   NSString *resourcesPath =
       [contentsPath stringByAppendingPathComponent:@"Resources"];
 
-  NSString *scriptPath = [resourcesPath
-      stringByAppendingPathComponent:@"Scripts/install-lexicon-release.sh"];
+  NSString *scriptPath = [[resourcesPath
+      stringByAppendingPathComponent:@"Scripts"]
+      stringByAppendingPathComponent:name];
   if ([[NSFileManager defaultManager] fileExistsAtPath:scriptPath])
     return scriptPath;
 
-  scriptPath =
-      [resourcesPath stringByAppendingPathComponent:@"install-lexicon-release.sh"];
+  scriptPath = [resourcesPath stringByAppendingPathComponent:name];
   if ([[NSFileManager defaultManager] fileExistsAtPath:scriptPath])
     return scriptPath;
 
   return nil;
+}
+
+- (NSString *)_bundledLexiconInstallerPath {
+  return [self _bundledScriptNamed:@"install-lexicon-release.sh"];
 }
 
 - (BOOL)_installLexiconRelease:(NSString *)tag output:(NSString **)output {
@@ -635,6 +641,111 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
                           showAlerts:showAlerts];
     });
   }];
+}
+
+// The update pane xibs are maintained per locale, so the uninstall row is
+// added in code instead of in three diverging xib files.
+- (void)addUninstallControlsToView:(NSView *)view {
+  const CGFloat extraHeight = 40.0;
+
+  // Grow the pane with autoresizing suspended, or the masks would shift the
+  // subviews a second time on top of the manual offset below.
+  BOOL autoresizes = [view autoresizesSubviews];
+  [view setAutoresizesSubviews:NO];
+  NSRect viewFrame = [view frame];
+  viewFrame.size.height += extraHeight;
+  [view setFrame:viewFrame];
+  [view setAutoresizesSubviews:autoresizes];
+
+  for (NSView *subview in [view subviews]) {
+    NSRect frame = [subview frame];
+    frame.origin.y += extraHeight;
+    [subview setFrame:frame];
+  }
+
+  NSButton *button =
+      [[[NSButton alloc] initWithFrame:NSMakeRect(20, 8, 200, 28)] autorelease];
+  [button setBezelStyle:NSBezelStyleRounded];
+  [[button cell] setControlSize:NSControlSizeSmall];
+  [button setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+  [button setTitle:LFLSTR(@"Uninstall ChiaKey…")];
+  [button sizeToFit];
+  [button setFrameOrigin:NSMakePoint(
+                             viewFrame.size.width - [button frame].size.width -
+                                 20,
+                             14)];
+  [button setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
+  [button setTarget:self];
+  [button setAction:@selector(uninstallChiaKey:)];
+  [view addSubview:button];
+}
+
+- (void)_launchUninstallerPurging:(BOOL)purge {
+  NSString *scriptPath = [self _bundledScriptNamed:@"uninstall.sh"];
+  if (![scriptPath length]) {
+    [self _showAlertWithTitle:LFLSTR(@"Unable to uninstall ChiaKey.")
+                      message:LFLSTR(@"The uninstaller script was not found.")];
+    return;
+  }
+
+  // The script deletes the bundle it ships in, so run a copy from a
+  // temporary location and let it wait for this app to exit.
+  NSString *tempPath = [NSTemporaryDirectory()
+      stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"ChiaKey-uninstall-%d.sh",
+                                     (int)getpid()]];
+  NSFileManager *fileManager = [NSFileManager defaultManager];
+  [fileManager removeItemAtPath:tempPath error:NULL];
+  if (![fileManager copyItemAtPath:scriptPath toPath:tempPath error:NULL]) {
+    [self _showAlertWithTitle:LFLSTR(@"Unable to uninstall ChiaKey.")
+                      message:LFLSTR(@"The uninstaller script was not found.")];
+    return;
+  }
+
+  NSMutableArray *arguments = [NSMutableArray
+      arrayWithObjects:tempPath, @"--wait-pid",
+                       [NSString stringWithFormat:@"%d", (int)getpid()], nil];
+  if (purge) [arguments addObject:@"--purge"];
+
+  NSTask *task = [[[NSTask alloc] init] autorelease];
+  [task setLaunchPath:@"/bin/bash"];
+  [task setArguments:arguments];
+  @try {
+    [task launch];
+  } @catch (NSException *exception) {
+    [self _showAlertWithTitle:LFLSTR(@"Unable to uninstall ChiaKey.")
+                      message:[exception reason]];
+    return;
+  }
+
+  [NSApp terminate:self];
+}
+
+- (IBAction)uninstallChiaKey:(id)sender {
+  NSButton *purgeCheckbox = [[[NSButton alloc]
+      initWithFrame:NSMakeRect(0, 0, 300, 18)] autorelease];
+  [purgeCheckbox setButtonType:NSButtonTypeSwitch];
+  [purgeCheckbox setTitle:LFLSTR(@"Also delete user phrases and settings")];
+  [purgeCheckbox sizeToFit];
+
+  NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+  [alert setAlertStyle:NSAlertStyleWarning];
+  [alert setMessageText:LFLSTR(@"Uninstall ChiaKey?")];
+  [alert setInformativeText:
+             LFLSTR(@"ChiaKey will be removed from Input Sources and deleted. "
+                    @"This window will close. Log out and back in to finish "
+                    @"the removal.")];
+  [alert setAccessoryView:purgeCheckbox];
+  [alert addButtonWithTitle:LFLSTR(@"Uninstall")];
+  [alert addButtonWithTitle:LFLSTR(@"Cancel")];
+
+  [alert beginSheetModalForWindow:_window
+                completionHandler:^(NSModalResponse response) {
+                  if (response != NSAlertFirstButtonReturn) return;
+                  BOOL purge =
+                      [purgeCheckbox state] == NSControlStateValueOn;
+                  [self _launchUninstallerPurging:purge];
+                }];
 }
 
 - (void)updatePaneDidBecomeActive {
