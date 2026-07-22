@@ -32,6 +32,18 @@ sudo installer -pkg ChiaKey.pkg -target /
 
 請把 `ChiaKey.pkg` 換成實際下載的檔名。此命令將會安裝到 `/Library/Input Methods`，需要管理員權限。
 
+### 解除安裝
+
+在「千秋輸入法偏好設定」的「更新」分頁按「移除 ChiaKey…」即可。預設會保留使用者自訂詞與設定（之後重新安裝可以直接接續使用）；勾選「同時刪除使用者自訂詞與設定」則會徹底移除。
+
+也可以直接執行解除安裝 script：
+
+```sh
+Scripts/uninstall.sh
+```
+
+加上 `--purge` 會一併刪除自訂詞、詞庫與設定。全域安裝（`/Library/Input Methods`）需要另外以 `sudo rm -rf '/Library/Input Methods/ChiaKey.app'` 移除。
+
 ## 適合誰使用
 
 千秋輸入法不是為了和所有現代注音輸入法競爭功能完整度而建立。這個專案的主要動機是紀念並延續 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 這條歷史脈絡，盡可能保留 KeyKey 在 macOS 上的輸入節奏、候選窗體驗與 bigram 語言模型。
