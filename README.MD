@@ -18,7 +18,7 @@
 
 ## 下載
 
-- [下載最新版 macOS 安裝包（.pkg）](https://github.com/chiakich/ChiaKey/releases/latest/)
+- [下載最新版 macOS 安裝包（.pkg）](https://cdn.chiaki.ch/chiakey/ChiaKey.pkg)
 - [查看所有歷史版本](https://github.com/chiakich/ChiaKey/releases/)
 
 安裝包會裝到目前使用者的 `~/Library/Input Methods`。
