@@ -10,6 +10,7 @@ file for terms.
 #include <sys/stat.h>
 #include <time.h>
 
+#include <algorithm>
 #include <deque>
 #include <iostream>
 #include <map>
@@ -38,7 +39,14 @@ class DataCache {
   typename map<KeyType, ValueType>::iterator end() { return m_map.end(); }
 
   void forcePush(const KeyType& key, const ValueType& value) {
-    if (m_deque.size() >= m_capacity) {
+    // Re-inserting an existing key must not add a second deque entry: a
+    // duplicate would later let eviction erase this (still-live) key from
+    // m_map while a stale copy of it lingers in m_deque.
+    typename deque<KeyType>::iterator existing =
+        find(m_deque.begin(), m_deque.end(), key);
+    if (existing != m_deque.end()) {
+      m_deque.erase(existing);
+    } else if (m_deque.size() >= m_capacity) {
       KeyType oldKey = m_deque.front();
       m_deque.pop_front();
       m_map.erase(oldKey);
