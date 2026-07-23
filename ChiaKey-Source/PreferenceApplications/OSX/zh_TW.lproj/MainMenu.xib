@@ -1110,7 +1110,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestLabel">
-                                <rect key="frame" x="15" y="81" width="108" height="14"/>
+                                <rect key="frame" x="14" y="81" width="62" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新版本：" id="applicationLatestLabelCell">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1118,7 +1118,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCurrentLabel">
-                                <rect key="frame" x="15" y="61" width="108" height="14"/>
+                                <rect key="frame" x="14" y="61" width="62" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前版本：" id="applicationCurrentLabelCell">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1126,7 +1126,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCheckLabel">
-                                <rect key="frame" x="15" y="41" width="108" height="14"/>
+                                <rect key="frame" x="14" y="41" width="62" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次檢查：" id="applicationCheckLabelCell">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1134,7 +1134,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestVersionField">
-                                <rect key="frame" x="131" y="81" width="150" height="14"/>
+                                <rect key="frame" x="84" y="81" width="150" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0" id="applicationLatestVersionCell">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1142,7 +1142,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCurrentVersionField">
-                                <rect key="frame" x="131" y="61" width="150" height="14"/>
+                                <rect key="frame" x="84" y="61" width="150" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0" id="applicationCurrentVersionCell">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1150,7 +1150,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestCheckField">
-                                <rect key="frame" x="131" y="41" width="150" height="14"/>
+                                <rect key="frame" x="84" y="41" width="150" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="applicationLatestCheckCell">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1184,7 +1184,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                             </progressIndicator>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationAutoUpdateCheckbox">
-                                <rect key="frame" x="15" y="10" width="220" height="18"/>
+                                <rect key="frame" x="14" y="10" width="220" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="check" title="自動檢查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="applicationAutoUpdateCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -1224,7 +1224,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="535">
-                                <rect key="frame" x="15" y="81" width="108" height="14"/>
+                                <rect key="frame" x="14" y="81" width="62" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新詞庫：" id="536">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1232,7 +1232,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="605">
-                                <rect key="frame" x="15" y="61" width="108" height="14"/>
+                                <rect key="frame" x="14" y="61" width="62" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前詞庫：" id="606">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1240,7 +1240,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="615">
-                                <rect key="frame" x="15" y="41" width="108" height="14"/>
+                                <rect key="frame" x="14" y="41" width="62" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次檢查：" id="616">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1248,7 +1248,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="533">
-                                <rect key="frame" x="131" y="81" width="150" height="14"/>
+                                <rect key="frame" x="84" y="81" width="150" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="534">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1256,7 +1256,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="607">
-                                <rect key="frame" x="131" y="61" width="150" height="14"/>
+                                <rect key="frame" x="84" y="61" width="150" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="608">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1264,7 +1264,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="611">
-                                <rect key="frame" x="131" y="41" width="150" height="14"/>
+                                <rect key="frame" x="84" y="41" width="150" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="612">
                                     <font key="font" metaFont="smallSystem"/>
@@ -1298,7 +1298,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                             </progressIndicator>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconAutoUpdateCheckbox">
-                                <rect key="frame" x="15" y="10" width="220" height="18"/>
+                                <rect key="frame" x="14" y="10" width="220" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="check" title="自動更新詞庫" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="lexiconAutoUpdateCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
