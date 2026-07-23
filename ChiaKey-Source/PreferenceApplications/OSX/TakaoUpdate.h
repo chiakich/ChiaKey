@@ -50,7 +50,6 @@ file for terms.
 */
 - (IBAction)checkApplicationUpdateNow:(id)sender;
 - (IBAction)uninstallChiaKey:(id)sender;
-- (void)addUninstallControlsToView:(NSView *)view;
 - (IBAction)checkLexiconUpdateNow:(id)sender;
 - (IBAction)installApplicationUpdate:(id)sender;
 - (IBAction)installLexiconUpdate:(id)sender;

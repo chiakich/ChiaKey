@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="24765" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="24765"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -1090,68 +1091,38 @@
             <point key="canvasLocation" x="-425" y="692"/>
         </customView>
         <customView id="473" userLabel="Update View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="316"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="350"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconUpdateTitleLabel">
-                    <rect key="frame" x="54" y="133" width="180" height="17"/>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationUpdateTitleLabel">
+                    <rect key="frame" x="20" y="317" width="200" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="詞庫更新" id="lexiconUpdateTitleLabelCell">
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="輸入法更新" id="applicationUpdateTitleLabelCell">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="applicationUpdateBox">
-                    <rect key="frame" x="22" y="171" width="441" height="100"/>
+                <box autoresizesSubviews="NO" fixedFrame="YES" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="applicationUpdateBox">
+                    <rect key="frame" x="20" y="205" width="440" height="106"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <view key="contentView" id="applicationUpdateContentView">
-                        <rect key="frame" x="0.0" y="0.0" width="441" height="100"/>
+                        <rect key="frame" x="5" y="5" width="430" height="96"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestVersionField">
-                                <rect key="frame" x="133" y="70" width="140" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0" id="applicationLatestVersionCell">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCurrentVersionField">
-                                <rect key="frame" x="133" y="50" width="140" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0" id="applicationCurrentVersionCell">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestCheckField">
-                                <rect key="frame" x="133" y="30" width="140" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="applicationLatestCheckCell">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestLabel">
-                                <rect key="frame" x="15" y="70" width="108" height="14"/>
+                                <rect key="frame" x="15" y="74" width="108" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新版本：" id="applicationLatestLabelCell">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCurrentLabel">
-                                <rect key="frame" x="15" y="50" width="108" height="14"/>
+                                <rect key="frame" x="15" y="52" width="108" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前版本：" id="applicationCurrentLabelCell">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCheckLabel">
@@ -1160,11 +1131,34 @@
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次檢查：" id="applicationCheckLabelCell">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestVersionField">
+                                <rect key="frame" x="131" y="74" width="150" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0" id="applicationLatestVersionCell">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCurrentVersionField">
+                                <rect key="frame" x="131" y="52" width="150" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0" id="applicationCurrentVersionCell">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationLatestCheckField">
+                                <rect key="frame" x="131" y="30" width="150" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="applicationLatestCheckCell">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationCheckButton">
-                                <rect key="frame" x="282" y="66" width="136" height="28"/>
+                                <rect key="frame" x="286" y="64" width="140" height="28"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="push" title="檢查更新" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="applicationCheckButtonCell">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1175,7 +1169,7 @@
                                 </connections>
                             </button>
                             <button hidden="YES" imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationInstallButton">
-                                <rect key="frame" x="282" y="39" width="136" height="28"/>
+                                <rect key="frame" x="286" y="36" width="140" height="28"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="push" title="下載安裝" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="applicationInstallButtonCell">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1185,8 +1179,12 @@
                                     <action selector="installApplicationUpdate:" target="695" id="applicationInstallAction"/>
                                 </connections>
                             </button>
+                            <progressIndicator hidden="YES" wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" minValue="16" maxValue="100" doubleValue="16" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="726">
+                                <rect key="frame" x="262" y="68" width="16" height="16"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            </progressIndicator>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationAutoUpdateCheckbox">
-                                <rect key="frame" x="15" y="6" width="135" height="18"/>
+                                <rect key="frame" x="15" y="6" width="220" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="check" title="自動檢查更新" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="applicationAutoUpdateCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -1197,7 +1195,7 @@
                                 </connections>
                             </button>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationIncludeBetaCheckbox">
-                                <rect key="frame" x="150" y="6" width="120" height="18"/>
+                                <rect key="frame" x="240" y="6" width="170" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="check" title="接受 Beta 版" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="applicationIncludeBetaCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -1207,63 +1205,38 @@
                                     <action selector="toggleIncludeBetaReleases:" target="695" id="applicationIncludeBetaAction"/>
                                 </connections>
                             </button>
-                            <progressIndicator hidden="YES" wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" minValue="16" maxValue="100" doubleValue="16" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="726">
-                                <rect key="frame" x="258" y="72" width="16" height="16"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                            </progressIndicator>
                         </subviews>
                     </view>
                 </box>
-                <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="659">
-                    <rect key="frame" x="22" y="25" width="441" height="100"/>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconUpdateTitleLabel">
+                    <rect key="frame" x="20" y="176" width="200" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="詞庫更新" id="lexiconUpdateTitleLabelCell">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box autoresizesSubviews="NO" fixedFrame="YES" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="659">
+                    <rect key="frame" x="20" y="64" width="440" height="106"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <view key="contentView" id="9wr-s1-ed6">
-                        <rect key="frame" x="0.0" y="0.0" width="441" height="100"/>
+                    <view key="contentView" id="lexiconUpdateContentView">
+                        <rect key="frame" x="5" y="5" width="430" height="96"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="533">
-                                <rect key="frame" x="133" y="70" width="140" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="534">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="607">
-                                <rect key="frame" x="133" y="50" width="140" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="608">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="611">
-                                <rect key="frame" x="133" y="30" width="140" height="14"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="612">
-                                    <font key="font" metaFont="smallSystem"/>
-                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="535">
-                                <rect key="frame" x="15" y="70" width="108" height="14"/>
+                                <rect key="frame" x="15" y="74" width="108" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="最新詞庫：" id="536">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="605">
-                                <rect key="frame" x="15" y="50" width="108" height="14"/>
+                                <rect key="frame" x="15" y="52" width="108" height="14"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="目前詞庫：" id="606">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="615">
@@ -1272,11 +1245,34 @@
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="上次檢查：" id="616">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="533">
+                                <rect key="frame" x="131" y="74" width="150" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="534">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="607">
+                                <rect key="frame" x="131" y="52" width="150" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="1.0 Beta" id="608">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="611">
+                                <rect key="frame" x="131" y="30" width="150" height="14"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2007/12/12" id="612">
+                                    <font key="font" metaFont="smallSystem"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
                             <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="537">
-                                <rect key="frame" x="282" y="66" width="136" height="28"/>
+                                <rect key="frame" x="286" y="64" width="140" height="28"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="push" title="檢查更新" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="538">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1287,7 +1283,7 @@
                                 </connections>
                             </button>
                             <button hidden="YES" imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconInstallButton">
-                                <rect key="frame" x="282" y="39" width="136" height="28"/>
+                                <rect key="frame" x="286" y="36" width="140" height="28"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="push" title="下載安裝" bezelStyle="rounded" alignment="center" controlSize="small" borderStyle="border" inset="2" id="lexiconInstallButtonCell">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1297,8 +1293,12 @@
                                     <action selector="installLexiconUpdate:" target="695" id="lexiconInstallAction"/>
                                 </connections>
                             </button>
+                            <progressIndicator hidden="YES" wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" minValue="16" maxValue="100" doubleValue="16" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconProgressIndicator">
+                                <rect key="frame" x="262" y="68" width="16" height="16"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            </progressIndicator>
                             <button imageHugsTitle="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconAutoUpdateCheckbox">
-                                <rect key="frame" x="15" y="6" width="180" height="18"/>
+                                <rect key="frame" x="15" y="6" width="220" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="check" title="自動更新詞庫" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="lexiconAutoUpdateCheckboxCell">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -1308,22 +1308,20 @@
                                     <action selector="toggleAutomaticLexiconUpdates:" target="695" id="lexiconAutoUpdateAction"/>
                                 </connections>
                             </button>
-                            <progressIndicator hidden="YES" wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" minValue="16" maxValue="100" doubleValue="16" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="lexiconProgressIndicator">
-                                <rect key="frame" x="258" y="73" width="16" height="16"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                            </progressIndicator>
                         </subviews>
                     </view>
                 </box>
-                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="applicationUpdateTitleLabel">
-                    <rect key="frame" x="54" y="273" width="180" height="20"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="輸入法更新" id="applicationUpdateTitleLabelCell">
-                        <font key="font" metaFont="systemBold"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
+                <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uninstallButton">
+                    <rect key="frame" x="336" y="16" width="124" height="32"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                    <buttonCell key="cell" type="push" title="移除 ChiaKey…" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="uninstallButtonCell">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="uninstallChiaKey:" target="695" id="uninstallButtonAction"/>
+                    </connections>
+                </button>
             </subviews>
             <point key="canvasLocation" x="-143" y="392"/>
         </customView>
@@ -1575,9 +1573,9 @@
         </customObject>
         <customObject id="695" customClass="TakaoUpdate">
             <connections>
+                <outlet property="_applicationAutoUpdateCheckBox" destination="applicationAutoUpdateCheckbox" id="applicationAutoUpdateOutlet"/>
                 <outlet property="_applicationCheckButton" destination="applicationCheckButton" id="applicationCheckButtonOutlet"/>
                 <outlet property="_applicationCurrentVersionTextField" destination="applicationCurrentVersionField" id="applicationCurrentVersionOutlet"/>
-                <outlet property="_applicationAutoUpdateCheckBox" destination="applicationAutoUpdateCheckbox" id="applicationAutoUpdateOutlet"/>
                 <outlet property="_applicationIncludeBetaCheckBox" destination="applicationIncludeBetaCheckbox" id="applicationIncludeBetaOutlet"/>
                 <outlet property="_applicationInstallButton" destination="applicationInstallButton" id="applicationInstallButtonOutlet"/>
                 <outlet property="_applicationLatestCheckTextField" destination="applicationLatestCheckField" id="applicationLatestCheckOutlet"/>

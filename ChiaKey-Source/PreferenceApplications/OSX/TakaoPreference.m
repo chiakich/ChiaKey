@@ -74,9 +74,6 @@ file for terms.
     [window setToolbarStyle:NSWindowToolbarStylePreference];
   }
 
-  [(TakaoUpdate *)_takaoUpdateController
-      addUninstallControlsToView:_updateView];
-
   [window setLevel:NSFloatingWindowLevel];
   [window setToolbar:toolbar];
   [window center];

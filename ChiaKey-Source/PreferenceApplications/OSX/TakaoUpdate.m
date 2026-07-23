@@ -643,43 +643,6 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
   }];
 }
 
-// The update pane xibs are maintained per locale, so the uninstall row is
-// added in code instead of in three diverging xib files.
-- (void)addUninstallControlsToView:(NSView *)view {
-  const CGFloat extraHeight = 40.0;
-
-  // Grow the pane with autoresizing suspended, or the masks would shift the
-  // subviews a second time on top of the manual offset below.
-  BOOL autoresizes = [view autoresizesSubviews];
-  [view setAutoresizesSubviews:NO];
-  NSRect viewFrame = [view frame];
-  viewFrame.size.height += extraHeight;
-  [view setFrame:viewFrame];
-  [view setAutoresizesSubviews:autoresizes];
-
-  for (NSView *subview in [view subviews]) {
-    NSRect frame = [subview frame];
-    frame.origin.y += extraHeight;
-    [subview setFrame:frame];
-  }
-
-  NSButton *button =
-      [[[NSButton alloc] initWithFrame:NSMakeRect(20, 8, 200, 28)] autorelease];
-  [button setBezelStyle:NSBezelStyleRounded];
-  [[button cell] setControlSize:NSControlSizeSmall];
-  [button setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
-  [button setTitle:LFLSTR(@"Uninstall ChiaKey…")];
-  [button sizeToFit];
-  [button setFrameOrigin:NSMakePoint(
-                             viewFrame.size.width - [button frame].size.width -
-                                 20,
-                             14)];
-  [button setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
-  [button setTarget:self];
-  [button setAction:@selector(uninstallChiaKey:)];
-  [view addSubview:button];
-}
-
 - (void)_launchUninstallerPurging:(BOOL)purge {
   NSString *scriptPath = [self _bundledScriptNamed:@"uninstall.sh"];
   if (![scriptPath length]) {
