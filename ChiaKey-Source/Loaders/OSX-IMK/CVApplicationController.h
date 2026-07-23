@@ -30,6 +30,11 @@
   BOOL _observedEditorSessionActive;
   NSDate *_lastSeenUserPhraseDirtyDate;
 
+  // Re-arms the lexicon/application update checks while the IME process
+  // stays resident, since applicationDidFinishLaunching only fires once
+  // per process launch and this process can stay alive for weeks.
+  NSTimer *_autoUpdateCheckTimer;
+
   // <lithoglyph>
   OVSQLiteConnection *_userPhraseDB;
   // </lithoglyph>

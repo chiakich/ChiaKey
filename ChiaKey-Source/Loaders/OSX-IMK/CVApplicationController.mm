@@ -28,6 +28,13 @@ static NSString *const ChiaKeyApplicationAutoUpdateEnabledPreferenceKey =
 static const NSTimeInterval kChiaKeyApplicationAutoUpdateCheckInterval =
     24.0 * 60.0 * 60.0;
 
+// Re-check cadence while the process stays resident, not the check
+// interval itself: the 24h throttles above still gate actual work. A
+// shorter re-arm keeps the wait after sleep/wake or a missed cycle bounded
+// to about an hour instead of however long this process happens to run.
+static const NSTimeInterval kChiaKeyAutoUpdateCheckTimerInterval =
+    60.0 * 60.0;
+
 static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   return (codePoint >= 0x2E80 && codePoint < 0xFF00) ||
          (codePoint >= 0x20000 && codePoint <= 0x323AF);
@@ -72,6 +79,8 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
   [_userPhrasePollTimer invalidate];
   [_userPhrasePollTimer release];
+  [_autoUpdateCheckTimer invalidate];
+  [_autoUpdateCheckTimer release];
   [_lastSeenUserPhraseDirtyDate release];
   [super dealloc];
 }
@@ -526,6 +535,24 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   }
 }
 
+- (void)_runAutoUpdateChecks:(NSTimer *)timer {
+  [self _runSilentLexiconUpdateIfNeeded];
+  [self _runApplicationUpdateCheckIfNeeded];
+}
+
+- (void)_startAutoUpdateCheckTimer {
+  _autoUpdateCheckTimer = [[NSTimer
+      scheduledTimerWithTimeInterval:kChiaKeyAutoUpdateCheckTimerInterval
+                              target:self
+                            selector:@selector(_runAutoUpdateChecks:)
+                            userInfo:nil
+                             repeats:YES] retain];
+  // Coalesce with other system wakeups instead of demanding an exact fire
+  // time; the 24h throttles make a few extra minutes of slack irrelevant.
+  [_autoUpdateCheckTimer
+      setTolerance:kChiaKeyAutoUpdateCheckTimerInterval * 0.1];
+}
+
 #pragma mark Phrase Editor coordination
 
 // The distributed notifications give immediacy; the poll timer below is the
@@ -641,6 +668,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [self _startObservingPreferencesRequests];
   [self _runSilentLexiconUpdateIfNeeded];
   [self _runApplicationUpdateCheckIfNeeded];
+  [self _startAutoUpdateCheckTimer];
 }
 
 @end
