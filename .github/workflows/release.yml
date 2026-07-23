@@ -249,7 +249,7 @@ jobs:
               printf '> This is a **pre-release (beta)** and may be less stable than a normal release.\n\n'
             fi
             [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
-            printf 'Download the `.pkg` below and open it — per-user, no admin prompt.\n'
+            printf 'Please download the `.pkg` below.\n'
             if [[ -n "${PREV}" ]]; then
               printf '\n**Full Changelog**: %s/%s/compare/%s...%s\n' "${SERVER}" "${REPO}" "${PREV}" "${TAG}"
             fi
