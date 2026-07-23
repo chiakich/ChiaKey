@@ -667,7 +667,8 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 
   NSMutableArray *arguments = [NSMutableArray
       arrayWithObjects:tempPath, @"--wait-pid",
-                       [NSString stringWithFormat:@"%d", (int)getpid()], nil];
+                       [NSString stringWithFormat:@"%d", (int)getpid()],
+                       @"--show-completion-alert", nil];
   if (purge) [arguments addObject:@"--purge"];
 
   NSTask *task = [[[NSTask alloc] init] autorelease];

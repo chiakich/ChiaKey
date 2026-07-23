@@ -27,6 +27,7 @@ PKG_IDENTIFIERS=(
 PURGE=0
 DRY_RUN=0
 WAIT_PID=""
+SHOW_COMPLETION_ALERT=0
 
 usage() {
   cat <<EOF
@@ -43,6 +44,9 @@ Options:
   --keep-user-data Keep user data (default).
   --wait-pid PID   Wait for PID to exit before removing files. Used when the
                    preferences app launches this script to uninstall itself.
+  --show-completion-alert
+                   Show a confirmation dialog after removal. Used by the
+                   preferences app.
   --dry-run        Print actions without deleting anything.
   -h, --help       Show this help.
 EOF
@@ -56,6 +60,7 @@ while [[ $# -gt 0 ]]; do
       WAIT_PID="${2:-}"
       shift
       ;;
+    --show-completion-alert) SHOW_COMPLETION_ALERT=1 ;;
     --dry-run) DRY_RUN=1 ;;
     -h|--help)
       usage
@@ -139,5 +144,17 @@ if [[ -e "/Library/Input Methods/${APP_NAME}.app" ]]; then
   echo "  sudo rm -rf '/Library/Input Methods/${APP_NAME}.app'" >&2
 fi
 
-echo "ChiaKey uninstalled. Log out and back in to clear the input source cache."
-exit 0
+if [[ -e "${APP}" || -e "${LEGACY_APP}" ]]; then
+  completion_message="ChiaKey could not be completely removed. Please try again."
+  echo "${completion_message}" >&2
+  if [[ "${SHOW_COMPLETION_ALERT}" == "1" && "${DRY_RUN}" != "1" ]]; then
+    /usr/bin/osascript -e 'display dialog "ChiaKey 無法完全移除，請再試一次。" with title "ChiaKey" buttons {"確定"} default button "確定" with icon caution' || true
+  fi
+  exit 1
+fi
+
+completion_message="ChiaKey was removed successfully. Log out and back in to clear the input source cache."
+echo "${completion_message}"
+if [[ "${SHOW_COMPLETION_ALERT}" == "1" && "${DRY_RUN}" != "1" ]]; then
+  /usr/bin/osascript -e 'display dialog "ChiaKey 已成功移除。請登出再登入以清除輸入法快取。" with title "ChiaKey" buttons {"確定"} default button "確定" with icon note' || true
+fi

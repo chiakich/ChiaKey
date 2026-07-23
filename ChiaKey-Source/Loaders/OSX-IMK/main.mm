@@ -102,16 +102,6 @@ static BOOL ChiaKeyDisableInputSourceWithID(NSString *inputSourceID) {
   return YES;
 }
 
-static BOOL ChiaKeyHasInputSourceWithID(NSString *inputSourceID) {
-  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
-  if (!source) {
-    return NO;
-  }
-
-  CFRelease(source);
-  return YES;
-}
-
 static NSString *ChiaKeyInputSourceID() {
   NSBundle *mainBundle = [NSBundle mainBundle];
   NSString *inputSourceID =
@@ -126,12 +116,14 @@ static int ChiaKeyRegisterInputMethod() {
   NSURL *bundleURL = [[NSBundle mainBundle] bundleURL];
   NSString *inputSourceID = ChiaKeyInputSourceID();
 
-  if (!ChiaKeyHasInputSourceWithID(inputSourceID)) {
-    OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
-    if (registerStatus != noErr) {
-      NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
-            bundleURL, registerStatus);
-    }
+  // Re-register on every install, not only a first install. An update can move
+  // the bundle (for example from /Library to ~/Library); TIS must rebuild its
+  // cache for the new location even though the input source ID already exists.
+  OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
+  if (registerStatus != noErr) {
+    NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
+          bundleURL, registerStatus);
+    return 1;
   }
 
   if (!ChiaKeyEnableInputSourceWithID(inputSourceID)) {

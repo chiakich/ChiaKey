@@ -80,6 +80,9 @@ if [ -n "${keep_app}" ]; then
     install_status=$?
   fi
   echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}" >&2
+  if [ "${install_status}" != "0" ]; then
+    exit "${install_status}"
+  fi
 else
   echo "ChiaKey postinstall: cannot find installed ChiaKey executable" >&2
 fi
