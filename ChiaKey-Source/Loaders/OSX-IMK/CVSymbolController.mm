@@ -22,23 +22,52 @@ static const CGFloat CVSymbolWindowCaretGap = 150.0;
 }
 - (void)dealloc {
   [_viewArray release];
+  [_categoryArray release];
   [[NSNotificationCenter defaultCenter]
       removeObserver:self
                 name:CVLoaderUpdateCannedMessagesNotification
               object:nil];
   [super dealloc];
 }
+// Building every category up front costs ~1000 NSButtons that stay resident for
+// the whole session, so materialize one only when it is actually shown.
+- (NSView *)viewAtIndex:(NSInteger)index {
+  if (index < 0 || index >= (NSInteger)[_viewArray count]) return nil;
+
+  id item = [_viewArray objectAtIndex:index];
+  if (item == [NSNull null]) {
+    NSDictionary *d = [_categoryArray objectAtIndex:index];
+    NSArray *messages = [d valueForKey:@"Messages"];
+    BOOL hasMessages = [messages isKindOfClass:[NSArray class]] &&
+                       [messages count] > 0;
+    if (!hasMessages &&
+        [[d valueForKey:@"IsSymbolButtonList"] isEqualToString:@"true"]) {
+      item = [[[CVButtonViewController alloc] initWithDictionary:d] autorelease];
+    } else {
+      item = [[[CVSmileyViewController alloc] initWithDictionary:d] autorelease];
+    }
+    [_viewArray replaceObjectAtIndex:index withObject:item];
+  }
+
+  return [item view];
+}
+
+- (void)releaseCachedViews {
+  [self toggleActiveView:nil];
+  NSUInteger i = 0;
+  for (; i < [_viewArray count]; i++) {
+    [_viewArray replaceObjectAtIndex:i withObject:[NSNull null]];
+  }
+}
+
 - (void)loadSymbolTable:(NSNotification *)notification {
   // NSLog(@"received %@", notification);
 
   NSInteger selectedIndex = [_popUpButton indexOfSelectedItem];
   NSString *selectedTitle = [[[_popUpButton selectedItem] title] copy];
 
-  if ([[_symbolContentView subviews] count]) {
-    NSView *lastView = [[_symbolContentView subviews] objectAtIndex:0];
-    [lastView removeFromSuperview];
-  }
-  if ([_viewArray count]) [_viewArray removeAllObjects];
+  [self toggleActiveView:nil];
+  [_viewArray removeAllObjects];
 
   NSString *locale =
       [NSString stringWithUTF8String:[OpenVanillaLoader sharedLoaderService]
@@ -46,26 +75,16 @@ static const CGFloat CVSymbolWindowCaretGap = 150.0;
                                          .c_str()];
   NSArray *array =
       [[OpenVanillaLoader sharedInstance] mergedCannedMessagesArray];
+  // The loader mutates its array in place on the next merge, so keep our own.
+  [_categoryArray release];
+  _categoryArray = [[NSArray alloc] initWithArray:array];
+
   [_popUpButton removeAllItems];
   NSDictionary *d = nil;
-  NSEnumerator *enumerator = [array objectEnumerator];
+  NSEnumerator *enumerator = [_categoryArray objectEnumerator];
 
   while (d = [enumerator nextObject]) {
-    NSArray *messages = [d valueForKey:@"Messages"];
-    BOOL hasMessages = [messages isKindOfClass:[NSArray class]] &&
-                       [messages count] > 0;
-    if (!hasMessages &&
-        [[d valueForKey:@"IsSymbolButtonList"] isEqualToString:@"true"]) {
-      CVButtonViewController *controller =
-          [[CVButtonViewController alloc] initWithDictionary:d];
-      [controller autorelease];
-      [_viewArray addObject:controller];
-    } else {
-      CVSmileyViewController *controller =
-          [[CVSmileyViewController alloc] initWithDictionary:d];
-      [controller autorelease];
-      [_viewArray addObject:controller];
-    }
+    [_viewArray addObject:[NSNull null]];
     NSString *name = [[d valueForKey:@"Name"]
         fallbackableLocalizedStringValueForLocale:locale];
     [_popUpButton addItemWithTitle:name];
@@ -83,9 +102,7 @@ static const CGFloat CVSymbolWindowCaretGap = 150.0;
     }
 
     [_popUpButton selectItemAtIndex:indexToSelect];
-    id item = [_viewArray objectAtIndex:indexToSelect];
-    NSView *view = [item view];
-    [self toggleActiveView:view];
+    [self toggleActiveView:[self viewAtIndex:indexToSelect]];
   }
   [selectedTitle release];
 }
@@ -221,9 +238,7 @@ static const CGFloat CVSymbolWindowCaretGap = 150.0;
   NSInteger selectedIndex =
       [_popUpButton indexOfItem:[_popUpButton selectedItem]];
   if (selectedIndex < 0 || selectedIndex >= (NSInteger)[_viewArray count]) return;
-  id item = [_viewArray objectAtIndex:selectedIndex];
-  NSView *view = [item view];
-  [self toggleActiveView:view];
+  [self toggleActiveView:[self viewAtIndex:selectedIndex]];
 }
 - (IBAction)showWindow:(id)sender {
   NSRect originalWindowRect = [[self window] frame];
@@ -237,6 +252,8 @@ static const CGFloat CVSymbolWindowCaretGap = 150.0;
   [[self window] orderOut:self];
   _isVisible = NO;
   _isTemporarilyHidden = NO;
+  // show: re-merges the canned messages, which rebuilds what we drop here.
+  [self releaseCachedViews];
 }
 - (IBAction)show:(id)sender {
   [[OpenVanillaLoader sharedInstance] mergeCannedMessagesData];
@@ -252,6 +269,7 @@ static const CGFloat CVSymbolWindowCaretGap = 150.0;
   [window orderOut:self];
   _isVisible = NO;
   _isTemporarilyHidden = NO;
+  [self releaseCachedViews];
   return NO;
 }
 

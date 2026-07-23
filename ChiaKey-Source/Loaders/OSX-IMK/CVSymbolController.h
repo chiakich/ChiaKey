@@ -11,6 +11,8 @@
 
   IBOutlet NSPopUpButton *_popUpButton;
   IBOutlet NSView *_symbolContentView;
+  NSArray *_categoryArray;
+  // Parallel to _categoryArray; NSNull until the category is materialized.
   NSMutableArray *_viewArray;
 }
 - (void)loadSymbolTable:(NSNotification *)notification;
