@@ -298,73 +298,31 @@ fi
 
 MANIFEST_FILE="${TMP_DIR}/lexicon-manifest.json"
 
-if [[ -z "${MANIFEST_URL}" &&
-      ( -n "${MIN_RELEASE_AGE_DAYS}" || "${SKIP_CURRENT}" == "1" ) ]]; then
-  RELEASE_INFO_FILE="${TMP_DIR}/latest-release.json"
-  RELEASE_API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+R2_LEXICON_MANIFEST_URL="https://cdn.chiaki.ch/chiakey/lexicon/lexicon-manifest.json"
 
-  echo "Checking latest release:"
-  echo "  ${RELEASE_API_URL}"
-  curl --header "Accept: application/vnd.github+json" \
-    --output "${RELEASE_INFO_FILE}" "${RELEASE_API_URL}"
-
-  RELEASE_INFO="$(
-    /usr/bin/ruby -rjson -rtime - "${RELEASE_INFO_FILE}" "${MIN_RELEASE_AGE_DAYS:-}" <<'RUBY'
-release_path = ARGV.fetch(0)
-min_age_days = ARGV.fetch(1)
-release = JSON.parse(File.read(release_path))
-tag = release.fetch("tag_name")
-published_at = Time.parse(release.fetch("published_at"))
-age_seconds = Time.now - published_at
-min_age_seconds = min_age_days.empty? ? 0 : min_age_days.to_i * 24 * 60 * 60
-fields = [
-  tag,
-  published_at.utc.iso8601,
-  age_seconds.to_i,
-  min_age_seconds.to_i,
-  age_seconds >= min_age_seconds ? "ready" : "too_new"
-]
-puts fields.join("\t")
-RUBY
-  )"
-
-  IFS=$'\t' read -r RELEASE_TAG RELEASE_PUBLISHED_AT RELEASE_AGE_SECONDS RELEASE_MIN_AGE_SECONDS RELEASE_AGE_STATUS <<<"${RELEASE_INFO}"
-  if [[ -z "${TAG}" ]]; then
-    TAG="${RELEASE_TAG}"
-  fi
-
-  if [[ -n "${MIN_RELEASE_AGE_DAYS}" &&
-        "${RELEASE_AGE_STATUS}" != "ready" ]]; then
-    cat <<EOF
-Skipping ChiaKey lexicon ${RELEASE_TAG}: release is newer than ${MIN_RELEASE_AGE_DAYS} days.
-Published at: ${RELEASE_PUBLISHED_AT}
-Age seconds:  ${RELEASE_AGE_SECONDS}
-Required:     ${RELEASE_MIN_AGE_SECONDS}
-EOF
-    exit 0
-  fi
-fi
-
-if [[ "${SKIP_CURRENT}" == "1" && -n "${TAG}" ]]; then
-  CURRENT_VERSION="$(current_lexicon_version)"
-  if [[ -n "${CURRENT_VERSION}" ]] &&
-     [[ "$(compare_versions "${CURRENT_VERSION}" "${TAG}")" != "-1" ]]; then
-    echo "Skipping ChiaKey lexicon ${TAG}: active lexicon ${CURRENT_VERSION} is current."
-    exit 0
-  fi
-fi
-
+# R2 mirror first: the GitHub API's unauthenticated 60/hour limit is per IP,
+# shared by everyone behind one NAT, and this check now runs hourly per
+# machine. GitHub stays as the fallback so a CDN outage or regional block
+# cannot strand anyone on an old lexicon. An explicit --tag always names a
+# specific GitHub release directly, since the R2 mirror only ever holds the
+# single latest one.
 if [[ -z "${MANIFEST_URL}" ]]; then
   if [[ -n "${TAG}" ]]; then
     MANIFEST_URL="https://github.com/${REPO}/releases/download/${TAG}/lexicon-manifest.json"
+  elif curl --fail --output "${MANIFEST_FILE}" "${R2_LEXICON_MANIFEST_URL}" 2>/dev/null; then
+    echo "Using manifest mirror:"
+    echo "  ${R2_LEXICON_MANIFEST_URL}"
+    MANIFEST_URL="${R2_LEXICON_MANIFEST_URL}"
   else
     MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/lexicon-manifest.json"
   fi
 fi
 
-echo "Downloading manifest:"
-echo "  ${MANIFEST_URL}"
-curl --output "${MANIFEST_FILE}" "${MANIFEST_URL}"
+if [[ ! -s "${MANIFEST_FILE}" ]]; then
+  echo "Downloading manifest:"
+  echo "  ${MANIFEST_URL}"
+  curl --output "${MANIFEST_FILE}" "${MANIFEST_URL}"
+fi
 
 ARTIFACT_INFO="$(
   /usr/bin/ruby -rjson - "${MANIFEST_FILE}" <<'RUBY'
@@ -384,14 +342,53 @@ fields = [
   db.fetch("sha256"),
   metadata&.fetch("url", ""),
   metadata&.fetch("filename", ""),
-  metadata&.fetch("sha256", "")
+  metadata&.fetch("sha256", ""),
+  manifest.fetch("generated_at", "")
 ]
 
 puts fields.join("\t")
 RUBY
 )"
 
-IFS=$'\t' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_URL METADATA_FILENAME METADATA_SHA <<<"${ARTIFACT_INFO}"
+IFS=$'\t' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_URL METADATA_FILENAME METADATA_SHA GENERATED_AT <<<"${ARTIFACT_INFO}"
+
+if [[ -z "${TAG}" ]]; then
+  TAG="${VERSION}"
+fi
+
+# Age and skip-current gating now reads off the manifest we already have
+# (whichever source it came from) instead of a separate GitHub API call.
+if [[ -n "${MIN_RELEASE_AGE_DAYS}" ]]; then
+  AGE_STATUS="$(
+    /usr/bin/ruby -rtime - "${GENERATED_AT}" "${MIN_RELEASE_AGE_DAYS}" <<'RUBY'
+generated_at = ARGV.fetch(0)
+min_age_days = ARGV.fetch(1).to_i
+if generated_at.empty?
+  puts "ready"
+else
+  age_seconds = Time.now - Time.parse(generated_at)
+  puts(age_seconds >= min_age_days * 24 * 60 * 60 ? "ready" : "too_new")
+end
+RUBY
+  )"
+
+  if [[ "${AGE_STATUS}" != "ready" ]]; then
+    cat <<EOF
+Skipping ChiaKey lexicon ${VERSION}: release is newer than ${MIN_RELEASE_AGE_DAYS} days.
+Generated at: ${GENERATED_AT}
+EOF
+    exit 0
+  fi
+fi
+
+if [[ "${SKIP_CURRENT}" == "1" ]]; then
+  CURRENT_VERSION="$(current_lexicon_version)"
+  if [[ -n "${CURRENT_VERSION}" ]] &&
+     [[ "$(compare_versions "${CURRENT_VERSION}" "${VERSION}")" != "-1" ]]; then
+    echo "Skipping ChiaKey lexicon ${VERSION}: active lexicon ${CURRENT_VERSION} is current."
+    exit 0
+  fi
+fi
 
 validate_manifest_path_component "version" "${VERSION}"
 validate_manifest_path_component "database filename" "${DB_FILENAME}"

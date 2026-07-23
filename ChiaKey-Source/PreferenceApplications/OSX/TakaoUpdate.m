@@ -29,6 +29,8 @@ static NSString *const ChiaKeyLatestApplicationCheckDefaultsKey =
 
 static NSString *const ChiaKeyLexiconLatestURL =
     @"https://github.com/chiakich/ChiaKey-Lexicon/releases/latest";
+static NSString *const ChiaKeyLexiconManifestR2URL =
+    @"https://cdn.chiaki.ch/chiakey/lexicon/lexicon-manifest.json";
 static NSString *const ChiaKeyLatestLexiconDefaultsKey =
     @"ChiaKeyLatestLexiconVersion";
 static NSString *const ChiaKeyLatestLexiconCheckDefaultsKey =
@@ -361,7 +363,56 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
                          userInfo:userInfo];
 }
 
+// R2 mirror first: the GitHub API's unauthenticated 60/hour limit is per IP,
+// shared by everyone behind one NAT. GitHub stays as the fallback so a CDN
+// outage or regional block cannot strand anyone on stale lexicon info.
 - (void)_latestLexiconReleaseTagWithCompletion:
+    (void (^)(NSString *tag, NSError *error))completion {
+  [self _latestLexiconTagFromR2ManifestWithCompletion:^(NSString *tag,
+                                                        NSError *error) {
+    if ([tag length]) {
+      if (completion) completion(tag, nil);
+      return;
+    }
+    [self _latestLexiconTagFromGitHubWithCompletion:completion];
+  }];
+}
+
+- (void)_latestLexiconTagFromR2ManifestWithCompletion:
+    (void (^)(NSString *tag, NSError *error))completion {
+  NSURL *url = [NSURL URLWithString:ChiaKeyLexiconManifestR2URL];
+  NSMutableURLRequest *request =
+      [NSMutableURLRequest requestWithURL:url
+                              cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                          timeoutInterval:15.0];
+  [request setValue:@"ChiaKey Preferences" forHTTPHeaderField:@"User-Agent"];
+
+  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+      dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *response,
+                            NSError *requestError) {
+          NSInteger statusCode = 0;
+          if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = [(NSHTTPURLResponse *)response statusCode];
+          }
+
+          NSString *tag = nil;
+          if (!requestError && statusCode < 400 && [data length]) {
+            id manifest = [NSJSONSerialization JSONObjectWithData:data
+                                                            options:0
+                                                              error:NULL];
+            if ([manifest isKindOfClass:[NSDictionary class]]) {
+              id version = [(NSDictionary *)manifest objectForKey:@"version"];
+              if ([version isKindOfClass:[NSString class]]) tag = version;
+            }
+          }
+
+          if (completion) completion(tag, requestError);
+        }];
+  [task resume];
+}
+
+- (void)_latestLexiconTagFromGitHubWithCompletion:
     (void (^)(NSString *tag, NSError *error))completion {
   NSURL *url = [NSURL URLWithString:ChiaKeyLexiconLatestURL];
   NSMutableURLRequest *request =
