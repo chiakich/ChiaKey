@@ -94,6 +94,7 @@ jobs:
           echo "tag=${next}" >>"$GITHUB_OUTPUT"
           echo "core=${core}" >>"$GITHUB_OUTPUT"
           echo "prerelease=${prerelease}" >>"$GITHUB_OUTPUT"
+          echo "previous=${latest}" >>"$GITHUB_OUTPUT"
 
       - name: Bump CFBundleVersion
         id: bump
@@ -186,6 +187,81 @@ jobs:
           echo "Built: $pkg"
           echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
 
+      # Build categorized notes from Conventional Commit subjects since the
+      # previous tag. This repo commits straight to main, so GitHub's built-in
+      # PR-based generator has nothing to group; parsing the log ourselves gives
+      # a proper changelog. awk (not bash) does the bucketing so it runs on the
+      # runner's bash 3.2, which has no associative arrays.
+      - name: Generate release notes
+        id: notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          PREV: ${{ steps.version.outputs.previous }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+
+          # Only diff against the previous tag when it actually exists (the very
+          # first release has none, so we fall back to the whole history).
+          range=()
+          if [[ -n "${PREV}" ]] && git rev-parse -q --verify "${PREV}^{commit}" >/dev/null 2>&1; then
+            range=("${PREV}..HEAD")
+          fi
+
+          changelog="$(git log ${range[@]+"${range[@]}"} --no-merges \
+            --pretty=format:'%h%x1f%s' | awk -F'\037' '
+            BEGIN {
+              n = split("feat fix perf refactor test build style chore other", ord, " ")
+              title["feat"]="### Features"; title["fix"]="### Bug Fixes"
+              title["perf"]="### Performance"; title["refactor"]="### Refactoring"
+              title["test"]="### Tests"; title["build"]="### Build"
+              title["style"]="### Styling"; title["other"]="### Other Changes"
+              drop["docs"]=1; drop["ci"]=1        # not user-facing; keep them out of notes
+            }
+            {
+              hash=$1; s=$2
+              if (s ~ /^chore.*bump version/) next          # skip the automated bump commit
+              type="other"; desc=s
+              p=index(s, ": ")
+              if (p > 1) {
+                left=substr(s, 1, p-1); right=substr(s, p+2)
+                gsub(/\([^)]*\)/, "", left); gsub(/!/, "", left)
+                gsub(/^[ \t]+|[ \t]+$/, "", left); left=tolower(left)
+                if (left in drop) next
+                if (left in title || left == "chore") { type=left; desc=right }
+              }
+              bucket[type]=bucket[type] "- " desc " (`" hash "`)\n"
+            }
+            END {
+              for (i=1; i<=n; i++) {
+                t=ord[i]; if (!(t in bucket)) continue
+                if (t == "chore")
+                  printf "<details>\n<summary>Chores</summary>\n\n%s</details>\n\n", bucket[t]
+                else
+                  printf "%s\n\n%s\n", title[t], bucket[t]
+              }
+            }')"
+
+          {
+            if [[ "${PRERELEASE}" == "true" ]]; then
+              printf '> This is a **pre-release (beta)** and may be less stable than a normal release.\n\n'
+            fi
+            [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
+            printf 'Download the `.pkg` below and open it — per-user, no admin prompt.\n'
+            if [[ -n "${PREV}" ]]; then
+              printf '\n**Full Changelog**: %s/%s/compare/%s...%s\n' "${SERVER}" "${REPO}" "${PREV}" "${TAG}"
+            fi
+          } > RELEASE_NOTES.md
+
+          echo "Generated release notes:"
+          cat RELEASE_NOTES.md
+          {
+            echo "## Release notes preview (${TAG})"
+            cat RELEASE_NOTES.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Push version bump and tag
         if: ${{ inputs.dry_run == false }}
         run: |
@@ -203,7 +279,7 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ChiaKey ${{ steps.version.outputs.tag }}
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           prerelease: ${{ steps.version.outputs.prerelease }}
           files: |
             ${{ steps.build.outputs.pkg }}
