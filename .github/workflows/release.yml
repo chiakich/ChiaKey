@@ -187,6 +187,10 @@ jobs:
           echo "Built: $pkg"
           echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
 
+          lexicon_version="$(cat artifacts/release/lexicon-version.txt 2>/dev/null || true)"
+          echo "Bundled lexicon: ${lexicon_version:-<unknown>}"
+          echo "lexicon_version=${lexicon_version}" >>"$GITHUB_OUTPUT"
+
       # Build categorized notes from Conventional Commit subjects since the
       # previous tag. This repo commits straight to main, so GitHub's built-in
       # PR-based generator has nothing to group; parsing the log ourselves gives
@@ -200,6 +204,7 @@ jobs:
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
           REPO: ${{ github.repository }}
           SERVER: ${{ github.server_url }}
+          LEXICON_VERSION: ${{ steps.build.outputs.lexicon_version }}
         run: |
           set -euo pipefail
 
@@ -249,6 +254,9 @@ jobs:
               printf '> This is a **pre-release (beta)** and may be less stable than a normal release.\n\n'
             fi
             [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
+            if [[ -n "${LEXICON_VERSION}" ]]; then
+              printf 'Bundled lexicon: `%s`\n\n' "${LEXICON_VERSION}"
+            fi
             printf 'Please download the `.pkg` below.\n'
             if [[ -n "${PREV}" ]]; then
               printf '\n**Full Changelog**: %s/%s/compare/%s...%s\n' "${SERVER}" "${REPO}" "${PREV}" "${TAG}"

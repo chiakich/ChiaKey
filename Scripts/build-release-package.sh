@@ -278,6 +278,12 @@ RUBY
   fi
 
   echo "Bundled ChiaKey lexicon release ${version}."
+
+  # Written next to the .pkg (survives WORK_DIR cleanup) so callers - e.g. the
+  # release workflow - can report which lexicon release shipped without
+  # re-parsing the app bundle.
+  run /bin/mkdir -p "${OUTPUT_DIR}"
+  echo "${version}" > "${OUTPUT_DIR}/lexicon-version.txt"
 }
 
 create_product_resources() {
