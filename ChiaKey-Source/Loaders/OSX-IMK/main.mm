@@ -18,10 +18,7 @@ using namespace std;
 // dirty-flag files, same as the Phrase Editor.
 static OVSQLiteConnection *ChiaKeyOpenUserPhraseDBForCLI() {
   NSString *dir = ChiaKeyServiceUserDataDirectory();
-  [[NSFileManager defaultManager] createDirectoryAtPath:dir
-                            withIntermediateDirectories:YES
-                                             attributes:nil
-                                                  error:NULL];
+  ChiaKeyEnsureUserDataDirectoryPrivate();
   NSString *path =
       [dir stringByAppendingPathComponent:@"SmartMandarinUserData.db"];
   OVSQLiteConnection *db = OVSQLiteConnection::Open([path UTF8String]);

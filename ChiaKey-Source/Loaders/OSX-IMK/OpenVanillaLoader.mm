@@ -1266,11 +1266,7 @@ using namespace OpenVanilla;
   [status setObject:[self dynamicallyLoadedModulePackageInfo]
              forKey:ChiaKeyStatusPackagesKey];
 
-  [[NSFileManager defaultManager]
-            createDirectoryAtPath:ChiaKeyServiceUserDataDirectory()
-      withIntermediateDirectories:YES
-                       attributes:nil
-                            error:NULL];
+  ChiaKeyEnsureUserDataDirectoryPrivate();
   if ([status writeToFile:ChiaKeyServiceStatusPath() atomically:YES]) {
     ChiaKeyPostServiceNotification(ChiaKeyServiceStatusDidUpdateNotification);
   }

@@ -13,6 +13,7 @@
 
 #import <AppKit/AppKit.h>
 
+#import "ChiaKeyServiceCoordination.h"
 #import "ChiaKeyUserPhraseCoordination.h"
 
 #include <sqlite3.h>
@@ -164,10 +165,7 @@ static std::string PEEscapeForLike(const std::string &s) {
 - (void)_openUserDB {
   if (_userDB) return;
 
-  [[NSFileManager defaultManager] createDirectoryAtPath:[self _userDataDirectory]
-                             withIntermediateDirectories:YES
-                                              attributes:nil
-                                                   error:NULL];
+  ChiaKeyEnsureUserDataDirectoryPrivate();
 
   if (sqlite3_open([[self _userDBPath] UTF8String], &_userDB) != SQLITE_OK) {
     if (_userDB) {

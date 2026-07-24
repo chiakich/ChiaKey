@@ -58,6 +58,19 @@ static inline NSString *ChiaKeyServiceUserDataDirectory(void) {
       stringByAppendingPathComponent:@"Library/Application Support/ChiaKey"];
 }
 
+// Creates the user data directory with 0700 permissions if it doesn't exist
+// yet. This directory holds SmartMandarinUserData.db / UserData.db, a record
+// of what the user has typed; 0700 keeps it unreadable to other local
+// accounts. NSFileManager only applies `attributes:` on creation, so this
+// does nothing to a directory that already exists with a different mode.
+static inline void ChiaKeyEnsureUserDataDirectoryPrivate(void) {
+  [[NSFileManager defaultManager]
+            createDirectoryAtPath:ChiaKeyServiceUserDataDirectory()
+      withIntermediateDirectories:YES
+                       attributes:@{NSFilePosixPermissions : @0700}
+                            error:NULL];
+}
+
 static inline NSString *ChiaKeyServiceStatusPath(void) {
   return [ChiaKeyServiceUserDataDirectory()
       stringByAppendingPathComponent:@"IMEStatus.plist"];
