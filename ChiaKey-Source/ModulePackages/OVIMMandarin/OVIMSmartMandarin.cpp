@@ -1414,6 +1414,9 @@ void OVIMSmartMandarin::saveConfig(OVKeyValueMap* moduleConfig,
   moduleConfig->setKeyBoolValue("ShiftKeyAlwaysCommitUppercaseCharacters",
                                 m_cfgShiftKeyAlwaysCommitUppercaseCharacters);
 
+  moduleConfig->setKeyIntValue("ComposingTextBufferSize",
+                               (int)m_cfgComposingTextBufferSize);
+
   if (m_cfgCandidateSelectionKeys.size())
     moduleConfig->setKeyStringValue("CandidateSelectionKeys",
                                     m_cfgCandidateSelectionKeys);
