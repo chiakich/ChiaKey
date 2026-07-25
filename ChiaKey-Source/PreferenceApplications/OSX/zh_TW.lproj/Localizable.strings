@@ -12,7 +12,7 @@
 "Please choose the audio clip which you want to use:" = "請選擇您想要使用的音效檔案:";
 "Choose Audio Clip..."="選擇音效檔案…";
 "Choose" = "選用";
-"Generic" = "泛用";
+"Generic" = "自訂輸入法";
 "Settings for '%@'" = "「%@」模組相關設定";
 "Cancel" = "取消";
 "Export As:" = "匯出為：";
@@ -93,3 +93,38 @@
 "Uninstall" = "移除";
 "Unable to uninstall ChiaKey." = "無法移除 ChiaKey。";
 "The uninstaller script was not found." = "找不到解除安裝程式。";
+
+/* Table input method import */
+"Input Method" = "輸入法";
+"No input tables have been imported.\n\nClick + to import a CIN table file. Imported tables appear in the input menu alongside the built-in input methods." = "尚未匯入任何輸入表格。\n\n按 + 匯入 CIN 表格檔。匯入後的表格會和內建輸入法一起出現在輸入選單中。";
+"Import a CIN table file" = "匯入 CIN 表格檔";
+"Remove the selected table" = "移除選取的表格";
+"Choose a CIN input table file to import." = "請選擇要匯入的 CIN 表格檔。";
+"Import" = "匯入";
+"Replace" = "取代";
+"This table cannot be imported" = "無法匯入這個表格";
+"%@ entries" = "%@ 個字詞";
+"\nSelection keys: %@" = "\n選字鍵：%@";
+"\nWill be installed as: %@" = "\n將安裝為：%@";
+"\n\nThis file is %@ and will be converted to UTF-8 on import." = "\n\n此檔案是 %@ 編碼，匯入時會轉換成 UTF-8。";
+"\n\nA table with this name is already installed and will be replaced." = "\n\n已經有同名的表格，匯入後會取代它。";
+"Import “%@”?" = "要匯入「%@」嗎？";
+"The table could not be imported" = "無法匯入表格";
+"Table imported" = "表格已匯入";
+"Switch away from and back to ChiaKey to start using it." = "請切換到其他輸入法再切回千秋輸入法，就可以開始使用。";
+"Remove “%@”?" = "要移除「%@」嗎？";
+"The table file will be deleted and the input method will no longer appear in the input menu. You can import it again later." = "表格檔會被刪除，這個輸入法也不會再出現在輸入選單中。你之後可以再匯入一次。";
+"The table could not be removed" = "無法移除表格";
+"The file could not be read." = "無法讀取這個檔案。";
+"The file is too large to be an input table." = "這個檔案太大，不像是輸入表格。";
+"The text encoding of the file could not be recognized. ChiaKey can read UTF-8 and Big5 tables." = "無法辨識這個檔案的文字編碼。千秋輸入法可以讀取 UTF-8 與 Big5 的表格。";
+"This does not look like a CIN table: it has no %chardef section." = "這看起來不是 CIN 表格：檔案裡沒有 %chardef 區段。";
+"The table contains no entries." = "這個表格裡沒有任何字詞。";
+"The table has no name (%cname or %ename), so it cannot be shown in the input menu." = "這個表格沒有名稱（%cname 或 %ename），無法顯示在輸入選單中。";
+"The file name contains no letters or digits that can be used as an input method name. Please rename the file and try again." = "檔名中沒有可以用來當作輸入法名稱的英數字，請重新命名後再試一次。";
+"This file name is reserved for a built-in input method. Please rename the file and try again." = "這個檔名保留給內建輸入法使用，請重新命名後再試一次。";
+"The folder for imported tables could not be created." = "無法建立存放匯入表格的資料夾。";
+"A table with this name is already installed." = "已經有同名的表格了。";
+"The table could not be written." = "無法寫入表格檔。";
+"Invalid table name." = "表格名稱無效。";
+"“%@” is now available in the input menu." = "「%@」現在可以在輸入選單中選用了。";

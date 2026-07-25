@@ -17,10 +17,10 @@ file for terms.
   [array addObject:PhoneticToolbarItemIdentifier];
   [array addObject:CangjieToolbarItemIdentifier];
   [array addObject:SimplexToolbarItemIdentifier];
+  // Always present: it is where tables are imported, so it has to be
+  // reachable before the user has any.
+  [array addObject:GenericToolbarItemIdentifier];
 
-  if (_hasGenericInputMethods) {
-    [array addObject:GenericToolbarItemIdentifier];
-  }
   if (_hasLoadedModules) {
     [array addObject:PluginToolbarItemIdentifier];
   }

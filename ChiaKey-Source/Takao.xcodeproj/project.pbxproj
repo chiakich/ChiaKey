@@ -419,6 +419,7 @@
 		D479FDB40D60506200B33AA2 /* CVToolTipController.m in Sources */ = {isa = PBXBuildFile; fileRef = D479FDB20D60506200B33AA2 /* CVToolTipController.m */; };
 		D47D5E550D5EDDC40093524C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D47D5E420D5EDDC40093524C /* main.m */; };
 		D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */ = {isa = PBXBuildFile; fileRef = D47D5E440D5EDDC40093524C /* TakaoCangjie.m */; };
+		CK01CIN0000000000000003 /* TakaoCINTable.m in Sources */ = {isa = PBXBuildFile; fileRef = CK01CIN0000000000000002 /* TakaoCINTable.m */; };
 		D47D5E570D5EDDC40093524C /* TakaoGeneric.m in Sources */ = {isa = PBXBuildFile; fileRef = D47D5E460D5EDDC40093524C /* TakaoGeneric.m */; };
 		D47D5E580D5EDDC40093524C /* TakaoGenericSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = D47D5E480D5EDDC40093524C /* TakaoGenericSettings.m */; };
 		D47D5E590D5EDDC40093524C /* TakaoGlobal.m in Sources */ = {isa = PBXBuildFile; fileRef = D47D5E4A0D5EDDC40093524C /* TakaoGlobal.m */; };
@@ -1171,6 +1172,8 @@
 		D47D5E420D5EDDC40093524C /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = PreferenceApplications/OSX/main.m; sourceTree = "<group>"; };
 		D47D5E430D5EDDC40093524C /* TakaoCangjie.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoCangjie.h; path = PreferenceApplications/OSX/TakaoCangjie.h; sourceTree = "<group>"; };
 		D47D5E440D5EDDC40093524C /* TakaoCangjie.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoCangjie.m; path = PreferenceApplications/OSX/TakaoCangjie.m; sourceTree = "<group>"; };
+		CK01CIN0000000000000001 /* TakaoCINTable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoCINTable.h; path = PreferenceApplications/OSX/TakaoCINTable.h; sourceTree = "<group>"; };
+		CK01CIN0000000000000002 /* TakaoCINTable.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoCINTable.m; path = PreferenceApplications/OSX/TakaoCINTable.m; sourceTree = "<group>"; };
 		D47D5E450D5EDDC40093524C /* TakaoGeneric.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoGeneric.h; path = PreferenceApplications/OSX/TakaoGeneric.h; sourceTree = "<group>"; };
 		D47D5E460D5EDDC40093524C /* TakaoGeneric.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoGeneric.m; path = PreferenceApplications/OSX/TakaoGeneric.m; sourceTree = "<group>"; };
 		D47D5E470D5EDDC40093524C /* TakaoGenericSettings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoGenericSettings.h; path = PreferenceApplications/OSX/TakaoGenericSettings.h; sourceTree = "<group>"; };
@@ -2322,6 +2325,8 @@
 				D47D5E6D0D5EDDDD0093524C /* TakaoWindow.m */,
 				D47D5E430D5EDDC40093524C /* TakaoCangjie.h */,
 				D47D5E440D5EDDC40093524C /* TakaoCangjie.m */,
+				CK01CIN0000000000000001 /* TakaoCINTable.h */,
+				CK01CIN0000000000000002 /* TakaoCINTable.m */,
 				D47D5E450D5EDDC40093524C /* TakaoGeneric.h */,
 				D47D5E460D5EDDC40093524C /* TakaoGeneric.m */,
 				D47D5E470D5EDDC40093524C /* TakaoGenericSettings.h */,
@@ -3770,6 +3775,7 @@
 				D47D5E550D5EDDC40093524C /* main.m in Sources */,
 				CE00000000000000000000B6 /* PEUserPhraseStore.mm in Sources */,
 				D47D5E560D5EDDC40093524C /* TakaoCangjie.m in Sources */,
+				CK01CIN0000000000000003 /* TakaoCINTable.m in Sources */,
 				D47D5E570D5EDDC40093524C /* TakaoGeneric.m in Sources */,
 				D47D5E580D5EDDC40093524C /* TakaoGenericSettings.m in Sources */,
 				D47D5E590D5EDDC40093524C /* TakaoGlobal.m in Sources */,

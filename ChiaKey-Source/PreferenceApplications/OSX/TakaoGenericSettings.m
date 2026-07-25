@@ -12,6 +12,7 @@ file for terms.
 @implementation TakaoGenericSettings
 
 - (void)dealloc {
+  [view release];
   [_genericDictionary release];
   [_preferenceFilePath release];
   [_moduleIdentifier release];
@@ -23,6 +24,12 @@ file for terms.
   if (self = [super init]) {
     BOOL loaded = [[NSBundle mainBundle] loadNibNamed:@"TakaoGenericSettings" owner:self topLevelObjects:nil];
     NSAssert((loaded == YES), @"NIB did not load");
+
+    // Top-level nib objects come back autoreleased and this controller is
+    // their only owner: without this retain the settings view stays alive
+    // only as long as it has a superview, so swapping panes deallocates it
+    // and the next -addSubview: touches freed memory.
+    [view retain];
   }
   return self;
 }

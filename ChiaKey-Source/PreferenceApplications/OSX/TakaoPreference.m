@@ -9,8 +9,14 @@ file for terms.
 
 #import "TakaoGeneric.h"
 #import "TakaoGlobal.h"
+#import "TakaoLoadedModule.h"
 #import "TakaoUpdate.h"
 #import "TakaoWindow.h"
+
+@interface TakaoPreference (Private)
+- (void)_refreshInputMethodListFromStatus:(NSDictionary *)status;
+- (void)_serviceStatusDidUpdate:(NSNotification *)notification;
+@end
 
 @implementation TakaoPreference
 
@@ -21,31 +27,22 @@ file for terms.
 
   // Module info comes from the status file the IME publishes on every
   // start/reload (see ChiaKeyServiceCoordination.h), not from XPC.
-  NSMutableArray *genericModules = [NSMutableArray array];
   NSDictionary *status = ChiaKeyReadServiceStatus();
 
-  NSEnumerator *moduleEnumerator =
-      [[status objectForKey:ChiaKeyStatusModulesKey] objectEnumerator];
-  NSArray *itemArray = nil;
-  while (itemArray = [moduleEnumerator nextObject]) {
-    if (![itemArray isKindOfClass:[NSArray class]] || ![itemArray count])
-      continue;
-    NSString *name = [itemArray objectAtIndex:0];
-    if ([name hasPrefix:@"Generic-"] &&
-        ![name isEqualToString:@"Generic-cj-cin"] &&
-        ![name isEqualToString:@"Generic-simplex-cin"])
-      [genericModules addObject:itemArray];
-  }
+  // The General pane lists whatever the engine actually loaded, so that
+  // imported tables can be hidden from the input menu. The table pane
+  // manages the files themselves and loads its own list.
+  [self _refreshInputMethodListFromStatus:status];
+
+  // Republished whenever the engine reloads, which is what happens right
+  // after a table is imported or removed.
+  [[NSDistributedNotificationCenter defaultCenter]
+      addObserver:self
+         selector:@selector(_serviceStatusDidUpdate:)
+             name:ChiaKeyServiceStatusDidUpdateNotification
+           object:nil];
 
   NSArray *loadedModules = [status objectForKey:ChiaKeyStatusPackagesKey];
-
-  if ([genericModules count]) {
-    _hasGenericInputMethods = YES;
-    [_takaoGenericController setModules:genericModules];
-    [_takaoGlobalController setInputMethods:genericModules];
-  } else {
-    [_takaoGlobalController setInputMethods:nil];
-  }
 
   if ([loadedModules count]) {
     _hasLoadedModules = YES;
@@ -83,6 +80,30 @@ file for terms.
   [self setAppIcon:[NSImage imageNamed:@"general"]];
 
   [window setTitle:LFLSTR(GeneralToolbarItemIdentifier)];
+}
+
+- (void)_refreshInputMethodListFromStatus:(NSDictionary *)status {
+  NSMutableArray *genericModules = [NSMutableArray array];
+
+  NSEnumerator *moduleEnumerator =
+      [[status objectForKey:ChiaKeyStatusModulesKey] objectEnumerator];
+  NSArray *itemArray = nil;
+  while (itemArray = [moduleEnumerator nextObject]) {
+    if (![itemArray isKindOfClass:[NSArray class]] || ![itemArray count])
+      continue;
+    NSString *name = [itemArray objectAtIndex:0];
+    if ([name hasPrefix:@"Generic-"] &&
+        ![name isEqualToString:@"Generic-cj-cin"] &&
+        ![name isEqualToString:@"Generic-simplex-cin"])
+      [genericModules addObject:itemArray];
+  }
+
+  [_takaoGlobalController
+      setInputMethods:[genericModules count] ? genericModules : nil];
+}
+
+- (void)_serviceStatusDidUpdate:(NSNotification *)notification {
+  [self _refreshInputMethodListFromStatus:ChiaKeyReadServiceStatus()];
 }
 
 - (void)setActiveView:(NSView *)view animate:(BOOL)flag {
