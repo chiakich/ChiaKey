@@ -96,7 +96,7 @@
 
 /* Table input method import */
 "Input Method" = "輸入法";
-"No input tables have been imported.\n\nClick + to import a CIN table file. Imported tables appear in the input menu alongside the built-in input methods." = "尚未匯入任何輸入表格。\n\n按 + 匯入 CIN 表格檔。匯入後的表格會和內建輸入法一起出現在輸入選單中。";
+"No input tables have been imported.\n\nClick + or drag a CIN table file here to import one. Imported tables appear in the input menu alongside the built-in input methods." = "尚未匯入任何輸入表格。\n\n按 + 或把 CIN 表格檔拖到這裡即可匯入。匯入後的表格會和內建輸入法一起出現在輸入選單中。";
 "Import a CIN table file" = "匯入 CIN 表格檔";
 "Remove the selected table" = "移除選取的表格";
 "Choose a CIN input table file to import." = "請選擇要匯入的 CIN 表格檔。";

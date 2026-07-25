@@ -94,7 +94,7 @@
 
 /* Table input method import */
 "Input Method" = "Input Method";
-"No input tables have been imported.\n\nClick + to import a CIN table file. Imported tables appear in the input menu alongside the built-in input methods." = "No input tables have been imported.\n\nClick + to import a CIN table file. Imported tables appear in the input menu alongside the built-in input methods.";
+"No input tables have been imported.\n\nClick + or drag a CIN table file here to import one. Imported tables appear in the input menu alongside the built-in input methods." = "No input tables have been imported.\n\nClick + or drag a CIN table file here to import one. Imported tables appear in the input menu alongside the built-in input methods.";
 "Import a CIN table file" = "Import a CIN table file";
 "Remove the selected table" = "Remove the selected table";
 "Choose a CIN input table file to import." = "Choose a CIN input table file to import.";

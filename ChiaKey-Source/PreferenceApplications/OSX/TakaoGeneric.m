@@ -47,6 +47,9 @@ static const CGFloat kButtonBarHeight = 28.0;
   [_genericModuleListTableView setDataSource:self];
   [_genericModuleListTableView setDelegate:self];
   [_genericModuleListTableView setAllowsEmptySelection:YES];
+  [_genericModuleListTableView
+      registerForDraggedTypes:[NSArray
+                                  arrayWithObject:NSPasteboardTypeFileURL]];
 
   _emptyStateTextField =
       [[NSTextField alloc] initWithFrame:NSMakeRect(20, 0, 276, 120)];
@@ -59,9 +62,9 @@ static const CGFloat kButtonBarHeight = 28.0;
   [[_emptyStateTextField cell] setWraps:YES];
   [_emptyStateTextField
       setStringValue:LFLSTR(@"No input tables have been imported.\n\nClick + "
-                            @"to import a CIN table file. Imported tables "
-                            @"appear in the input menu alongside the built-in "
-                            @"input methods.")];
+                            @"or drag a CIN table file here to import one. "
+                            @"Imported tables appear in the input menu "
+                            @"alongside the built-in input methods.")];
 
   NSRect settingFrame = [_genericSettingView bounds];
   NSRect labelFrame = [_emptyStateTextField frame];
@@ -365,6 +368,57 @@ static const CGFloat kButtonBarHeight = 28.0;
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification {
   [self _showSettingsForRow:[_genericModuleListTableView selectedRow]];
   [self _updateButtonState];
+}
+
+#pragma mark Drag and drop
+
+// One table per drop: each import puts up its own confirmation sheet, and
+// queueing several of those behind one another is worse than asking the user
+// to drop them one at a time.
+- (NSString *)_droppedTablePathFromInfo:(id<NSDraggingInfo>)info {
+  NSDictionary *options =
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES]
+                                  forKey:NSPasteboardURLReadingFileURLsOnlyKey];
+  NSArray *urls = [[info draggingPasteboard]
+      readObjectsForClasses:[NSArray arrayWithObject:[NSURL class]]
+                    options:options];
+
+  NSString *found = nil;
+  NSEnumerator *enumerator = [urls objectEnumerator];
+  NSURL *url = nil;
+  while (url = [enumerator nextObject]) {
+    if (![[[url pathExtension] lowercaseString] isEqualToString:@"cin"])
+      continue;
+    if (found) return nil;
+    found = [url path];
+  }
+  return found;
+}
+
+- (NSDragOperation)tableView:(NSTableView *)tableView
+                validateDrop:(id<NSDraggingInfo>)info
+                 proposedRow:(NSInteger)row
+       proposedDropOperation:(NSTableViewDropOperation)dropOperation {
+  if (![self _droppedTablePathFromInfo:info]) return NSDragOperationNone;
+
+  // The list has no user-defined order, so highlight the whole table rather
+  // than pretending the drop lands between two particular rows.
+  [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
+  return NSDragOperationCopy;
+}
+
+- (BOOL)tableView:(NSTableView *)tableView
+       acceptDrop:(id<NSDraggingInfo>)info
+              row:(NSInteger)row
+    dropOperation:(NSTableViewDropOperation)dropOperation {
+  NSString *path = [self _droppedTablePathFromInfo:info];
+  if (!path) return NO;
+
+  // Let the drag session finish before a sheet goes up on the window.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self _confirmImportOfFileAtPath:path];
+  });
+  return YES;
 }
 
 @end
