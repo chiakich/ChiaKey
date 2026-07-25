@@ -43,7 +43,7 @@ class DataCache {
     // duplicate would later let eviction erase this (still-live) key from
     // m_map while a stale copy of it lingers in m_deque.
     typename deque<KeyType>::iterator existing =
-        find(m_deque.begin(), m_deque.end(), key);
+        std::find(m_deque.begin(), m_deque.end(), key);
     if (existing != m_deque.end()) {
       m_deque.erase(existing);
     } else if (m_deque.size() >= m_capacity) {
