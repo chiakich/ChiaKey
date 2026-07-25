@@ -272,23 +272,21 @@ static const CGFloat kButtonBarHeight = 28.0;
                   BOOL reloaded = [self _requestReloadAndReturnIMEIsRunning];
                   [self reloadTablesSelectingFileName:fileName];
 
-                  NSString *displayName =
-                      [table objectForKey:TakaoCINTableDisplayNameKey];
-                  NSString *message =
-                      reloaded
-                          ? [NSString
-                                stringWithFormat:
-                                    LFLSTR(@"“%@” is now available in the "
-                                           @"input menu."),
-                                    displayName]
-                          : LFLSTR(@"Switch away from and back to ChiaKey to "
-                                   @"start using it.");
+                  // The new row appearing selected is the confirmation: the
+                  // user just answered a sheet naming this table, so saying
+                  // it worked adds a click without adding information. The
+                  // one case worth interrupting for is the IME not running,
+                  // where the table is installed but nothing has loaded it.
+                  if (reloaded) return;
 
                   // Let the confirmation sheet finish dismissing before the
                   // next one goes up on the same window.
                   dispatch_async(dispatch_get_main_queue(), ^{
                     [self _showAlertWithTitle:LFLSTR(@"Table imported")
-                                      message:message];
+                                      message:
+                                          LFLSTR(@"Switch away from and back "
+                                                 @"to ChiaKey to start using "
+                                                 @"it.")];
                   });
                 }];
 }
