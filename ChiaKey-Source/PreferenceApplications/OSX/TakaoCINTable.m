@@ -250,7 +250,7 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
     if (error)
       *error = [self
           errorWithCode:TakaoCINTableErrorNoCharDef
-            description:LFLSTR(@"This does not look like a CIN table: it has "
+            description:LFLSTR(@"This does not look like a .cin table: it has "
                                @"no %chardef section.")];
     return nil;
   }

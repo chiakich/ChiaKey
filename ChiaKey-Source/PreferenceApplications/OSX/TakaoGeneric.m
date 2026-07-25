@@ -40,13 +40,25 @@ static const CGFloat kButtonBarHeight = 28.0;
 
   [self _buildButtonBar];
 
-  NSTableColumn *column =
-      [[_genericModuleListTableView tableColumns] objectAtIndex:0];
-  [[column headerCell] setStringValue:LFLSTR(@"Input Method")];
+  // The nib's header view is layer-backed and does not repaint as rows scroll
+  // underneath it, so it turns transparent once the list is long enough to
+  // scroll. A one-column list sitting under a pane already titled "Custom"
+  // does not need a column title anyway.
+  [_genericModuleListTableView setHeaderView:nil];
 
   [_genericModuleListTableView setDataSource:self];
   [_genericModuleListTableView setDelegate:self];
-  [_genericModuleListTableView setAllowsEmptySelection:YES];
+  // With rows present there is always a selection, so clicking blank space
+  // below the list cannot land the pane in a "nothing selected" state that
+  // has nothing sensible to show.
+  [_genericModuleListTableView setAllowsEmptySelection:NO];
+  // The nib silences the focus ring on the enclosing scroll view but not
+  // on the table itself, so focusing the list drew a ring around the whole
+  // sidebar. The selection highlight already shows where focus is.
+  [_genericModuleListTableView setFocusRingType:NSFocusRingTypeNone];
+  [_genericModuleListTableView
+      registerForDraggedTypes:[NSArray
+                                  arrayWithObject:NSPasteboardTypeFileURL]];
 
   _emptyStateTextField =
       [[NSTextField alloc] initWithFrame:NSMakeRect(20, 0, 276, 120)];
@@ -59,9 +71,9 @@ static const CGFloat kButtonBarHeight = 28.0;
   [[_emptyStateTextField cell] setWraps:YES];
   [_emptyStateTextField
       setStringValue:LFLSTR(@"No input tables have been imported.\n\nClick + "
-                            @"to import a CIN table file. Imported tables "
-                            @"appear in the input menu alongside the built-in "
-                            @"input methods.")];
+                            @"or drag a .cin table file here to import one. "
+                            @"Imported tables appear in the input menu "
+                            @"alongside the built-in input methods.")];
 
   NSRect settingFrame = [_genericSettingView bounds];
   NSRect labelFrame = [_emptyStateTextField frame];
@@ -93,7 +105,7 @@ static const CGFloat kButtonBarHeight = 28.0;
   [_importButton setTitle:@"+"];
   [_importButton setTarget:self];
   [_importButton setAction:@selector(importTable:)];
-  [_importButton setToolTip:LFLSTR(@"Import a CIN table file")];
+  [_importButton setToolTip:LFLSTR(@"Import a .cin table file")];
   [container addSubview:_importButton];
 
   _removeButton = [[[NSButton alloc] initWithFrame:removeFrame] autorelease];
@@ -166,10 +178,14 @@ static const CGFloat kButtonBarHeight = 28.0;
   NSView *subview = nil;
   while (subview = [enumerator nextObject]) [subview removeFromSuperview];
 
-  if (row < 0 || row >= (NSInteger)[_modules count]) {
+  // The empty state describes having imported nothing at all; it must not
+  // stand in for "no row is selected", which is a different situation.
+  if (![_modules count]) {
     [_genericSettingView addSubview:_emptyStateTextField];
     return;
   }
+
+  if (row < 0 || row >= (NSInteger)[_modules count]) return;
 
   id controller = [[_modules objectAtIndex:row] objectForKey:@"controller"];
   if (controller) [_genericSettingView addSubview:[controller view]];
@@ -187,7 +203,7 @@ static const CGFloat kButtonBarHeight = 28.0;
   [panel setCanChooseDirectories:NO];
   [panel setCanChooseFiles:YES];
   [panel setAllowedFileTypes:[NSArray arrayWithObject:@"cin"]];
-  [panel setMessage:LFLSTR(@"Choose a CIN input table file to import.")];
+  [panel setMessage:LFLSTR(@"Choose a .cin input table file to import.")];
   [panel setPrompt:LFLSTR(@"Import")];
 
   [panel beginSheetModalForWindow:[self _window]
@@ -269,23 +285,21 @@ static const CGFloat kButtonBarHeight = 28.0;
                   BOOL reloaded = [self _requestReloadAndReturnIMEIsRunning];
                   [self reloadTablesSelectingFileName:fileName];
 
-                  NSString *displayName =
-                      [table objectForKey:TakaoCINTableDisplayNameKey];
-                  NSString *message =
-                      reloaded
-                          ? [NSString
-                                stringWithFormat:
-                                    LFLSTR(@"“%@” is now available in the "
-                                           @"input menu."),
-                                    displayName]
-                          : LFLSTR(@"Switch away from and back to ChiaKey to "
-                                   @"start using it.");
+                  // The new row appearing selected is the confirmation: the
+                  // user just answered a sheet naming this table, so saying
+                  // it worked adds a click without adding information. The
+                  // one case worth interrupting for is the IME not running,
+                  // where the table is installed but nothing has loaded it.
+                  if (reloaded) return;
 
                   // Let the confirmation sheet finish dismissing before the
                   // next one goes up on the same window.
                   dispatch_async(dispatch_get_main_queue(), ^{
                     [self _showAlertWithTitle:LFLSTR(@"Table imported")
-                                      message:message];
+                                      message:
+                                          LFLSTR(@"Switch away from and back "
+                                                 @"to ChiaKey to start using "
+                                                 @"it.")];
                   });
                 }];
 }
@@ -365,6 +379,57 @@ static const CGFloat kButtonBarHeight = 28.0;
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification {
   [self _showSettingsForRow:[_genericModuleListTableView selectedRow]];
   [self _updateButtonState];
+}
+
+#pragma mark Drag and drop
+
+// One table per drop: each import puts up its own confirmation sheet, and
+// queueing several of those behind one another is worse than asking the user
+// to drop them one at a time.
+- (NSString *)_droppedTablePathFromInfo:(id<NSDraggingInfo>)info {
+  NSDictionary *options =
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES]
+                                  forKey:NSPasteboardURLReadingFileURLsOnlyKey];
+  NSArray *urls = [[info draggingPasteboard]
+      readObjectsForClasses:[NSArray arrayWithObject:[NSURL class]]
+                    options:options];
+
+  NSString *found = nil;
+  NSEnumerator *enumerator = [urls objectEnumerator];
+  NSURL *url = nil;
+  while (url = [enumerator nextObject]) {
+    if (![[[url pathExtension] lowercaseString] isEqualToString:@"cin"])
+      continue;
+    if (found) return nil;
+    found = [url path];
+  }
+  return found;
+}
+
+- (NSDragOperation)tableView:(NSTableView *)tableView
+                validateDrop:(id<NSDraggingInfo>)info
+                 proposedRow:(NSInteger)row
+       proposedDropOperation:(NSTableViewDropOperation)dropOperation {
+  if (![self _droppedTablePathFromInfo:info]) return NSDragOperationNone;
+
+  // The list has no user-defined order, so highlight the whole table rather
+  // than pretending the drop lands between two particular rows.
+  [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
+  return NSDragOperationCopy;
+}
+
+- (BOOL)tableView:(NSTableView *)tableView
+       acceptDrop:(id<NSDraggingInfo>)info
+              row:(NSInteger)row
+    dropOperation:(NSTableViewDropOperation)dropOperation {
+  NSString *path = [self _droppedTablePathFromInfo:info];
+  if (!path) return NO;
+
+  // Let the drag session finish before a sheet goes up on the window.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self _confirmImportOfFileAtPath:path];
+  });
+  return YES;
 }
 
 @end
