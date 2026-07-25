@@ -23,7 +23,7 @@
 sudo installer -pkg ChiaKey.pkg -target /
 ```
 
-請把 `ChiaKey.pkg` 換成實際下載的檔名。此命令將會安裝到 `/Library/Input Methods`，需要管理員權限。
+此命令將會安裝到 `/Library/Input Methods`，需要管理員權限。
 
 ### 解除安裝
 
@@ -39,20 +39,28 @@ Scripts/uninstall.sh
 
 ## 適合誰使用
 
-千秋輸入法不是為了和所有現代注音輸入法競爭功能完整度而建立。這個專案的主要動機是紀念並延續 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 這條歷史脈絡，盡可能保留 KeyKey 在 macOS 上的輸入節奏、候選窗體驗與 bigram 語言模型。
+千秋輸入法不是為了和所有現代注音輸入法競爭功能完整度而建立。這個專案的主要動機是紀念並延續 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 這條歷史脈絡，盡可能保留 KeyKey 在 macOS 上的輸入節奏與候選窗體驗，並重建當年未曾釋出的 bigram 語言模型。
 
 它比較適合下列使用者：
 
 1. 懷念 Yahoo! 奇摩輸入法 的候選窗、組字與輸入節奏。
 2. 想保存、研究或延續 KeyKey / OpenVanilla 這套開源輸入法引擎。
 3. 偏好保守、小步維護的復興專案，而不是功能面非常寬的現代輸入法。
-4. 希望詞庫 release、SQLite schema、fallback 與驗證規則圍繞 KeyKey 原有語言模型逐步整理。
+4. 希望詞庫 release、SQLite schema、fallback 與驗證規則圍繞 KeyKey 的語言模型架構逐步整理。
 
 如果你想找一套日常可用、功能更完整的現代注音輸入法，也可以參考：
 
 1. macOS 內建注音輸入方式：不需要額外安裝，和系統整合度最高，適合需求單純、希望維持最少維護成本的使用者。
-2. [小麥注音輸入法](https://github.com/openvanilla/McBopomofo)：長期維護的開源注音輸入法，架構較現代、專案焦點清楚。
+2. [小麥注音輸入法](https://github.com/openvanilla/McBopomofo)：由 OpenVanilla 社群長期維護的開源注音輸入法，與 Yahoo 輸入法有共同的淵源，架構現代、專案焦點清楚。
 3. [vChewing 唯音輸入法](https://vchewing.github.io/) 與其 [macOS repo](https://github.com/vChewing/vChewing-macOS)：功能面完整，支援多種鍵盤、拼音輸入、Sandbox、安全防護、輸出轉換與許多進階偏好設定。
+
+## 關於詞庫與 bigram
+
+Yahoo! 奇摩輸入法當年為人稱道的選字品質，很大一部分來自一套 bigram 語言模型。它決定了同音時「打完前一個詞，接哪個字才合理」。但這套 bigram 模型當年並未隨程式碼一起開源，因此無法沿用。
+
+千秋輸入法的 bigram 是重新建構的：以既有開源詞庫為基底，疊加 Mozilla Common Voice 句料，以及參照中央研究院平衡語料庫主題分佈、由大型語言模型生成再經審核提煉的台灣口語語料，透過一條可重現、來源可追蹤的 pipeline 產生。
+
+這是本專案投入最深的部分。完整的資料層、來源審查與整合流程記錄在 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon)。
 
 ## 目前狀態
 
