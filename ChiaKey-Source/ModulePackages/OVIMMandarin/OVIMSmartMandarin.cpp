@@ -996,7 +996,7 @@ OVIMSmartMandarin::OVIMSmartMandarin()
       //    , m_BPMFDB(0)
       ,
       m_cfgCandidateCursorAtEndOfTargetBlock(false),
-      m_cfgComposingTextBufferSize(10)
+      m_cfgComposingTextBufferSize(20)
 #ifndef WIN32
       ,
       m_cfgShowCandidateListWithSpace(true),

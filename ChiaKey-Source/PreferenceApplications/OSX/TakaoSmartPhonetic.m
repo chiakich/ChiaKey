@@ -94,7 +94,7 @@ file for terms.
   [_phoneticDictionary setValue:@"false"
                          forKey:@"CandidateCursorAtEndOfTargetBlock"];
   [_phoneticDictionary setValue:@"12345678" forKey:@"CandidateSelectionKeys"];
-  [_phoneticDictionary setValue:@"10" forKey:@"ComposingTextBufferSize"];
+  [_phoneticDictionary setValue:@"20" forKey:@"ComposingTextBufferSize"];
   LFRetainAssign(_preferenceFilePath,
                  [TakaoHelper plistFilePath:PLIST_SMARTPHONETIC_FILENAME]);
 

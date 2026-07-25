@@ -165,7 +165,7 @@ CKC_EngineConfig CKC_EngineConfigDefault(void) {
   config.show_candidate_list_with_space = 1;
   config.clear_composing_text_with_esc = 0;
   config.shift_key_always_commit_uppercase_characters = 0;
-  config.composing_text_buffer_size = 10;
+  config.composing_text_buffer_size = 20;
   return config;
 }
 

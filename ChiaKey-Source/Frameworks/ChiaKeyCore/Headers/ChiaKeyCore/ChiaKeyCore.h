@@ -47,7 +47,7 @@ struct EngineConfig {
   bool showCandidateListWithSpace = true;
   bool clearComposingTextWithEsc = false;
   bool shiftKeyAlwaysCommitUppercaseCharacters = false;
-  std::size_t composingTextBufferSize = 10;
+  std::size_t composingTextBufferSize = 20;
 };
 
 struct TextRange {
