@@ -62,6 +62,26 @@ Yahoo! 奇摩輸入法當年為人稱道的選字品質，很大一部分來自�
 
 這是本專案投入最深的部分。完整的資料層、來源審查與整合流程記錄在 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon)。
 
+## 匯入自訂輸入法（cin 表格）
+
+除了注音、倉頡與速成之外，千秋輸入法也保留了 OpenVanilla 的通用表格引擎，可以載入 `.cin` 對照表。倉頡、行列、大易、粵語拼音、客語、台語等以「打碼查字」為主的輸入法，都是這種格式。
+
+在「千秋輸入法偏好設定 > 自訂輸入法」按 **+** 選擇 `.cin` 檔即可匯入。匯入前會先顯示表格名稱、字詞數與選字鍵讓你確認；Big5 編碼的舊表格會自動轉成 UTF-8。匯入完成後，該輸入法就會出現在輸入選單中，也可以在「一般」分頁取消勾選，讓它不顯示在選單上。
+
+選取清單中的表格再按 **−** 即可移除。只有你自己匯入的表格會列在這裡，內建的四個輸入法不受影響。
+
+表格檔會存放在：
+
+```
+~/Library/Application Support/ChiaKey/DataTables/Generic/
+```
+
+也可以直接把 `.cin` 檔放進這個資料夾（檔名請使用英數字），登出再登入即可生效。
+注意：請不要把檔案放進 app bundle 內部，那會讓程式安全性簽章失效，並且更新時會被覆蓋。
+
+表格檔可以從 [chinese-opendesktop/cin-tables](https://github.com/chinese-opendesktop/cin-tables) 取得。該倉庫整體採用 CC0，但個別檔案可能另外標註授權，例如廣東話的 `cantonhk.cin` 在檔頭寫明是 GPL，而 `jyutping.cin`（粵拼）、`ile.cin`（廣東拼音）、`zyujam.cin`（粵語注音）則標為 Public Domain。使用前請自行確認檔案本身的授權說明。
+
+
 ## 目前狀態
 
 這個 fork 的上游脈絡來自官方封存的 `YahooArchive/KeyKey`，目前的現代化工作則起始於 `vChewing/KeyKey-Boneyard` snapshot。
