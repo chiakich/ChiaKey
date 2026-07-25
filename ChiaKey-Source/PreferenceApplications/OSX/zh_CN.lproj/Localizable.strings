@@ -95,11 +95,10 @@
 "The uninstaller script was not found." = "找不到卸载程序。";
 
 /* Table input method import */
-"Input Method" = "输入法";
-"No input tables have been imported.\n\nClick + or drag a CIN table file here to import one. Imported tables appear in the input menu alongside the built-in input methods." = "尚未导入任何输入表格。\n\n点 + 或把 CIN 表格文件拖到这里即可导入。导入后的表格会和内建输入法一起出现在输入菜单中。";
-"Import a CIN table file" = "导入 CIN 表格文件";
+"No input tables have been imported.\n\nClick + or drag a .cin table file here to import one. Imported tables appear in the input menu alongside the built-in input methods." = "尚未导入任何输入表格。\n\n点 + 或把 .cin 表格文件拖到这里即可导入。导入后的表格会和内建输入法一起出现在输入菜单中。";
+"Import a .cin table file" = "导入 .cin 表格文件";
 "Remove the selected table" = "移除选中的表格";
-"Choose a CIN input table file to import." = "请选择要导入的 CIN 表格文件。";
+"Choose a .cin input table file to import." = "请选择要导入的 .cin 表格文件。";
 "Import" = "导入";
 "Replace" = "替换";
 "This table cannot be imported" = "无法导入这个表格";
@@ -118,7 +117,7 @@
 "The file could not be read." = "无法读取这个文件。";
 "The file is too large to be an input table." = "这个文件太大，不像是输入表格。";
 "The text encoding of the file could not be recognized. ChiaKey can read UTF-8 and Big5 tables." = "无法识别这个文件的文字编码。千秋输入法可以读取 UTF-8 与 Big5 的表格。";
-"This does not look like a CIN table: it has no %chardef section." = "这看起来不是 CIN 表格：文件里没有 %chardef 区段。";
+"This does not look like a .cin table: it has no %chardef section." = "这看起来不是 .cin 表格：文件里没有 %chardef 区段。";
 "The table contains no entries." = "这个表格里没有任何字词。";
 "The table has no name (%cname or %ename), so it cannot be shown in the input menu." = "这个表格没有名称（%cname 或 %ename），无法显示在输入菜单中。";
 "The file name contains no letters or digits that can be used as an input method name. Please rename the file and try again." = "文件名中没有可以用作输入法名称的英文数字，请重命名后再试一次。";

@@ -93,11 +93,10 @@
 "The uninstaller script was not found." = "The uninstaller script was not found.";
 
 /* Table input method import */
-"Input Method" = "Input Method";
-"No input tables have been imported.\n\nClick + or drag a CIN table file here to import one. Imported tables appear in the input menu alongside the built-in input methods." = "No input tables have been imported.\n\nClick + or drag a CIN table file here to import one. Imported tables appear in the input menu alongside the built-in input methods.";
-"Import a CIN table file" = "Import a CIN table file";
+"No input tables have been imported.\n\nClick + or drag a .cin table file here to import one. Imported tables appear in the input menu alongside the built-in input methods." = "No input tables have been imported.\n\nClick + or drag a .cin table file here to import one. Imported tables appear in the input menu alongside the built-in input methods.";
+"Import a .cin table file" = "Import a .cin table file";
 "Remove the selected table" = "Remove the selected table";
-"Choose a CIN input table file to import." = "Choose a CIN input table file to import.";
+"Choose a .cin input table file to import." = "Choose a .cin input table file to import.";
 "Import" = "Import";
 "Replace" = "Replace";
 "Cancel" = "Cancel";
@@ -118,7 +117,7 @@
 "The file could not be read." = "The file could not be read.";
 "The file is too large to be an input table." = "The file is too large to be an input table.";
 "The text encoding of the file could not be recognized. ChiaKey can read UTF-8 and Big5 tables." = "The text encoding of the file could not be recognized. ChiaKey can read UTF-8 and Big5 tables.";
-"This does not look like a CIN table: it has no %chardef section." = "This does not look like a CIN table: it has no %chardef section.";
+"This does not look like a .cin table: it has no %chardef section." = "This does not look like a .cin table: it has no %chardef section.";
 "The table contains no entries." = "The table contains no entries.";
 "The table has no name (%cname or %ename), so it cannot be shown in the input menu." = "The table has no name (%cname or %ename), so it cannot be shown in the input menu.";
 "The file name contains no letters or digits that can be used as an input method name. Please rename the file and try again." = "The file name contains no letters or digits that can be used as an input method name. Please rename the file and try again.";

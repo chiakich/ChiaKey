@@ -40,13 +40,22 @@ static const CGFloat kButtonBarHeight = 28.0;
 
   [self _buildButtonBar];
 
-  NSTableColumn *column =
-      [[_genericModuleListTableView tableColumns] objectAtIndex:0];
-  [[column headerCell] setStringValue:LFLSTR(@"Input Method")];
+  // The nib's header view is layer-backed and does not repaint as rows scroll
+  // underneath it, so it turns transparent once the list is long enough to
+  // scroll. A one-column list sitting under a pane already titled "Custom"
+  // does not need a column title anyway.
+  [_genericModuleListTableView setHeaderView:nil];
 
   [_genericModuleListTableView setDataSource:self];
   [_genericModuleListTableView setDelegate:self];
-  [_genericModuleListTableView setAllowsEmptySelection:YES];
+  // With rows present there is always a selection, so clicking blank space
+  // below the list cannot land the pane in a "nothing selected" state that
+  // has nothing sensible to show.
+  [_genericModuleListTableView setAllowsEmptySelection:NO];
+  // The nib silences the focus ring on the enclosing scroll view but not
+  // on the table itself, so focusing the list drew a ring around the whole
+  // sidebar. The selection highlight already shows where focus is.
+  [_genericModuleListTableView setFocusRingType:NSFocusRingTypeNone];
   [_genericModuleListTableView
       registerForDraggedTypes:[NSArray
                                   arrayWithObject:NSPasteboardTypeFileURL]];
@@ -62,7 +71,7 @@ static const CGFloat kButtonBarHeight = 28.0;
   [[_emptyStateTextField cell] setWraps:YES];
   [_emptyStateTextField
       setStringValue:LFLSTR(@"No input tables have been imported.\n\nClick + "
-                            @"or drag a CIN table file here to import one. "
+                            @"or drag a .cin table file here to import one. "
                             @"Imported tables appear in the input menu "
                             @"alongside the built-in input methods.")];
 
@@ -96,7 +105,7 @@ static const CGFloat kButtonBarHeight = 28.0;
   [_importButton setTitle:@"+"];
   [_importButton setTarget:self];
   [_importButton setAction:@selector(importTable:)];
-  [_importButton setToolTip:LFLSTR(@"Import a CIN table file")];
+  [_importButton setToolTip:LFLSTR(@"Import a .cin table file")];
   [container addSubview:_importButton];
 
   _removeButton = [[[NSButton alloc] initWithFrame:removeFrame] autorelease];
@@ -169,10 +178,14 @@ static const CGFloat kButtonBarHeight = 28.0;
   NSView *subview = nil;
   while (subview = [enumerator nextObject]) [subview removeFromSuperview];
 
-  if (row < 0 || row >= (NSInteger)[_modules count]) {
+  // The empty state describes having imported nothing at all; it must not
+  // stand in for "no row is selected", which is a different situation.
+  if (![_modules count]) {
     [_genericSettingView addSubview:_emptyStateTextField];
     return;
   }
+
+  if (row < 0 || row >= (NSInteger)[_modules count]) return;
 
   id controller = [[_modules objectAtIndex:row] objectForKey:@"controller"];
   if (controller) [_genericSettingView addSubview:[controller view]];
@@ -190,7 +203,7 @@ static const CGFloat kButtonBarHeight = 28.0;
   [panel setCanChooseDirectories:NO];
   [panel setCanChooseFiles:YES];
   [panel setAllowedFileTypes:[NSArray arrayWithObject:@"cin"]];
-  [panel setMessage:LFLSTR(@"Choose a CIN input table file to import.")];
+  [panel setMessage:LFLSTR(@"Choose a .cin input table file to import.")];
   [panel setPrompt:LFLSTR(@"Import")];
 
   [panel beginSheetModalForWindow:[self _window]
