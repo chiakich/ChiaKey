@@ -381,10 +381,12 @@ jobs:
             jq --argjson e "${entry}" '.schema=1 | .stable=$e | .beta=$e' current.json >appcast.json
           fi
 
+          # Clients throttle their update check to once every 24h, so a short
+          # freshness window buys nothing and just multiplies origin fetches.
           r2 PUT appcast.json \
             --upload-file appcast.json \
             -H "Content-Type: application/json" \
-            -H "Cache-Control: max-age=300"
+            -H "Cache-Control: public, max-age=3600"
 
           echo "Published manifest for ${TAG} to ${R2_PUBLIC_BASE_URL}/${prefix}/appcast.json" \
             >>"$GITHUB_STEP_SUMMARY"
