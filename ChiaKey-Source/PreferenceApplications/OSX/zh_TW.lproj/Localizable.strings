@@ -113,7 +113,7 @@
 "Table imported" = "表格已匯入";
 "Switch away from and back to ChiaKey to start using it." = "請切換到其他輸入法再切回千秋輸入法，就可以開始使用。";
 "Remove “%@”?" = "要移除「%@」嗎？";
-"The table file will be deleted and the input method will no longer appear in the input menu. You can import it again later." = "表格檔會被刪除，這個輸入法也不會再出現在輸入選單中。你之後可以再匯入一次。";
+"The table file will be deleted and the input method will no longer appear in the input menu. You can import it again later." = "將會移除此表格檔，這個輸入法將不會再出現在輸入選單中。若有需要可以再次匯入。";
 "The table could not be removed" = "無法移除表格";
 "The file could not be read." = "無法讀取這個檔案。";
 "The file is too large to be an input table." = "這個檔案太大，不像是輸入表格。";
