@@ -107,11 +107,18 @@ class LearningStore {
   // A hit means the user typed this reading again, so it counts as recency
   // evidence even if they go on to pick something else.
   const ValueType* fetch(const string& key) {
+    const Entry* entry = fetchEntry(key);
+    return entry ? &entry->value : 0;
+  }
+
+  // Same read, but the caller also needs the statistics -- scoring a learned
+  // entry depends on how often it was selected.
+  const Entry* fetchEntry(const string& key) {
     typename EntryMap::iterator iter = m_map.find(key);
     if (iter == m_map.end()) return 0;
 
     touch(iter);
-    return &(*iter).second.value;
+    return &(*iter).second;
   }
 
   const Entry* peek(const string& key) const {
@@ -412,6 +419,25 @@ class LanguageModel {
   // already-correct lexicon answer by 22% while still needing fewer manual
   // selections than trusting it unconditionally.
   static const size_t c_overrideGeneralizationContexts = 3;
+
+  // What a learned bigram is worth, as an explicit decision rather than a
+  // side effect. This used to come from cachedMaxUnigramProbability(), which on
+  // the shipped lexicon evaluates to ~0.0 -- log10(1), a certainty no real
+  // n-gram can have -- only because the BOS/EOS marker rows carry probability 0.
+  // So a single selection outscored every bigram in the lexicon (they span
+  // -3.35 to -0.05, median -1.10), by accident.
+  //
+  // Weakening it was measured and rejected. Scaling the first pick down to the
+  // lexicon's 90th percentile and letting repeated picks climb back cost 11%
+  // more manual selections on replayed material (206 vs 185 per pass) and bought
+  // nothing on held-out sentences (84.05% vs 83.73% exact, 2 sentences in 627).
+  // Users rely on one correction sticking. Keep it decisive -- but keep it
+  // stated here, not inherited from whatever MAX(probability) happens to be in
+  // the current lexicon. Tunable so Scripts/eval-walker-goldset.sh can re-sweep.
+  static double c_learnedBigramScore;
+  static void SetLearnedBigramScore(double score);
+
+  virtual double learnedBigramScore(size_t selectionCount);
 
   // @in-research: the candidate-selection cache
   virtual void cacheOverrideSelection(const string& qstring,
@@ -849,6 +875,18 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
   return true;
 }
 
+inline void LanguageModel::SetLearnedBigramScore(double score) {
+  c_learnedBigramScore = score;
+}
+
+// selectionCount is accepted but unused: see c_learnedBigramScore for why
+// count-scaling was measured and dropped. Kept in the signature because it is
+// the natural hook if a future measurement changes the answer.
+inline double LanguageModel::learnedBigramScore(size_t selectionCount) {
+  (void)selectionCount;
+  return c_learnedBigramScore;
+}
+
 inline void LanguageModel::cacheUserBigram(const string& combinedQueryString,
                                            const string& previous,
                                            const string& current) {
@@ -1016,49 +1054,59 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
   BigramVector results;
   if (!m_selectBigram) return results;
 
-#ifdef MANJUSRI_USE_CACHE
-  if (m_cfgUseUserBigramCache) {
-    const Bigram* learned = m_userBigramCache.fetch(queryString);
-    if (learned) {
-      // cerr << "using cached user bigram result for: " << queryString << ",
-      // bigram = " << *learned << endl;
-      m_cachedQueryCount++;
-      results.push_back(*learned);
-      return results;
-    }
-  }
+  bool haveLexiconResults = false;
 
+#ifdef MANJUSRI_USE_CACHE
   map<string, BigramVector>::iterator citer = m_bigramCache.find(queryString);
   if (citer != m_bigramCache.end()) {
     m_cachedQueryCount++;
     // cerr << "using cached result for: " << queryString << endl;
-    return (*citer).second;
+    results = (*citer).second;
+    haveLexiconResults = true;
   }
 #endif
 
-  m_queryCount++;
-  m_selectBigram->reset();
-  m_selectBigram->bindTextToColumn(queryString, 1);
+  if (!haveLexiconResults) {
+    m_queryCount++;
+    m_selectBigram->reset();
+    m_selectBigram->bindTextToColumn(queryString, 1);
 
-  while (m_selectBigram->step() == SQLITE_ROW) {
-    if (!filter)
-      results.push_back(Bigram(queryString, m_selectBigram->textOfColumn(1),
-                               m_selectBigram->textOfColumn(2),
-                               m_selectBigram->doubleOfColumn(3)));
-    else {
-      if (filter->shouldPass(m_selectBigram->textOfColumn(2)))
+    while (m_selectBigram->step() == SQLITE_ROW) {
+      if (!filter)
         results.push_back(Bigram(queryString, m_selectBigram->textOfColumn(1),
                                  m_selectBigram->textOfColumn(2),
                                  m_selectBigram->doubleOfColumn(3)));
+      else {
+        if (filter->shouldPass(m_selectBigram->textOfColumn(2)))
+          results.push_back(Bigram(queryString, m_selectBigram->textOfColumn(1),
+                                   m_selectBigram->textOfColumn(2),
+                                   m_selectBigram->doubleOfColumn(3)));
+      }
+    }
+
+#ifdef MANJUSRI_USE_CACHE
+    // cache the lexicon's own answer; the learned entry is merged per call
+    // because its score moves as the user keeps picking it
+    m_bigramCache.forcePush(queryString, results);
+#endif
+  }
+
+  // A learned bigram competes with the lexicon rather than replacing it. It
+  // used to be returned alone, which made one selection final regardless of how
+  // strongly the lexicon disagreed.
+  if (m_cfgUseUserBigramCache) {
+    const LearningStore<Bigram>::Entry* learned =
+        m_userBigramCache.fetchEntry(queryString);
+    if (learned) {
+      m_cachedQueryCount++;
+      Bigram scored = learned->value;
+      scored.probability = learnedBigramScore(learned->selectionCount);
+      if (!filter || filter->shouldPass(scored.current))
+        results.push_back(scored);
     }
   }
 
   stable_sort(results.begin(), results.end(), GramCompare<Bigram>());
-
-#ifdef MANJUSRI_USE_CACHE
-  m_bigramCache.forcePush(queryString, results);
-#endif
-
   return results;
 }
 

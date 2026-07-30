@@ -12,4 +12,8 @@ Score Node::c_defaultUNKBackoff = (Score)0;
 Score Node::c_defaultOverrideScore = (Score)100;
 // Length prior, log10 per extra syllable; gold-set safe window [0.85,1.33]. Tune via SetPhraseLengthBonus.
 Score Node::c_phraseLengthBonus = (Score)1.0;
+
+// log10(1.0): a learned bigram outranks every entry in the lexicon. Measured
+// choice, not an accident of the lexicon's contents -- see the declaration.
+double LanguageModel::c_learnedBigramScore = 0.0;
 };  // namespace Manjusri
