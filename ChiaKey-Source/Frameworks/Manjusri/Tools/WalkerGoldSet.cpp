@@ -19,6 +19,12 @@
 //
 //   eval   replays each row through the real Graph and LanguageModel.
 //
+//   replay drives ManjusriComposer exactly as the IME does, correcting whatever
+//          the walk got wrong and letting the real learning path record it, so
+//          the cost of a weighting scheme is measured in manual selections over
+//          a stream of typing rather than in one-shot accuracy. This is the mode
+//          to use for anything that changes how strongly learning scores.
+//
 // Report absolute accuracy only from a --dominance 0 set. Looser sets are for
 // comparing two configurations, where the noise sits on both sides.
 //
@@ -35,6 +41,9 @@
 
 #include "Graph.h"
 #include "LanguageModel.h"
+// ManjusriComposer is the layer the IME drives, so replay mode uses it directly
+// rather than reimplementing candidate selection and its learning side effects.
+#include "OVIMSmartMandarin.h"
 
 using namespace std;
 using namespace Manjusri;
@@ -53,7 +62,10 @@ void Usage() {
        << "  WalkerGoldSet build --lexicon DB --corpus FILE --out TSV\n"
        << "        [--dominance N] [--min-chars N] [--max-chars N] [--limit N]\n"
        << "  WalkerGoldSet eval --lexicon DB --gold TSV [--length-prior X]\n"
-       << "        [--user-db PATH] [--mismatches FILE]\n";
+       << "        [--user-db PATH] [--mismatches FILE]\n"
+       << "  WalkerGoldSet replay --lexicon DB --gold TSV [--passes N]\n"
+       << "        [--length-prior X] [--user-db PATH] [--keep-user-db]\n"
+       << "        [--learned-score X]\n";
 }
 
 const string ArgValue(const vector<string>& args, const string& name,
@@ -348,6 +360,166 @@ int Eval(const vector<string>& args) {
   return 0;
 }
 
+// ---- replay ----------------------------------------------------------------
+
+// Index of the candidate a user would pick to fix position `at`: the longest
+// one whose text matches the expected characters from there.
+int BestCandidateFor(const vector<string>& candidates,
+                     const vector<string>& expectedChars, size_t at) {
+  int best = -1;
+  size_t bestLength = 0;
+
+  for (size_t i = 0; i < candidates.size(); i++) {
+    vector<string> candidateChars =
+        OVUTF8Helper::SplitStringByCodePoint(candidates[i]);
+    if (candidateChars.empty()) continue;
+    if (at + candidateChars.size() > expectedChars.size()) continue;
+
+    bool matches = true;
+    for (size_t c = 0; c < candidateChars.size(); c++)
+      if (candidateChars[c] != expectedChars[at + c]) {
+        matches = false;
+        break;
+      }
+
+    if (matches && candidateChars.size() > bestLength) {
+      best = (int)i;
+      bestLength = candidateChars.size();
+    }
+  }
+
+  return best;
+}
+
+int Replay(const vector<string>& args) {
+  const string lexicon = ArgValue(args, "--lexicon");
+  const string gold = ArgValue(args, "--gold");
+  if (lexicon.empty() || gold.empty()) {
+    Usage();
+    return 1;
+  }
+
+  const size_t passes = (size_t)atoi(ArgValue(args, "--passes", "1").c_str());
+
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(lexicon);
+  if (!db) {
+    cerr << "cannot open lexicon: " << lexicon << endl;
+    return 1;
+  }
+
+  // Learning goes to a scratch database so a measurement never touches the
+  // user's own; the caller decides whether to keep it.
+  const string userDBPath =
+      ArgValue(args, "--user-db", "/tmp/chiakey-replay-user.db");
+  if (!HasArg(args, "--keep-user-db")) remove(userDBPath.c_str());
+
+  OVSQLiteConnection* userDB = OVSQLiteConnection::Open(userDBPath);
+  if (!userDB) {
+    cerr << "cannot open scratch user database: " << userDBPath << endl;
+    delete db;
+    return 1;
+  }
+  userDB->execute(
+      "CREATE TABLE IF NOT EXISTS user_unigrams "
+      "(qstring, current, probability, backoff)");
+  userDB->execute(
+      "CREATE TABLE IF NOT EXISTS user_bigram_cache "
+      "(qstring, previous, current, probability)");
+  userDB->execute(
+      "CREATE TABLE IF NOT EXISTS user_candidate_override_cache "
+      "(qstring, current)");
+  LanguageModel::MigrateUserLearningTables(userDB);
+  delete userDB;
+
+  if (db->execute("ATTACH DATABASE %Q AS userdb", userDBPath.c_str()) !=
+      SQLITE_OK) {
+    cerr << "cannot attach scratch user database" << endl;
+    delete db;
+    return 1;
+  }
+
+  LanguageModel lm(db, 0, true, false, false, true, true);
+  lm.loadUserBigramCache();
+  lm.loadUserCandidateOverrideCache();
+
+  Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+  if (HasArg(args, "--length-prior"))
+    Node::SetPhraseLengthBonus(
+        (Score)atof(ArgValue(args, "--length-prior").c_str()));
+  if (HasArg(args, "--learned-score"))
+    LanguageModel::SetLearnedBigramScore(
+        atof(ArgValue(args, "--learned-score", "0.0").c_str()));
+
+  vector<GoldRow> rows = LoadGold(gold);
+  if (rows.empty()) {
+    cerr << "no usable rows in " << gold << endl;
+    delete db;
+    return 1;
+  }
+
+  cout << "sentences per pass: " << rows.size() << endl;
+
+  for (size_t pass = 0; pass < passes; pass++) {
+    size_t selections = 0, firstTry = 0, unreachable = 0;
+
+    for (size_t i = 0; i < rows.size(); i++) {
+      const GoldRow& row = rows[i];
+      vector<string> expectedChars =
+          OVUTF8Helper::SplitStringByCodePoint(row.expected);
+
+      ManjusriComposer composer(&lm);
+      composer.clear();
+      for (size_t r = 0; r < row.readings.size(); r++)
+        composer.insertAt(r + 1, row.readings[r]);
+      composer.update();
+
+      if (composer.composedString() == row.expected) {
+        firstTry++;
+        continue;
+      }
+
+      // Correct left to right, exactly as a user would, until the sentence
+      // matches or the lexicon simply cannot produce it.
+      bool stuck = false;
+      for (size_t guard = 0; guard < expectedChars.size() + 1; guard++) {
+        const string current = composer.composedString();
+        if (current == row.expected) break;
+
+        vector<string> currentChars =
+            OVUTF8Helper::SplitStringByCodePoint(current);
+        size_t at = 0;
+        while (at < currentChars.size() && at < expectedChars.size() &&
+               currentChars[at] == expectedChars[at])
+          at++;
+        if (at >= expectedChars.size()) break;
+
+        vector<string> candidates =
+            composer.collectCandidates(at + composer.cursorLeftBound(), false);
+        int pick = BestCandidateFor(candidates, expectedChars, at);
+        if (pick < 0) {
+          stuck = true;
+          break;
+        }
+
+        composer.chooseCandidate((size_t)pick);
+        selections++;
+      }
+
+      if (stuck) unreachable++;
+    }
+
+    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+
+    cout << "pass " << (pass + 1) << ": right first time " << firstTry << " ("
+         << (100.0 * (double)firstTry / (double)rows.size())
+         << "%), manual selections " << selections << ", unreachable "
+         << unreachable << endl;
+  }
+
+  delete db;
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -361,6 +533,7 @@ int main(int argc, char** argv) {
 
   if (args[0] == "build") return Build(args);
   if (args[0] == "eval") return Eval(args);
+  if (args[0] == "replay") return Replay(args);
 
   Usage();
   return 1;

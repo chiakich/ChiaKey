@@ -23,6 +23,11 @@ set -euo pipefail
 #   --user-db PATH     attach a user learning database and enable it
 #   --mismatches FILE  write every wrong sentence for inspection
 #   --limit N          cap the number of gold sentences
+#   --replay           drive ManjusriComposer like the IME, correcting mistakes
+#                      and letting the real learning path record them; reports
+#                      manual selections per pass. Use this for changes to how
+#                      strongly learning scores.
+#   --passes N         replay the gold set N times (learning carries over)
 #
 # Any other flags are passed through to the eval step.
 
@@ -42,6 +47,7 @@ DOMINANCE="0"
 LIMIT=""
 LEXICON="${CHIAKEY_LOCAL_LEXICON_DB:-}"
 EVAL_ARGS=()
+MODE="eval"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -50,6 +56,7 @@ while [[ $# -gt 0 ]]; do
     --out) GOLD_OUT="$2"; shift 2 ;;
     --dominance) DOMINANCE="$2"; shift 2 ;;
     --limit) LIMIT="$2"; shift 2 ;;
+    --replay) MODE="replay"; shift ;;
     --lexicon) LEXICON="$2"; shift 2 ;;
     -h|--help) sed -n '3,28p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) EVAL_ARGS+=("$1"); shift ;;
@@ -82,8 +89,10 @@ clang++ \
   -I"$SOURCE_DIR/Frameworks/PlainVanilla/Headers" \
   -I"$SOURCE_DIR/Frameworks/Formosa/Headers" \
   -I"$SOURCE_DIR/Frameworks/Manjusri/Headers" \
+  -I"$SOURCE_DIR/ModulePackages/OVIMMandarin" \
   "$SOURCE_DIR/Frameworks/Manjusri/Tools/WalkerGoldSet.cpp" \
   "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp" \
+  "$SOURCE_DIR/Frameworks/Formosa/Source/Mandarin.cpp" \
   -lsqlite3 \
   -o "$BIN"
 
@@ -98,4 +107,4 @@ if [[ -z "$GOLD" ]]; then
   echo "gold set: $GOLD"
 fi
 
-"$BIN" eval --lexicon "$LEXICON" --gold "$GOLD" ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
+"$BIN" "$MODE" --lexicon "$LEXICON" --gold "$GOLD" ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
