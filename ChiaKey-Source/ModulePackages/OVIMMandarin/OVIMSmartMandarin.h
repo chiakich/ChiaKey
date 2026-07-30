@@ -82,8 +82,8 @@ class ManjusriComposer {
     m_graph.removeQueryBlockAndBuild(index - 1, filter);
   }
 
-  bool forceBreakAt(size_t index, StringFilter* filter = 0) {
-    return m_graph.forceBreakAt(index, filter);
+  bool toggleForcedBreakAt(size_t index, StringFilter* filter = 0) {
+    return m_graph.toggleForcedBreakAt(index, filter);
   }
 
   size_t cursorLeftBound() { return m_cursorLeftBound; }

@@ -540,7 +540,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         } else {
           if (composingText->isEmpty()) return false;
 
-          if (!m_manjusri.forceBreakAt(m_cursor, &filter)) {
+          if (!m_manjusri.toggleForcedBreakAt(m_cursor, &filter)) {
             loaderService->beep();
           }
         }
