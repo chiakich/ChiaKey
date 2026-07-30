@@ -234,7 +234,7 @@ class Graph {
   bool insertQueryBlockAndBuild(const string& newBlock, size_t atIndex,
                                 StringFilter* filter = 0);
   bool removeQueryBlockAndBuild(size_t atIndex, StringFilter* filter = 0);
-  bool forceBreakAt(size_t atIndex, StringFilter* filter = 0);
+  bool toggleForcedBreakAt(size_t atIndex, StringFilter* filter = 0);
 
   // this is used to "pop" the head node, be sure you pop the one in the path
   // with highest score
@@ -400,8 +400,12 @@ inline void Graph::build(StringFilter* filter) {
       Node node(location, subblock);
       node.addSortedUnigrams(currentUnigrams);
 
-      // candidate cache
-      string cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+      // candidate cache: nothing precedes this node, so only a correction the
+      // user has shown to be general can apply here
+      string cachedCurrentText;
+      if (m_LM->overrideGeneralizesAcrossContexts(subblock))
+        cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+
       if (cachedCurrentText.size()) {
         node.adjustScoreWithSelection(cachedCurrentText);
 
@@ -435,8 +439,14 @@ inline void Graph::build(StringFilter* filter) {
       // then the unigrams
       node.addSortedUnigrams(currentUnigrams);
 
-      // candidate cache
-      string cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+      // candidate cache: a correction made after this exact preceding reading
+      // wins; the context-free entry is a fallback and only applies once the
+      // user has made the same correction after several different readings.
+      string cachedCurrentText = m_LM->fetchCachedContextOverrideSelection(
+          pnode.queryString(), subblock);
+      if (!cachedCurrentText.size() &&
+          m_LM->overrideGeneralizesAcrossContexts(subblock))
+        cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
 
       if (cachedCurrentText.size()) {
         node.adjustScoreWithSelection(cachedCurrentText);
@@ -1048,10 +1058,19 @@ inline bool Graph::removeQueryBlockAndBuild(size_t atIndex,
   return true;
 }
 
-inline bool Graph::forceBreakAt(size_t atIndex, StringFilter* filter) {
+inline bool Graph::toggleForcedBreakAt(size_t atIndex, StringFilter* filter) {
   if (!atIndex || atIndex >= m_source.size() - 1) return false;
 
-  m_forcedBreaks.insert(atIndex);
+  // Pressing again at the same boundary takes the break back. It used to be a
+  // silent no-op, which left no way out of a mis-typed break short of clearing
+  // the whole composing buffer -- the split node is a hard veto, so the phrase
+  // it covers is not even offered as a candidate any more.
+  set<size_t>::iterator existing = m_forcedBreaks.find(atIndex);
+  if (existing != m_forcedBreaks.end())
+    m_forcedBreaks.erase(existing);
+  else
+    m_forcedBreaks.insert(atIndex);
+
   rebuild(filter);
   return true;
 }

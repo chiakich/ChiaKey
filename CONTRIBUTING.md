@@ -122,6 +122,32 @@ Scripts/test-core-smoke.sh
 Scripts/test-ios-core-syntax.sh
 ```
 
+驗證個人學習（LearningStore 淘汰策略、使用者詞庫 schema 遷移與舊版相容性、學過的候選能不能在 walker 存活）。自帶 SQLite fixture，不需要詞庫：
+
+```sh
+Scripts/test-learning-store.sh
+```
+
+量測智慧注音 walker 的 top-1 準確率。這不是 pass/fail 測試，是給「會動到排序的改動」用的比較工具（詞長加成、個人學習權重等），所以命名為 `eval-`：
+
+```sh
+Scripts/eval-walker-goldset.sh --corpus path/to/sentences.txt
+Scripts/eval-walker-goldset.sh --gold goldset.tsv --length-prior 1.0
+Scripts/eval-walker-goldset.sh --gold goldset.tsv --user-db ~/Library/Application\ Support/ChiaKey/SmartMandarinUserData.db
+```
+
+中文句子只給得出輸出，輸入的讀音序列必須反推，而每個多音字都是一次反推錯的機會 —— 讀音餵錯，walker 就不可能答對，那個誤差會被算在 walker 頭上。`--dominance` 控制這個取捨：預設 `0` 只收詞庫裡唯一讀音的字（完全無噪音，但句子少且偏短）；正值會額外接受「最高機率讀音領先次高 N 個 log10」的多音字（句子多很多，但部分讀音是推測的）。
+
+實測兩者角色不同：嚴格集（1,182 句）偵測不到 ranking 改動的**傷害面** —— 詞長加成從 1.2 加到 2.5 準確率完全不動。`--dominance 1.0`（約 10,400 句）才有靈敏度，能重現詞長加成在 1.0 附近的最佳點。所以**絕對準確率只從 `--dominance 0` 報，調參用寬鬆集**，工具會同時印出無噪音子集的數字當對照。
+
+gold set 是從本機語料現算的，不要 commit 進 repo：語料可能包含個人對話內容。
+
+驗證 Manjusri 的 graph/node 查找（NodeSet 定位、前驅、重疊）與 Bopomofo 音節／鍵盤佈局（標準、倚天、倚天 26、許氏）往返轉換。自帶測資，不需要詞庫：
+
+```sh
+Scripts/test-manjusri-core.sh
+```
+
 iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接入共用輸入核心。若有對應的 iOS host project，請在該 repo 執行它自己的 Xcode build 驗證腳本。
 
 ## Release package

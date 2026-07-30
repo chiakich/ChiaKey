@@ -82,8 +82,8 @@ class ManjusriComposer {
     m_graph.removeQueryBlockAndBuild(index - 1, filter);
   }
 
-  bool forceBreakAt(size_t index, StringFilter* filter = 0) {
-    return m_graph.forceBreakAt(index, filter);
+  bool toggleForcedBreakAt(size_t index, StringFilter* filter = 0) {
+    return m_graph.toggleForcedBreakAt(index, filter);
   }
 
   size_t cursorLeftBound() { return m_cursorLeftBound; }
@@ -214,22 +214,38 @@ class ManjusriComposer {
       if ((*(*fpiter).nodePointer).isPreceding(node.location())) {
         string previous = (*(*fpiter).nodePointer).queryString();
 
+        // don't learn from punctuation and friends
+        if (!shouldLearnFromSelection ||
+            OVWildcard::Match(node.queryString(), "_punctuation_*") ||
+            OVWildcard::Match(node.queryString(), "_passthru_*") ||
+            OVWildcard::Match(node.queryString(), "_ctrl_*")) {
+          continue;
+        }
+
+        // The context-keyed override has to be learned here rather than in
+        // overrideNodeCandidate(): only the walked path knows which node
+        // actually precedes this one. Unlike the bigram below this accepts a
+        // BOS predecessor -- "at the start of a sentence" is a real context,
+        // and skipping it would leave sentence-initial picks unlearnable,
+        // since they could never accumulate the breadth the context-free
+        // store now requires. Mirrors the context-free store otherwise: a
+        // pick that is already the reading's first candidate needs no
+        // override, and clears any stale one.
+        if (shouldCacheSelection) {
+          if (node.isTextFirstInUnigramCurrents(candi.first.first))
+            m_LM->removeCachedContextSelection(previous, node.queryString());
+          else
+            m_LM->cacheContextOverrideSelection(previous, node.queryString(),
+                                                candi.first.first);
+        }
+
         if (previous != m_LM->BOSQueryString()) {
           // cerr << "caching user bigram, preceeding text = " << (*fpiter).text
           // << ", our text = " << candi.first.first << ", so qstring: "
-          //     << (*(*fpiter).nodePointer).queryString()  << " + "
-          //     << node.queryString() << endl;
-
-          // don't cache the bigram if it's a punctuation symbol
-          if (shouldLearnFromSelection &&
-              !OVWildcard::Match(node.queryString(), "_punctuation_*") &&
-              !OVWildcard::Match(node.queryString(), "_passthru_*") &&
-              !OVWildcard::Match(node.queryString(), "_ctrl_*")) {
-            m_LM->cacheUserBigram(
-                m_LM->combineBigramQueryString(
-                    (*(*fpiter).nodePointer).queryString(), node.queryString()),
-                (*fpiter).text, candi.first.first);
-          }
+          //     << previous << " + " << node.queryString() << endl;
+          m_LM->cacheUserBigram(
+              m_LM->combineBigramQueryString(previous, node.queryString()),
+              (*fpiter).text, candi.first.first);
         }
       }
     }

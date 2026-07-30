@@ -540,7 +540,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         } else {
           if (composingText->isEmpty()) return false;
 
-          if (!m_manjusri.forceBreakAt(m_cursor, &filter)) {
+          if (!m_manjusri.toggleForcedBreakAt(m_cursor, &filter)) {
             loaderService->beep();
           }
         }
@@ -1219,6 +1219,8 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
       userDB->createIndexOnTable("user_candidate_override_cache_index",
                                  "user_candidate_override_cache", "qstring");
     }
+
+    LanguageModel::MigrateUserLearningTables(userDB);
 
     // import and remove the old database
     string oldDBPath;
