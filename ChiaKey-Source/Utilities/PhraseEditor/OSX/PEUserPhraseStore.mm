@@ -201,7 +201,14 @@ static std::string PEEscapeForLike(const std::string &s) {
       "CREATE TABLE IF NOT EXISTS user_candidate_override_cache "
       "(qstring, current);"
       "CREATE INDEX IF NOT EXISTS user_candidate_override_cache_index "
-      "ON user_candidate_override_cache (qstring);";
+      "ON user_candidate_override_cache (qstring);"
+      // Per-entry learning statistics live beside the two cache tables rather
+      // than as extra columns in them, for the same landmine: the IME's
+      // positional INSERTs would break.
+      "CREATE TABLE IF NOT EXISTS user_learning_stats "
+      "(store, qstring, selection_count, last_used);"
+      "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
+      "ON user_learning_stats (store, qstring);";
   sqlite3_exec(_userDB, schema, NULL, NULL, NULL);
 }
 
@@ -755,18 +762,25 @@ static NSData *PEHexDecode(NSString *hex) {
   }
   sqlite3_finalize(st);
 
-  // Learning data (bigram + candidate-override caches) as a hex-encoded
-  // side database, byte-compatible with the IME's own export.
+  // Learning data (bigram + candidate-override caches) as a hex-encoded side
+  // database. The two original tables stay byte-compatible with older ChiaKey
+  // exports; user_learning_stats rides along beside them, and older builds
+  // simply never look at it because their import names its columns explicitly.
   NSString *tempPath = [self _tempDatabasePath];
   char *sql = sqlite3_mprintf(
       "ATTACH DATABASE %Q AS export KEY 'mjsrexport';"
       "CREATE TABLE export.user_bigram_cache "
       "(qstring, previous, current, probability);"
       "CREATE TABLE export.user_candidate_override_cache (qstring, current);"
+      "CREATE TABLE export.user_learning_stats "
+      "(store, qstring, selection_count, last_used);"
       "INSERT INTO export.user_bigram_cache "
       "SELECT qstring, previous, current, probability FROM user_bigram_cache;"
       "INSERT INTO export.user_candidate_override_cache "
       "SELECT qstring, current FROM user_candidate_override_cache;"
+      "INSERT INTO export.user_learning_stats "
+      "SELECT store, qstring, selection_count, last_used FROM "
+      "user_learning_stats;"
       "DETACH DATABASE export;",
       [tempPath UTF8String]);
   int attachResult = sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
@@ -887,19 +901,33 @@ static NSData *PEHexDecode(NSString *hex) {
     if ([blob length]) {
       NSString *tempPath = [self _tempDatabasePath];
       if ([blob writeToFile:tempPath atomically:YES]) {
+        // OR REPLACE because the cache tables now carry a unique key on
+        // qstring, and a hand-made or foreign blob may hold duplicates.
         char *sql = sqlite3_mprintf(
             "ATTACH DATABASE %Q AS export KEY 'mjsrexport';"
             "DELETE FROM user_bigram_cache;"
-            "INSERT INTO user_bigram_cache (qstring, previous, current, "
-            "probability) SELECT qstring, previous, current, probability "
-            "FROM export.user_bigram_cache;"
+            "INSERT OR REPLACE INTO user_bigram_cache (qstring, previous, "
+            "current, probability) SELECT qstring, previous, current, "
+            "probability FROM export.user_bigram_cache;"
             "DELETE FROM user_candidate_override_cache;"
-            "INSERT INTO user_candidate_override_cache (qstring, current) "
+            "INSERT OR REPLACE INTO user_candidate_override_cache "
+            "(qstring, current) "
             "SELECT qstring, current FROM export.user_candidate_override_cache;"
-            "DETACH DATABASE export;",
+            "DELETE FROM user_learning_stats;",
             [tempPath UTF8String]);
         sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
         sqlite3_free(sql);
+
+        // Separate step: a file written by an older ChiaKey has no stats table,
+        // and that failure must not abort the DETACH. Entries without stats
+        // fall back to a single selection when the IME loads them.
+        sqlite3_exec(_userDB,
+                     "INSERT OR REPLACE INTO user_learning_stats "
+                     "(store, qstring, selection_count, last_used) "
+                     "SELECT store, qstring, selection_count, last_used "
+                     "FROM export.user_learning_stats",
+                     NULL, NULL, NULL);
+        sqlite3_exec(_userDB, "DETACH DATABASE export", NULL, NULL, NULL);
         [[NSFileManager defaultManager] removeItemAtPath:tempPath error:NULL];
       }
     }
