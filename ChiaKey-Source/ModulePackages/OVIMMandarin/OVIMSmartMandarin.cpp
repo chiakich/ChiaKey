@@ -1042,6 +1042,77 @@ const string OVIMSmartMandarin::localizedName(const string& locale) {
     return string("Smart Mandarin");
 }
 
+static bool UserTableHasColumn(OVSQLiteConnection* userDB, const char* table,
+                               const char* column) {
+  OVSQLiteStatement* probe =
+      userDB->prepare("SELECT %s FROM %s LIMIT 1", column, table);
+  if (!probe) return false;
+
+  delete probe;
+  return true;
+}
+
+// Rebuilds one learning table in its original column shape, moving the
+// selection_count/last_used pair an earlier build added into
+// user_learning_stats. Shipped ChiaKey builds INSERT into these tables
+// positionally, so an extra column makes their learning writes fail outright --
+// the stats have to live beside the table, not inside it.
+static void RollBackInlineLearningStats(OVSQLiteConnection* userDB,
+                                        const char* table, const char* store,
+                                        const char* columns) {
+  if (!UserTableHasColumn(userDB, table, "selection_count")) return;
+
+  if (userDB->execute("BEGIN") != SQLITE_OK) return;
+
+  userDB->execute(
+      "INSERT OR REPLACE INTO user_learning_stats "
+      "(store, qstring, selection_count, last_used) "
+      "SELECT %Q, qstring, selection_count, last_used FROM %s",
+      store, table);
+  userDB->execute("CREATE TABLE %s_rebuild (%s)", table, columns);
+  userDB->execute("INSERT INTO %s_rebuild SELECT %s FROM %s", table, columns,
+                  table);
+  userDB->execute("DROP TABLE %s", table);
+  userDB->execute("ALTER TABLE %s_rebuild RENAME TO %s", table, table);
+  userDB->execute("COMMIT");
+}
+
+// Brings a pre-existing user database up to what the learning stores need: a
+// side table for per-entry statistics, and a unique key on qstring so saves can
+// be incremental INSERT OR REPLACEs instead of rewriting the whole table. The
+// learning tables themselves keep the exact shape older builds expect.
+static void MigrateUserLearningTables(OVSQLiteConnection* userDB) {
+  if (!userDB->hasTable("user_learning_stats")) {
+    userDB->createTable("user_learning_stats",
+                        "store, qstring, selection_count, last_used");
+  }
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
+      "ON user_learning_stats (store, qstring)");
+
+  RollBackInlineLearningStats(userDB, "user_bigram_cache", "bigram",
+                              "qstring, previous, current, probability");
+  RollBackInlineLearningStats(userDB, "user_candidate_override_cache",
+                              "override", "qstring, current");
+
+  // The old full-table rewrite wrote one row per qstring, but an imported file
+  // could carry duplicates; they have to go before a unique index can exist.
+  userDB->execute(
+      "DELETE FROM user_bigram_cache WHERE rowid NOT IN "
+      "(SELECT MAX(rowid) FROM user_bigram_cache GROUP BY qstring)");
+  userDB->execute(
+      "DELETE FROM user_candidate_override_cache WHERE rowid NOT IN "
+      "(SELECT MAX(rowid) FROM user_candidate_override_cache GROUP BY qstring)");
+
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
+      "ON user_bigram_cache (qstring)");
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS "
+      "user_candidate_override_cache_qstring_unique "
+      "ON user_candidate_override_cache (qstring)");
+}
+
 bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
                                    OVLoaderService* loaderService) {
   OVSQLiteDatabaseService* dbService = dynamic_cast<OVSQLiteDatabaseService*>(
@@ -1219,6 +1290,8 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
       userDB->createIndexOnTable("user_candidate_override_cache_index",
                                  "user_candidate_override_cache", "qstring");
     }
+
+    MigrateUserLearningTables(userDB);
 
     // import and remove the old database
     string oldDBPath;
