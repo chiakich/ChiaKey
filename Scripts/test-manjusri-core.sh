@@ -10,7 +10,8 @@ TMP_BASE="$(mktemp -d "${TMPDIR:-/tmp}/chiakey-manjusri-core.XXXXXX")"
 trap 'rm -rf "$TMP_BASE"' EXIT
 
 # Graph/node lookups and Bopomofo syllable + keyboard layout round trips.
-# Self-contained: no lexicon or SQLite fixture needed.
+# Self-contained: no lexicon needed; the one graph test that needs a language
+# model builds an in-memory SQLite fixture.
 build_and_run() {
   local name="$1"
   shift
@@ -31,6 +32,8 @@ build_and_run() {
 }
 
 build_and_run TestNode "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp"
+build_and_run TestGraphForcedBreak "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp" \
+  -DOV_USE_SQLITE -lsqlite3
 build_and_run TestMandarinSyllable "$SOURCE_DIR/Frameworks/Formosa/Source/Mandarin.cpp"
 
 echo "Manjusri core tests passed."
