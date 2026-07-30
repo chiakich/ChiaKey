@@ -574,6 +574,34 @@ inline void LanguageModel::MigrateUserLearningTables(
       "user_context_override_cache_qstring_unique "
       "ON user_context_override_cache (qstring)");
 
+  // Overrides learned before context keying existed applied in every context
+  // unconditionally, and the user kept them on that basis. Left alone they
+  // would carry no breadth at all and so go permanently inert -- an upgrade
+  // would silently throw away learning the user had already benefited from.
+  // Credit them as proven instead. The marker keeps this to the one migration:
+  // entries learned from here on earn their breadth honestly, and re-running it
+  // would promote them for free.
+  OVSQLiteStatement* grandfathered = userDB->prepare(
+      "SELECT 1 FROM user_learning_stats "
+      "WHERE store = 'schema' AND qstring = 'override_breadth_grandfathered'");
+  bool alreadyDone = grandfathered && grandfathered->step() == SQLITE_ROW;
+  if (grandfathered) delete grandfathered;
+
+  if (!alreadyDone) {
+    userDB->execute(
+        "INSERT OR REPLACE INTO user_learning_stats "
+        "(store, qstring, selection_count, last_used) "
+        "SELECT 'override_breadth', qstring, %d, 0 "
+        "FROM user_candidate_override_cache WHERE qstring NOT IN "
+        "(SELECT qstring FROM user_learning_stats WHERE "
+        "store = 'override_breadth')",
+        (int)c_overrideGeneralizationContexts);
+    userDB->execute(
+        "INSERT OR REPLACE INTO user_learning_stats "
+        "(store, qstring, selection_count, last_used) "
+        "VALUES('schema', 'override_breadth_grandfathered', 1, 0)");
+  }
+
   RollBackInlineLearningStats(userDB, "user_bigram_cache", "bigram",
                               "qstring, previous, current, probability");
   RollBackInlineLearningStats(userDB, "user_candidate_override_cache",

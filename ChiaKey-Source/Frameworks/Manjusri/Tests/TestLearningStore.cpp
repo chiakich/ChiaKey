@@ -297,6 +297,41 @@ static void TestContextKeyedOverrides() {
   remove(path.c_str());
 }
 
+// Overrides that predate context keying must keep working after the upgrade,
+// but the credit has to be a one-off: entries learned afterwards earn it.
+static void TestPreExistingOverridesAreGrandfathered() {
+  const string path = TempPath("learningstore-grandfather.db");
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  db->execute("INSERT INTO user_candidate_override_cache VALUES('old', 'O')");
+
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.loadUserCandidateOverrideCache();
+    CHECK(lm.overrideGeneralizesAcrossContexts("old"));
+    CHECK(lm.fetchCachedOverrideSelection("old") == "O");
+
+    // something learned now starts from one context, not from credit
+    lm.cacheOverrideSelection("fresh", "F");
+    lm.cacheContextOverrideSelection("p1", "fresh", "F");
+    CHECK(!lm.overrideGeneralizesAcrossContexts("fresh"));
+    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+  }
+
+  // a second migration pass must not hand out free breadth
+  LanguageModel::MigrateUserLearningTables(db);
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.loadUserCandidateOverrideCache();
+    CHECK(!lm.overrideGeneralizesAcrossContexts("fresh"));
+    CHECK(lm.overrideGeneralizesAcrossContexts("old"));
+  }
+
+  delete db;
+  remove(path.c_str());
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -307,6 +342,7 @@ int main(int argc, char** argv) {
   TestMigrationAndRoundTrip();
   TestRollsBackInlineStatColumns();
   TestContextKeyedOverrides();
+  TestPreExistingOverridesAreGrandfathered();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;
