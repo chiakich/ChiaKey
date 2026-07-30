@@ -128,6 +128,12 @@ Scripts/test-ios-core-syntax.sh
 Scripts/test-learning-store.sh
 ```
 
+驗證 Manjusri 的 graph/node 查找（NodeSet 定位、前驅、重疊）與 Bopomofo 音節／鍵盤佈局（標準、倚天、倚天 26、許氏）往返轉換。自帶測資，不需要詞庫：
+
+```sh
+Scripts/test-manjusri-core.sh
+```
+
 iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接入共用輸入核心。若有對應的 iOS host project，請在該 repo 執行它自己的 Xcode build 驗證腳本。
 
 ## Release package
