@@ -122,6 +122,12 @@ Scripts/test-core-smoke.sh
 Scripts/test-ios-core-syntax.sh
 ```
 
+驗證個人學習（LearningStore 淘汰策略、使用者詞庫 schema 遷移與舊版相容性、學過的候選能不能在 walker 存活）。自帶 SQLite fixture，不需要詞庫：
+
+```sh
+Scripts/test-learning-store.sh
+```
+
 iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接入共用輸入核心。若有對應的 iOS host project，請在該 repo 執行它自己的 Xcode build 驗證腳本。
 
 ## Release package

@@ -415,6 +415,12 @@ class LanguageModel {
   virtual void cacheUserBigram(const string& combinedQueryString,
                                const string& previous, const string& current);
 
+  // Brings an existing user database up to what the stores below need: the
+  // user_learning_stats side table, and a unique key on qstring so saves can be
+  // incremental. Lives here rather than in the IME module because it encodes
+  // the same schema the load/save paths depend on. Idempotent.
+  static void MigrateUserLearningTables(OVSQLiteConnection* userDB);
+
   virtual void loadUserBigramCache();
   virtual void saveUserBigramCache(bool useTransaction = true);
   virtual void loadUserCandidateOverrideCache();
@@ -483,6 +489,76 @@ inline bool LanguageModel::userPhraseWritesSuspended() {
   // Keep in sync with ChiaKeyPhraseEditorSessionTimeout.
   const time_t kEditingLockTimeout = 30 * 60;
   return (time(NULL) - st.st_mtime) < kEditingLockTimeout;
+}
+
+inline bool UserTableHasColumn(OVSQLiteConnection* userDB, const char* table,
+                               const char* column) {
+  OVSQLiteStatement* probe =
+      userDB->prepare("SELECT %s FROM %s LIMIT 1", column, table);
+  if (!probe) return false;
+
+  delete probe;
+  return true;
+}
+
+// Rebuilds one learning table in its original column shape, moving the
+// selection_count/last_used pair an earlier build added into
+// user_learning_stats. Shipped ChiaKey builds INSERT into these tables
+// positionally, so an extra column makes their learning writes fail outright --
+// and because a dev install shares this database with the release install, that
+// breakage is not hypothetical. The stats have to live beside the table, not
+// inside it. The bundled SQLite (3.6.11) has no DROP COLUMN, hence the rebuild.
+inline void RollBackInlineLearningStats(OVSQLiteConnection* userDB,
+                                       const char* table, const char* store,
+                                       const char* columns) {
+  if (!UserTableHasColumn(userDB, table, "selection_count")) return;
+
+  if (userDB->execute("BEGIN") != SQLITE_OK) return;
+
+  userDB->execute(
+      "INSERT OR REPLACE INTO user_learning_stats "
+      "(store, qstring, selection_count, last_used) "
+      "SELECT %Q, qstring, selection_count, last_used FROM %s",
+      store, table);
+  userDB->execute("CREATE TABLE %s_rebuild (%s)", table, columns);
+  userDB->execute("INSERT INTO %s_rebuild SELECT %s FROM %s", table, columns,
+                  table);
+  userDB->execute("DROP TABLE %s", table);
+  userDB->execute("ALTER TABLE %s_rebuild RENAME TO %s", table, table);
+  userDB->execute("COMMIT");
+}
+
+inline void LanguageModel::MigrateUserLearningTables(
+    OVSQLiteConnection* userDB) {
+  if (!userDB->hasTable("user_learning_stats")) {
+    userDB->createTable("user_learning_stats",
+                        "store, qstring, selection_count, last_used");
+  }
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
+      "ON user_learning_stats (store, qstring)");
+
+  RollBackInlineLearningStats(userDB, "user_bigram_cache", "bigram",
+                              "qstring, previous, current, probability");
+  RollBackInlineLearningStats(userDB, "user_candidate_override_cache",
+                              "override", "qstring, current");
+
+  // The old full-table rewrite wrote one row per qstring, but an imported file
+  // could carry duplicates; they have to go before a unique index can exist.
+  userDB->execute(
+      "DELETE FROM user_bigram_cache WHERE rowid NOT IN "
+      "(SELECT MAX(rowid) FROM user_bigram_cache GROUP BY qstring)");
+  userDB->execute(
+      "DELETE FROM user_candidate_override_cache WHERE rowid NOT IN "
+      "(SELECT MAX(rowid) FROM user_candidate_override_cache GROUP BY qstring)");
+
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
+      "ON user_bigram_cache (qstring)");
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS "
+      "user_candidate_override_cache_qstring_unique "
+      "ON user_candidate_override_cache (qstring)");
 }
 
 inline void LanguageModel::loadUserBigramCache() {
