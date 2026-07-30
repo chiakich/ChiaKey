@@ -90,18 +90,47 @@ int main(int argc, char** argv) {
     CHECK(text.find("PHRASE") == string::npos);
   }
 
-  // After the user picks the rare candidate for R1, the walk must still take
-  // the two-character split and must show RARE. Before the scoring fix the node
-  // fell to -4.5 and PHRASE took over the whole span.
+  // A correction made in this context applies immediately, and the walk must
+  // still take the two-character split. Before the scoring fix the node fell to
+  // -4.5 and PHRASE took over the whole span.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+    // R1 sits at index 1, so the node preceding it is BOS
+    lm.cacheContextOverrideSelection(lm.BOSQueryString(), "R1", "RARE");
+
+    string text = WalkText(&lm);
+    cout << "context learned:  " << text << endl;
+    CHECK(text.find("RARE") != string::npos);
+    CHECK(text.find("PHRASE") == string::npos);
+    CHECK(text.find("COMMON") == string::npos);
+  }
+
+  // A context-free entry alone must NOT fire: one correction is not evidence
+  // that the reading should change everywhere.
   {
     LanguageModel lm(db, 0, false, false, false, true, true);
     Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
     lm.cacheOverrideSelection("R1", "RARE");
 
     string text = WalkText(&lm);
-    cout << "after learning:   " << text << endl;
+    cout << "reading only:     " << text << endl;
+    CHECK(text.find("COMMON") != string::npos);
+  }
+
+  // ...until the same correction has been made after enough distinct readings,
+  // at which point it generalises to contexts never visited.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+    lm.cacheOverrideSelection("R1", "RARE");
+    lm.cacheContextOverrideSelection("Z1", "R1", "RARE");
+    lm.cacheContextOverrideSelection("Z2", "R1", "RARE");
+    lm.cacheContextOverrideSelection("Z3", "R1", "RARE");
+
+    string text = WalkText(&lm);
+    cout << "generalized:      " << text << endl;
     CHECK(text.find("RARE") != string::npos);
-    CHECK(text.find("PHRASE") == string::npos);
     CHECK(text.find("COMMON") == string::npos);
   }
 

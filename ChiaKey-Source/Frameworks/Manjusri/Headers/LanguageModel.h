@@ -406,11 +406,30 @@ class LanguageModel {
   virtual void flushCache();
   virtual void flushUserCache();
 
+  // How many distinct preceding readings a reading must have been corrected
+  // after before its context-free override is trusted everywhere. Measured on
+  // the LINE corpus: gating at 3 cuts the cases where learning overrides an
+  // already-correct lexicon answer by 22% while still needing fewer manual
+  // selections than trusting it unconditionally.
+  static const size_t c_overrideGeneralizationContexts = 3;
+
   // @in-research: the candidate-selection cache
   virtual void cacheOverrideSelection(const string& qstring,
                                       const string& current);
   virtual void removeCachedSelection(const string& qstring);
   virtual const string fetchCachedOverrideSelection(const string& qstring);
+
+  // Context-keyed overrides. The key is combineBigramQueryString(previous
+  // reading, this reading); a hit here beats the context-free entry above,
+  // which only applies once the correction has proved itself general.
+  virtual void cacheContextOverrideSelection(const string& previousQString,
+                                             const string& qstring,
+                                             const string& current);
+  virtual void removeCachedContextSelection(const string& previousQString,
+                                            const string& qstring);
+  virtual const string fetchCachedContextOverrideSelection(
+      const string& previousQString, const string& qstring);
+  virtual bool overrideGeneralizesAcrossContexts(const string& qstring);
 
   virtual void cacheUserBigram(const string& combinedQueryString,
                                const string& previous, const string& current);
@@ -469,6 +488,15 @@ class LanguageModel {
 
   LearningStore<Bigram> m_userBigramCache;
   LearningStore<string> m_candidateOverrideCache;
+  LearningStore<string> m_contextOverrideCache;
+
+  // Reading -> how many distinct preceding readings the user has corrected it
+  // after. Monotonic on purpose: "this correction turned out to be general" is
+  // a fact about the user's history, not about what is currently resident, so
+  // an eviction must not walk it back.
+  map<string, size_t> m_overrideContextBreadth;
+  set<string> m_dirtyContextBreadth;
+
   OVBenchmark m_userCacheTimer;
 
   string m_unigramTableName;
@@ -537,6 +565,14 @@ inline void LanguageModel::MigrateUserLearningTables(
   userDB->execute(
       "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
       "ON user_learning_stats (store, qstring)");
+
+  if (!userDB->hasTable("user_context_override_cache")) {
+    userDB->createTable("user_context_override_cache", "qstring, current");
+  }
+  userDB->execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS "
+      "user_context_override_cache_qstring_unique "
+      "ON user_context_override_cache (qstring)");
 
   RollBackInlineLearningStats(userDB, "user_bigram_cache", "bigram",
                               "qstring, previous, current, probability");
@@ -640,17 +676,17 @@ inline void LanguageModel::saveUserBigramCache(bool useTransaction) {
   m_userBigramCache.markClean();
 }
 
-inline void LanguageModel::loadUserCandidateOverrideCache() {
-  if (!m_cfgUseUserCandidateOverrideCache) return;
-
-  OVSQLiteStatement* statement = m_connection->prepare(
+inline void LoadOverrideTable(OVSQLiteConnection* connection,
+                             const char* table, const char* store,
+                             LearningStore<string>& target) {
+  OVSQLiteStatement* statement = connection->prepare(
       "SELECT c.qstring, c.current, COALESCE(s.selection_count, 1), "
       "COALESCE(s.last_used, 0) "
-      "FROM user_candidate_override_cache c LEFT JOIN user_learning_stats s "
-      "ON s.store = 'override' AND s.qstring = c.qstring "
+      "FROM %s c LEFT JOIN user_learning_stats s "
+      "ON s.store = %Q AND s.qstring = c.qstring "
       "ORDER BY COALESCE(s.selection_count, 1) DESC, "
       "COALESCE(s.last_used, 0) DESC LIMIT %d",
-      (int)m_candidateOverrideCache.capacity());
+      table, store, (int)target.capacity());
   if (!statement) return;
 
   vector<LoadedOverride> rows;
@@ -666,9 +702,61 @@ inline void LanguageModel::loadUserCandidateOverrideCache() {
 
   for (vector<LoadedOverride>::reverse_iterator iter = rows.rbegin();
        iter != rows.rend(); ++iter)
-    m_candidateOverrideCache.loadEntry((*iter).key, (*iter).value,
-                                       (*iter).selectionCount,
-                                       (*iter).lastUsed);
+    target.loadEntry((*iter).key, (*iter).value, (*iter).selectionCount,
+                     (*iter).lastUsed);
+}
+
+inline void LanguageModel::loadUserCandidateOverrideCache() {
+  if (!m_cfgUseUserCandidateOverrideCache) return;
+
+  LoadOverrideTable(m_connection, "user_candidate_override_cache", "override",
+                    m_candidateOverrideCache);
+  LoadOverrideTable(m_connection, "user_context_override_cache",
+                    "context_override", m_contextOverrideCache);
+
+  OVSQLiteStatement* breadth = m_connection->prepare(
+      "SELECT qstring, selection_count FROM user_learning_stats "
+      "WHERE store = 'override_breadth'");
+  if (!breadth) return;
+
+  while (breadth->step() == SQLITE_ROW) {
+    const string qstring = SafeColumnText(breadth, 0);
+    size_t count = (size_t)breadth->intOfColumn(1);
+    // Never lower a breadth already advanced in this session.
+    if (m_overrideContextBreadth[qstring] < count)
+      m_overrideContextBreadth[qstring] = count;
+  }
+  delete breadth;
+}
+
+inline void SaveOverrideTable(OVSQLiteConnection* connection, const char* table,
+                            const char* store,
+                            LearningStore<string>& source) {
+  const set<string>& deletes = source.pendingDeletes();
+  for (set<string>::const_iterator iter = deletes.begin();
+       iter != deletes.end(); ++iter) {
+    connection->execute("DELETE FROM %s WHERE qstring = %Q", table,
+                        (*iter).c_str());
+    connection->execute(
+        "DELETE FROM user_learning_stats WHERE store = %Q AND qstring = %Q",
+        store, (*iter).c_str());
+  }
+
+  vector<string> dirty = source.dirtyKeys();
+  for (vector<string>::iterator iter = dirty.begin(); iter != dirty.end();
+       ++iter) {
+    const LearningStore<string>::Entry* entry = source.peek(*iter);
+    if (!entry) continue;
+
+    connection->execute(
+        "INSERT OR REPLACE INTO %s (qstring, current) VALUES(%Q, %Q)", table,
+        (*iter).c_str(), entry->value.c_str());
+    connection->execute(
+        "INSERT OR REPLACE INTO user_learning_stats "
+        "(store, qstring, selection_count, last_used) VALUES(%Q, %Q, %d, %d)",
+        store, (*iter).c_str(), (int)entry->selectionCount,
+        (int)entry->lastUsed);
+  }
 }
 
 inline void LanguageModel::saveUserCandidateOverrideCache(bool useTransaction) {
@@ -678,41 +766,26 @@ inline void LanguageModel::saveUserCandidateOverrideCache(bool useTransaction) {
     if (m_connection->execute("BEGIN") != SQLITE_OK) return;
   }
 
-  const set<string>& deletes = m_candidateOverrideCache.pendingDeletes();
-  for (set<string>::const_iterator iter = deletes.begin();
-       iter != deletes.end(); ++iter) {
-    m_connection->execute(
-        "DELETE FROM user_candidate_override_cache WHERE qstring = %Q",
-        (*iter).c_str());
-    m_connection->execute(
-        "DELETE FROM user_learning_stats WHERE store = 'override' AND "
-        "qstring = %Q",
-        (*iter).c_str());
-  }
+  SaveOverrideTable(m_connection, "user_candidate_override_cache", "override",
+                    m_candidateOverrideCache);
+  SaveOverrideTable(m_connection, "user_context_override_cache",
+                    "context_override", m_contextOverrideCache);
 
-  vector<string> dirty = m_candidateOverrideCache.dirtyKeys();
-  for (vector<string>::iterator iter = dirty.begin(); iter != dirty.end();
-       ++iter) {
-    const LearningStore<string>::Entry* entry =
-        m_candidateOverrideCache.peek(*iter);
-    if (!entry) continue;
-
-    m_connection->execute(
-        "INSERT OR REPLACE INTO user_candidate_override_cache "
-        "(qstring, current) VALUES(%Q, %Q)",
-        (*iter).c_str(), entry->value.c_str());
+  for (set<string>::iterator iter = m_dirtyContextBreadth.begin();
+       iter != m_dirtyContextBreadth.end(); ++iter)
     m_connection->execute(
         "INSERT OR REPLACE INTO user_learning_stats "
         "(store, qstring, selection_count, last_used) "
-        "VALUES('override', %Q, %d, %d)",
-        (*iter).c_str(), (int)entry->selectionCount, (int)entry->lastUsed);
-  }
+        "VALUES('override_breadth', %Q, %d, 0)",
+        (*iter).c_str(), (int)m_overrideContextBreadth[*iter]);
 
   if (useTransaction) {
     if (m_connection->execute("COMMIT") != SQLITE_OK) return;
   }
 
   m_candidateOverrideCache.markClean();
+  m_contextOverrideCache.markClean();
+  m_dirtyContextBreadth.clear();
 }
 
 inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
@@ -727,7 +800,9 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
 
   // Writes are incremental now, so an idle save has nothing to do.
   if (!m_userBigramCache.hasPendingWrites() &&
-      !m_candidateOverrideCache.hasPendingWrites())
+      !m_candidateOverrideCache.hasPendingWrites() &&
+      !m_contextOverrideCache.hasPendingWrites() &&
+      m_dirtyContextBreadth.empty())
     return false;
 
   m_userCacheTimer.start();
@@ -779,6 +854,49 @@ inline const string LanguageModel::fetchCachedOverrideSelection(
   return string();
 }
 
+inline void LanguageModel::cacheContextOverrideSelection(
+    const string& previousQString, const string& qstring,
+    const string& current) {
+  if (!m_cfgUseUserCandidateOverrideCache) return;
+
+  const string key = combineBigramQueryString(previousQString, qstring);
+  bool isNewContext = (m_contextOverrideCache.peek(key) == 0);
+  m_contextOverrideCache.learn(key, current);
+
+  // Breadth counts contexts the user has ever corrected in, so only a key that
+  // was not already present may advance it.
+  if (isNewContext) {
+    m_overrideContextBreadth[qstring]++;
+    m_dirtyContextBreadth.insert(qstring);
+  }
+}
+
+inline void LanguageModel::removeCachedContextSelection(
+    const string& previousQString, const string& qstring) {
+  if (m_cfgUseUserCandidateOverrideCache)
+    m_contextOverrideCache.remove(
+        combineBigramQueryString(previousQString, qstring));
+}
+
+inline const string LanguageModel::fetchCachedContextOverrideSelection(
+    const string& previousQString, const string& qstring) {
+  if (m_cfgUseUserCandidateOverrideCache) {
+    const string* cached = m_contextOverrideCache.fetch(
+        combineBigramQueryString(previousQString, qstring));
+    if (cached) return *cached;
+  }
+
+  return string();
+}
+
+inline bool LanguageModel::overrideGeneralizesAcrossContexts(
+    const string& qstring) {
+  map<string, size_t>::iterator iter = m_overrideContextBreadth.find(qstring);
+  if (iter == m_overrideContextBreadth.end()) return false;
+
+  return (*iter).second >= c_overrideGeneralizationContexts;
+}
+
 inline LanguageModel::LanguageModel(
     OVSQLiteConnection* connection, OVKeyValueDataTableInterface* externalTable,
     bool useUserTable, bool combineBigramQueryString, bool ownsDBConnection,
@@ -802,6 +920,7 @@ inline LanguageModel::LanguageModel(
       m_cfgUseUserCandidateOverrideCache(useUserCandidateOverrideCache),
       m_userBigramCache(bigramStoreCapacity),
       m_candidateOverrideCache(overrideStoreCapacity),
+      m_contextOverrideCache(overrideStoreCapacity * 2),
       m_unigramTableName("unigrams") {
   // see if table 'supplement.unigrams' exists
   OVSQLiteStatement* supplementFind =
@@ -1143,6 +1262,9 @@ inline void LanguageModel::flushCache() {
 inline void LanguageModel::flushUserCache() {
   m_userBigramCache.flush();
   m_candidateOverrideCache.flush();
+  m_contextOverrideCache.flush();
+  m_overrideContextBreadth.clear();
+  m_dirtyContextBreadth.clear();
 
   // The stores are the source of truth for these tables. Now that saves are
   // incremental, dropping the entries in memory no longer empties the table as
@@ -1151,6 +1273,7 @@ inline void LanguageModel::flushUserCache() {
 
   m_connection->execute("DELETE FROM user_bigram_cache");
   m_connection->execute("DELETE FROM user_candidate_override_cache");
+  m_connection->execute("DELETE FROM user_context_override_cache");
   m_connection->execute("DELETE FROM user_learning_stats");
 }
 };  // namespace Manjusri

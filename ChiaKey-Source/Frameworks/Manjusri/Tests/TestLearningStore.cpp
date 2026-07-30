@@ -232,6 +232,71 @@ static void TestMigrationAndRoundTrip() {
   remove(path.c_str());
 }
 
+// A correction is trusted in the context it was made in immediately, but only
+// applies context-free once it has proved general.
+static void TestContextKeyedOverrides() {
+  const string path = TempPath("learningstore-context.db");
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+
+    lm.cacheContextOverrideSelection("p1", "q", "A");
+    CHECK(lm.fetchCachedContextOverrideSelection("p1", "q") == "A");
+    // a different preceding reading must not inherit it
+    CHECK(lm.fetchCachedContextOverrideSelection("p2", "q") == "");
+    // and one context is not enough to generalise
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q"));
+
+    lm.cacheContextOverrideSelection("p2", "q", "A");
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q"));
+
+    // third distinct context: the correction has proved itself
+    lm.cacheContextOverrideSelection("p3", "q", "A");
+    CHECK(lm.overrideGeneralizesAcrossContexts("q"));
+
+    // re-learning a context already seen must not inflate the breadth
+    lm.cacheContextOverrideSelection("p1", "other", "B");
+    lm.cacheContextOverrideSelection("p1", "other", "B");
+    lm.cacheContextOverrideSelection("p1", "other", "B");
+    CHECK(!lm.overrideGeneralizesAcrossContexts("other"));
+
+    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+  }
+
+  // breadth and context entries have to survive a reload
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.loadUserCandidateOverrideCache();
+    CHECK(lm.fetchCachedContextOverrideSelection("p1", "q") == "A");
+    CHECK(lm.fetchCachedContextOverrideSelection("p9", "q") == "");
+    CHECK(lm.overrideGeneralizesAcrossContexts("q"));
+    CHECK(!lm.overrideGeneralizesAcrossContexts("other"));
+
+    // removing the context entry leaves the reading's breadth alone: the user
+    // did make those corrections, whatever is currently resident
+    lm.removeCachedContextSelection("p1", "q");
+    CHECK(lm.fetchCachedContextOverrideSelection("p1", "q") == "");
+    CHECK(lm.overrideGeneralizesAcrossContexts("q"));
+    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+  }
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.loadUserCandidateOverrideCache();
+    CHECK(lm.fetchCachedContextOverrideSelection("p1", "q") == "");
+    CHECK(lm.fetchCachedContextOverrideSelection("p2", "q") == "A");
+
+    lm.flushUserCache();
+    CHECK(CountRows(db, "user_context_override_cache") == 0);
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q"));
+  }
+
+  delete db;
+  remove(path.c_str());
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -241,6 +306,7 @@ int main(int argc, char** argv) {
   TestLoadDoesNotClobberNewerMemory();
   TestMigrationAndRoundTrip();
   TestRollsBackInlineStatColumns();
+  TestContextKeyedOverrides();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;

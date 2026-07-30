@@ -400,8 +400,12 @@ inline void Graph::build(StringFilter* filter) {
       Node node(location, subblock);
       node.addSortedUnigrams(currentUnigrams);
 
-      // candidate cache
-      string cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+      // candidate cache: nothing precedes this node, so only a correction the
+      // user has shown to be general can apply here
+      string cachedCurrentText;
+      if (m_LM->overrideGeneralizesAcrossContexts(subblock))
+        cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+
       if (cachedCurrentText.size()) {
         node.adjustScoreWithSelection(cachedCurrentText);
 
@@ -435,8 +439,14 @@ inline void Graph::build(StringFilter* filter) {
       // then the unigrams
       node.addSortedUnigrams(currentUnigrams);
 
-      // candidate cache
-      string cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+      // candidate cache: a correction made after this exact preceding reading
+      // wins; the context-free entry is a fallback and only applies once the
+      // user has made the same correction after several different readings.
+      string cachedCurrentText = m_LM->fetchCachedContextOverrideSelection(
+          pnode.queryString(), subblock);
+      if (!cachedCurrentText.size() &&
+          m_LM->overrideGeneralizesAcrossContexts(subblock))
+        cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
 
       if (cachedCurrentText.size()) {
         node.adjustScoreWithSelection(cachedCurrentText);

@@ -202,9 +202,16 @@ static std::string PEEscapeForLike(const std::string &s) {
       "(qstring, current);"
       "CREATE INDEX IF NOT EXISTS user_candidate_override_cache_index "
       "ON user_candidate_override_cache (qstring);"
-      // Per-entry learning statistics live beside the two cache tables rather
-      // than as extra columns in them, for the same landmine: the IME's
-      // positional INSERTs would break.
+      // Context-keyed overrides: same shape as the table above, but the qstring
+      // is "previous reading + space + this reading".
+      "CREATE TABLE IF NOT EXISTS user_context_override_cache "
+      "(qstring, current);"
+      "CREATE UNIQUE INDEX IF NOT EXISTS "
+      "user_context_override_cache_qstring_unique "
+      "ON user_context_override_cache (qstring);"
+      // Per-entry learning statistics live beside the cache tables rather than
+      // as extra columns in them, for the same landmine: the IME's positional
+      // INSERTs would break.
       "CREATE TABLE IF NOT EXISTS user_learning_stats "
       "(store, qstring, selection_count, last_used);"
       "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
@@ -772,12 +779,15 @@ static NSData *PEHexDecode(NSString *hex) {
       "CREATE TABLE export.user_bigram_cache "
       "(qstring, previous, current, probability);"
       "CREATE TABLE export.user_candidate_override_cache (qstring, current);"
+      "CREATE TABLE export.user_context_override_cache (qstring, current);"
       "CREATE TABLE export.user_learning_stats "
       "(store, qstring, selection_count, last_used);"
       "INSERT INTO export.user_bigram_cache "
       "SELECT qstring, previous, current, probability FROM user_bigram_cache;"
       "INSERT INTO export.user_candidate_override_cache "
       "SELECT qstring, current FROM user_candidate_override_cache;"
+      "INSERT INTO export.user_context_override_cache "
+      "SELECT qstring, current FROM user_context_override_cache;"
       "INSERT INTO export.user_learning_stats "
       "SELECT store, qstring, selection_count, last_used FROM "
       "user_learning_stats;"
@@ -913,7 +923,8 @@ static NSData *PEHexDecode(NSString *hex) {
             "INSERT OR REPLACE INTO user_candidate_override_cache "
             "(qstring, current) "
             "SELECT qstring, current FROM export.user_candidate_override_cache;"
-            "DELETE FROM user_learning_stats;",
+            "DELETE FROM user_learning_stats;"
+            "DELETE FROM user_context_override_cache;",
             [tempPath UTF8String]);
         sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
         sqlite3_free(sql);
@@ -926,6 +937,11 @@ static NSData *PEHexDecode(NSString *hex) {
                      "(store, qstring, selection_count, last_used) "
                      "SELECT store, qstring, selection_count, last_used "
                      "FROM export.user_learning_stats",
+                     NULL, NULL, NULL);
+        sqlite3_exec(_userDB,
+                     "INSERT OR REPLACE INTO user_context_override_cache "
+                     "(qstring, current) SELECT qstring, current "
+                     "FROM export.user_context_override_cache",
                      NULL, NULL, NULL);
         sqlite3_exec(_userDB, "DETACH DATABASE export", NULL, NULL, NULL);
         [[NSFileManager defaultManager] removeItemAtPath:tempPath error:NULL];

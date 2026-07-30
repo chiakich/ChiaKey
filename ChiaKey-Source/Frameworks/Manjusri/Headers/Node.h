@@ -41,7 +41,7 @@ class Node {
   void overrideWithText(const string& text);
   void overrideWithSelection(size_t index);
   // bool isSelectedCandidateScoreHigherThanFirst(size_t index);
-  bool isTextFirstInUnigramCurrents(const string& text);
+  bool isTextFirstInUnigramCurrents(const string& text) const;
 
   void adjustScoreWithSelection(const string& currentText);
   void cancelOverride();
@@ -214,7 +214,7 @@ inline void Node::overrideWithSelection(size_t index) {
   }
 }
 
-inline bool Node::isTextFirstInUnigramCurrents(const string& text) {
+inline bool Node::isTextFirstInUnigramCurrents(const string& text) const {
   if (!m_unigramCurrents.size()) return false;
 
   return m_unigramCurrents[0].first == text;
