@@ -242,36 +242,32 @@ inline void Node::adjustScoreWithSelection(const string& currentText) {
 
   if (sspi == m_unigramCurrents.end()) return;
 
-  StringScorePair ssp = *sspi;  // m_unigramCurrents[index];
-  // cerr << "string = " << ssp.first << ", score =" << ssp.second << endl;
+  StringScorePair ssp = *sspi;
+
+  // Moving the pick to the front is not enough. findHighestScorePair() scores
+  // the node from its first entry, so a rare pick used to drag the whole node
+  // below competing segmentations -- the walk then chose a different split and
+  // the learned pick never showed up at all. Score it as the reading's best
+  // candidate instead: the pick wins inside its own node without the node
+  // outscoring anything it did not outscore before.
+  if (m_unigramCurrents[0].second > ssp.second)
+    ssp.second = m_unigramCurrents[0].second;
 
   m_unigramCurrents.erase(sspi);
-  // if (m_unigramCurrents.size())
-  // ssp.second = m_unigramCurrents[0].second;
-  // ssp.second = 0.0;
-
   m_unigramCurrents.insert(m_unigramCurrents.begin(), ssp);
 
-  // heuristics: add a bigram for empty text (BOS)
+  // Same reasoning per context: keep each bigram's own score, swap in the
+  // user's text. The override store is keyed by reading alone, so a learned
+  // pick applies in every context -- otherwise a strong bigram would keep
+  // reinstating the text the user just corrected away from.
+  for (map<string, StringScorePairVector>::iterator miter = m_bigramMap.begin();
+       miter != m_bigramMap.end(); ++miter) {
+    StringScorePairVector& sspv = (*miter).second;
+    if (!sspv.size()) continue;
+    if (sspv[0].first == ssp.first) continue;
 
-  StringScorePairVector& sspv = m_bigramMap[""];
-
-  // cerr << "dumping the adjusted node (before bigram adjustment): " << *this
-  // << endl;
-
-  if (sspv.size()) {
-    StringScorePair oldPair = sspv[0];
-    if (oldPair.first != ssp.first)
-      sspv.insert(sspv.begin(), StringScorePair(ssp.first, oldPair.second));
-  } else {
-    // m_bigramMap[""].push_back(StringScorePair(ssp.first,
-    // c_defaultOverrideScore));
-    m_bigramMap.erase("");
+    sspv.insert(sspv.begin(), StringScorePair(ssp.first, sspv[0].second));
   }
-
-  // m_bigramMap.clear();
-
-  // cerr << "dumping the adjusted node: " << *this << endl;
 }
 
 inline void Node::cancelOverride() {
