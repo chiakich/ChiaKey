@@ -139,7 +139,10 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     if (c < 32 || c == 127 || (c >= 0xF700 && c <= 0xF8FF)) return nil;
   }
 
-  return [text lowercaseString];
+  // Decide the case from Shift alone; -characters already folds in Caps Lock,
+  // which would otherwise force uppercase no matter how the user typed.
+  return OVCEventIsShiftPressed(event) ? [text uppercaseString]
+                                       : [text lowercaseString];
 }
 
 @implementation OpenVanillaController
@@ -591,7 +594,9 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       _shiftKeyTapCanceled = YES;
     }
 
-    if (_temporaryEnglishMode && !OVCEventIsShiftPressed(event)) {
+    // Shift stays inside the English path so it capitalises; letting it fall
+    // through would hand the key to the Bopomofo passthru, which lowercases.
+    if (_temporaryEnglishMode) {
       NSString *temporaryEnglishText = OVCTextForTemporaryEnglishMode(event);
       if (temporaryEnglishText) {
         [self sendTemporaryEnglishStringToClient:temporaryEnglishText
