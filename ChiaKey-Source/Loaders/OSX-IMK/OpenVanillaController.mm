@@ -411,14 +411,18 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _lastActivationTime = [[NSProcessInfo processInfo] systemUptime];
   _pendingCapsTapTime = 0;
   _bridgingToASCIISource = NO;
+  // Each -bundleIdentifier is a synchronous round trip to the client, so ask
+  // once and reuse it for every app-specific check below.
+  NSString *clientBundleIdentifier = [sender bundleIdentifier];
+
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-  if ([[sender bundleIdentifier] isEqualToString:@"com.apple.Terminal"]) {
+  if ([clientBundleIdentifier isEqualToString:@"com.apple.Terminal"]) {
     // NSLog(@"applying app-specific fix for Terminal.app");
     _doNotClearContextStateEvenWithForcedCommit = YES;
   }
 #endif
 
-  if ([[sender bundleIdentifier] isEqualToString:@"com.microsoft.Powerpoint"]) {
+  if ([clientBundleIdentifier isEqualToString:@"com.microsoft.Powerpoint"]) {
     // NSLog(@"applying app-specific fix for PowerPoint (2008)");
     _updateCommitStringBeforeCommit = YES;
   }
