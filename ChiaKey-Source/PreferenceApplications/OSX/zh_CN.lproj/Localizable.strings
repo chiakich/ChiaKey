@@ -126,3 +126,15 @@
 "A table with this name is already installed." = "已经有同名的表格了。";
 "The table could not be written." = "无法写入表格文件。";
 "Invalid table name." = "表格名称无效。";
+
+
+/* Yahoo! KeyKey legacy import */
+"Legacy Data:" = "旧版数据：";
+"Import Yahoo! KeyKey Data…" = "导入 Yahoo! 奇摩输入法数据…";
+"No legacy data found." = "找不到旧版数据";
+"ChiaKey could not find a Yahoo! KeyKey user database in ~/Library/Application Support/Yahoo! KeyKey." = "在 ~/Library/Application Support/Yahoo! KeyKey 里找不到 Yahoo! 奇摩输入法的用户词库。";
+"Yahoo! KeyKey is not installed." = "Yahoo! 奇摩输入法没有安装";
+"Its user phrase database is encrypted and only that input method can read it, so only %lu plain-text file(s) were imported. Reinstall Yahoo! KeyKey and try again to bring the phrases over." = "它的用户词库是加密的，只有那套输入法本身能读取，因此这次只导入了 %lu 个纯文本文件。若要一并带回自定义词，请重新安装 Yahoo! 奇摩输入法后再试一次。";
+"Could not read the legacy database." = "无法读取旧版词库";
+"ChiaKey asked Yahoo! KeyKey to export its phrases, but it did not answer. Switch to Yahoo! KeyKey, type a character to wake it up, then try again. On Apple Silicon this also needs Rosetta 2, because Yahoo! KeyKey has no Apple Silicon version." = "千秋输入法已经请 Yahoo! 奇摩输入法导出自定义词，但它没有回应。请先切换到 Yahoo! 奇摩输入法随便打一个字把它唤醒，再回来试一次。在 Apple Silicon 上还需要安装 Rosetta 2，因为 Yahoo! 奇摩输入法没有 Apple Silicon 版本。";
+"Imported %lu phrase(s) and %lu other file(s) from Yahoo! KeyKey." = "已从 Yahoo! 奇摩输入法导入 %lu 个自定义词与 %lu 个其他文件。";

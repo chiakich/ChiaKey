@@ -37,5 +37,13 @@ file for terms.
         @param sender The sender object.
 */
 - (IBAction)importDatabase:(id)sender;
+/*!
+        @method importLegacyDatabase:
+        @abstract Import the user data left behind by Yahoo! KeyKey: phrases
+   and learning caches by way of that input method's own export command, plus
+   the canned messages and CIN tables it stored in plain text.
+        @param sender The sender object.
+*/
+- (IBAction)importLegacyDatabase:(id)sender;
 - (IBAction)launchEditor:(id)sender;
 @end

@@ -1032,11 +1032,11 @@
             <point key="canvasLocation" x="-637" y="-589"/>
         </customView>
         <customView id="445" userLabel="Phrase View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="145"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="174"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1022">
-                    <rect key="frame" x="154" y="15" width="268" height="32"/>
+                    <rect key="frame" x="154" y="44" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="啟動詞彙編輯工具" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="1023">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1047,7 +1047,7 @@
                     </connections>
                 </button>
                 <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1021">
-                    <rect key="frame" x="31" y="23" width="116" height="17"/>
+                    <rect key="frame" x="31" y="52" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="編輯詞庫：" id="1024">
                         <font key="font" metaFont="system"/>
@@ -1056,7 +1056,7 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="521">
-                    <rect key="frame" x="31" y="107" width="116" height="17"/>
+                    <rect key="frame" x="31" y="136" width="116" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="自訂詞資料庫：" id="522">
                         <font key="font" metaFont="system"/>
@@ -1065,7 +1065,7 @@
                     </textFieldCell>
                 </textField>
                 <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="466">
-                    <rect key="frame" x="154" y="67" width="268" height="32"/>
+                    <rect key="frame" x="154" y="96" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="匯出自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="467">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1076,7 +1076,7 @@
                     </connections>
                 </button>
                 <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="464">
-                    <rect key="frame" x="154" y="96" width="268" height="32"/>
+                    <rect key="frame" x="154" y="125" width="268" height="32"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="push" title="匯入自訂詞資料庫" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="465">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -1086,6 +1086,26 @@
                         <action selector="importDatabase:" target="655" id="657"/>
                     </connections>
                 </button>
+                <button imageHugsTitle="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="legacyImportButton">
+                    <rect key="frame" x="154" y="12" width="268" height="32"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="push" title="导入 Yahoo! 奇摩输入法数据…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="legacyImportButtonCell">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="importLegacyDatabase:" target="655" id="legacyImportAction"/>
+                    </connections>
+                </button>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="legacyImportLabel">
+                    <rect key="frame" x="31" y="23" width="116" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="旧版数据：" id="legacyImportLabelCell">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
             </subviews>
             <point key="canvasLocation" x="-355" y="-376"/>
         </customView>

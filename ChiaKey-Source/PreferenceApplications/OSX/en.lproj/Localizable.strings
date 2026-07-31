@@ -126,3 +126,15 @@
 "A table with this name is already installed." = "A table with this name is already installed.";
 "The table could not be written." = "The table could not be written.";
 "Invalid table name." = "Invalid table name.";
+
+
+/* Yahoo! KeyKey legacy import */
+"Legacy Data:" = "Legacy Data:";
+"Import Yahoo! KeyKey Data…" = "Import Yahoo! KeyKey Data…";
+"No legacy data found." = "No legacy data found.";
+"ChiaKey could not find a Yahoo! KeyKey user database in ~/Library/Application Support/Yahoo! KeyKey." = "ChiaKey could not find a Yahoo! KeyKey user database in ~/Library/Application Support/Yahoo! KeyKey.";
+"Yahoo! KeyKey is not installed." = "Yahoo! KeyKey is not installed.";
+"Its user phrase database is encrypted and only that input method can read it, so only %lu plain-text file(s) were imported. Reinstall Yahoo! KeyKey and try again to bring the phrases over." = "Its user phrase database is encrypted and only that input method can read it, so only %lu plain-text file(s) were imported. Reinstall Yahoo! KeyKey and try again to bring the phrases over.";
+"Could not read the legacy database." = "Could not read the legacy database.";
+"ChiaKey asked Yahoo! KeyKey to export its phrases, but it did not answer. Switch to Yahoo! KeyKey, type a character to wake it up, then try again. On Apple Silicon this also needs Rosetta 2, because Yahoo! KeyKey has no Apple Silicon version." = "ChiaKey asked Yahoo! KeyKey to export its phrases, but it did not answer. Switch to Yahoo! KeyKey, type a character to wake it up, then try again. On Apple Silicon this also needs Rosetta 2, because Yahoo! KeyKey has no Apple Silicon version.";
+"Imported %lu phrase(s) and %lu other file(s) from Yahoo! KeyKey." = "Imported %lu phrase(s) and %lu other file(s) from Yahoo! KeyKey.";
