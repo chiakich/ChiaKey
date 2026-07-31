@@ -1178,9 +1178,13 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   NSURL *preferenceURL = [NSURL fileURLWithPath:preferencePath];
   if (![[NSWorkspace sharedWorkspace] openURL:preferenceURL]) {
     if (@available(macOS 10.15, *)) {
+      // Derived from our own identifier rather than hard-coded: a dev install
+      // renames both bundles, and looking up the release id from there would
+      // open the release preferences instead.
+      NSString *preferencesIdentifier = [[[NSBundle mainBundle] bundleIdentifier]
+          stringByAppendingString:@".Preferences"];
       NSURL *applicationURL = [[NSWorkspace sharedWorkspace]
-          URLForApplicationWithBundleIdentifier:
-              @"com.chiakey.inputmethod.ChiaKey.Preferences"];
+          URLForApplicationWithBundleIdentifier:preferencesIdentifier];
       if (applicationURL) {
         [[NSWorkspace sharedWorkspace]
             openApplicationAtURL:applicationURL

@@ -326,14 +326,18 @@ static NSUInteger CKCopyLegacyPlainFiles(void) {
   NSURL *phraseEditorURL = [NSURL fileURLWithPath:phraseEditorPath];
   if (![[NSWorkspace sharedWorkspace] openURL:phraseEditorURL]) {
     if (@available(macOS 10.15, *)) {
+      // Our own identifier is <input method id>.Preferences; the editor is a
+      // sibling. Derived rather than hard-coded so a dev install, which
+      // renames every bundle, does not launch the release editor.
+      NSString *editorIdentifier = [[[[NSBundle mainBundle] bundleIdentifier]
+          stringByDeletingPathExtension] stringByAppendingString:@".PhraseEditor"];
       NSURL *applicationURL = [[NSWorkspace sharedWorkspace]
-          URLForApplicationWithBundleIdentifier:
-              @"com.chiakey.inputmethod.ChiaKey.PhraseEditor"];
+          URLForApplicationWithBundleIdentifier:editorIdentifier];
       if (applicationURL) {
         [[NSWorkspace sharedWorkspace]
             openApplicationAtURL:applicationURL
-                    configuration:[NSWorkspaceOpenConfiguration configuration]
-                completionHandler:nil];
+                   configuration:[NSWorkspaceOpenConfiguration configuration]
+               completionHandler:nil];
       }
     }
     usleep(700);

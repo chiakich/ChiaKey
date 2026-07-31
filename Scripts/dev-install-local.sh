@@ -118,7 +118,58 @@ reset_user_state() {
   run_allow_fail /usr/bin/killall cfprefsd
 }
 
-# Rewrite the installed bundle's identity so it registers as a distinct dev input method. 
+plist_set_string() {
+  local plist="$1"
+  local key="$2"
+  local value="$3"
+
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    print_command /usr/libexec/PlistBuddy -c "Set :${key} ${value}" "${plist}"
+    return
+  fi
+
+  print_command /usr/libexec/PlistBuddy -c "Set :${key} ${value}" "${plist}"
+  if ! /usr/libexec/PlistBuddy -c "Set :${key} ${value}" "${plist}" >/dev/null 2>&1; then
+    run /usr/libexec/PlistBuddy -c "Add :${key} string ${value}" "${plist}"
+  fi
+}
+
+# The helper apps nested in Contents/SharedSupport ship with the release
+# bundle identifiers. Left alone, a dev install and a release install are the
+# same app as far as LaunchServices is concerned: opening the dev copy while
+# the release one runs just activates the release window, so you end up
+# staring at the build you did not just make. They also share one
+# NSUserDefaults domain that way.
+apply_dev_shared_support_identity() {
+  local app
+  local bundle_id
+  local plist
+  local localized_plist
+
+  for app in Preferences PhraseEditor Updater; do
+    plist="${INSTALL_APP}/Contents/SharedSupport/${app}.app/Contents/Info.plist"
+    if [[ "${DRY_RUN}" != "1" && ! -f "${plist}" ]]; then
+      continue
+    fi
+
+    bundle_id="$(dev_shared_support_bundle_id "${app}")"
+    plist_set_string "${plist}" CFBundleIdentifier "${bundle_id}"
+    plist_set_string "${plist}" CFBundleName "${app} (Dev)"
+    plist_set_string "${plist}" CFBundleDisplayName "${app} (Dev)"
+
+    for localized_plist in "${INSTALL_APP}/Contents/SharedSupport/${app}.app"/Contents/Resources/*.lproj/InfoPlist.strings; do
+      [[ -f "${localized_plist}" ]] || continue
+      plist_set_string "${localized_plist}" CFBundleName "${app} (Dev)"
+      plist_set_string "${localized_plist}" CFBundleDisplayName "${app} (Dev)"
+    done
+  done
+}
+
+dev_shared_support_bundle_id() {
+  printf '%s.%s\n' "${DEV_BUNDLE_ID}" "$1"
+}
+
+# Rewrite the installed bundle's identity so it registers as a distinct dev input method.
 apply_dev_identity() {
   local localized_plist
 
@@ -137,6 +188,8 @@ apply_dev_identity() {
     run /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName ${DEV_DISPLAY_NAME}" "${localized_plist}"
     run /usr/libexec/PlistBuddy -c "Set :com.chiakey.inputmethod.ChiaKey ${DEV_DISPLAY_NAME}" "${localized_plist}"
   done
+
+  apply_dev_shared_support_identity
 }
 
 copy_legal_notices() {
@@ -367,15 +420,22 @@ fi
 run /usr/bin/ditto "${BUILT_APP}" "${INSTALL_APP}"
 apply_dev_identity
 # The `--deep` sign below does not descend into Contents/SharedSupport, so the
-# nested PhraseEditor would otherwise keep the linker's ad-hoc signature whose
-# identifier is the bare executable name ("PhraseEditor"). Sign it first, with
-# its real bundle id as the identifier, so TCC (e.g. the Contacts prompt)
-# attributes it correctly; the outer `--deep` sign then seals it in. Signing
-# inside-out matters: re-signing the nested app after the outer bundle would
-# invalidate the outer signature's seal over SharedSupport.
-run /usr/bin/codesign --force --sign - \
-  --identifier com.chiakey.inputmethod.ChiaKey.PhraseEditor \
-  "${INSTALL_APP}/Contents/SharedSupport/PhraseEditor.app"
+# nested helper apps would otherwise keep the linker's ad-hoc signature whose
+# identifier is the bare executable name ("PhraseEditor"). Sign them first,
+# each with the dev bundle id it was just given, so TCC (e.g. the Contacts
+# prompt) attributes them correctly and does not merge them with the release
+# copies; the outer `--deep` sign then seals them in. Signing inside-out
+# matters: re-signing a nested app after the outer bundle would invalidate the
+# outer signature's seal over SharedSupport.
+for shared_support_app in Preferences PhraseEditor Updater; do
+  shared_support_path="${INSTALL_APP}/Contents/SharedSupport/${shared_support_app}.app"
+  if [[ "${DRY_RUN}" != "1" && ! -d "${shared_support_path}" ]]; then
+    continue
+  fi
+  run /usr/bin/codesign --force --sign - \
+    --identifier "$(dev_shared_support_bundle_id "${shared_support_app}")" \
+    "${shared_support_path}"
+done
 run /usr/bin/codesign --force --deep --sign - "${INSTALL_APP}"
 
 # Register the dev input source so it appears without a logout/login.

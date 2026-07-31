@@ -609,15 +609,32 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
   // Fall back to the lexicon bundled inside the IME app, which the IME itself
   // uses before one is installed. Without this, a fresh or offline install
   // would derive every reading as the "ㄅ" placeholder.
-  NSURL *imeURL = [[NSWorkspace sharedWorkspace]
-      URLForApplicationWithBundleIdentifier:kChiaKeyIMEBundleIdentifier];
+  //
+  // We ship inside that bundle (…/ChiaKey.app/Contents/SharedSupport/), so
+  // walk up from our own path first. A bundle-identifier lookup is the
+  // fallback's fallback: with a dev install sitting next to a release one it
+  // can hand back the other app's lexicon.
+  NSURL *imeURL = nil;
+  NSString *enclosing = [[[[[NSBundle mainBundle] bundlePath]
+      stringByDeletingLastPathComponent]  // SharedSupport
+      stringByDeletingLastPathComponent]  // Contents
+      stringByDeletingLastPathComponent];
+  if ([[enclosing pathExtension] isEqualToString:@"app"]) {
+    imeURL = [NSURL fileURLWithPath:enclosing];
+  }
+  if (!imeURL) {
+    imeURL = [[NSWorkspace sharedWorkspace]
+        URLForApplicationWithBundleIdentifier:kChiaKeyIMEBundleIdentifier];
+  }
   if (imeURL) {
     NSString *bundledDir = [[imeURL path]
         stringByAppendingPathComponent:@"Contents/Resources/Databases"];
-    [candidates addObject:[bundledDir
-                              stringByAppendingPathComponent:@"ChiaKeySource.db"]];
-    [candidates addObject:[bundledDir
-                              stringByAppendingPathComponent:@"KeyKeySource.db"]];
+    [candidates
+        addObject:[bundledDir
+                      stringByAppendingPathComponent:@"ChiaKeySource.db"]];
+    [candidates
+        addObject:[bundledDir
+                      stringByAppendingPathComponent:@"KeyKeySource.db"]];
   }
 
   NSFileManager *fm = [NSFileManager defaultManager];
