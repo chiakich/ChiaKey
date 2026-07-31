@@ -19,6 +19,19 @@
 static OpenVanillaController *OVCActiveContext = nil;
 static id OVCActiveContextSender = nil;
 
+// Measured on macOS 26: a successful Caps Lock language switch surfaces as
+// deactivateServer: 110-200ms after the key; a keystroke landing before that
+// makes macOS abandon the switch outright. These bound how long we wait for a
+// keystroke to prove the switch was abandoned, and how long we keep bridging
+// before giving up on deactivateServer: ever arriving.
+static const NSTimeInterval OVCCapsTapTakeoverWindow = 0.3;
+static const NSTimeInterval OVCCapsBridgeMaxDuration = 1.5;
+// The Caps Lock event that completes an incoming switch reaches us ~10ms after
+// activateServer:; ignore that whole neighbourhood so we never "finish" a
+// switch that was already delivered.
+static const NSTimeInterval OVCCapsPostActivationGuard = 0.3;
+static const unsigned short OVCVirtualKeyCodeCapsLock = 0x39;
+
 static BOOL OVCInvokeBooleanSelector(id object, SEL selector) {
   if (![object respondsToSelector:selector]) {
     return NO;
@@ -172,6 +185,10 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     _temporaryEnglishMode = NO;
     _shiftKeyPressedForTemporaryEnglish = NO;
     _shiftKeyTapCanceled = NO;
+    _pendingCapsTapTime = 0;
+    _bridgeStartedAt = 0;
+    _lastActivationTime = 0;
+    _bridgingToASCIISource = NO;
     _composingBuffer = [NSMutableString new];
 
     [[OpenVanillaLoader sharedLock] lock];
@@ -378,7 +395,22 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 }
 #endif
 
+// Completes the input source switch macOS abandoned. Returns NO when the
+// switch could not be started, in which case the caller falls back to the
+// in-process English mode so the user still gets Latin letters.
+- (BOOL)_switchToASCIICapableInputSource {
+  TISInputSourceRef asciiSource = TISCopyCurrentASCIICapableKeyboardInputSource();
+  if (!asciiSource) return NO;
+
+  OSStatus status = TISSelectInputSource(asciiSource);
+  CFRelease(asciiSource);
+  return status == noErr;
+}
+
 - (void)activateServer:(id)sender {
+  _lastActivationTime = [[NSProcessInfo processInfo] systemUptime];
+  _pendingCapsTapTime = 0;
+  _bridgingToASCIISource = NO;
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
   if ([[sender bundleIdentifier] isEqualToString:@"com.apple.Terminal"]) {
     // NSLog(@"applying app-specific fix for Terminal.app");
@@ -441,6 +473,10 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _temporaryEnglishMode = NO;
   _shiftKeyPressedForTemporaryEnglish = NO;
   _shiftKeyTapCanceled = NO;
+  // Either macOS completed its own switch or ours landed; either way the
+  // takeover is done and must not leak into the next activation.
+  _pendingCapsTapTime = 0;
+  _bridgingToASCIISource = NO;
 
   // IMK does not guarantee this arrives before the incoming client's
   // activateServer:, so clearing unconditionally can wipe out a context that
@@ -540,6 +576,15 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   // %@", sender, [event type], [event modifierFlags], event);
 
   if ([event type] == NSEventTypeFlagsChanged) {
+    // Arm the takeover: if a keystroke reaches us before deactivateServer:
+    // does, macOS has abandoned the language switch and we finish it instead.
+    // The Caps Lock event trailing our own activation belongs to the switch
+    // that just brought us here, so arming on it would bounce straight back.
+    if ([event keyCode] == OVCVirtualKeyCodeCapsLock &&
+        ([event timestamp] - _lastActivationTime) > OVCCapsPostActivationGuard) {
+      _pendingCapsTapTime = [event timestamp];
+    }
+
     // handles caps lock and shift here
     BOOL shiftPressed = OVCEventIsShiftPressed(event);
     if (shiftPressed && !_shiftKeyPressedForTemporaryEnglish &&
@@ -594,9 +639,33 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       _shiftKeyTapCanceled = YES;
     }
 
+    // This keystroke beat deactivateServer:, which means macOS gave up on the
+    // switch. Start it ourselves and carry the keys that arrive in the gap.
+    if (_pendingCapsTapTime > 0) {
+      NSTimeInterval sinceTap = [event timestamp] - _pendingCapsTapTime;
+      _pendingCapsTapTime = 0;
+      if (sinceTap >= 0 && sinceTap < OVCCapsTapTakeoverWindow) {
+        // Set the flag before switching: TISSelectInputSource may deliver
+        // deactivateServer: before it returns, and that clears the bridge.
+        _bridgingToASCIISource = YES;
+        _bridgeStartedAt = [event timestamp];
+        if (![self _switchToASCIICapableInputSource]) {
+          _bridgingToASCIISource = NO;
+          _temporaryEnglishMode = YES;
+        }
+      }
+    }
+
+    // Stop bridging if deactivateServer: never arrived, so a failed switch
+    // cannot strand the client in English.
+    if (_bridgingToASCIISource &&
+        ([event timestamp] - _bridgeStartedAt) > OVCCapsBridgeMaxDuration) {
+      _bridgingToASCIISource = NO;
+    }
+
     // Shift stays inside the English path so it capitalises; letting it fall
     // through would hand the key to the Bopomofo passthru, which lowercases.
-    if (_temporaryEnglishMode) {
+    if (_temporaryEnglishMode || _bridgingToASCIISource) {
       NSString *temporaryEnglishText = OVCTextForTemporaryEnglishMode(event);
       if (temporaryEnglishText) {
         [self sendTemporaryEnglishStringToClient:temporaryEnglishText

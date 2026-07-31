@@ -16,6 +16,13 @@ using namespace OpenVanilla;
   BOOL _shiftKeyPressedForTemporaryEnglish;
   BOOL _shiftKeyTapCanceled;
 
+  // macOS aborts its own Caps Lock language switch when a key lands inside its
+  // decision window; these let us finish the switch on its behalf.
+  NSTimeInterval _pendingCapsTapTime;
+  NSTimeInterval _bridgeStartedAt;
+  NSTimeInterval _lastActivationTime;
+  BOOL _bridgingToASCIISource;
+
   // application-specific fixes
   BOOL _doNotClearContextStateEvenWithForcedCommit;
   BOOL _updateCommitStringBeforeCommit;
