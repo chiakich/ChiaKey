@@ -295,6 +295,8 @@
 		6ABC3EBC0DBF62BA00146A8B /* PhaseTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6ABC3EBB0DBF62BA00146A8B /* PhaseTool.cpp */; };
 		6ABC3F180DBF813E00146A8B /* BPMFUserPhraseHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A428A6A0D7409AB00ABCDA1 /* BPMFUserPhraseHelper.h */; };
 		6ABC3F190DBF815C00146A8B /* BPMFUserPhraseHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A428A6A0D7409AB00ABCDA1 /* BPMFUserPhraseHelper.h */; };
+		CE00000000000000000000C2 /* MJSRExportCipher.h in Headers */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000C1 /* MJSRExportCipher.h */; };
+		CE00000000000000000000C3 /* MJSRExportCipher.h in Headers */ = {isa = PBXBuildFile; fileRef = CE00000000000000000000C1 /* MJSRExportCipher.h */; };
 		6AC80D921095CFAC00F0B8F0 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6AC80D901095CFAC00F0B8F0 /* InfoPlist.strings */; };
 		6AC80DD21095CFC600F0B8F0 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6AC80DD01095CFC600F0B8F0 /* InfoPlist.strings */; };
 		6AC898F70EB5FA2C009217C5 /* PackageMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AC898D00EB5F9BC009217C5 /* PackageMain.cpp */; };
@@ -877,6 +879,7 @@
 		6A428A2D0D74066D00ABCDA1 /* ManjusriBuilder */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ManjusriBuilder; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A428A3B0D7406B100ABCDA1 /* ManjusriBuilder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ManjusriBuilder.cpp; path = Frameworks/Manjusri/Tools/ManjusriBuilder.cpp; sourceTree = "<group>"; };
 		6A428A6A0D7409AB00ABCDA1 /* BPMFUserPhraseHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BPMFUserPhraseHelper.h; sourceTree = "<group>"; };
+		CE00000000000000000000C1 /* MJSRExportCipher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MJSRExportCipher.h; sourceTree = "<group>"; };
 		6A428A9F0D741BC600ABCDA1 /* BPMFUserPhraseHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BPMFUserPhraseHelper.cpp; sourceTree = "<group>"; };
 		6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenVanilla.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A476EE90D5C48CE00C6C744 /* OpenVanilla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "OpenVanilla-Info.plist"; sourceTree = "<group>"; };
@@ -1556,6 +1559,7 @@
 				6A2D56160D5D88AD00E710D6 /* Graph.h */,
 				6ABC3EB70DBF62A800146A8B /* LMDBHelper.h */,
 				6A2D56170D5D88AD00E710D6 /* LanguageModel.h */,
+				CE00000000000000000000C1 /* MJSRExportCipher.h */,
 				6A2D56180D5D88AD00E710D6 /* MandarinAlias.h */,
 				6A2D56190D5D88AD00E710D6 /* Manjusri.h */,
 				6A2D561A0D5D88AD00E710D6 /* Node.h */,
@@ -2551,6 +2555,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6ABC3F190DBF815C00146A8B /* BPMFUserPhraseHelper.h in Headers */,
+				CE00000000000000000000C2 /* MJSRExportCipher.h in Headers */,
 				6A2D56200D5D88AD00E710D6 /* Graph.h in Headers */,
 				6A2D56210D5D88AD00E710D6 /* LanguageModel.h in Headers */,
 				6A2D56220D5D88AD00E710D6 /* MandarinAlias.h in Headers */,
@@ -2753,6 +2758,7 @@
 			files = (
 				6ABC3EB80DBF62A800146A8B /* LMDBHelper.h in Headers */,
 				6ABC3F180DBF813E00146A8B /* BPMFUserPhraseHelper.h in Headers */,
+				CE00000000000000000000C3 /* MJSRExportCipher.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

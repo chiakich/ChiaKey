@@ -6,6 +6,9 @@ file for terms.
 
 #include "BPMFUserPhraseHelper.h"
 
+#include <cstring>
+
+#include "MJSRExportCipher.h"
 #include "Mandarin.h"
 #include "Minotaur.h"
 #include "StringVectorHelper.h"
@@ -15,8 +18,6 @@ file for terms.
 // pair<char*, size_t> ObtenirUserDonneCle();
 // int sqlite3_rekey(sqlite3 *db, const void *pKey, int nKey);
 //#endif
-
-#define MANJUSRI_EXPORT_KEY "mjsrexport"
 
 namespace Manjusri {
 
@@ -142,26 +143,35 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
 
   pair<char*, size_t> binData = Minotaur::Minos::BinaryFromHexString(dbHex);
   if (binData.first) {
-    string cacheImportTempFile = OVDirectoryHelper::GenerateTempFilename();
-    FILE* f = OVFileHelper::OpenStream(cacheImportTempFile, "wb");
-    if (f) {
-      fwrite(binData.first, 1, binData.second, f);
-      fclose(f);
+    string cacheData(binData.first, binData.second);
+    free(binData.first);
 
-      int result = 0;
-      result = db->execute("ATTACH DATABASE %Q AS export KEY %Q",
-                           cacheImportTempFile.c_str(), MANJUSRI_EXPORT_KEY);
-      result = db->execute("DELETE FROM user_bigram_cache");
-      result = db->execute(
-          "INSERT INTO user_bigram_cache (qstring, previous, current, "
-          "probability) SELECT qstring, previous, current, probability FROM "
-          "export.user_bigram_cache");
-      result = db->execute("DELETE FROM user_candidate_override_cache");
-      result = db->execute(
-          "INSERT INTO user_candidate_override_cache (qstring, current) SELECT "
-          "qstring, current FROM export.user_candidate_override_cache");
-      result = db->execute("DETACH DATABASE export");
-      OVPathHelper::RemoveEverythingAtPath(cacheImportTempFile);
+    // A block we cannot read (truncated, or encrypted with a key that is not
+    // ours) costs the caller its learning cache, not the phrases it just
+    // imported above.
+    if (DecryptExportDatabase(cacheData)) {
+      string cacheImportTempFile = OVDirectoryHelper::GenerateTempFilename();
+      FILE* f = OVFileHelper::OpenStream(cacheImportTempFile, "wb");
+      if (f) {
+        fwrite(cacheData.data(), 1, cacheData.size(), f);
+        fclose(f);
+
+        int result = 0;
+        result = db->execute("ATTACH DATABASE %Q AS export",
+                             cacheImportTempFile.c_str());
+        result = db->execute("DELETE FROM user_bigram_cache");
+        result = db->execute(
+            "INSERT INTO user_bigram_cache (qstring, previous, current, "
+            "probability) SELECT qstring, previous, current, probability FROM "
+            "export.user_bigram_cache");
+        result = db->execute("DELETE FROM user_candidate_override_cache");
+        result = db->execute(
+            "INSERT INTO user_candidate_override_cache (qstring, current) "
+            "SELECT qstring, current FROM "
+            "export.user_candidate_override_cache");
+        result = db->execute("DETACH DATABASE export");
+        OVPathHelper::RemoveEverythingAtPath(cacheImportTempFile);
+      }
     }
   }
 
