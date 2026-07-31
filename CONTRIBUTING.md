@@ -128,6 +128,18 @@ Scripts/test-ios-core-syntax.sh
 Scripts/test-learning-store.sh
 ```
 
+驗證使用者詞庫匯入（`MJSR version 1.0.0` 匯出檔）。重點是 `<database>` 區塊：舊版 Yahoo! 奇摩輸入法用 SQLite SEE 加密，ChiaKey 自己匯出則是明文，Import 兩種都要吃。測試裡有兩組取自真實 KeyKey 匯出檔的 golden vector（只有 SQLite 檔頭與亂數 nonce，不含任何詞彙資料），改動金鑰推導、模式、IV 位置或 counter 規則都會被擋下來。自帶 fixture，不需要詞庫：
+
+```sh
+Scripts/test-user-phrase-import.sh
+```
+
+驗證偏好設定「匯入 Yahoo! 奇摩輸入法資料…」走的那條路（`PEUserPhraseStore`）：匯入的 unigram 機率會被正規化成跟手動新增的自訂詞同一條線（舊版的數值是對著另一套詞庫算的，而 `user_unigrams` 的機率是直接被讀的），以及學習快取中現行詞庫產不出來的項目會被丟掉。測試透過 `CFFIXED_USER_HOME` 導到暫存 home，**不會碰到你真正的使用者資料**；萬一導向失敗，測試會拒絕執行而不是寫進真實 profile：
+
+```sh
+Scripts/test-legacy-import.sh
+```
+
 量測智慧注音 walker 的 top-1 準確率。這不是 pass/fail 測試，是給「會動到排序的改動」用的比較工具（詞長加成、個人學習權重等），所以命名為 `eval-`：
 
 ```sh

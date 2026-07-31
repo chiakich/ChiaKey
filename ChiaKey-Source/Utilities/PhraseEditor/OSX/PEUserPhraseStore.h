@@ -78,5 +78,10 @@ typedef NS_ENUM(NSInteger, PEPhraseSortKey) {
 
 - (BOOL)exportUserPhraseDBToFile:(NSString *)path;
 - (BOOL)importUserPhraseDBFromFile:(NSString *)path;
+// Same format, but written by Yahoo! KeyKey: its numbers were estimated
+// against a different lexicon, so imported phrases are renormalized to what a
+// hand-added phrase gets, and learning-cache entries naming something this
+// lexicon cannot produce are dropped.
+- (BOOL)importLegacyUserPhraseDBFromFile:(NSString *)path;
 
 @end

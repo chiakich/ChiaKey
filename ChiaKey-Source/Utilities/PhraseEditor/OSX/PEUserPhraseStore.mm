@@ -12,15 +12,14 @@
 #import "PEUserPhraseStore.h"
 
 #import <AppKit/AppKit.h>
-
-#import "ChiaKeyServiceCoordination.h"
-#import "ChiaKeyUserPhraseCoordination.h"
-
 #include <sqlite3.h>
 
 #include <string>
 #include <vector>
 
+#import "ChiaKeyServiceCoordination.h"
+#import "ChiaKeyUserPhraseCoordination.h"
+#include "MJSRExportCipher.h"
 #include "Mandarin.h"
 
 using Formosa::Mandarin::BPMF;
@@ -42,8 +41,8 @@ static std::string PEComposedFromQstring(const std::string &qstring) {
   if (qstring.size() % 2) return result;
   for (size_t i = 0; i < qstring.size(); i += 2) {
     if (i) result += ",";
-    result += BPMF::FromAbsoluteOrderString(qstring.substr(i, 2))
-                  .composedString();
+    result +=
+        BPMF::FromAbsoluteOrderString(qstring.substr(i, 2)).composedString();
   }
   return result;
 }
@@ -105,6 +104,11 @@ static std::string PEEscapeForLike(const std::string &s) {
 
 @interface PEUserPhraseStore ()
 - (void)_markDirtyAndScheduleChangeNotification;
+- (sqlite3 *)_lexiconDB;
+- (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy;
+- (NSSet *)_keysOfTable:(NSString *)table;
+- (NSSet *)_keysOf:(NSString *)exportTable missingFrom:(NSString *)table;
+- (NSUInteger)_dropLearningEntriesUnknownToLexicon:(NSDictionary *)scope;
 @end
 
 @implementation PEUserPhraseStore {
@@ -255,7 +259,7 @@ static std::string PEEscapeForLike(const std::string &s) {
   // editor cannot let its lock look stale while the user is away.
   _editingActivity = [[[NSProcessInfo processInfo]
       beginActivityWithOptions:NSActivityUserInitiated
-                         reason:@"Editing ChiaKey user phrases"] retain];
+                        reason:@"Editing ChiaKey user phrases"] retain];
 
   ChiaKeyClaimUserPhraseEditingLock([self _userDataDirectory]);
   _lockRefreshTimer =
@@ -317,12 +321,12 @@ static std::string PEEscapeForLike(const std::string &s) {
   }
 
   if (_changeNotificationTimer) return;  // already scheduled
-  _changeNotificationTimer =
-      [[NSTimer scheduledTimerWithTimeInterval:kChangeNotificationThrottle
-                                        target:self
-                                      selector:@selector(_postChangeNotification:)
-                                      userInfo:nil
-                                       repeats:NO] retain];
+  _changeNotificationTimer = [[NSTimer
+      scheduledTimerWithTimeInterval:kChangeNotificationThrottle
+                              target:self
+                            selector:@selector(_postChangeNotification:)
+                            userInfo:nil
+                             repeats:NO] retain];
 }
 
 - (void)_postChangeNotification:(NSTimer *)timer {
@@ -382,8 +386,8 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
   if (cachedCount) return [cachedCount unsignedIntegerValue];
 
   std::vector<std::string> params;
-  std::string sql = "SELECT COUNT(*) FROM user_unigrams " +
-                    PEFilterClause(filter, params);
+  std::string sql =
+      "SELECT COUNT(*) FROM user_unigrams " + PEFilterClause(filter, params);
 
   NSUInteger count = 0;
   sqlite3_stmt *st = NULL;
@@ -421,8 +425,7 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
   }
   int bindIndex = 1;
   for (size_t i = 0; i < params.size(); i++) {
-    sqlite3_bind_text(st, bindIndex++, params[i].c_str(), -1,
-                      SQLITE_TRANSIENT);
+    sqlite3_bind_text(st, bindIndex++, params[i].c_str(), -1, SQLITE_TRANSIENT);
   }
   sqlite3_bind_int64(st, bindIndex++, (sqlite3_int64)range.length);
   sqlite3_bind_int64(st, bindIndex++, (sqlite3_int64)range.location);
@@ -673,8 +676,7 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
       if (sqlite3_prepare_v2(
               lex, "SELECT key FROM 'Mandarin-bpmf-cin' WHERE value = ?", -1,
               &cin, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(cin, 1, [character UTF8String], -1,
-                          SQLITE_TRANSIENT);
+        sqlite3_bind_text(cin, 1, [character UTF8String], -1, SQLITE_TRANSIENT);
         while (sqlite3_step(cin) == SQLITE_ROW) {
           const char *key = (const char *)sqlite3_column_text(cin, 0);
           if (!key) continue;
@@ -820,8 +822,9 @@ static NSData *PEHexDecode(NSString *hex) {
   if (attachResult == SQLITE_OK) {
     NSString *hex = PEHexEncodeFile(tempPath);
     if (hex) {
-      [out appendString:@"\n# What follows is the \"Automatic Learning\" "
-                        @"database, do not remove this\n"];
+      [out appendString:
+               @"\n# What follows is the \"Automatic Learning\" "
+               @"database, do not remove this\n"];
       [out appendString:@"<database>"];
       [out appendString:hex];
       [out appendString:@"\n</database>\n"];
@@ -851,15 +854,149 @@ static NSData *PEHexDecode(NSString *hex) {
   return exists;
 }
 
+// Does the current lexicon -- or the user's own phrases -- know this text
+// under this reading? Learning-cache entries name a text outright rather than
+// weighting one, so an entry naming something unreachable is not inert: it
+// puts that text in front of the walker anyway.
+- (BOOL)_reading:(const std::string &)qstring canProduce:(const char *)text {
+  if (!text || !qstring.size()) return NO;
+
+  sqlite3_stmt *st = NULL;
+  if (sqlite3_prepare_v2(_userDB,
+                         "SELECT 1 FROM user_unigrams WHERE qstring = ? AND "
+                         "current = ? LIMIT 1",
+                         -1, &st, NULL) == SQLITE_OK) {
+    sqlite3_bind_text(st, 1, qstring.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(st, 2, text, -1, SQLITE_TRANSIENT);
+    BOOL found = (sqlite3_step(st) == SQLITE_ROW);
+    sqlite3_finalize(st);
+    if (found) return YES;
+  }
+
+  sqlite3 *lex = [self _lexiconDB];
+  if (!lex) return YES;  // cannot judge; keep the entry rather than lose it
+
+  if (sqlite3_prepare_v2(
+          lex,
+          "SELECT 1 FROM unigrams WHERE qstring = ? AND current = ? LIMIT 1",
+          -1, &st, NULL) != SQLITE_OK) {
+    return YES;
+  }
+  sqlite3_bind_text(st, 1, qstring.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_text(st, 2, text, -1, SQLITE_TRANSIENT);
+  BOOL found = (sqlite3_step(st) == SQLITE_ROW);
+  sqlite3_finalize(st);
+  return found;
+}
+
+// Bigram and context-override keys are two readings joined by a space; the
+// entry names a text for the second one.
+static std::string PECurrentReadingOfKey(const std::string &key) {
+  size_t space = key.rfind(' ');
+  return space == std::string::npos ? key : key.substr(space + 1);
+}
+
+// The qstrings present in a table, used to scope the filter below to the rows
+// an import actually brought in.
+- (NSSet *)_keysOfTable:(NSString *)table {
+  NSMutableSet *keys = [NSMutableSet set];
+  char *sql = sqlite3_mprintf("SELECT qstring FROM %s", [table UTF8String]);
+  sqlite3_stmt *st = NULL;
+  if (sqlite3_prepare_v2(_userDB, sql, -1, &st, NULL) == SQLITE_OK) {
+    while (sqlite3_step(st) == SQLITE_ROW) {
+      const char *key = (const char *)sqlite3_column_text(st, 0);
+      if (key) [keys addObject:PENSString(key)];
+    }
+    sqlite3_finalize(st);
+  }
+  sqlite3_free(sql);
+  return keys;
+}
+
+// Drops learning-cache rows the current lexicon cannot produce. Only worth
+// doing for entries from another input method: our own were learned against
+// this same lexicon, so `scope` limits this to the keys just imported.
+// The keys `exportTable` would add to `table`: what it holds, minus what is
+// already there. Must be called before the merge.
+- (NSSet *)_keysOf:(NSString *)exportTable missingFrom:(NSString *)table {
+  NSMutableSet *added =
+      [[[self _keysOfTable:exportTable] mutableCopy] autorelease];
+  [added minusSet:[self _keysOfTable:table]];
+  return added;
+}
+
+- (NSUInteger)_dropLearningEntriesUnknownToLexicon:(NSDictionary *)scope {
+  static const struct {
+    const char *table;
+    BOOL keyIsCombined;
+    const char *store;  // matching user_learning_stats rows, if any
+  } tables[] = {
+      {"user_bigram_cache", YES, "bigram"},
+      {"user_candidate_override_cache", NO, "override"},
+      {"user_context_override_cache", YES, NULL},
+  };
+
+  NSUInteger dropped = 0;
+  for (size_t i = 0; i < sizeof(tables) / sizeof(tables[0]); i++) {
+    NSSet *only =
+        [scope objectForKey:[NSString stringWithUTF8String:tables[i].table]];
+    if (scope && !only) continue;
+
+    NSMutableArray *doomed = [NSMutableArray array];
+    char *sql =
+        sqlite3_mprintf("SELECT qstring, current FROM %s", tables[i].table);
+    sqlite3_stmt *st = NULL;
+    if (sqlite3_prepare_v2(_userDB, sql, -1, &st, NULL) == SQLITE_OK) {
+      while (sqlite3_step(st) == SQLITE_ROW) {
+        const char *key = (const char *)sqlite3_column_text(st, 0);
+        const char *text = (const char *)sqlite3_column_text(st, 1);
+        if (!key) continue;
+        if (only && ![only containsObject:PENSString(key)]) continue;
+        std::string reading =
+            tables[i].keyIsCombined ? PECurrentReadingOfKey(key) : key;
+        if (![self _reading:reading canProduce:text]) {
+          [doomed addObject:PENSString(key)];
+        }
+      }
+      sqlite3_finalize(st);
+    }
+    sqlite3_free(sql);
+
+    for (NSString *key in doomed) {
+      char *del = sqlite3_mprintf("DELETE FROM %s WHERE qstring = %Q",
+                                  tables[i].table, [key UTF8String]);
+      if (sqlite3_exec(_userDB, del, NULL, NULL, NULL) == SQLITE_OK) dropped++;
+      sqlite3_free(del);
+
+      if (!tables[i].store) continue;
+      char *stats = sqlite3_mprintf(
+          "DELETE FROM user_learning_stats WHERE store = %Q AND qstring = %Q",
+          tables[i].store, [key UTF8String]);
+      sqlite3_exec(_userDB, stats, NULL, NULL, NULL);
+      sqlite3_free(stats);
+    }
+  }
+  return dropped;
+}
+
 - (BOOL)importUserPhraseDBFromFile:(NSString *)path {
+  return [self _importFromFile:path legacy:NO];
+}
+
+- (BOOL)importLegacyUserPhraseDBFromFile:(NSString *)path {
+  return [self _importFromFile:path legacy:YES];
+}
+
+- (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy {
   if (!_userDB) return NO;
   NSString *content = [NSString stringWithContentsOfFile:path
                                                 encoding:NSUTF8StringEncoding
                                                    error:NULL];
   if (!content) return NO;
 
-  NSArray *lines = [content componentsSeparatedByCharactersInSet:
-                                [NSCharacterSet newlineCharacterSet]];
+  NSArray *lines =
+      [content componentsSeparatedByCharactersInSet:[NSCharacterSet
+                                                        newlineCharacterSet]];
   if (![lines count] ||
       [(NSString *)[lines objectAtIndex:0] rangeOfString:@"MJSR version 1.0.0"]
               .location == NSNotFound) {
@@ -886,9 +1023,8 @@ static NSData *PEHexDecode(NSString *hex) {
     }
 
     NSMutableArray *fields = [NSMutableArray array];
-    for (NSString *tok in
-         [line componentsSeparatedByCharactersInSet:
-                   [NSCharacterSet whitespaceCharacterSet]]) {
+    for (NSString *tok in [line componentsSeparatedByCharactersInSet:
+                                    [NSCharacterSet whitespaceCharacterSet]]) {
       if ([tok length]) [fields addObject:tok];
     }
     if ([fields count] < 2) continue;
@@ -904,10 +1040,19 @@ static NSData *PEHexDecode(NSString *hex) {
     if (!qstring.size() || qstring.size() / 2 != codePoints) continue;
     if ([self _phraseExistsWithQstring:qstring phrase:phrase]) continue;
 
+    // A legacy file carries probabilities estimated against Yahoo! KeyKey's
+    // lexicon, and they are read as-is: user_unigrams is UNIONed straight into
+    // the unigram lookup, where they compete with our own numbers. Left alone,
+    // a phrase the user deliberately added years ago can land below this
+    // lexicon's median and never win. Give it what a hand-added phrase gets.
     const char *prob =
-        [fields count] > 2 ? [[fields objectAtIndex:2] UTF8String] : "-1.0";
+        legacy ? "-1.0"
+               : ([fields count] > 2 ? [[fields objectAtIndex:2] UTF8String]
+                                     : "-1.0");
     const char *backoff =
-        [fields count] > 3 ? [[fields objectAtIndex:3] UTF8String] : "0.0";
+        legacy ? "0.0"
+               : ([fields count] > 3 ? [[fields objectAtIndex:3] UTF8String]
+                                     : "0.0");
 
     sqlite3_reset(insert);
     sqlite3_bind_text(insert, 1, qstring.c_str(), -1, SQLITE_TRANSIENT);
@@ -929,43 +1074,101 @@ static NSData *PEHexDecode(NSString *hex) {
     }
 
     NSData *blob = PEHexDecode(hex);
+    // Files written by Yahoo! KeyKey carry this block encrypted (SQLite SEE);
+    // ours are in the clear. DecryptExportDatabase tells the two apart and
+    // leaves the blob empty when it is neither, so an unreadable block costs
+    // the caller its learning caches but not the phrases imported above.
+    std::string cacheData((const char *)[blob bytes], [blob length]);
+    if (!Manjusri::DecryptExportDatabase(cacheData)) cacheData.clear();
+    blob = [NSData dataWithBytes:cacheData.data() length:cacheData.size()];
+
     if ([blob length]) {
       NSString *tempPath = [self _tempDatabasePath];
       if ([blob writeToFile:tempPath atomically:YES]) {
-        // OR REPLACE because the cache tables now carry a unique key on
-        // qstring, and a hand-made or foreign blob may hold duplicates.
+        char *attach = sqlite3_mprintf("ATTACH DATABASE %Q AS export",
+                                       [tempPath UTF8String]);
+        sqlite3_exec(_userDB, attach, NULL, NULL, NULL);
+        sqlite3_free(attach);
+
+        // Restoring one of our own backups means restoring it: the file is a
+        // snapshot of these tables and replaces them wholesale. A legacy file
+        // is a different thing -- it comes from another input method while
+        // ChiaKey is already in use, so it merges, and on a collision the
+        // entry the user has been training here wins. Same rule as the
+        // plain-text files: importing never overwrites current work.
+        if (!legacy) {
+          sqlite3_exec(_userDB,
+                       "DELETE FROM user_bigram_cache;"
+                       "DELETE FROM user_candidate_override_cache;"
+                       "DELETE FROM user_learning_stats;"
+                       "DELETE FROM user_context_override_cache;",
+                       NULL, NULL, NULL);
+        }
+
+        // OR REPLACE/IGNORE because the cache tables carry a unique key on
+        // qstring, and a hand-made or foreign blob may hold duplicates -- a
+        // legacy KeyKey blob in particular keeps one row per (qstring,
+        // previous) pair, where ours keeps one row per qstring.
+        const char *conflict = legacy ? "OR IGNORE" : "OR REPLACE";
+        NSSet *newBigrams = nil;
+        NSSet *newOverrides = nil;
+        if (legacy) {
+          // Only entries this file actually adds are subject to the
+          // reachability filter below -- "imported minus already here", not
+          // just "imported". A key the file and the user share keeps the
+          // user's value (OR IGNORE above), and judging that value against
+          // the file's intent would delete something this import never
+          // touched, stats and all.
+          newBigrams = [self _keysOf:@"export.user_bigram_cache"
+                         missingFrom:@"user_bigram_cache"];
+          newOverrides = [self _keysOf:@"export.user_candidate_override_cache"
+                           missingFrom:@"user_candidate_override_cache"];
+        }
+
         char *sql = sqlite3_mprintf(
-            "ATTACH DATABASE %Q AS export KEY 'mjsrexport';"
-            "DELETE FROM user_bigram_cache;"
-            "INSERT OR REPLACE INTO user_bigram_cache (qstring, previous, "
+            "INSERT %s INTO user_bigram_cache (qstring, previous, "
             "current, probability) SELECT qstring, previous, current, "
             "probability FROM export.user_bigram_cache;"
-            "DELETE FROM user_candidate_override_cache;"
-            "INSERT OR REPLACE INTO user_candidate_override_cache "
+            "INSERT %s INTO user_candidate_override_cache "
             "(qstring, current) "
-            "SELECT qstring, current FROM export.user_candidate_override_cache;"
-            "DELETE FROM user_learning_stats;"
-            "DELETE FROM user_context_override_cache;",
-            [tempPath UTF8String]);
+            "SELECT qstring, current FROM "
+            "export.user_candidate_override_cache;",
+            conflict, conflict);
         sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
         sqlite3_free(sql);
 
         // Separate step: a file written by an older ChiaKey has no stats table,
         // and that failure must not abort the DETACH. Entries without stats
         // fall back to a single selection when the IME loads them.
-        sqlite3_exec(_userDB,
-                     "INSERT OR REPLACE INTO user_learning_stats "
-                     "(store, qstring, selection_count, last_used) "
-                     "SELECT store, qstring, selection_count, last_used "
-                     "FROM export.user_learning_stats",
-                     NULL, NULL, NULL);
-        sqlite3_exec(_userDB,
-                     "INSERT OR REPLACE INTO user_context_override_cache "
-                     "(qstring, current) SELECT qstring, current "
-                     "FROM export.user_context_override_cache",
-                     NULL, NULL, NULL);
+        sql = sqlite3_mprintf(
+            "INSERT %s INTO user_learning_stats "
+            "(store, qstring, selection_count, last_used) "
+            "SELECT store, qstring, selection_count, last_used "
+            "FROM export.user_learning_stats",
+            conflict);
+        sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
+        sqlite3_free(sql);
+
+        sql = sqlite3_mprintf(
+            "INSERT %s INTO user_context_override_cache "
+            "(qstring, current) SELECT qstring, current "
+            "FROM export.user_context_override_cache",
+            conflict);
+        sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
+        sqlite3_free(sql);
+
         sqlite3_exec(_userDB, "DETACH DATABASE export", NULL, NULL, NULL);
         [[NSFileManager defaultManager] removeItemAtPath:tempPath error:NULL];
+
+        // After the phrases are in, so an entry naming a phrase this file also
+        // brought over counts as reachable.
+        if (legacy) {
+          [self _dropLearningEntriesUnknownToLexicon:@{
+            @"user_bigram_cache" : newBigrams ? newBigrams : [NSSet set],
+            @"user_candidate_override_cache" : newOverrides ? newOverrides
+                                                            : [NSSet set],
+          }];
+        }
       }
     }
   }
