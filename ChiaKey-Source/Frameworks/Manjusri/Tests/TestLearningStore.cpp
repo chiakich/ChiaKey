@@ -48,6 +48,60 @@ static void TestReadRefreshesRecency() {
   CHECK(store.peek("b") == 0);
 }
 
+// With nothing left that was picked only once, the victim is still the entry
+// with the fewest selections rather than simply the oldest.
+static void TestEvictionRanksByCountWhenNothingIsSingle() {
+  LearningStore<string> store(3);
+  store.learn("a", "1");  // ends up at three selections
+  store.learn("a", "1");
+  store.learn("a", "1");
+  store.learn("b", "2");  // two
+  store.learn("b", "2");
+  store.learn("c", "3");  // one
+
+  store.learn("d", "4");
+  CHECK(store.peek("c") == 0);  // the single-selection entry goes first
+  CHECK(store.peek("a") != 0);
+  CHECK(store.peek("b") != 0);
+
+  // now a(3), b(2), d(1): the fresh single-selection entry is the cheapest again
+  store.learn("e", "5");
+  CHECK(store.peek("d") == 0);
+  CHECK(store.peek("a") != 0);
+  CHECK(store.peek("b") != 0);
+
+  // a(3), b(2), e(1) -> promote e past b, so b becomes the weakest
+  store.learn("e", "5");
+  store.learn("e", "5");
+  store.learn("f", "6");
+  CHECK(store.peek("b") == 0);
+  CHECK(store.peek("a") != 0);
+  CHECK(store.peek("e") != 0);
+}
+
+// Lowering the capacity has to shed the excess immediately, not one entry per
+// subsequent insertion.
+static void TestCapacityShrinkEvictsNow() {
+  LearningStore<string> store(10);
+  for (int i = 0; i < 8; i++) {
+    char key[8];
+    snprintf(key, sizeof(key), "k%d", i);
+    store.learn(key, "v");
+  }
+  CHECK(store.size() == 8);
+
+  store.setCapacity(3);
+  CHECK(store.capacity() == 3);
+  CHECK(store.size() == 3);
+  // the survivors are the most recent, and every drop is queued for the disk
+  CHECK(store.peek("k7") != 0);
+  CHECK(store.peek("k0") == 0);
+  CHECK(store.pendingDeletes().count("k0") == 1);
+
+  store.setCapacity(0);  // ignored: a zero-capacity store could hold nothing
+  CHECK(store.capacity() == 3);
+}
+
 static void TestSelectionCountAndDirtyTracking() {
   LearningStore<string> store(10);
   CHECK(!store.hasPendingWrites());
@@ -332,17 +386,184 @@ static void TestPreExistingOverridesAreGrandfathered() {
   remove(path.c_str());
 }
 
+// A save that cannot reach the disk must leave the stores dirty so the next one
+// retries. Marking them clean on a failed commit loses the correction outright:
+// nothing on disk, and nothing in memory saying anything was owed.
+static void TestFailedSaveKeepsLearningDirty() {
+  const string path = TempPath("learningstore-busy.db");
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  // A second connection holding a write lock: the Phrase Editor, or any other
+  // process sharing this database.
+  sqlite3* blocker = 0;
+  CHECK(sqlite3_open(path.c_str(), &blocker) == SQLITE_OK);
+  CHECK(sqlite3_exec(blocker, "BEGIN IMMEDIATE", 0, 0, 0) == SQLITE_OK);
+
+  LanguageModel lm(db, 0, false, false, false, true, true);
+  lm.cacheOverrideSelection("q1", "A");
+  lm.cacheUserBigram("p q1", "P", "A");
+
+  CHECK(!lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+  CHECK(CountRows(db, "user_candidate_override_cache") == 1);  // only 'legacy'
+  CHECK(CountRows(db, "user_bigram_cache") == 0);
+
+  sqlite3_exec(blocker, "COMMIT", 0, 0, 0);
+  sqlite3_close(blocker);
+
+  // the retry finds the work still outstanding and lands it
+  CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+  CHECK(CountRows(db, "user_candidate_override_cache") == 2);
+  CHECK(CountRows(db, "user_bigram_cache") == 1);
+  CHECK(lm.fetchCachedOverrideSelection("q1") == "A");
+
+  delete db;
+  remove(path.c_str());
+}
+
+// Flushing has to be all or nothing. Clearing memory while the tables survive
+// just means the next load brings the discarded learning back, and the IME would
+// have told the user it was gone.
+static void TestFlushRefusedWhileEditorHoldsLock() {
+  const string path = TempPath("learningstore-flushlock.db");
+  const string lockPath = TempPath("learningstore-flushlock.lock");
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.cacheOverrideSelection("q1", "A");
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+  }
+
+  FILE* lock = fopen(lockPath.c_str(), "w");
+  CHECK(lock != 0);
+  if (lock) fclose(lock);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.setUserPhraseEditingLockPath(lockPath);
+    lm.loadUserCandidateOverrideCache();
+
+    CHECK(!lm.flushUserCache());
+    // neither the tables nor the resident entries were touched
+    CHECK(CountRows(db, "user_candidate_override_cache") == 2);
+    CHECK(lm.fetchCachedOverrideSelection("q1") == "A");
+  }
+
+  remove(lockPath.c_str());
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.setUserPhraseEditingLockPath(lockPath);
+    lm.loadUserCandidateOverrideCache();
+
+    CHECK(lm.flushUserCache());
+    CHECK(CountRows(db, "user_candidate_override_cache") == 0);
+    CHECK(lm.fetchCachedOverrideSelection("q1") == "");
+  }
+
+  delete db;
+  remove(path.c_str());
+}
+
+// Taking a reading back to the lexicon's own answer drops the breadth with it,
+// so a later correction has to earn its way to being general again.
+static void TestRevertingAnOverrideDropsItsBreadth() {
+  const string path = TempPath("learningstore-breadth.db");
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.cacheOverrideSelection("q1", "A");
+    lm.cacheContextOverrideSelection("p1", "q1", "A");
+    lm.cacheContextOverrideSelection("p2", "q1", "A");
+    lm.cacheContextOverrideSelection("p3", "q1", "A");
+    CHECK(lm.overrideGeneralizesAcrossContexts("q1"));
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+
+    lm.removeCachedSelection("q1");
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
+
+    // a reload in between (loadConfig() does this on every preference change)
+    // must not resurrect the row we just dropped
+    lm.loadUserCandidateOverrideCache();
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+  }
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.loadUserCandidateOverrideCache();
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
+    // re-learning starts over rather than generalising for free
+    lm.cacheOverrideSelection("q1", "B");
+    lm.cacheContextOverrideSelection("p1", "q1", "B");
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
+  }
+
+  delete db;
+  remove(path.c_str());
+}
+
+// A cache hit is handed straight back now, so what goes into the cache has to be
+// sorted; otherwise the walk would read whatever row SQLite happened to yield
+// first.
+static void TestCachedBigramsComeBackSorted() {
+  const string path = TempPath("learningstore-bigramsort.db");
+  remove(path.c_str());
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+  assert(db);
+  db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
+  db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
+  db->execute("CREATE TABLE user_bigram_cache "
+              "(qstring, previous, current, probability)");
+  db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
+  // deliberately inserted worst-first
+  db->execute("INSERT INTO bigrams VALUES('p q', 'P', 'WORST', -3.0)");
+  db->execute("INSERT INTO bigrams VALUES('p q', 'P', 'BEST', -0.5)");
+  db->execute("INSERT INTO bigrams VALUES('p q', 'P', 'MIDDLE', -1.5)");
+  LanguageModel::MigrateUserLearningTables(db);
+
+  LanguageModel lm(db, 0, false, false, false, true, true);
+
+  BigramVector first = lm.findBigrams("p q");
+  CHECK(first.size() == 3);
+  if (first.size() == 3) CHECK(first[0].current == "BEST");
+
+  // second call comes from m_bigramCache
+  BigramVector cached = lm.findBigrams("p q");
+  CHECK(cached.size() == 3);
+  if (cached.size() == 3) CHECK(cached[0].current == "BEST");
+
+  // and a learned entry still outranks the lexicon on a cache hit
+  lm.cacheUserBigram("p q", "P", "LEARNED");
+  BigramVector merged = lm.findBigrams("p q");
+  CHECK(merged.size() == 4);
+  if (merged.size() == 4) CHECK(merged[0].current == "LEARNED");
+
+  delete db;
+  remove(path.c_str());
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
   TestEvictionPrefersLeastUsed();
   TestReadRefreshesRecency();
+  TestEvictionRanksByCountWhenNothingIsSingle();
+  TestCapacityShrinkEvictsNow();
   TestSelectionCountAndDirtyTracking();
   TestLoadDoesNotClobberNewerMemory();
   TestMigrationAndRoundTrip();
   TestRollsBackInlineStatColumns();
   TestContextKeyedOverrides();
   TestPreExistingOverridesAreGrandfathered();
+  TestFailedSaveKeepsLearningDirty();
+  TestFlushRefusedWhileEditorHoldsLock();
+  TestRevertingAnOverrideDropsItsBreadth();
+  TestCachedBigramsComeBackSorted();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;

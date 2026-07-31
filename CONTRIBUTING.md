@@ -136,6 +136,8 @@ Scripts/eval-walker-goldset.sh --gold goldset.tsv --length-prior 1.0
 Scripts/eval-walker-goldset.sh --gold goldset.tsv --user-db ~/Library/Application\ Support/ChiaKey/SmartMandarinUserData.db
 ```
 
+預設模式只讀 `--user-db`，所以上面第三行指向自己的真實學習資料庫是安全的。但 `--replay` 會**寫入** `--user-db`（它就是要量測學習行為），所以那個模式請指向副本；不給 `--user-db` 時它會用 TMPDIR 下的暫存 DB。
+
 中文句子只給得出輸出，輸入的讀音序列必須反推，而每個多音字都是一次反推錯的機會 —— 讀音餵錯，walker 就不可能答對，那個誤差會被算在 walker 頭上。`--dominance` 控制這個取捨：預設 `0` 只收詞庫裡唯一讀音的字（完全無噪音，但句子少且偏短）；正值會額外接受「最高機率讀音領先次高 N 個 log10」的多音字（句子多很多，但部分讀音是推測的）。
 
 實測兩者角色不同：嚴格集（1,182 句）偵測不到 ranking 改動的**傷害面** —— 詞長加成從 1.2 加到 2.5 準確率完全不動。`--dominance 1.0`（約 10,400 句）才有靈敏度，能重現詞長加成在 1.0 附近的最佳點。所以**絕對準確率只從 `--dominance 0` 報，調參用寬鬆集**，工具會同時印出無噪音子集的數字當對照。

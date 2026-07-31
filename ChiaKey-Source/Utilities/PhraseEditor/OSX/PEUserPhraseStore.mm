@@ -217,6 +217,27 @@ static std::string PEEscapeForLike(const std::string &s) {
       "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
       "ON user_learning_stats (store, qstring);";
   sqlite3_exec(_userDB, schema, NULL, NULL, NULL);
+
+  // The unique keys the IME's incremental saves depend on. Kept separate from
+  // the batch above because they can only be created once the duplicates an
+  // older full-table rewrite could leave behind are gone, and because a failure
+  // here must not abort the rest of the schema. This mirrors
+  // LanguageModel::MigrateUserLearningTables() -- either side may be the first
+  // to open a given database, and importing without these keys would let
+  // INSERT OR REPLACE quietly become INSERT.
+  static const char *const dedupe[] = {
+      "DELETE FROM user_bigram_cache WHERE rowid NOT IN "
+      "(SELECT MAX(rowid) FROM user_bigram_cache GROUP BY qstring)",
+      "DELETE FROM user_candidate_override_cache WHERE rowid NOT IN "
+      "(SELECT MAX(rowid) FROM user_candidate_override_cache GROUP BY qstring)",
+      "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
+      "ON user_bigram_cache (qstring)",
+      "CREATE UNIQUE INDEX IF NOT EXISTS "
+      "user_candidate_override_cache_qstring_unique "
+      "ON user_candidate_override_cache (qstring)",
+  };
+  for (size_t i = 0; i < sizeof(dedupe) / sizeof(dedupe[0]); i++)
+    sqlite3_exec(_userDB, dedupe[i], NULL, NULL, NULL);
 }
 
 - (BOOL)isAvailable {

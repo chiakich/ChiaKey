@@ -20,14 +20,20 @@ set -euo pipefail
 #                      accuracy it never had a chance at. Report absolute
 #                      numbers from 0 only.
 #   --length-prior X   override Node's per-extra-syllable bonus
-#   --user-db PATH     attach a user learning database and enable it
+#   --user-db PATH     attach a user learning database and enable it. Read-only
+#                      in the default mode; with --replay it is WRITTEN TO, so
+#                      point that at a scratch copy, never at your live
+#                      SmartMandarinUserData.db.
 #   --mismatches FILE  write every wrong sentence for inspection
 #   --limit N          cap the number of gold sentences
 #   --replay           drive ManjusriComposer like the IME, correcting mistakes
 #                      and letting the real learning path record them; reports
 #                      manual selections per pass. Use this for changes to how
-#                      strongly learning scores.
+#                      strongly learning scores. Without --user-db it learns
+#                      into a scratch database under TMPDIR.
 #   --passes N         replay the gold set N times (learning carries over)
+#   --reset-user-db    with --replay, empty the --user-db first (it is otherwise
+#                      added to in place)
 #
 # Any other flags are passed through to the eval step.
 

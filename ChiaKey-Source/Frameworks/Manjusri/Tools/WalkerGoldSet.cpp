@@ -63,9 +63,14 @@ void Usage() {
        << "        [--dominance N] [--min-chars N] [--max-chars N] [--limit N]\n"
        << "  WalkerGoldSet eval --lexicon DB --gold TSV [--length-prior X]\n"
        << "        [--user-db PATH] [--mismatches FILE]\n"
+       << "        (eval never writes to --user-db)\n"
        << "  WalkerGoldSet replay --lexicon DB --gold TSV [--passes N]\n"
-       << "        [--length-prior X] [--user-db PATH] [--keep-user-db]\n"
-       << "        [--learned-score X]\n";
+       << "        [--length-prior X] [--user-db PATH] [--reset-user-db]\n"
+       << "        [--keep-user-db] [--learned-score X]\n"
+       << "        (replay WRITES learning. Without --user-db it uses a scratch\n"
+       << "         database under TMPDIR and starts it empty unless\n"
+       << "         --keep-user-db; a --user-db you name is written to in place\n"
+       << "         and only emptied first if you pass --reset-user-db.)\n";
 }
 
 const string ArgValue(const vector<string>& args, const string& name,
@@ -78,6 +83,16 @@ const string ArgValue(const vector<string>& args, const string& name,
 
 bool HasArg(const vector<string>& args, const string& name) {
   return find(args.begin(), args.end(), name) != args.end();
+}
+
+// Honour TMPDIR rather than hardcoding /tmp: on macOS that keeps the scratch
+// database in the caller's own per-user temp directory.
+const string ScratchPath(const string& name) {
+  const char* tmpdir = getenv("TMPDIR");
+  string base = tmpdir && *tmpdir ? string(tmpdir) : string("/tmp/");
+  if (base[base.size() - 1] != '/') base += '/';
+
+  return base + name;
 }
 
 // ---- build -----------------------------------------------------------------
@@ -407,15 +422,27 @@ int Replay(const vector<string>& args) {
     return 1;
   }
 
-  // Learning goes to a scratch database so a measurement never touches the
-  // user's own; the caller decides whether to keep it.
+  // Replay writes learning, so unlike eval it needs a database of its own. Only
+  // the default scratch path is ever cleared: --user-db used to be wiped too,
+  // which turned the documented `--user-db ~/Library/.../SmartMandarinUserData.db`
+  // (an eval invocation) into a way to delete your own learning by passing it to
+  // the wrong subcommand. Starting a supplied database from empty now has to be
+  // asked for.
+  const bool defaultUserDB = !HasArg(args, "--user-db");
   const string userDBPath =
-      ArgValue(args, "--user-db", "/tmp/chiakey-replay-user.db");
-  if (!HasArg(args, "--keep-user-db")) remove(userDBPath.c_str());
+      defaultUserDB ? ScratchPath("chiakey-replay-user.db")
+                    : ArgValue(args, "--user-db");
+
+  if (HasArg(args, "--reset-user-db") ||
+      (defaultUserDB && !HasArg(args, "--keep-user-db")))
+    remove(userDBPath.c_str());
+
+  if (!defaultUserDB)
+    cerr << "note: replay writes learning into " << userDBPath << endl;
 
   OVSQLiteConnection* userDB = OVSQLiteConnection::Open(userDBPath);
   if (!userDB) {
-    cerr << "cannot open scratch user database: " << userDBPath << endl;
+    cerr << "cannot open user database: " << userDBPath << endl;
     delete db;
     return 1;
   }

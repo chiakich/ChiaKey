@@ -83,25 +83,60 @@ class DataCache {
 // query caches in three ways: a read refreshes recency, eviction drops the
 // least-used entry instead of the oldest, and writes are tracked so they can go
 // to disk incrementally rather than by rewriting the whole table.
+//
+// The recency refresh is memory-only on purpose: Graph::build() reads these
+// stores for every candidate node on every keystroke, and dirtying an entry
+// there would turn each one into a disk write. So the lastUsed that reaches
+// disk is the last time the entry was *learned*, which is the order
+// loadEntry() replays -- across sessions the eviction order is by last write,
+// not last read.
 template <class ValueType>
 class LearningStore {
  public:
+  struct Entry;
+
+  // One recency list per selection count, least- to most-recently-used within
+  // each bucket. Eviction wants "fewest selections, then least recent", which
+  // is then just the front of the lowest non-empty bucket -- no scan of the
+  // whole store, which matters because a heavy user sits permanently at
+  // capacity and pays this on every correction. Empty buckets are dropped so
+  // begin() is the lowest count present, and selectionCount is capped, so there
+  // are never more than c_maxSelectionCount buckets.
+  typedef list<Entry*> RecencyList;
+  typedef map<size_t, RecencyList> RecencyBuckets;
+
   struct Entry {
     ValueType value;
     size_t selectionCount;
     time_t lastUsed;
     bool dirty;
-    list<string>::iterator recency;
+    // Points at this entry's key in m_map. Map keys are stable for the lifetime
+    // of the node, and the Entry cannot outlive it.
+    const string* key;
+    typename RecencyList::iterator recency;
   };
 
   typedef map<string, Entry> EntryMap;
 
   LearningStore(size_t capacity = 8000) : m_capacity(capacity) {}
 
+  // Every Entry holds an iterator into m_recency and a pointer into m_map's
+  // keys, so a copy would leave all of them pointing into the original.
+  LearningStore(const LearningStore&) = delete;
+  LearningStore& operator=(const LearningStore&) = delete;
+
   size_t size() const { return m_map.size(); }
   size_t capacity() const { return m_capacity; }
+
+  // Lowering the capacity has to shed the excess right away: eviction otherwise
+  // only runs on insert, so the store would stay oversized until that many new
+  // corrections happened to arrive.
   void setCapacity(size_t capacity) {
-    if (capacity) m_capacity = capacity;
+    if (!capacity) return;
+
+    m_capacity = capacity;
+    while (m_map.size() > m_capacity)
+      if (!evictOne()) break;
   }
 
   // A hit means the user typed this reading again, so it counts as recency
@@ -117,7 +152,7 @@ class LearningStore {
     typename EntryMap::iterator iter = m_map.find(key);
     if (iter == m_map.end()) return 0;
 
-    touch(iter);
+    touch((*iter).second);
     return &(*iter).second;
   }
 
@@ -134,25 +169,17 @@ class LearningStore {
     if (iter != m_map.end()) {
       Entry& entry = (*iter).second;
       entry.value = value;
+      entry.dirty = true;
       // Counts how often this reading needed a correction, not how often this
       // particular text won: a reading the user keeps revisiting is worth
       // keeping either way.
-      if (entry.selectionCount < c_maxSelectionCount) entry.selectionCount++;
-      entry.dirty = true;
-      touch(iter);
+      promote(entry);
+      touch(entry);
       return;
     }
 
     evictIfFull();
-
-    Entry entry;
-    entry.value = value;
-    entry.selectionCount = 1;
-    entry.lastUsed = time(NULL);
-    entry.dirty = true;
-    m_recency.push_back(key);
-    entry.recency = --m_recency.end();
-    m_map[key] = entry;
+    insert(key, value, 1, time(NULL), true);
     m_pendingDeletes.erase(key);
   }
 
@@ -160,7 +187,7 @@ class LearningStore {
     typename EntryMap::iterator iter = m_map.find(key);
     if (iter == m_map.end()) return;
 
-    m_recency.erase((*iter).second.recency);
+    unlink((*iter).second);
     m_map.erase(iter);
     m_pendingDeletes.insert(key);
   }
@@ -173,14 +200,13 @@ class LearningStore {
     if (m_map.find(key) != m_map.end()) return false;
     if (m_map.size() >= m_capacity) return false;
 
-    Entry entry;
-    entry.value = value;
-    entry.selectionCount = selectionCount ? selectionCount : 1;
-    entry.lastUsed = lastUsed;
-    entry.dirty = false;
-    m_recency.push_back(key);
-    entry.recency = --m_recency.end();
-    m_map[key] = entry;
+    // Clamp rather than trust the row: a garbled count would otherwise open a
+    // bucket outside the capped range and never be reachable by promote().
+    if (selectionCount < 1) selectionCount = 1;
+    if (selectionCount > c_maxSelectionCount)
+      selectionCount = c_maxSelectionCount;
+
+    insert(key, value, selectionCount, lastUsed, false);
     return true;
   }
 
@@ -221,47 +247,96 @@ class LearningStore {
   }
 
  protected:
-  void touch(typename EntryMap::iterator iter) {
+  Entry& insert(const string& key, const ValueType& value,
+                size_t selectionCount, time_t lastUsed, bool dirty) {
+    typename EntryMap::iterator iter =
+        m_map.insert(typename EntryMap::value_type(key, Entry())).first;
+
     Entry& entry = (*iter).second;
+    entry.value = value;
+    entry.selectionCount = selectionCount;
+    entry.lastUsed = lastUsed;
+    entry.dirty = dirty;
+    entry.key = &(*iter).first;
+
+    RecencyList& bucket = m_recency[selectionCount];
+    bucket.push_back(&entry);
+    entry.recency = --bucket.end();
+    return entry;
+  }
+
+  void touch(Entry& entry) {
     entry.lastUsed = time(NULL);
+
+    typename RecencyBuckets::iterator biter =
+        m_recency.find(entry.selectionCount);
+    if (biter == m_recency.end()) return;
+
     // splice within the same list moves the node and keeps the iterator valid
-    m_recency.splice(m_recency.end(), m_recency, entry.recency);
+    RecencyList& bucket = (*biter).second;
+    bucket.splice(bucket.end(), bucket, entry.recency);
+  }
+
+  // Moving up a bucket is what makes a second selection protect an entry from
+  // eviction.
+  void promote(Entry& entry) {
+    if (entry.selectionCount >= c_maxSelectionCount) return;
+
+    typename RecencyBuckets::iterator from =
+        m_recency.find(entry.selectionCount);
+    // Every live entry is in the bucket for its own count. If that ever stops
+    // holding, leave the entry where it is rather than relinking it and ending
+    // up with it listed twice.
+    if (from == m_recency.end()) return;
+
+    entry.selectionCount++;
+    // map insertion never invalidates existing iterators, so `from` survives.
+    RecencyList& to = m_recency[entry.selectionCount];
+    to.splice(to.end(), (*from).second, entry.recency);
+    if ((*from).second.empty()) m_recency.erase(from);
+  }
+
+  void unlink(Entry& entry) {
+    typename RecencyBuckets::iterator biter =
+        m_recency.find(entry.selectionCount);
+    if (biter == m_recency.end()) return;
+
+    (*biter).second.erase(entry.recency);
+    if ((*biter).second.empty()) m_recency.erase(biter);
   }
 
   void evictIfFull() {
     if (m_map.size() < m_capacity) return;
 
-    // Prefer dropping entries the user picked only once, and among those the
-    // least recently seen. m_recency runs least- to most-recent, so the first
-    // single-selection entry we meet is already the best victim; the scan only
-    // runs when the store is full, and only for the one insertion at hand.
-    typename EntryMap::iterator victim = m_map.end();
-    for (list<string>::iterator riter = m_recency.begin();
-         riter != m_recency.end(); ++riter) {
-      typename EntryMap::iterator iter = m_map.find(*riter);
-      if (iter == m_map.end()) continue;
+    evictOne();
+  }
 
-      if (victim == m_map.end() ||
-          (*iter).second.selectionCount < (*victim).second.selectionCount)
-        victim = iter;
+  // Drops the entry the user picked fewest times, and among those the least
+  // recently seen -- the front of the lowest non-empty bucket.
+  bool evictOne() {
+    typename RecencyBuckets::iterator biter = m_recency.begin();
+    while (biter != m_recency.end() && (*biter).second.empty()) ++biter;
+    if (biter == m_recency.end()) return false;
 
-      if (victim != m_map.end() && (*victim).second.selectionCount <= 1) break;
-    }
+    RecencyList& bucket = (*biter).second;
+    // Copy the key out: the pointer into it dies with the map node.
+    const string key = *bucket.front()->key;
 
-    if (victim == m_map.end()) return;
+    bucket.pop_front();
+    if (bucket.empty()) m_recency.erase(biter);
+    m_map.erase(key);
 
     // Memory is the source of truth for these tables, so an eviction has to
     // reach the disk too -- otherwise the table would grow without bound and
     // reload rows we already decided to drop.
-    m_pendingDeletes.insert((*victim).first);
-    m_recency.erase((*victim).second.recency);
-    m_map.erase(victim);
+    m_pendingDeletes.insert(key);
+    return true;
   }
 
   static const size_t c_maxSelectionCount = 255;
 
   EntryMap m_map;
-  list<string> m_recency;
+  RecencyBuckets m_recency;
   set<string> m_pendingDeletes;
   size_t m_capacity;
 };
@@ -411,7 +486,9 @@ class LanguageModel {
   virtual size_t cachedQueryCount();
 
   virtual void flushCache();
-  virtual void flushUserCache();
+  // False when nothing was discarded, so the caller can avoid telling the user
+  // their learning is gone when it is not.
+  virtual bool flushUserCache();
 
   // How many distinct preceding readings a reading must have been corrected
   // after before its context-free override is trusted everywhere. Measured on
@@ -434,7 +511,14 @@ class LanguageModel {
   // Users rely on one correction sticking. Keep it decisive -- but keep it
   // stated here, not inherited from whatever MAX(probability) happens to be in
   // the current lexicon. Tunable so Scripts/eval-walker-goldset.sh can re-sweep.
-  static double c_learnedBigramScore;
+  //
+  // A function-local static rather than a static data member so this class stays
+  // header-only like the rest of the file; a data member would need an
+  // out-of-line definition in some arbitrary .cpp.
+  static double& LearnedBigramScore() {
+    static double score = 0.0;  // log10(1.0)
+    return score;
+  }
   static void SetLearnedBigramScore(double score);
 
   virtual double learnedBigramScore(size_t selectionCount);
@@ -473,6 +557,13 @@ class LanguageModel {
   virtual bool saveUserBigramCacheAndCandidateOverrideCache(
       bool useTransaction = true, bool forced = false);
 
+  // Emit the pending changes without touching the stores' dirty state, and stop
+  // at the first statement that fails. Only whoever owns the transaction can
+  // know that the rows really landed, so only they may markClean(); see
+  // saveUserBigramCacheAndCandidateOverrideCache().
+  virtual bool writeUserBigramCache();
+  virtual bool writeUserCandidateOverrideCache();
+
   // While the Phrase Editor holds its editing-lock file, all writes to the
   // user tables are suspended (see ChiaKeyUserPhraseCoordination.h for the
   // protocol). The lock path is set by the module after it resolves the user
@@ -482,6 +573,14 @@ class LanguageModel {
 
  protected:
   virtual double cachedMaxUnigramProbability();
+
+  // Only call once the override writes are known to have reached the disk.
+  void markUserCandidateOverrideCacheClean() {
+    m_candidateOverrideCache.markClean();
+    m_contextOverrideCache.markClean();
+    m_dirtyContextBreadth.clear();
+    m_pendingBreadthDeletes.clear();
+  }
 
   OVSQLiteConnection* m_connection;
   bool m_ownsDBConnection;
@@ -517,11 +616,18 @@ class LanguageModel {
   LearningStore<string> m_contextOverrideCache;
 
   // Reading -> how many distinct preceding readings the user has corrected it
-  // after. Monotonic on purpose: "this correction turned out to be general" is
-  // a fact about the user's history, not about what is currently resident, so
-  // an eviction must not walk it back.
+  // after. Monotonic under eviction on purpose: "this correction turned out to
+  // be general" is a fact about the user's history, not about what is currently
+  // resident, so dropping an entry to make room must not walk it back.
+  //
+  // It is dropped when the user *reverts* a reading to the lexicon's own answer,
+  // though -- see removeCachedSelection(). That both keeps the map bounded by
+  // the same population as the override table (which is why it needs no
+  // capacity of its own) and stops a since-abandoned override from silently
+  // generalising the moment it is learned again.
   map<string, size_t> m_overrideContextBreadth;
   set<string> m_dirtyContextBreadth;
+  set<string> m_pendingBreadthDeletes;
 
   OVBenchmark m_userCacheTimer;
 
@@ -686,22 +792,21 @@ inline void LanguageModel::loadUserBigramCache() {
                                 (*iter).selectionCount, (*iter).lastUsed);
 }
 
-inline void LanguageModel::saveUserBigramCache(bool useTransaction) {
-  if (!m_cfgUseUserBigramCache) return;
-
-  if (useTransaction) {
-    if (m_connection->execute("BEGIN") != SQLITE_OK) return;
-  }
+inline bool LanguageModel::writeUserBigramCache() {
+  if (!m_cfgUseUserBigramCache) return true;
 
   const set<string>& deletes = m_userBigramCache.pendingDeletes();
   for (set<string>::const_iterator iter = deletes.begin();
        iter != deletes.end(); ++iter) {
-    m_connection->execute("DELETE FROM user_bigram_cache WHERE qstring = %Q",
-                          (*iter).c_str());
-    m_connection->execute(
-        "DELETE FROM user_learning_stats WHERE store = 'bigram' AND "
-        "qstring = %Q",
-        (*iter).c_str());
+    if (m_connection->execute("DELETE FROM user_bigram_cache WHERE qstring = %Q",
+                              (*iter).c_str()) != SQLITE_OK)
+      return false;
+
+    if (m_connection->execute(
+            "DELETE FROM user_learning_stats WHERE store = 'bigram' AND "
+            "qstring = %Q",
+            (*iter).c_str()) != SQLITE_OK)
+      return false;
   }
 
   vector<string> dirty = m_userBigramCache.dirtyKeys();
@@ -711,21 +816,42 @@ inline void LanguageModel::saveUserBigramCache(bool useTransaction) {
     if (!entry) continue;
 
     const Bigram& bigram = entry->value;
-    m_connection->execute(
-        "INSERT OR REPLACE INTO user_bigram_cache "
-        "(qstring, previous, current, probability) VALUES(%Q, %Q, %Q, %f)",
-        bigram.queryString.c_str(), bigram.previous.c_str(),
-        bigram.current.c_str(), bigram.probability);
-    m_connection->execute(
-        "INSERT OR REPLACE INTO user_learning_stats "
-        "(store, qstring, selection_count, last_used) "
-        "VALUES('bigram', %Q, %d, %d)",
-        (*iter).c_str(), (int)entry->selectionCount, (int)entry->lastUsed);
+    if (m_connection->execute(
+            "INSERT OR REPLACE INTO user_bigram_cache "
+            "(qstring, previous, current, probability) VALUES(%Q, %Q, %Q, %f)",
+            bigram.queryString.c_str(), bigram.previous.c_str(),
+            bigram.current.c_str(), bigram.probability) != SQLITE_OK)
+      return false;
+
+    if (m_connection->execute(
+            "INSERT OR REPLACE INTO user_learning_stats "
+            "(store, qstring, selection_count, last_used) "
+            "VALUES('bigram', %Q, %d, %d)",
+            (*iter).c_str(), (int)entry->selectionCount,
+            (int)entry->lastUsed) != SQLITE_OK)
+      return false;
   }
 
-  if (useTransaction) {
-    if (m_connection->execute("COMMIT") != SQLITE_OK) return;
+  return true;
+}
+
+inline void LanguageModel::saveUserBigramCache(bool useTransaction) {
+  if (!m_cfgUseUserBigramCache) return;
+
+  // The caller owns the transaction, so it also owns the markClean() decision.
+  if (!useTransaction) {
+    writeUserBigramCache();
+    return;
   }
+
+  if (m_connection->execute("BEGIN") != SQLITE_OK) return;
+
+  if (!writeUserBigramCache()) {
+    m_connection->execute("ROLLBACK");
+    return;
+  }
+
+  if (m_connection->execute("COMMIT") != SQLITE_OK) return;
 
   m_userBigramCache.markClean();
 }
@@ -775,6 +901,11 @@ inline void LanguageModel::loadUserCandidateOverrideCache() {
 
   while (breadth->step() == SQLITE_ROW) {
     const string qstring = SafeColumnText(breadth, 0);
+    // A row we have already dropped in memory must not come back: loadConfig()
+    // re-reads these tables on every preference change, which can easily land
+    // between the drop and the save that clears the row.
+    if (m_pendingBreadthDeletes.count(qstring)) continue;
+
     size_t count = (size_t)breadth->intOfColumn(1);
     // Never lower a breadth already advanced in this session.
     if (m_overrideContextBreadth[qstring] < count)
@@ -783,17 +914,20 @@ inline void LanguageModel::loadUserCandidateOverrideCache() {
   delete breadth;
 }
 
-inline void SaveOverrideTable(OVSQLiteConnection* connection, const char* table,
-                            const char* store,
-                            LearningStore<string>& source) {
+inline bool SaveOverrideTable(OVSQLiteConnection* connection, const char* table,
+                              const char* store,
+                              LearningStore<string>& source) {
   const set<string>& deletes = source.pendingDeletes();
   for (set<string>::const_iterator iter = deletes.begin();
        iter != deletes.end(); ++iter) {
-    connection->execute("DELETE FROM %s WHERE qstring = %Q", table,
-                        (*iter).c_str());
-    connection->execute(
-        "DELETE FROM user_learning_stats WHERE store = %Q AND qstring = %Q",
-        store, (*iter).c_str());
+    if (connection->execute("DELETE FROM %s WHERE qstring = %Q", table,
+                            (*iter).c_str()) != SQLITE_OK)
+      return false;
+
+    if (connection->execute(
+            "DELETE FROM user_learning_stats WHERE store = %Q AND qstring = %Q",
+            store, (*iter).c_str()) != SQLITE_OK)
+      return false;
   }
 
   vector<string> dirty = source.dirtyKeys();
@@ -802,44 +936,73 @@ inline void SaveOverrideTable(OVSQLiteConnection* connection, const char* table,
     const LearningStore<string>::Entry* entry = source.peek(*iter);
     if (!entry) continue;
 
-    connection->execute(
-        "INSERT OR REPLACE INTO %s (qstring, current) VALUES(%Q, %Q)", table,
-        (*iter).c_str(), entry->value.c_str());
-    connection->execute(
-        "INSERT OR REPLACE INTO user_learning_stats "
-        "(store, qstring, selection_count, last_used) VALUES(%Q, %Q, %d, %d)",
-        store, (*iter).c_str(), (int)entry->selectionCount,
-        (int)entry->lastUsed);
+    if (connection->execute(
+            "INSERT OR REPLACE INTO %s (qstring, current) VALUES(%Q, %Q)", table,
+            (*iter).c_str(), entry->value.c_str()) != SQLITE_OK)
+      return false;
+
+    if (connection->execute(
+            "INSERT OR REPLACE INTO user_learning_stats "
+            "(store, qstring, selection_count, last_used) "
+            "VALUES(%Q, %Q, %d, %d)",
+            store, (*iter).c_str(), (int)entry->selectionCount,
+            (int)entry->lastUsed) != SQLITE_OK)
+      return false;
   }
+
+  return true;
+}
+
+inline bool LanguageModel::writeUserCandidateOverrideCache() {
+  if (!m_cfgUseUserCandidateOverrideCache) return true;
+
+  if (!SaveOverrideTable(m_connection, "user_candidate_override_cache",
+                         "override", m_candidateOverrideCache))
+    return false;
+
+  if (!SaveOverrideTable(m_connection, "user_context_override_cache",
+                         "context_override", m_contextOverrideCache))
+    return false;
+
+  for (set<string>::iterator iter = m_pendingBreadthDeletes.begin();
+       iter != m_pendingBreadthDeletes.end(); ++iter)
+    if (m_connection->execute(
+            "DELETE FROM user_learning_stats WHERE store = 'override_breadth' "
+            "AND qstring = %Q",
+            (*iter).c_str()) != SQLITE_OK)
+      return false;
+
+  for (set<string>::iterator iter = m_dirtyContextBreadth.begin();
+       iter != m_dirtyContextBreadth.end(); ++iter)
+    if (m_connection->execute(
+            "INSERT OR REPLACE INTO user_learning_stats "
+            "(store, qstring, selection_count, last_used) "
+            "VALUES('override_breadth', %Q, %d, 0)",
+            (*iter).c_str(), (int)m_overrideContextBreadth[*iter]) != SQLITE_OK)
+      return false;
+
+  return true;
 }
 
 inline void LanguageModel::saveUserCandidateOverrideCache(bool useTransaction) {
   if (!m_cfgUseUserCandidateOverrideCache) return;
 
-  if (useTransaction) {
-    if (m_connection->execute("BEGIN") != SQLITE_OK) return;
+  // The caller owns the transaction, so it also owns the markClean() decision.
+  if (!useTransaction) {
+    writeUserCandidateOverrideCache();
+    return;
   }
 
-  SaveOverrideTable(m_connection, "user_candidate_override_cache", "override",
-                    m_candidateOverrideCache);
-  SaveOverrideTable(m_connection, "user_context_override_cache",
-                    "context_override", m_contextOverrideCache);
+  if (m_connection->execute("BEGIN") != SQLITE_OK) return;
 
-  for (set<string>::iterator iter = m_dirtyContextBreadth.begin();
-       iter != m_dirtyContextBreadth.end(); ++iter)
-    m_connection->execute(
-        "INSERT OR REPLACE INTO user_learning_stats "
-        "(store, qstring, selection_count, last_used) "
-        "VALUES('override_breadth', %Q, %d, 0)",
-        (*iter).c_str(), (int)m_overrideContextBreadth[*iter]);
-
-  if (useTransaction) {
-    if (m_connection->execute("COMMIT") != SQLITE_OK) return;
+  if (!writeUserCandidateOverrideCache()) {
+    m_connection->execute("ROLLBACK");
+    return;
   }
 
-  m_candidateOverrideCache.markClean();
-  m_contextOverrideCache.markClean();
-  m_dirtyContextBreadth.clear();
+  if (m_connection->execute("COMMIT") != SQLITE_OK) return;
+
+  markUserCandidateOverrideCacheClean();
 }
 
 inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
@@ -856,7 +1019,7 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
   if (!m_userBigramCache.hasPendingWrites() &&
       !m_candidateOverrideCache.hasPendingWrites() &&
       !m_contextOverrideCache.hasPendingWrites() &&
-      m_dirtyContextBreadth.empty())
+      m_dirtyContextBreadth.empty() && m_pendingBreadthDeletes.empty())
     return false;
 
   m_userCacheTimer.start();
@@ -865,26 +1028,39 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
     if (m_connection->execute("BEGIN") != SQLITE_OK) return false;
   }
 
-  saveUserBigramCache(false);
-  saveUserCandidateOverrideCache(false);
+  // The stores keep their dirty flags until the commit is known to have landed.
+  // Marking them clean any earlier is unrecoverable: a busy database -- the
+  // Phrase Editor holding a write lock is the ordinary case -- would leave
+  // nothing on disk and no record in memory that anything was still owed, so
+  // the corrections would be gone for good rather than retried in 3.5 seconds.
+  bool written = writeUserBigramCache() && writeUserCandidateOverrideCache();
 
   if (useTransaction) {
-    m_connection->execute("COMMIT");
+    if (!written) {
+      m_connection->execute("ROLLBACK");
+      return false;
+    }
+
+    if (m_connection->execute("COMMIT") != SQLITE_OK) return false;
+  } else if (!written) {
+    return false;
   }
 
+  m_userBigramCache.markClean();
+  markUserCandidateOverrideCacheClean();
   return true;
 }
 
 inline void LanguageModel::SetLearnedBigramScore(double score) {
-  c_learnedBigramScore = score;
+  LearnedBigramScore() = score;
 }
 
-// selectionCount is accepted but unused: see c_learnedBigramScore for why
+// selectionCount is accepted but unused: see LearnedBigramScore() for why
 // count-scaling was measured and dropped. Kept in the signature because it is
 // the natural hook if a future measurement changes the answer.
 inline double LanguageModel::learnedBigramScore(size_t selectionCount) {
   (void)selectionCount;
-  return c_learnedBigramScore;
+  return LearnedBigramScore();
 }
 
 inline void LanguageModel::cacheUserBigram(const string& combinedQueryString,
@@ -905,8 +1081,18 @@ inline void LanguageModel::cacheOverrideSelection(const string& qstring,
 }
 
 inline void LanguageModel::removeCachedSelection(const string& qstring) {
-  if (m_cfgUseUserCandidateOverrideCache) {
-    m_candidateOverrideCache.remove(qstring);
+  if (!m_cfgUseUserCandidateOverrideCache) return;
+
+  m_candidateOverrideCache.remove(qstring);
+
+  // The user just took this reading back to the lexicon's own answer, so the
+  // breadth that would have made a future correction generalise immediately is
+  // no longer evidence of anything. Dropping it is also what keeps the map from
+  // accumulating a row per reading ever corrected, for the lifetime of the
+  // profile.
+  if (m_overrideContextBreadth.erase(qstring)) {
+    m_dirtyContextBreadth.erase(qstring);
+    m_pendingBreadthDeletes.insert(qstring);
   }
 }
 
@@ -934,6 +1120,8 @@ inline void LanguageModel::cacheContextOverrideSelection(
   if (isNewContext) {
     m_overrideContextBreadth[qstring]++;
     m_dirtyContextBreadth.insert(qstring);
+    // Outranks a delete queued earlier in the same save window.
+    m_pendingBreadthDeletes.erase(qstring);
   }
 }
 
@@ -1054,6 +1242,16 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
   BigramVector results;
   if (!m_selectBigram) return results;
 
+  // A learned bigram competes with the lexicon rather than replacing it. It
+  // used to be returned alone, which made one selection final regardless of how
+  // strongly the lexicon disagreed. Looked up first so a cache hit with nothing
+  // to merge can be handed back untouched: Graph::build() calls this for every
+  // candidate edge on every keystroke, and copying and re-sorting the cached
+  // vector there is pure overhead.
+  const LearningStore<Bigram>::Entry* learned = 0;
+  if (m_cfgUseUserBigramCache)
+    learned = m_userBigramCache.fetchEntry(queryString);
+
   bool haveLexiconResults = false;
 
 #ifdef MANJUSRI_USE_CACHE
@@ -1061,6 +1259,8 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
   if (citer != m_bigramCache.end()) {
     m_cachedQueryCount++;
     // cerr << "using cached result for: " << queryString << endl;
+    if (!learned) return (*citer).second;
+
     results = (*citer).second;
     haveLexiconResults = true;
   }
@@ -1084,6 +1284,11 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
       }
     }
 
+    // Sort before caching, not after merging: what goes in the cache has to be
+    // the sorted lexicon answer, because that is what a later hit returns
+    // directly, and everything downstream reads only element 0.
+    stable_sort(results.begin(), results.end(), GramCompare<Bigram>());
+
 #ifdef MANJUSRI_USE_CACHE
     // cache the lexicon's own answer; the learned entry is merged per call
     // because its score moves as the user keeps picking it
@@ -1091,22 +1296,16 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
 #endif
   }
 
-  // A learned bigram competes with the lexicon rather than replacing it. It
-  // used to be returned alone, which made one selection final regardless of how
-  // strongly the lexicon disagreed.
-  if (m_cfgUseUserBigramCache) {
-    const LearningStore<Bigram>::Entry* learned =
-        m_userBigramCache.fetchEntry(queryString);
-    if (learned) {
-      m_cachedQueryCount++;
-      Bigram scored = learned->value;
-      scored.probability = learnedBigramScore(learned->selectionCount);
-      if (!filter || filter->shouldPass(scored.current))
-        results.push_back(scored);
+  if (learned) {
+    m_cachedQueryCount++;
+    Bigram scored = learned->value;
+    scored.probability = learnedBigramScore(learned->selectionCount);
+    if (!filter || filter->shouldPass(scored.current)) {
+      results.push_back(scored);
+      stable_sort(results.begin(), results.end(), GramCompare<Bigram>());
     }
   }
 
-  stable_sort(results.begin(), results.end(), GramCompare<Bigram>());
   return results;
 }
 
@@ -1335,22 +1534,38 @@ inline void LanguageModel::flushCache() {
   m_unigramCache.flush();
 }
 
-inline void LanguageModel::flushUserCache() {
+inline bool LanguageModel::flushUserCache() {
+  // The stores are the source of truth for these tables. Now that saves are
+  // incremental, dropping the entries in memory no longer empties the tables as
+  // a side effect, and the next load would bring the discarded learning back.
+  // So refuse the whole thing rather than clear half of it: the caller tells the
+  // user whether their learning was actually discarded.
+  if (userPhraseWritesSuspended()) return false;
+
+  if (m_connection->execute("BEGIN") != SQLITE_OK) return false;
+
+  if (m_connection->execute("DELETE FROM user_bigram_cache") != SQLITE_OK ||
+      m_connection->execute("DELETE FROM user_candidate_override_cache") !=
+          SQLITE_OK ||
+      m_connection->execute("DELETE FROM user_context_override_cache") !=
+          SQLITE_OK ||
+      m_connection->execute("DELETE FROM user_learning_stats") != SQLITE_OK) {
+    m_connection->execute("ROLLBACK");
+    return false;
+  }
+
+  if (m_connection->execute("COMMIT") != SQLITE_OK) {
+    m_connection->execute("ROLLBACK");
+    return false;
+  }
+
   m_userBigramCache.flush();
   m_candidateOverrideCache.flush();
   m_contextOverrideCache.flush();
   m_overrideContextBreadth.clear();
   m_dirtyContextBreadth.clear();
-
-  // The stores are the source of truth for these tables. Now that saves are
-  // incremental, dropping the entries in memory no longer empties the table as
-  // a side effect, and the next load would bring the discarded learning back.
-  if (userPhraseWritesSuspended()) return;
-
-  m_connection->execute("DELETE FROM user_bigram_cache");
-  m_connection->execute("DELETE FROM user_candidate_override_cache");
-  m_connection->execute("DELETE FROM user_context_override_cache");
-  m_connection->execute("DELETE FROM user_learning_stats");
+  m_pendingBreadthDeletes.clear();
+  return true;
 }
 };  // namespace Manjusri
 

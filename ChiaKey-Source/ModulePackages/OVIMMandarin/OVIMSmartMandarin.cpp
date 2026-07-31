@@ -274,10 +274,16 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
     if (m_module->m_cacheFlushKeyCounter > 10) {
       m_module->m_cacheFlushKeyCounter = 0;
       m_module->m_LM->flushCache();
-      m_module->m_LM->flushUserCache();
-      m_module->m_LM->saveUserBigramCacheAndCandidateOverrideCache(true, true);
 
-      composingText->showToolTip("All caches flushed.");
+      if (m_module->m_LM->flushUserCache()) {
+        m_module->m_LM->saveUserBigramCacheAndCandidateOverrideCache(true, true);
+        composingText->showToolTip("All caches flushed.");
+      } else {
+        // The user tables were left alone -- almost always because the Phrase
+        // Editor holds its editing lock -- so saying otherwise would be a lie.
+        composingText->showToolTip(
+            "Query caches flushed; personal learning kept (in use elsewhere).");
+      }
     }
     return false;
   } else {
