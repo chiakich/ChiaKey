@@ -1,7 +1,8 @@
 # 千秋輸入法 ChiaKey
+
 <img width="256" height="256" alt="千秋輸入法 ChiaKey" src="Docs/images/chiakey-icon.png" />
 
-<img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />  
+<img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />
 
 千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。
 
@@ -27,11 +28,11 @@ sudo installer -pkg ChiaKey.pkg -target /
 
 ### 從 Yahoo! 奇摩輸入法搬家
 
-如果這台 Mac 上還留著 Yahoo! 奇摩輸入法，可以在「千秋輸入法偏好設定」的「自訂詞」分頁按「匯入 Yahoo! 奇摩輸入法資料…」，把當年的自訂詞、學習過的選字記錄，以及自訂訊息與 .cin 表格一併帶過來。
+如果這台 Mac 上還留著 Yahoo! 奇摩輸入法，可以在「千秋輸入法偏好設定」的「詞彙管理」分頁按「匯入 Yahoo! 奇摩輸入法資料…」，把當年的自訂詞、學習過的選字記錄，以及自訂訊息與 .cin 表格一併帶過來。
 
 舊版的詞庫檔是加密的，只有那套輸入法本身讀得開，所以千秋輸入法是請它自己匯出。這代表舊版程式必須還能執行：它沒有 Apple Silicon 版本，在 M 系列晶片上需要安裝 Rosetta 2；而且匯出指令要靠執行中的舊輸入法回應，若按下按鈕後顯示沒有回應，請先切換到 Yahoo! 奇摩輸入法隨便打一個字把它喚醒，再回來按一次。
 
-匯入不會覆蓋現有的自訂訊息或表格檔，重複的自訂詞也會略過。
+匯入不會覆蓋現有的自訂訊息或表格檔，重複的自訂詞會略過。
 
 ### 解除安裝
 
@@ -88,7 +89,6 @@ Yahoo! 奇摩輸入法當年為人稱道的選字品質，很大一部分來自�
 注意：請不要把檔案放進 app bundle 內部，那會讓程式安全性簽章失效，並且更新時會被覆蓋。
 
 表格檔可以從 [chinese-opendesktop/cin-tables](https://github.com/chinese-opendesktop/cin-tables) 取得。該倉庫整體採用 CC0，但個別檔案可能另外標註授權，例如廣東話的 `cantonhk.cin` 在檔頭寫明是 GPL，而 `jyutping.cin`（粵拼）、`ile.cin`（廣東拼音）、`zyujam.cin`（粵語注音）則標為 Public Domain。使用前請自行確認檔案本身的授權說明。
-
 
 ## 目前狀態
 
