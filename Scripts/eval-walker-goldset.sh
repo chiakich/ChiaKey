@@ -53,6 +53,8 @@ DOMINANCE="0"
 LIMIT=""
 LEXICON="${CHIAKEY_LOCAL_LEXICON_DB:-}"
 EVAL_ARGS=()
+BUILD_EXTRA=()
+WORD_LEVEL=""
 MODE="eval"
 
 while [[ $# -gt 0 ]]; do
@@ -64,6 +66,10 @@ while [[ $# -gt 0 ]]; do
     --limit) LIMIT="$2"; shift 2 ;;
     --replay) MODE="replay"; shift ;;
     --lexicon) LEXICON="$2"; shift 2 ;;
+    # word-level build options; they mean nothing to eval, so keep them apart
+    --word-level) WORD_LEVEL="1"; shift ;;
+    --pins|--variants|--max-variants|--min-chars|--max-chars|--max-word-chars)
+      BUILD_EXTRA+=("$1" "$2"); shift 2 ;;
     -h|--help) sed -n '3,28p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) EVAL_ARGS+=("$1"); shift ;;
   esac
@@ -103,8 +109,13 @@ clang++ \
   -o "$BIN"
 
 if [[ -z "$GOLD" ]]; then
-  build_args=(build --lexicon "$LEXICON" --corpus "$CORPUS" --out "$GOLD_OUT"
-              --dominance "$DOMINANCE")
+  build_args=(build --lexicon "$LEXICON" --corpus "$CORPUS" --out "$GOLD_OUT")
+  if [[ -n "$WORD_LEVEL" ]]; then
+    build_args+=(--word-level)
+  else
+    build_args+=(--dominance "$DOMINANCE")
+  fi
+  build_args+=(${BUILD_EXTRA[@]+"${BUILD_EXTRA[@]}"})
   if [[ -n "$LIMIT" ]]; then
     build_args+=(--limit "$LIMIT")
   fi

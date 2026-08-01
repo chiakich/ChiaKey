@@ -1,0 +1,14 @@
+# Gold-set reading variants: words real users type more than one way. Each
+# listed reading emits its own gold row for the same sentence, so a walker
+# that only wins from one of them shows up as a failure.
+#
+# 一/不/們 sandhi is detected mechanically and is deliberately NOT listed.
+# Weight similarity is not used: tone is contrastive in Mandarin, so two
+# readings scoring alike means the lexicon never separated them.
+#
+# word	qstring...	# bopomofo
+什麼	<Clq	{Jlq	# ㄕㄜˊ ㄇㄜ˙ / ㄕㄣˊ ㄇㄜ˙
+為什麼	2f<Clq	2f{Jlq	# ㄨㄟˋ ㄕㄜˊ ㄇㄜ˙ / ㄨㄟˋ ㄕㄣˊ ㄇㄜ˙
+誰	WF	4G	# ㄕㄟˊ / ㄕㄨㄟˊ
+啊	Wo	91	# ㄚ˙ / ㄚ
+啦	_o	A1	# ㄌㄚ˙ / ㄌㄚ

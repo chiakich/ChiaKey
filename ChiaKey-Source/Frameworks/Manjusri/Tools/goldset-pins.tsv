@@ -1,0 +1,20 @@
+# Gold-set reading pins: words the lexicon gives several readings but whose
+# standalone token has only one in running text (的 is never ㄉㄧˋ -- 目的 is
+# its own word). Reviewed by hand; the bopomofo comment is decoded from the
+# qstring by Formosa/Mandarin.h's absoluteOrder encoding.
+#
+# word	qstring	# bopomofo, then the readings NOT taken
+的	nq	# ㄉㄜ˙ -0.58   not: ㄉㄧˊ -1.10  ㄉㄧˋ -3.09
+我	}Q	# ㄨㄛˇ -0.56   not: ㄜˇ -3.09
+有	NX	# ㄧㄡˇ -0.57   not: ㄧㄡˋ -2.63
+這個	Ibrq	# ㄓㄜˋ ㄍㄜ˙ -0.72   not: ㄓㄜˋ ㄍㄜˋ -1.37
+要	tf	# ㄧㄠˋ -0.73   not: ㄧㄠ -1.80
+了	qq	# ㄌㄜ˙ -0.61   not: ㄌㄧㄠˇ -1.65
+在	_d	# ㄗㄞˋ -0.89   not: ㄗㄞ˙ -3.09
+來	EE	# ㄌㄞˊ -0.75   not: ㄌㄞˋ -3.25
+他	?1	# ㄊㄚ -0.66   not: ㄊㄨㄛ -3.09
+請	0]	# ㄑㄧㄥˇ -0.71   not: ㄑㄧㄥˊ -3.09  ㄐㄧㄥˋ -3.09  ㄑㄧㄥˋ -3.09  ㄑㄧㄥ -3.09
+嗎	Zo	# ㄇㄚ˙ -0.96   not: ㄇㄚ -1.48  ㄇㄚˇ -1.72
+呢	pq	# ㄋㄜ˙ -1.06   not: ㄋㄧˊ -1.58  ㄋㄜ -3.09
+嘛	Zo	# ㄇㄚ˙ -0.96   not: ㄇㄚˊ -1.47
+這	Ib	# ㄓㄜˋ -0.76   not: ㄓㄟˋ -3.09
