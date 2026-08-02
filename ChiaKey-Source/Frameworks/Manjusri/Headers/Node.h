@@ -25,6 +25,27 @@ class Node {
   static void SetDefaultOverrideScore(Score override);
   static void SetPhraseLengthBonus(Score bonusPerExtraSyllable);
 
+  // How much of the gap to the reading's best candidate a learned pick is
+  // credited with; see adjustScoreWithSelection(). 1.0 scores the pick as the
+  // reading's best, 0.0 leaves it on its own probability.
+  //
+  // Softening it was measured and rejected. A generalised override does let a
+  // split outscore a phrase that used to beat it -- not by gaining score, but
+  // by changing which text the node emits, which can unlock a learned bigram
+  // worth LearnedBigramScore(). Anything below 1.0 breaks that up, but the cost
+  // lands on the common case: at 0.75 and below TestLearnedPickSurvivesWalk
+  // fails, the learned rare pick swallowed by a competing segmentation, which
+  // is the regression this promotion exists to prevent. Replay over 199k gold
+  // sentences could not tell 1.0, 0.75 and 0.5 apart (132.0k/132.0k/132.0k
+  // manual selections, accuracy within 0.05pp) and put 0.0 behind (132.3k).
+  // So: no measurable gain, one tested behaviour lost. Left tunable so
+  // Scripts/eval-walker-goldset.sh --unigram-promotion can re-sweep it.
+  static Score& UnigramPromotion() {
+    static Score promotion = (Score)1.0;
+    return promotion;
+  }
+  static void SetUnigramPromotion(Score promotion);
+
  public:
   Node(const Location& location = Location(0, 0),
        const string& queryStirng = "");
@@ -262,7 +283,8 @@ inline void Node::adjustScoreWithSelection(const string& currentText) {
   // candidate instead: the pick wins inside its own node without the node
   // outscoring anything it did not outscore before.
   if (m_unigramCurrents[0].second > ssp.second)
-    ssp.second = m_unigramCurrents[0].second;
+    ssp.second = m_unigramCurrents[0].second * UnigramPromotion() +
+                 ssp.second * (1.0 - UnigramPromotion());
 
   m_unigramCurrents.erase(sspi);
   m_unigramCurrents.insert(m_unigramCurrents.begin(), ssp);
@@ -394,6 +416,10 @@ inline bool Node::isOverlapping(const Location& location) const {
 inline void Node::SetUNK(Score probability, Score backoff) {
   c_defaultUNKProbability = probability;
   c_defaultUNKBackoff = backoff;
+}
+
+inline void Node::SetUnigramPromotion(Score promotion) {
+  UnigramPromotion() = promotion;
 }
 
 inline void Node::SetPhraseLengthBonus(Score bonusPerExtraSyllable) {

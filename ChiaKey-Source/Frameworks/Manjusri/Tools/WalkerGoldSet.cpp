@@ -73,11 +73,13 @@ void Usage() {
        << "         reading; words whose reading only context can settle are\n"
        << "         rejected outright rather than guessed.)\n"
        << "  WalkerGoldSet eval --lexicon DB --gold TSV [--length-prior X]\n"
+       << "        [--unigram-promotion X]\n"
        << "        [--user-db PATH] [--mismatches FILE]\n"
        << "        (eval never writes to --user-db)\n"
        << "  WalkerGoldSet replay --lexicon DB --gold TSV [--passes N]\n"
        << "        [--length-prior X] [--user-db PATH] [--reset-user-db]\n"
        << "        [--keep-user-db] [--learned-score X]\n"
+       << "        [--unigram-promotion X]\n"
        << "        (replay WRITES learning. Without --user-db it uses a scratch\n"
        << "         database under TMPDIR and starts it empty unless\n"
        << "         --keep-user-db; a --user-db you name is written to in place\n"
@@ -694,6 +696,9 @@ int Eval(const vector<string>& args) {
   if (HasArg(args, "--length-prior"))
     Node::SetPhraseLengthBonus(
         (Score)atof(ArgValue(args, "--length-prior").c_str()));
+  if (HasArg(args, "--unigram-promotion"))
+    Node::SetUnigramPromotion(
+        (Score)atof(ArgValue(args, "--unigram-promotion", "1.0").c_str()));
 
   vector<GoldRow> rows = LoadGold(gold);
   if (rows.empty()) {
@@ -861,6 +866,9 @@ int Replay(const vector<string>& args) {
   if (HasArg(args, "--length-prior"))
     Node::SetPhraseLengthBonus(
         (Score)atof(ArgValue(args, "--length-prior").c_str()));
+  if (HasArg(args, "--unigram-promotion"))
+    Node::SetUnigramPromotion(
+        (Score)atof(ArgValue(args, "--unigram-promotion", "1.0").c_str()));
   if (HasArg(args, "--learned-score"))
     LanguageModel::SetLearnedBigramScore(
         atof(ArgValue(args, "--learned-score", "0.0").c_str()));
