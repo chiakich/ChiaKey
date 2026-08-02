@@ -706,13 +706,13 @@ inline void LanguageModel::MigrateUserLearningTables(
       "user_context_override_cache_qstring_unique "
       "ON user_context_override_cache (qstring)");
 
-  // Overrides learned before context keying existed applied in every context
-  // unconditionally, and the user kept them on that basis. Left alone they
-  // would carry no breadth at all and so go permanently inert -- an upgrade
-  // would silently throw away learning the user had already benefited from.
-  // Credit them as proven instead. The marker keeps this to the one migration:
-  // entries learned from here on earn their breadth honestly, and re-running it
-  // would promote them for free.
+  // Overrides learned before context keying existed carry no breadth, so an
+  // upgrade would leave them inert and throw away learning the user relies on.
+  // Crediting them at the gate is the opposite mistake: it exempts the whole
+  // historical table from the check that stops one stray pick from overriding
+  // every context. One short of the gate does neither -- dormant on upgrade,
+  // and one confirmation restores the ones still wanted. The marker keeps this
+  // to a single migration; re-running it would promote entries for free.
   OVSQLiteStatement* grandfathered = userDB->prepare(
       "SELECT 1 FROM user_learning_stats "
       "WHERE store = 'schema' AND qstring = 'override_breadth_grandfathered'");
@@ -727,7 +727,7 @@ inline void LanguageModel::MigrateUserLearningTables(
         "FROM user_candidate_override_cache WHERE qstring NOT IN "
         "(SELECT qstring FROM user_learning_stats WHERE "
         "store = 'override_breadth')",
-        (int)c_overrideGeneralizationContexts);
+        (int)c_overrideGeneralizationContexts - 1);
     userDB->execute(
         "INSERT OR REPLACE INTO user_learning_stats "
         "(store, qstring, selection_count, last_used) "

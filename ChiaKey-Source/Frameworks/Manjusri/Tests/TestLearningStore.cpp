@@ -351,8 +351,10 @@ static void TestContextKeyedOverrides() {
   remove(path.c_str());
 }
 
-// Overrides that predate context keying must keep working after the upgrade,
-// but the credit has to be a one-off: entries learned afterwards earn it.
+// Overrides that predate context keying are credited to one short of the gate:
+// dormant on the day of the upgrade, so a stray one cannot force itself on
+// every context, but one confirmation away from the reach they used to have.
+// The credit has to be a one-off -- entries learned afterwards earn it.
 static void TestPreExistingOverridesAreGrandfathered() {
   const string path = TempPath("learningstore-grandfather.db");
   OVSQLiteConnection* db = MakeLegacyUserDB(path);
@@ -363,8 +365,13 @@ static void TestPreExistingOverridesAreGrandfathered() {
   {
     LanguageModel lm(db, 0, false, false, false, true, true);
     lm.loadUserCandidateOverrideCache();
-    CHECK(lm.overrideGeneralizesAcrossContexts("old"));
     CHECK(lm.fetchCachedOverrideSelection("old") == "O");
+    // Not forced everywhere yet...
+    CHECK(!lm.overrideGeneralizesAcrossContexts("old"));
+
+    // ...but the next confirmation in any context gets it there.
+    lm.cacheContextOverrideSelection("p1", "old", "O");
+    CHECK(lm.overrideGeneralizesAcrossContexts("old"));
 
     // something learned now starts from one context, not from credit
     lm.cacheOverrideSelection("fresh", "F");
