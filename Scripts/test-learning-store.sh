@@ -22,8 +22,10 @@ build_and_run() {
     -I"$SOURCE_DIR/Frameworks/PlainVanilla/Headers" \
     -I"$SOURCE_DIR/Frameworks/Formosa/Headers" \
     -I"$SOURCE_DIR/Frameworks/Manjusri/Headers" \
+    -I"$SOURCE_DIR/ModulePackages/OVIMMandarin" \
     "$TESTS_DIR/$name.cpp" \
     "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp" \
+    "$SOURCE_DIR/Frameworks/Formosa/Source/Mandarin.cpp" \
     -lsqlite3 \
     -o "$bin"
 
@@ -32,5 +34,7 @@ build_and_run() {
 
 build_and_run TestLearningStore
 build_and_run TestLearnedPickSurvivesWalk
+# Drives ManjusriComposer, hence the OVIMMandarin include and Mandarin.cpp above.
+build_and_run TestLearningReversal
 
 echo "Learning store tests passed."

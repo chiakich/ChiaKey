@@ -723,7 +723,7 @@ inline bool Graph::overrideNodeCandidate(const Node& queryNode,
     }
 
     Node& node = const_cast<Node&>(*niter);
-    // if (!node.isTextFirstInUnigramCurrents(currentText))
+    // if (!node.isTextLexiconFirstCandidate(currentText))
     node.overrideWithText(currentText);
 
     // put the stuff in cache
@@ -734,7 +734,11 @@ inline bool Graph::overrideNodeCandidate(const Node& queryNode,
         !OVWildcard::Match(node.queryString(), "_ctrl_*") && cacheSelection) {
       // cerr << "can be cached" << endl;
 
-      if (!node.isTextFirstInUnigramCurrents(currentText))
+      // Reverting to the lexicon's own answer retracts the override -- and
+      // with it the breadth that would let a future correction generalise.
+      // Anything else, including re-picking a text already learned here, is a
+      // correction worth recording.
+      if (!node.isTextLexiconFirstCandidate(currentText))
         m_LM->cacheOverrideSelection(node.queryString(), currentText);
       else
         m_LM->removeCachedSelection(node.queryString());

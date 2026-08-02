@@ -41,7 +41,12 @@ class Node {
   void overrideWithText(const string& text);
   void overrideWithSelection(size_t index);
   // bool isSelectedCandidateScoreHigherThanFirst(size_t index);
-  bool isTextFirstInUnigramCurrents(const string& text) const;
+  // "Is this what the lexicon would have offered on its own?" -- the question
+  // the learning path asks to decide between recording a correction and
+  // forgetting one. It has to be answered against the order the lexicon
+  // supplied, not against m_unigramCurrents, because adjustScoreWithSelection()
+  // has already moved any learned pick to the front of that vector.
+  bool isTextLexiconFirstCandidate(const string& text) const;
 
   void adjustScoreWithSelection(const string& currentText);
   void cancelOverride();
@@ -77,6 +82,11 @@ class Node {
   map<string, StringScorePairVector> m_bigramMap;
   StringScorePairVector m_unigramCurrents;
   StringScoreMap m_unigramPreviousBackoffs;
+
+  // The lexicon's own top candidate for this reading, captured before
+  // adjustScoreWithSelection() gets a chance to reorder m_unigramCurrents.
+  // See isTextLexiconFirstCandidate().
+  string m_lexiconFirstCurrent;
 };
 
 typedef set<Node> NodeSet;
@@ -168,6 +178,7 @@ inline void Node::clear() {
   m_bigramMap.clear();
   m_unigramCurrents.clear();
   m_unigramPreviousBackoffs.clear();
+  m_lexiconFirstCurrent.clear();
 }
 
 inline void Node::relocate(const Location& newLocation) {
@@ -214,10 +225,10 @@ inline void Node::overrideWithSelection(size_t index) {
   }
 }
 
-inline bool Node::isTextFirstInUnigramCurrents(const string& text) const {
-  if (!m_unigramCurrents.size()) return false;
+inline bool Node::isTextLexiconFirstCandidate(const string& text) const {
+  if (!m_lexiconFirstCurrent.size()) return false;
 
-  return m_unigramCurrents[0].first == text;
+  return m_lexiconFirstCurrent == text;
 }
 
 // inline bool Node::isSelectedCandidateScoreHigherThanFirst(size_t index)
@@ -339,6 +350,10 @@ inline void Node::addSortedUnigrams(const UnigramVector& unigrams) {
        iter != unigrams.end(); ++iter)
     m_unigramCurrents.push_back(
         StringScorePair((*iter).current, (*iter).probability));
+
+  // Only the first fill is the lexicon speaking for itself.
+  if (!m_lexiconFirstCurrent.size() && m_unigramCurrents.size())
+    m_lexiconFirstCurrent = m_unigramCurrents[0].first;
 }
 
 inline void Node::addUnigramBackoffs(const UnigramVector& unigrams) {

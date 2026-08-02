@@ -229,10 +229,10 @@ class ManjusriComposer {
         // and skipping it would leave sentence-initial picks unlearnable,
         // since they could never accumulate the breadth the context-free
         // store now requires. Mirrors the context-free store otherwise: a
-        // pick that is already the reading's first candidate needs no
-        // override, and clears any stale one.
+        // pick the lexicon would have made anyway needs no override, and
+        // clears any stale one.
         if (shouldCacheSelection) {
-          if (node.isTextFirstInUnigramCurrents(candi.first.first))
+          if (node.isTextLexiconFirstCandidate(candi.first.first))
             m_LM->removeCachedContextSelection(previous, node.queryString());
           else
             m_LM->cacheContextOverrideSelection(previous, node.queryString(),
