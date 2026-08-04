@@ -710,6 +710,11 @@ static NSComparisonResult CKCompareIdentifier(NSString *lhs, NSString *rhs) {
 
 #pragma mark Download
 
+// Sole owner of this directory, so it can be cleared wholesale.
+static NSString *CKUpdateDownloadDirectory(void) {
+  return [NSTemporaryDirectory() stringByAppendingPathComponent:@"ChiaKeyUpdates"];
+}
+
 - (NSString *)_safePackageFileNameForRelease:(ChiaKeyUpdateRelease *)release {
   NSString *fileName = [[release packageName] length]
                            ? [release packageName]
@@ -754,8 +759,11 @@ static NSComparisonResult CKCompareIdentifier(NSString *lhs, NSString *rhs) {
     return;
   }
 
-  NSString *directory =
-      [NSTemporaryDirectory() stringByAppendingPathComponent:@"ChiaKeyUpdates"];
+  NSString *directory = CKUpdateDownloadDirectory();
+
+  // A download abandoned by a cancelled or failed install would otherwise sit
+  // here until the system cleans its temporary directory.
+  [[NSFileManager defaultManager] removeItemAtPath:directory error:NULL];
 
   [_progressHandler release];
   _progressHandler = [progress copy];
@@ -930,7 +938,12 @@ static NSString *CKAppleScriptStringLiteral(NSString *value) {
 
   NSData *errorData = [[errorPipe fileHandleForReading] readDataToEndOfFile];
   [task waitUntilExit];
-  if ([task terminationStatus] == 0) return YES;
+  if ([task terminationStatus] == 0) {
+    // installer has read the package; nothing reinstalls from this copy.
+    [[NSFileManager defaultManager] removeItemAtPath:CKUpdateDownloadDirectory()
+                                               error:NULL];
+    return YES;
+  }
 
   NSString *stderrText =
       [[[NSString alloc] initWithData:errorData
