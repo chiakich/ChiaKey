@@ -6,8 +6,18 @@ LEGACY_APP_NAME="千秋輸入法"
 APP="${HOME}/Library/Input Methods/${APP_NAME}.app"
 LEGACY_APP="${HOME}/Library/Input Methods/${LEGACY_APP_NAME}.app"
 APP_SUPPORT_DIR="${HOME}/Library/Application Support/ChiaKey"
-CACHE_DIR="${HOME}/Library/Caches/com.chiakey.ChiaKey"
 UPDATE_LOCK="/var/tmp/com.chiakey.ChiaKey.update.lock"
+TMP_BASE="${TMPDIR:-/tmp}"
+UPDATE_DOWNLOAD_DIR="${TMP_BASE%/}/ChiaKeyUpdates"
+
+# Named after the bundle identifiers, not the loader name; spelled out rather
+# than globbed so a dev build's caches are left alone.
+CACHE_DIRS=(
+  "${HOME}/Library/Caches/com.chiakey.inputmethod.ChiaKey"
+  "${HOME}/Library/Caches/com.chiakey.inputmethod.ChiaKey.Preferences"
+  "${HOME}/Library/Caches/com.chiakey.inputmethod.ChiaKey.PhraseEditor"
+  "${HOME}/Library/Caches/com.chiakey.inputmethod.ChiaKey.Updater"
+)
 
 # Written directly by the preferences app (TakaoHelper), so they are plain
 # files rather than cfprefsd-managed domains.
@@ -17,6 +27,9 @@ DEFAULTS_DOMAINS=(
   com.chiakey.inputmethod.ChiaKey
   com.chiakey.inputmethod.ChiaKey.Preferences
   com.chiakey.inputmethod.ChiaKey.PhraseEditor
+  # The updater's shared suite writes here too, so removing the file alone
+  # leaves cfprefsd holding values it can write back.
+  com.chiakey.ChiaKey
 )
 
 PKG_IDENTIFIERS=(
@@ -125,7 +138,10 @@ done
 if [[ "${PURGE}" == "1" ]]; then
   echo "purging user data and settings"
   [[ -e "${APP_SUPPORT_DIR}" ]] && run /bin/rm -rf "${APP_SUPPORT_DIR}"
-  [[ -e "${CACHE_DIR}" ]] && run /bin/rm -rf "${CACHE_DIR}"
+  for cache in "${CACHE_DIRS[@]}"; do
+    [[ -e "${cache}" ]] && run /bin/rm -rf "${cache}"
+  done
+  [[ -e "${UPDATE_DOWNLOAD_DIR}" ]] && run /bin/rm -rf "${UPDATE_DOWNLOAD_DIR}"
   for plist in "${PLIST_GLOB}"*.plist; do
     [[ -e "${plist}" ]] || continue
     run /bin/rm -f "${plist}"
@@ -158,3 +174,12 @@ echo "${completion_message}"
 if [[ "${SHOW_COMPLETION_ALERT}" == "1" && "${DRY_RUN}" != "1" ]]; then
   /usr/bin/osascript -e 'display dialog "ChiaKey 已成功移除。請登出再登入以清除輸入法快取。" with title "ChiaKey" buttons {"確定"} default button "確定" with icon note' || true
 fi
+
+# The preferences app runs this from a copy in the temporary directory, because
+# the original lives inside the bundle being deleted. Nothing else removes that
+# copy, and it must be the last thing this script does.
+case "${BASH_SOURCE[0]}" in
+  "${TMP_BASE%/}"/ChiaKey-uninstall-*.sh)
+    [[ "${DRY_RUN}" == "1" ]] || /bin/rm -f "${BASH_SOURCE[0]}"
+    ;;
+esac
