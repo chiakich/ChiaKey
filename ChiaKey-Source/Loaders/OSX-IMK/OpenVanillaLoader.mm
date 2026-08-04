@@ -265,6 +265,7 @@ using namespace OpenVanilla;
 - (void)createDatabaseServices {
   _userPersistence->setDefaultDatabaseConnection(0, "");
   _activeUserLexiconLoaded = NO;
+  _activeUserLexiconFailed = NO;
 
   if (_CINDatabaseService) {
     delete _CINDatabaseService;
@@ -338,6 +339,7 @@ using namespace OpenVanilla;
     NSLog(@"Using external ChiaKey lexicon database: %s",
           selectedDBFile.c_str());
   } else if (OVPathHelper::PathExists(userChiaKeySourceDBFile)) {
+    _activeUserLexiconFailed = YES;
     NSLog(@"Falling back from invalid external ChiaKey lexicon database: %s",
           userChiaKeySourceDBFile.c_str());
   }
@@ -820,6 +822,10 @@ using namespace OpenVanilla;
 
 - (BOOL)activeUserLexiconLoaded {
   return _activeUserLexiconLoaded;
+}
+
+- (BOOL)activeUserLexiconFailed {
+  return _activeUserLexiconFailed;
 }
 
 - (OVSQLiteConnection *)_userPhraseDBConnection {

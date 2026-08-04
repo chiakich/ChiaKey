@@ -12,6 +12,7 @@ SKIP_CURRENT=0
 MIN_RELEASE_AGE_DAYS=""
 VALIDATE_DB_PATH=""
 PRUNE_SUPERSEDED=0
+ROLLBACK=0
 TMP_DIR=""
 declare -a VALIDATION_TMP_DIRS=()
 
@@ -33,6 +34,8 @@ Options:
   --validate-db PATH      Validate an existing ChiaKeySource.db and exit.
   --prune-superseded      Delete every installed version except the active one,
                           then clear the pending-verification marker, and exit.
+  --rollback              Point the active lexicon back at the version the
+                          pending one replaced, delete it, and exit.
   --dry-run               Print install actions without writing Application Support.
   --keep-downloads        Keep the temporary download directory.
   -h, --help              Show this help.
@@ -99,6 +102,72 @@ pending_verification_file() {
 
 resolve_path() {
   /usr/bin/ruby -e 'begin; puts File.realpath(ARGV[0]); rescue; end' "$1"
+}
+
+# Line 1 is the version awaiting verification, line 2 the one it replaced (empty
+# on a first install). Line 2 is what a rollback needs, so a single-line marker
+# written by an older build simply has nowhere to go back to.
+pending_verification_version() {
+  /usr/bin/sed -n '1p' "$(pending_verification_file)" 2>/dev/null || true
+}
+
+pending_verification_previous() {
+  /usr/bin/sed -n '2p' "$(pending_verification_file)" 2>/dev/null || true
+}
+
+# Restores the lexicon the failed one replaced. Repointing the symlink rather
+# than letting the runtime pick a different file keeps one source of truth: the
+# version the Preferences app shows, the version --skip-current compares
+# against, and the database actually in use stay the same thing.
+rollback_pending_version() {
+  local marker pending previous previous_dir active_dir
+  marker="$(pending_verification_file)"
+
+  if [[ ! -f "${marker}" ]]; then
+    echo "No lexicon awaiting verification; nothing to roll back." >&2
+    exit 1
+  fi
+
+  active_dir="$(resolve_path "${INSTALL_ROOT}/active")"
+
+  # Only the version this marker is about may be rolled back and deleted. If
+  # active has moved on since, the marker is stale and acting on it would throw
+  # away a lexicon nobody reported a problem with.
+  pending="$(pending_verification_version)"
+  if [[ -z "${active_dir}" || "$(basename "${active_dir}")" != "${pending}" ]]; then
+    echo "Active lexicon is no longer ${pending}; clearing the stale marker." >&2
+    run /bin/rm -f "${marker}"
+    exit 0
+  fi
+
+  previous="$(pending_verification_previous)"
+  previous_dir=""
+  [[ -n "${previous}" ]] && previous_dir="${INSTALL_ROOT}/versions/${previous}"
+
+  if [[ -n "${previous_dir}" && -d "${previous_dir}" ]]; then
+    if [[ "$(resolve_path "${previous_dir}")" == "${active_dir}" ]]; then
+      echo "Active lexicon is already ${previous}; clearing the marker." >&2
+      run /bin/rm -f "${marker}"
+      exit 0
+    fi
+
+    run /bin/ln -sfn "${previous_dir}" "${INSTALL_ROOT}/active"
+    echo "Rolled the active lexicon back to ${previous}."
+  else
+    # Nothing to go back to: drop the symlink so the runtime uses the bundled
+    # database and, just as importantly, so --skip-current stops reading a
+    # version number the runtime could never load and skipping every update.
+    run /bin/rm -f "${INSTALL_ROOT}/active"
+    echo "No previous lexicon to restore; cleared the active symlink."
+  fi
+
+  # The failed version is not a rollback target for anyone, and leaving it would
+  # keep it in the way of the next install's comparison.
+  if [[ -n "${active_dir}" && -d "${active_dir}" ]]; then
+    run /bin/rm -rf "${active_dir}"
+  fi
+
+  run /bin/rm -f "${marker}"
 }
 
 # Old versions exist for one reason: to fall back to if the newly installed one
@@ -307,6 +376,10 @@ while [[ $# -gt 0 ]]; do
       PRUNE_SUPERSEDED=1
       shift
       ;;
+    --rollback)
+      ROLLBACK=1
+      shift
+      ;;
     --dry-run)
       DRY_RUN=1
       shift
@@ -348,6 +421,11 @@ fi
 
 if [[ "${PRUNE_SUPERSEDED}" == "1" ]]; then
   prune_superseded_versions
+  exit 0
+fi
+
+if [[ "${ROLLBACK}" == "1" ]]; then
+  rollback_pending_version
   exit 0
 fi
 
@@ -510,11 +588,19 @@ if [[ -n "${METADATA_DOWNLOAD}" ]]; then
   run /bin/cp "${METADATA_DOWNLOAD}" "${VERSION_DIR}/metadata.json"
 fi
 
+PREVIOUS_ACTIVE_DIR="$(resolve_path "${ACTIVE_LINK}")"
+PREVIOUS_ACTIVE=""
+if [[ -n "${PREVIOUS_ACTIVE_DIR}" && "${PREVIOUS_ACTIVE_DIR}" != "${VERSION_DIR}" ]]; then
+  PREVIOUS_ACTIVE="$(basename "${PREVIOUS_ACTIVE_DIR}")"
+fi
+
 if [[ "${DRY_RUN}" != "1" ]]; then
   /bin/ln -sfn "${VERSION_DIR}" "${ACTIVE_LINK}"
   # The previous version stays on disk until the IME reports it opened this
-  # one; --prune-superseded then clears both it and this marker.
-  echo "${VERSION}" > "$(pending_verification_file)"
+  # one; --prune-superseded then clears both it and this marker, and --rollback
+  # uses the second line to put the previous one back.
+  printf '%s\n%s\n' "${VERSION}" "${PREVIOUS_ACTIVE}" \
+    > "$(pending_verification_file)"
 else
   print_command /bin/ln -sfn "${VERSION_DIR}" "${ACTIVE_LINK}"
 fi

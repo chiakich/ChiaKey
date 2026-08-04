@@ -27,6 +27,7 @@ using namespace CareService;
 
   NSString *_databaseVersion;
   BOOL _activeUserLexiconLoaded;
+  BOOL _activeUserLexiconFailed;
 
   OVSQLiteConnection *_userPhraseDB;
 
@@ -66,6 +67,9 @@ using namespace CareService;
 // NO when the installed lexicon failed to open and a fallback database is in
 // use, which is the case where the previous version must be kept.
 - (BOOL)activeUserLexiconLoaded;
+// YES only when an installed lexicon is there and did not open, which is what
+// a rollback repairs; having no installed lexicon at all is not a failure.
+- (BOOL)activeUserLexiconFailed;
 
 #pragma mark User Phrase additions
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;

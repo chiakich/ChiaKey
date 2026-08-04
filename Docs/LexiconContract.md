@@ -95,11 +95,20 @@ Active DB 路徑：
 
 更新必須使用 atomic symlink swap。下載失敗、checksum mismatch、SQLite validation failure 或 install failure 都必須保留既有 active lexicon。
 
-## 舊版本保留
+## 舊版本保留與回退
 
-安裝本身不刪除任何舊版本，只寫下 `pending-verification` 標記。Runtime 確認自己真的開起 active DB（而非 fallback）之後呼叫 `--prune-superseded`，此時刪除 active 以外的所有版本並清掉標記；穩定狀態下 `versions/` 只會有 active 一份。Runtime 若落在 fallback，標記與舊版本都必須保留，以便退回。
+安裝本身不刪除任何舊版本，只寫下 `pending-verification` 標記。標記兩行：第一行是待驗證的版本，第二行是它取代的版本（首次安裝為空）。
 
-Prune 由 runtime 驅動，因此輸入法從未載入過該詞庫的機器（例如只用 CLI 安裝）不會觸發清理。
+Runtime 載入後結算，兩種結果只會發生一種：
+
+1. **開起 active DB** → `--prune-superseded`：刪除 active 以外的所有版本並清掉標記。穩定狀態下 `versions/` 只有 active 一份。
+2. **active 存在但開不起來** → `--rollback`：把 `active` 指回標記第二行的版本、刪掉失敗的版本、清掉標記，然後重新載入一次。沒有可退的版本時改為移除 `active` symlink。
+
+回退是重指 symlink，而不是讓 runtime 去挑別的檔案。`active` 必須是唯一真相：偏好設定顯示的版本、`--skip-current` 比對的版本、實際使用的資料庫必須永遠是同一個。讓 runtime 靜默改用別的 DB 會使 `--skip-current` 讀到一個永遠載不起來的版本號，從此每次更新都跳過，使用者被永久卡在 bundled DB。
+
+標記在回退時一併清除，因此每次安裝最多只回退一次；上一版也載不起來就照 fallback 順序停在 bundled DB。`active` 已經不是標記所指版本時（狀態已改變），只清標記、不刪任何東西。
+
+Prune 與 rollback 都由 runtime 驅動，因此輸入法從未載入過該詞庫的機器（例如只用 CLI 安裝）不會觸發。
 
 `metadata.json` 中 `version` 為 `dev` 的目錄由本機建置產生、不可重新下載，prune 不得刪除。
 
@@ -111,6 +120,8 @@ Startup 或 reload 時 runtime 嘗試順序：
 2. legacy external active lexicon
 3. app 內建 fallback lexicon
 4. legacy app 內建 fallback lexicon
+
+第 1 項存在卻載入失敗時，runtime 會先回退到上一版並重新載入（見上節）；bundled DB 是回退也救不回來時才停留的位置。
 
 Bundled fallback DB 必須足以離線使用與救援。它不需要永遠最新，但必須符合 runtime-critical schema。
 
@@ -297,4 +308,5 @@ Release 在以下情境檢查前不算完整：
 8. 移除 active symlink 會 fallback 到 bundled DB。
 9. 從偏好設定更新後可以乾淨 reload 或 relaunch input method。
 10. 更新並成功載入後，`versions/` 只剩 active（dev 版本除外），標記已清除。
-11. 新 DB 無法載入而 fallback 時，舊版本與標記都還在。
+11. 新 DB 無法載入時，`active` 回退到上一版、失敗的版本被刪除、標記清除，且 runtime 跑在上一版而非 bundled DB。
+12. 回退後 `--skip-current` 讀到的是上一版版本號，下一輪自動更新會重新嘗試安裝。

@@ -441,7 +441,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       if (status == 0) {
         NSLog(@"ChiaKey lexicon auto-update finished: %@", output);
         [self performSelectorOnMainThread:
-                  @selector(_reloadAndPruneSupersededLexicons)
+                  @selector(_reloadAndSettleLexiconState)
                                withObject:nil
                             waitUntilDone:NO];
       } else {
@@ -454,11 +454,68 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   });
 }
 
-#pragma mark Superseded lexicon cleanup
+#pragma mark Settling a newly installed lexicon
 
 - (NSString *)_lexiconPendingVerificationPath {
   return [ChiaKeyServiceUserDataDirectory()
       stringByAppendingPathComponent:@"Lexicons/pending-verification"];
+}
+
+- (void)_runLexiconInstallerArgument:(NSString *)argument
+                          completion:(void (^)(int status))completion {
+  NSString *scriptPath = [self _bundledLexiconInstallerPath];
+  if (![scriptPath length]) return;
+
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSAutoreleasePool *pool = [NSAutoreleasePool new];
+    NSTask *task = [[NSTask alloc] init];
+    BOOL launched = NO;
+
+    [task setLaunchPath:@"/bin/bash"];
+    [task setArguments:[NSArray arrayWithObjects:scriptPath, argument, nil]];
+    [task setStandardOutput:[NSFileHandle fileHandleWithNullDevice]];
+    [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+
+    @try {
+      [task launch];
+      launched = YES;
+      [task waitUntilExit];
+    } @catch (NSException *exception) {
+      NSLog(@"ChiaKey lexicon %@ failed to launch: %@", argument, exception);
+    }
+
+    int status = launched ? [task terminationStatus] : -1;
+    if (completion) {
+      void (^handler)(int) = [[completion copy] autorelease];
+      dispatch_async(dispatch_get_main_queue(), ^{
+        handler(status);
+      });
+    }
+
+    [task release];
+    [pool drain];
+  });
+}
+
+// A lexicon that does not open leaves the runtime on a bundled database that
+// the user never chose, and -- because --skip-current reads the active
+// version, not the running one -- with an updater that considers itself up to
+// date and stops retrying. Putting the previous version back repairs both.
+- (void)_rollbackFailedLexiconIfNeeded {
+  if (![[NSFileManager defaultManager]
+          fileExistsAtPath:[self _lexiconPendingVerificationPath]])
+    return;
+
+  if (![[OpenVanillaLoader sharedInstance] activeUserLexiconFailed]) return;
+
+  NSLog(@"ChiaKey lexicon failed to open; rolling back to the previous one.");
+  [self _runLexiconInstallerArgument:@"--rollback"
+                          completion:^(int status) {
+                            // The rollback cleared the marker either way, so a
+                            // second failure just settles on the fallback
+                            // database instead of looping.
+                            if (status == 0) [self reloadOpenVanilla];
+                          }];
 }
 
 // An install leaves the previous lexicon on disk so a database that turns out
@@ -475,34 +532,19 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
     return;
   }
 
-  NSString *scriptPath = [self _bundledLexiconInstallerPath];
-  if (![scriptPath length]) return;
-
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
-    NSTask *task = [[NSTask alloc] init];
-
-    [task setLaunchPath:@"/bin/bash"];
-    [task setArguments:[NSArray arrayWithObjects:scriptPath,
-                                                 @"--prune-superseded", nil]];
-    [task setStandardOutput:[NSFileHandle fileHandleWithNullDevice]];
-    [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
-
-    @try {
-      [task launch];
-      [task waitUntilExit];
-    } @catch (NSException *exception) {
-      NSLog(@"ChiaKey lexicon prune failed to launch: %@", exception);
-    }
-
-    [task release];
-    [pool drain];
-  });
+  [self _runLexiconInstallerArgument:@"--prune-superseded" completion:nil];
 }
 
-- (void)_reloadAndPruneSupersededLexicons {
-  [self reloadOpenVanilla];
+// Both halves of settling an install: a lexicon that opened retires the old
+// one, a lexicon that did not gets rolled back. Only one of them can apply.
+- (void)_settleLexiconStateAfterLoad {
+  [self _rollbackFailedLexiconIfNeeded];
   [self _pruneSupersededLexiconsIfVerified];
+}
+
+- (void)_reloadAndSettleLexiconState {
+  [self reloadOpenVanilla];
+  [self _settleLexiconStateAfterLoad];
 }
 
 #pragma mark Application update check
@@ -591,7 +633,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   // Also the catch-up path for a lexicon installed by the Preferences app or
   // the script: the loader starts on its own thread, so launch is too early to
   // ask whether the active database opened.
-  [self _pruneSupersededLexiconsIfVerified];
+  [self _settleLexiconStateAfterLoad];
   [self _runSilentLexiconUpdateIfNeeded];
   [self _runApplicationUpdateCheckIfNeeded];
 }
