@@ -11,6 +11,7 @@ KEEP_DOWNLOADS=0
 SKIP_CURRENT=0
 MIN_RELEASE_AGE_DAYS=""
 VALIDATE_DB_PATH=""
+PRUNE_SUPERSEDED=0
 TMP_DIR=""
 declare -a VALIDATION_TMP_DIRS=()
 
@@ -30,6 +31,8 @@ Options:
   --min-release-age-days N
                           Only install latest release after it is at least N days old.
   --validate-db PATH      Validate an existing ChiaKeySource.db and exit.
+  --prune-superseded      Delete every installed version except the active one,
+                          then clear the pending-verification marker, and exit.
   --dry-run               Print install actions without writing Application Support.
   --keep-downloads        Keep the temporary download directory.
   -h, --help              Show this help.
@@ -71,9 +74,9 @@ curl() {
     "$@"
 }
 
-current_lexicon_version() {
-  /usr/bin/ruby -rjson - "${INSTALL_ROOT}/active/metadata.json" \
-    "${INSTALL_ROOT}/active/lexicon-manifest.json" <<'RUBY' 2>/dev/null || true
+lexicon_version_in_dir() {
+  /usr/bin/ruby -rjson - "$1/metadata.json" \
+    "$1/lexicon-manifest.json" <<'RUBY' 2>/dev/null || true
 ARGV.each do |path|
   next unless File.file?(path)
   data = JSON.parse(File.read(path))
@@ -84,6 +87,54 @@ ARGV.each do |path|
   end
 end
 RUBY
+}
+
+current_lexicon_version() {
+  lexicon_version_in_dir "${INSTALL_ROOT}/active"
+}
+
+pending_verification_file() {
+  echo "${INSTALL_ROOT}/pending-verification"
+}
+
+resolve_path() {
+  /usr/bin/ruby -e 'begin; puts File.realpath(ARGV[0]); rescue; end' "$1"
+}
+
+# Old versions exist for one reason: to fall back to if the newly installed one
+# turns out not to load. The IME calls this once it has actually opened the
+# active lexicon, at which point nothing else is worth the disk.
+prune_superseded_versions() {
+  local versions_dir="${INSTALL_ROOT}/versions"
+  local active_dir dir version
+
+  active_dir="$(resolve_path "${INSTALL_ROOT}/active")"
+  if [[ -z "${active_dir}" || ! -d "${active_dir}" ]]; then
+    echo "No active lexicon to verify against; keeping every version." >&2
+    exit 1
+  fi
+
+  if [[ -d "${versions_dir}" ]]; then
+    for dir in "${versions_dir}"/*/; do
+      dir="${dir%/}"
+      [[ -d "${dir}" ]] || continue
+      [[ "$(resolve_path "${dir}")" == "${active_dir}" ]] && continue
+
+      # Locally built lexicons are not re-downloadable, so they are not ours
+      # to delete; only releases this script installed are.
+      version="$(lexicon_version_in_dir "${dir}")"
+      [[ "${version}" == "dev" ]] && continue
+
+      run /bin/rm -rf "${dir}"
+    done
+  fi
+
+  if [[ "${DRY_RUN}" != "1" ]]; then
+    rm -f "$(pending_verification_file)"
+  fi
+
+  echo "Pruned superseded lexicons; active version kept:"
+  echo "  ${active_dir}"
 }
 
 compare_versions() {
@@ -252,6 +303,10 @@ while [[ $# -gt 0 ]]; do
       VALIDATE_DB_PATH="${2:-}"
       shift 2
       ;;
+    --prune-superseded)
+      PRUNE_SUPERSEDED=1
+      shift
+      ;;
     --dry-run)
       DRY_RUN=1
       shift
@@ -288,6 +343,11 @@ esac
 
 if [[ -n "${VALIDATE_DB_PATH}" ]]; then
   validate_database_health "${VALIDATE_DB_PATH}"
+  exit 0
+fi
+
+if [[ "${PRUNE_SUPERSEDED}" == "1" ]]; then
+  prune_superseded_versions
   exit 0
 fi
 
@@ -452,6 +512,9 @@ fi
 
 if [[ "${DRY_RUN}" != "1" ]]; then
   /bin/ln -sfn "${VERSION_DIR}" "${ACTIVE_LINK}"
+  # The previous version stays on disk until the IME reports it opened this
+  # one; --prune-superseded then clears both it and this marker.
+  echo "${VERSION}" > "$(pending_verification_file)"
 else
   print_command /bin/ln -sfn "${VERSION_DIR}" "${ACTIVE_LINK}"
 fi

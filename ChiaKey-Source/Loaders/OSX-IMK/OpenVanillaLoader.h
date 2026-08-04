@@ -26,6 +26,7 @@ using namespace CareService;
   PVLoader *_loader;
 
   NSString *_databaseVersion;
+  BOOL _activeUserLexiconLoaded;
 
   OVSQLiteConnection *_userPhraseDB;
 
@@ -62,6 +63,9 @@ using namespace CareService;
 - (bool)exportUserPhraseDBToFile:(NSString *)path;
 - (bool)importUserPhraseDBFromFile:(NSString *)path;
 - (NSString *)databaseVersion;
+// NO when the installed lexicon failed to open and a fallback database is in
+// use, which is the case where the previous version must be kept.
+- (BOOL)activeUserLexiconLoaded;
 
 #pragma mark User Phrase additions
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;

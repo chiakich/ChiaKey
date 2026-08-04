@@ -84,6 +84,7 @@ Lexicons/
       lexicon-manifest.json
       metadata.json
   active -> versions/2026.06.7
+  pending-verification
 ```
 
 Active DB 路徑：
@@ -93,6 +94,14 @@ Active DB 路徑：
 ```
 
 更新必須使用 atomic symlink swap。下載失敗、checksum mismatch、SQLite validation failure 或 install failure 都必須保留既有 active lexicon。
+
+## 舊版本保留
+
+安裝本身不刪除任何舊版本，只寫下 `pending-verification` 標記。Runtime 確認自己真的開起 active DB（而非 fallback）之後呼叫 `--prune-superseded`，此時刪除 active 以外的所有版本並清掉標記；穩定狀態下 `versions/` 只會有 active 一份。Runtime 若落在 fallback，標記與舊版本都必須保留，以便退回。
+
+Prune 由 runtime 驅動，因此輸入法從未載入過該詞庫的機器（例如只用 CLI 安裝）不會觸發清理。
+
+`metadata.json` 中 `version` 為 `dev` 的目錄由本機建置產生、不可重新下載，prune 不得刪除。
 
 ## Runtime fallback
 
@@ -287,3 +296,5 @@ Release 在以下情境檢查前不算完整：
 7. 缺少 `canned_messages` 的 DB 會被拒絕。
 8. 移除 active symlink 會 fallback 到 bundled DB。
 9. 從偏好設定更新後可以乾淨 reload 或 relaunch input method。
+10. 更新並成功載入後，`versions/` 只剩 active（dev 版本除外），標記已清除。
+11. 新 DB 無法載入而 fallback 時，舊版本與標記都還在。

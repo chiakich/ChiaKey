@@ -440,7 +440,8 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 
       if (status == 0) {
         NSLog(@"ChiaKey lexicon auto-update finished: %@", output);
-        [self performSelectorOnMainThread:@selector(reloadOpenVanilla)
+        [self performSelectorOnMainThread:
+                  @selector(_reloadAndPruneSupersededLexicons)
                                withObject:nil
                             waitUntilDone:NO];
       } else {
@@ -451,6 +452,57 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
     [task release];
     [pool drain];
   });
+}
+
+#pragma mark Superseded lexicon cleanup
+
+- (NSString *)_lexiconPendingVerificationPath {
+  return [ChiaKeyServiceUserDataDirectory()
+      stringByAppendingPathComponent:@"Lexicons/pending-verification"];
+}
+
+// An install leaves the previous lexicon on disk so a database that turns out
+// not to open here still has something to fall back to. The loader reporting
+// that it opened the active one is what retires that fallback; until then the
+// marker the installer wrote keeps it alive.
+- (void)_pruneSupersededLexiconsIfVerified {
+  if (![[NSFileManager defaultManager]
+          fileExistsAtPath:[self _lexiconPendingVerificationPath]])
+    return;
+
+  if (![[OpenVanillaLoader sharedInstance] activeUserLexiconLoaded]) {
+    NSLog(@"ChiaKey lexicon prune skipped: running on a fallback database.");
+    return;
+  }
+
+  NSString *scriptPath = [self _bundledLexiconInstallerPath];
+  if (![scriptPath length]) return;
+
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSAutoreleasePool *pool = [NSAutoreleasePool new];
+    NSTask *task = [[NSTask alloc] init];
+
+    [task setLaunchPath:@"/bin/bash"];
+    [task setArguments:[NSArray arrayWithObjects:scriptPath,
+                                                 @"--prune-superseded", nil]];
+    [task setStandardOutput:[NSFileHandle fileHandleWithNullDevice]];
+    [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+
+    @try {
+      [task launch];
+      [task waitUntilExit];
+    } @catch (NSException *exception) {
+      NSLog(@"ChiaKey lexicon prune failed to launch: %@", exception);
+    }
+
+    [task release];
+    [pool drain];
+  });
+}
+
+- (void)_reloadAndPruneSupersededLexicons {
+  [self reloadOpenVanilla];
+  [self _pruneSupersededLexiconsIfVerified];
 }
 
 #pragma mark Application update check
@@ -536,6 +588,10 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 }
 
 - (void)_runAutoUpdateChecks:(NSTimer *)timer {
+  // Also the catch-up path for a lexicon installed by the Preferences app or
+  // the script: the loader starts on its own thread, so launch is too early to
+  // ask whether the active database opened.
+  [self _pruneSupersededLexiconsIfVerified];
   [self _runSilentLexiconUpdateIfNeeded];
   [self _runApplicationUpdateCheckIfNeeded];
 }
