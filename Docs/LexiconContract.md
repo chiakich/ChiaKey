@@ -108,7 +108,7 @@ Runtime 載入後結算，兩種結果只會發生一種：
 
 標記在回退時一併清除，因此每次安裝最多只回退一次；上一版也載不起來就照 fallback 順序停在 bundled DB。`active` 已經不是標記所指版本時（狀態已改變），只清標記、不刪任何東西。
 
-Prune 與 rollback 都由 runtime 驅動，因此輸入法從未載入過該詞庫的機器（例如只用 CLI 安裝）不會觸發。
+Prune 與 rollback 都由 runtime 驅動，因此輸入法從未載入過該詞庫的機器（例如只用 CLI 安裝）不會觸發。偏好設定 app 安裝後發出的 reload 請求必須走同一條結算路徑，否則從 UI 更新的失敗詞庫要等到下一輪定時檢查才會被回退。
 
 `metadata.json` 中 `version` 為 `dev` 的目錄由本機建置產生、不可重新下載，prune 不得刪除。
 

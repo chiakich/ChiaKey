@@ -731,8 +731,12 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 
 #pragma mark Preferences app requests (see ChiaKeyServiceCoordination.h)
 
+// The Preferences app asks for this right after installing a lexicon, so it is
+// an install to settle, not just a reload -- without this a failed lexicon
+// installed from the UI would sit on the bundled database until the hourly
+// timer noticed.
 - (void)_reloadRequested:(NSNotification *)notification {
-  [self reloadOpenVanilla];
+  [self _reloadAndSettleLexiconState];
 }
 
 - (void)_moduleBlacklistDidChange:(NSNotification *)notification {
