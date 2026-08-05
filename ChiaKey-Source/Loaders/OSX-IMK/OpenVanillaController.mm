@@ -617,17 +617,21 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     }
 #endif
   } else if ([event type] == NSEventTypeKeyDown) {
-    BOOL secureInputActive = OVCIsSecureInputActive(sender);
+    // IsSecureEventInputEnabled() is system-wide: another app's password field
+    // turns it on while our own client is an ordinary text field. Refusing the
+    // key then drops raw ASCII into that innocent client, so only the client's
+    // own report may block input -- the global flag merely suppresses learning.
+    BOOL clientSecureInput = OVCClientReportsSecureInput(sender);
     BOOL allowSecureInputComposition = OVCAllowsSecureInputComposition();
-    BOOL secureInputComposition =
-        secureInputActive && allowSecureInputComposition;
 
-    if (secureInputActive && !allowSecureInputComposition) {
+    if (clientSecureInput && !allowSecureInputComposition) {
       [_composingBuffer setString:@""];
       _context->clear();
       [self _resetUI];
       return NO;
     }
+
+    BOOL secureInputComposition = OVCIsSecureInputActive(sender);
 
     OVCSecureInputModeScope secureInputModeScope(loaderService,
                                                 secureInputComposition);
