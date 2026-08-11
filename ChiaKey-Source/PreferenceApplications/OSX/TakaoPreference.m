@@ -114,11 +114,20 @@ file for terms.
     [window stopSlowMotion];
   }
 
+  // Measured, not assumed: under the macOS 11 preference toolbar style the
+  // title bar and toolbar come to 88pt, so the hardcoded 78 left every pane
+  // 10pt taller than the space it was given and clipped its top row.
+  CGFloat chromeHeight =
+      NSHeight([window frame]) - NSHeight([window contentLayoutRect]);
+  if (chromeHeight <= 0) {
+    chromeHeight = WINDOW_TITLE_HEIGHT;
+  }
+
   NSRect windowFrame = [window frame];
-  windowFrame.size.height = [view frame].size.height + WINDOW_TITLE_HEIGHT;
+  windowFrame.size.height = [view frame].size.height + chromeHeight;
   windowFrame.size.width = [view frame].size.width;
   windowFrame.origin.y =
-      NSMaxY([window frame]) - ([view frame].size.height + WINDOW_TITLE_HEIGHT);
+      NSMaxY([window frame]) - ([view frame].size.height + chromeHeight);
 
   if ([[[window contentView] subviews] count] != 0) {
     NSView *currentView = [[[window contentView] subviews] objectAtIndex:0];
