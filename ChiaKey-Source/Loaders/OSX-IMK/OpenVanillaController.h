@@ -16,6 +16,9 @@ using namespace OpenVanilla;
   BOOL _shiftKeyPressedForTemporaryEnglish;
   BOOL _shiftKeyTapCanceled;
 
+  // Timed so a down/up pair too short to be a hand can be told apart from a tap.
+  NSTimeInterval _shiftKeyPressedAt;
+
   // macOS aborts its own Caps Lock language switch when a key lands inside its
   // decision window; these let us finish the switch on its behalf.
   NSTimeInterval _pendingCapsTapTime;

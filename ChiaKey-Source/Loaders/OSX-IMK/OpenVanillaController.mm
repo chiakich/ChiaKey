@@ -31,6 +31,11 @@ static const NSTimeInterval OVCCapsBridgeMaxDuration = 1.5;
 // switch that was already delivered.
 static const NSTimeInterval OVCCapsPostActivationGuard = 0.3;
 static const unsigned short OVCVirtualKeyCodeCapsLock = 0x39;
+// Measured 2026-08-10: after a focus change macOS resynchronises modifier state
+// and delivers Shift down and up 1ms apart, which used to read as a deliberate
+// tap and silently switched the user to English. The fastest a hand can tap
+// Shift is tens of milliseconds, so anything shorter is the system talking.
+static const NSTimeInterval OVCShiftTapMinimumDuration = 0.02;
 
 static BOOL OVCInvokeBooleanSelector(id object, SEL selector) {
   if (![object respondsToSelector:selector]) {
@@ -185,6 +190,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     _temporaryEnglishMode = NO;
     _shiftKeyPressedForTemporaryEnglish = NO;
     _shiftKeyTapCanceled = NO;
+    _shiftKeyPressedAt = 0;
     _pendingCapsTapTime = 0;
     _bridgeStartedAt = 0;
     _lastActivationTime = 0;
@@ -411,6 +417,13 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _lastActivationTime = [[NSProcessInfo processInfo] systemUptime];
   _pendingCapsTapTime = 0;
   _bridgingToASCIISource = NO;
+  // A Shift still held from the previous session must not count as a tap here.
+  // deactivateServer: clears this too, but it does not always run: when a
+  // client's connection drops and reconnects, activateServer: arrives with no
+  // deactivation at all, and the stale flag turned the trailing Shift release
+  // into a silent English toggle.
+  _shiftKeyPressedForTemporaryEnglish = NO;
+  _shiftKeyTapCanceled = NO;
   // Each -bundleIdentifier is a synchronous round trip to the client, so ask
   // once and reuse it for every app-specific check below.
   NSString *clientBundleIdentifier = [sender bundleIdentifier];
@@ -474,6 +487,12 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   // NSLog(@"deactivateServer (client %08x), identifier: %@", sender, [sender
   // bundleIdentifier]);
 
+  // IMK does not guarantee this arrives before the incoming client's
+  // activateServer:. When it does not, everything shared -- the candidate
+  // windows, the symbol panel, the prompt -- already belongs to whoever
+  // activated after us, and tearing it down here blanks a live composition.
+  BOOL stillActiveContext = (OVCActiveContext == self);
+
   _temporaryEnglishMode = NO;
   _shiftKeyPressedForTemporaryEnglish = NO;
   _shiftKeyTapCanceled = NO;
@@ -482,19 +501,21 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _pendingCapsTapTime = 0;
   _bridgingToASCIISource = NO;
 
-  // IMK does not guarantee this arrives before the incoming client's
-  // activateServer:, so clearing unconditionally can wipe out a context that
-  // now belongs to someone else.
-  if (OVCActiveContext == self) {
+  if (stillActiveContext) {
     [OpenVanillaController setActiveContext:nil sender:nil];
   }
 
-  // force commit
+  // Our own client and context still need their composition settled, whether or
+  // not we are the active context -- both are per-controller state.
   _commitFromOurselves = YES;
   [self commitComposition:sender];
 
   _context->clear();
   _context->deactivate();
+
+  if (!stillActiveContext) {
+    return;
+  }
 
   CVApplicationController *applicationController =
       (CVApplicationController *)[NSApp delegate];
@@ -579,7 +600,9 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   // NSLog(@"handleEvent (client %08x), type = %08x, modifier = %08x, event:
   // %@", sender, [event type], [event modifierFlags], event);
 
-  if ([event type] == NSEventTypeFlagsChanged) {
+  NSEventType eventType = [event type];
+
+  if (eventType == NSEventTypeFlagsChanged) {
     // Arm the takeover: if a keystroke reaches us before deactivateServer:
     // does, macOS has abandoned the language switch and we finish it instead.
     // The Caps Lock event trailing our own activation belongs to the switch
@@ -595,7 +618,13 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
         !OVCEventHasCommandControlOrOption(event)) {
       _shiftKeyPressedForTemporaryEnglish = YES;
       _shiftKeyTapCanceled = NO;
+      _shiftKeyPressedAt = [event timestamp];
     } else if (!shiftPressed && _shiftKeyPressedForTemporaryEnglish) {
+      NSTimeInterval held = [event timestamp] - _shiftKeyPressedAt;
+      if (!_shiftKeyTapCanceled && held < OVCShiftTapMinimumDuration) {
+        _shiftKeyTapCanceled = YES;
+      }
+
       if (!_shiftKeyTapCanceled) {
         _temporaryEnglishMode = !_temporaryEnglishMode;
       }
@@ -616,7 +645,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       }
     }
 #endif
-  } else if ([event type] == NSEventTypeKeyDown) {
+  } else if (eventType == NSEventTypeKeyDown) {
     // IsSecureEventInputEnabled() is system-wide: another app's password field
     // turns it on while our own client is an ordinary text field. Refusing the
     // key then drops raw ASCII into that innocent client, so only the client's
@@ -659,7 +688,10 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
         _bridgeStartedAt = [event timestamp];
         if (![self _switchToASCIICapableInputSource]) {
           _bridgingToASCIISource = NO;
-          _temporaryEnglishMode = YES;
+          // Toggle rather than force on: the switch keeps failing for as long
+          // as whatever broke it lasts, so forcing YES here left Caps Lock
+          // re-entering English on every press with no way back out.
+          _temporaryEnglishMode = !_temporaryEnglishMode;
         }
       }
     }
