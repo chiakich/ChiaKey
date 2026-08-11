@@ -4,6 +4,7 @@
 #import <InputMethodKit/InputMethodKit.h>
 
 #import "OpenVanillaConfig.h"
+#import "ChiaKeyDevLog.h"
 #import "OpenVanillaLoader.h"
 
 using namespace OpenVanilla;
@@ -18,6 +19,16 @@ using namespace OpenVanilla;
 
   // Timed so a down/up pair too short to be a hand can be told apart from a tap.
   NSTimeInterval _shiftKeyPressedAt;
+
+#if CHIAKEY_DEV_LOGGING
+  // Sampled when Shift goes down, reported when a tap toggles English, so a
+  // report can say what the gesture actually was.
+  NSUInteger _shiftKeyPressedMouseButtons;
+  NSPoint _shiftKeyPressedMouseLocation;
+  NSUInteger _shiftKeyDownsDuringHold;
+  unsigned short _lastKeyDownVirtualKeyCode;
+  NSEventModifierFlags _lastKeyDownModifiers;
+#endif
 
   // macOS aborts its own Caps Lock language switch when a key lands inside its
   // decision window; these let us finish the switch on its behalf.

@@ -1122,6 +1122,7 @@
 		CE00000000000000000000A2 /* PEUserPhraseStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PEUserPhraseStore.h; path = Utilities/PhraseEditor/OSX/PEUserPhraseStore.h; sourceTree = "<group>"; };
 		CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyUserPhraseCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyUserPhraseCoordination.h"; sourceTree = "<group>"; };
 		CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyServiceCoordination.h; path = "Loaders/OSX-IMK/ChiaKeyServiceCoordination.h"; sourceTree = "<group>"; };
+		CE00000000000000000000D0 /* ChiaKeyDevLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChiaKeyDevLog.h; path = "Loaders/OSX-IMK/ChiaKeyDevLog.h"; sourceTree = "<group>"; };
 		CE00000000000000000000BB /* Contacts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Contacts.framework; path = /System/Library/Frameworks/Contacts.framework; sourceTree = "<absolute>"; };
 		D4041FEF0F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TakaoKeyboardLayoutPopUpButton.h; path = PreferenceApplications/OSX/TakaoKeyboardLayoutPopUpButton.h; sourceTree = "<group>"; };
 		D4041FF00F1C855A00B52BC9 /* TakaoKeyboardLayoutPopUpButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TakaoKeyboardLayoutPopUpButton.m; path = PreferenceApplications/OSX/TakaoKeyboardLayoutPopUpButton.m; sourceTree = "<group>"; };
@@ -2243,6 +2244,7 @@
 				D484CEDA0EC218170051B6CA /* UIControllers */,
 				CE00000000000000000000B3 /* ChiaKeyUserPhraseCoordination.h */,
 				CE00000000000000000000B5 /* ChiaKeyServiceCoordination.h */,
+				CE00000000000000000000D0 /* ChiaKeyDevLog.h */,
 				6A4772FD0D5C607200C6C744 /* main.mm */,
 				6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,

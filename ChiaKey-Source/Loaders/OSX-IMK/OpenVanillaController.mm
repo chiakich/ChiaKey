@@ -19,6 +19,13 @@
 static OpenVanillaController *OVCActiveContext = nil;
 static id OVCActiveContextSender = nil;
 
+@interface OpenVanillaController ()
+- (void)_setTemporaryEnglishMode:(BOOL)enabled reason:(const char *)reason;
+#if CHIAKEY_DEV_LOGGING
+- (void)_logShiftTapForEvent:(NSEvent *)event client:(id)sender;
+#endif
+@end
+
 // Measured on macOS 26: a successful Caps Lock language switch surfaces as
 // deactivateServer: 110-200ms after the key; a keystroke landing before that
 // makes macOS abandon the switch outright. These bound how long we wait for a
@@ -198,6 +205,13 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     _shiftKeyPressedForTemporaryEnglish = NO;
     _shiftKeyTapCanceled = NO;
     _shiftKeyPressedAt = 0;
+#if CHIAKEY_DEV_LOGGING
+    _shiftKeyPressedMouseButtons = 0;
+    _shiftKeyPressedMouseLocation = NSZeroPoint;
+    _shiftKeyDownsDuringHold = 0;
+    _lastKeyDownVirtualKeyCode = 0;
+    _lastKeyDownModifiers = 0;
+#endif
     _pendingCapsTapTime = 0;
     _bridgeStartedAt = 0;
     _lastActivationTime = 0;
@@ -408,6 +422,38 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 }
 #endif
 
+#if CHIAKEY_DEV_LOGGING
+- (void)_logShiftTapForEvent:(NSEvent *)event client:(id)sender {
+  NSPoint releasedAt = [NSEvent mouseLocation];
+  CGFloat dx = releasedAt.x - _shiftKeyPressedMouseLocation.x;
+  CGFloat dy = releasedAt.y - _shiftKeyPressedMouseLocation.y;
+  NSString *clientBundleIdentifier = @"?";
+  if ([sender respondsToSelector:@selector(bundleIdentifier)]) {
+    clientBundleIdentifier = [sender bundleIdentifier] ?: @"?";
+  }
+
+  CHIAKEY_DEV_LOG("Shift tap toggling English: held=%.0fms sinceActivation=%.0fms "
+         "keyDowns=%lu lastKey=0x%02x lastMods=0x%lx mouseButtons=%lu->%lu "
+         "mouseMoved=%.0fpt composing=%lu client=%{public}@",
+         ([event timestamp] - _shiftKeyPressedAt) * 1000.0,
+         ([event timestamp] - _lastActivationTime) * 1000.0,
+         (unsigned long)_shiftKeyDownsDuringHold, _lastKeyDownVirtualKeyCode,
+         (unsigned long)_lastKeyDownModifiers,
+         (unsigned long)_shiftKeyPressedMouseButtons,
+         (unsigned long)[NSEvent pressedMouseButtons], hypot(dx, dy),
+         (unsigned long)[_composingBuffer length], clientBundleIdentifier);
+}
+#endif
+
+- (void)_setTemporaryEnglishMode:(BOOL)enabled reason:(const char *)reason {
+  if (_temporaryEnglishMode == enabled) {
+    return;
+  }
+  _temporaryEnglishMode = enabled;
+  CHIAKEY_DEV_LOG("temporary English mode %{public}s (%{public}s)",
+         enabled ? "on" : "off", reason);
+}
+
 // Completes the input source switch macOS abandoned. Returns NO when the
 // switch could not be started, in which case the caller falls back to the
 // in-process English mode so the user still gets Latin letters.
@@ -500,7 +546,12 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   // activated after us, and tearing it down here blanks a live composition.
   BOOL stillActiveContext = (OVCActiveContext == self);
 
-  _temporaryEnglishMode = NO;
+  if (!stillActiveContext) {
+    CHIAKEY_DEV_LOG("late deactivateServer: for a superseded client; leaving shared UI "
+           "to the active context");
+  }
+
+  [self _setTemporaryEnglishMode:NO reason:"deactivateServer:"];
   _shiftKeyPressedForTemporaryEnglish = NO;
   _shiftKeyTapCanceled = NO;
   // Either macOS completed its own switch or ours landed; either way the
@@ -629,14 +680,31 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       _shiftKeyPressedForTemporaryEnglish = YES;
       _shiftKeyTapCanceled = NO;
       _shiftKeyPressedAt = [event timestamp];
+#if CHIAKEY_DEV_LOGGING
+      _shiftKeyPressedMouseButtons = [NSEvent pressedMouseButtons];
+      _shiftKeyPressedMouseLocation = [NSEvent mouseLocation];
+      _shiftKeyDownsDuringHold = 0;
+      _lastKeyDownVirtualKeyCode = 0;
+      _lastKeyDownModifiers = 0;
+#endif
     } else if (!shiftPressed && _shiftKeyPressedForTemporaryEnglish) {
       NSTimeInterval held = [event timestamp] - _shiftKeyPressedAt;
       if (!_shiftKeyTapCanceled && held < OVCShiftTapMinimumDuration) {
         _shiftKeyTapCanceled = YES;
+        CHIAKEY_DEV_LOG("ignoring a %.0fms Shift down/up pair %.0fms after activation "
+               "as a modifier state resync",
+               held * 1000.0, ([event timestamp] - _lastActivationTime) * 1000.0);
       }
 
       if (!_shiftKeyTapCanceled) {
-        _temporaryEnglishMode = !_temporaryEnglishMode;
+        // Only the toggling taps are reported: a canceled one is an ordinary
+        // capital letter and would drown this out. The mouse and activation
+        // fields are here to tell a deliberate tap from a shift-click.
+#if CHIAKEY_DEV_LOGGING
+        [self _logShiftTapForEvent:event client:sender];
+#endif
+        [self _setTemporaryEnglishMode:!_temporaryEnglishMode
+                                reason:"Shift tap"];
       }
       _shiftKeyPressedForTemporaryEnglish = NO;
       _shiftKeyTapCanceled = NO;
@@ -656,6 +724,16 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     }
 #endif
   } else if (eventType == NSEventTypeKeyDown) {
+#if CHIAKEY_DEV_LOGGING
+    // Sampled before the secure-input return below, so a key that never made it
+    // to the cancel check further down still shows up in the Shift tap report.
+    if (_shiftKeyPressedForTemporaryEnglish) {
+      _shiftKeyDownsDuringHold++;
+      _lastKeyDownVirtualKeyCode = [event keyCode];
+      _lastKeyDownModifiers = [event modifierFlags];
+    }
+#endif
+
     // IsSecureEventInputEnabled() is system-wide: another app's password field
     // turns it on while our own client is an ordinary text field. Refusing the
     // key then drops raw ASCII into that innocent client, so only the client's
@@ -664,6 +742,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     BOOL allowSecureInputComposition = OVCAllowsSecureInputComposition();
 
     if (clientSecureInput && !allowSecureInputComposition) {
+      // Unconditional: this return also skips the Shift tap cancel below, so
+      // it has to be visible even when there was nothing to discard.
+      CHIAKEY_DEV_LOG("client reports secure input; refusing key 0x%02x and discarding "
+             "%lu composing characters",
+             [event keyCode], (unsigned long)[_composingBuffer length]);
       [_composingBuffer setString:@""];
       _context->clear();
       [self _resetUI];
@@ -696,12 +779,18 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
         // deactivateServer: before it returns, and that clears the bridge.
         _bridgingToASCIISource = YES;
         _bridgeStartedAt = [event timestamp];
+        CHIAKEY_DEV_LOG("taking over the abandoned Caps Lock switch (%.0fms after the "
+               "tap)",
+               sinceTap * 1000.0);
         if (![self _switchToASCIICapableInputSource]) {
           _bridgingToASCIISource = NO;
           // Toggle rather than force on: the switch keeps failing for as long
           // as whatever broke it lasts, so forcing YES here left Caps Lock
           // re-entering English on every press with no way back out.
-          _temporaryEnglishMode = !_temporaryEnglishMode;
+          CHIAKEY_DEV_LOG_ERROR("ASCII input source switch failed; falling back to the "
+                       "in-process English mode");
+          [self _setTemporaryEnglishMode:!_temporaryEnglishMode
+                                  reason:"Caps Lock fallback"];
         }
       }
     }
@@ -711,6 +800,8 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     if (_bridgingToASCIISource &&
         ([event timestamp] - _bridgeStartedAt) > OVCCapsBridgeMaxDuration) {
       _bridgingToASCIISource = NO;
+      CHIAKEY_DEV_LOG_ERROR("deactivateServer: never arrived after the Caps Lock "
+                   "takeover; ending the ASCII bridge");
     }
 
     // Shift stays inside the English path so it capitalises; letting it fall

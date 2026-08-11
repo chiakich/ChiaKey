@@ -339,6 +339,10 @@ if [[ "${SKIP_BUILD}" != "1" ]]; then
   # each target's existing definitions; the appended macro wins (clang takes
   # the last -D for a given name) and only main.mm reads it, so this is inert
   # for every other target in the scheme.
+  #
+  # CHIAKEY_DEV_LOGGING rides along so the diagnostic os_log calls exist only in
+  # dev installs. It keys off this script rather than Debug/Release because both
+  # this and the release script can be pointed at either configuration.
   run /usr/bin/xcodebuild \
     -project "${PROJECT}" \
     -scheme "${SCHEME}" \
@@ -346,7 +350,7 @@ if [[ "${SKIP_BUILD}" != "1" ]]; then
     -derivedDataPath "${DERIVED_DATA_PATH}" \
     CODE_SIGNING_ALLOWED=NO \
     ONLY_ACTIVE_ARCH=YES \
-    GCC_PREPROCESSOR_DEFINITIONS="\$(inherited) OPENVANILLA_CONNECTION_NAME=@\\\"${DEV_CONNECTION_NAME}\\\"" \
+    GCC_PREPROCESSOR_DEFINITIONS="\$(inherited) OPENVANILLA_CONNECTION_NAME=@\\\"${DEV_CONNECTION_NAME}\\\" CHIAKEY_DEV_LOGGING=1" \
     build
 fi
 
