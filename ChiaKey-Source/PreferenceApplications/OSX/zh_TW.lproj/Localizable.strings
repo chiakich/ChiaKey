@@ -86,6 +86,8 @@
 "Do you really want to remove the plugin '%@'?" = "您確定要刪除「%@」這個外掛模組嗎？";
 "Compose in secure fields (no learning)" = "允許在安全輸入欄位組字（不學習）";
 "Remove Caps Lock delay" = "移除 Caps Lock 延遲";
+"Input method behaviour:" = "輸入法行為：";
+"Tapping Shift switches to English" = "輕點 Shift 切換英文";
 "Uninstall ChiaKey…" = "移除 ChiaKey…";
 "Uninstall ChiaKey?" = "要移除 ChiaKey 嗎？";
 "ChiaKey will be removed from Input Sources and deleted. This window will close. Log out and back in to finish the removal." = "ChiaKey 將從「輸入方式」清單移除並刪除，此視窗也會關閉。登出後再登入即可完成移除。";

@@ -222,6 +222,12 @@ file for terms.
   else
     [_applyCapsLockDelayOverrideCheckBox setIntValue:0];
 
+  if ([[_takaoDictionary valueForKey:@"ShiftTogglesTemporaryEnglish"]
+          isEqualToString:@"true"])
+    [_shiftTogglesTemporaryEnglishCheckBox setIntValue:1];
+  else
+    [_shiftTogglesTemporaryEnglishCheckBox setIntValue:0];
+
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
   if ([[_takaoDictionary valueForKey:@"ToggleInputMethodWithControlBackslash"]
           isEqualToString:@"true"])
@@ -319,6 +325,7 @@ file for terms.
                       forKey:@"ToggleInputMethodWithControlBackslash"];
   [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
   [_takaoDictionary setValue:@"true" forKey:@"ApplyCapsLockDelayOverride"];
+  [_takaoDictionary setValue:@"true" forKey:@"ShiftTogglesTemporaryEnglish"];
 
   LFRetainAssign(_preferenceFilePath,
                  [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]);
@@ -368,6 +375,13 @@ file for terms.
     [_takaoDictionary setValue:@"false" forKey:@"ApplyCapsLockDelayOverride"];
     [CVCapsLockDelayOverride reset];
   }
+
+  if ([_shiftTogglesTemporaryEnglishCheckBox intValue])
+    [_takaoDictionary setValue:@"true"
+                        forKey:@"ShiftTogglesTemporaryEnglish"];
+  else
+    [_takaoDictionary setValue:@"false"
+                        forKey:@"ShiftTogglesTemporaryEnglish"];
 
   if ([_useCtrlBackSlashToggleInputMethod intValue])
     [_takaoDictionary setValue:@"true"

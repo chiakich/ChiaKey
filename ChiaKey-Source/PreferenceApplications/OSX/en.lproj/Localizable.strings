@@ -84,6 +84,8 @@
 "Do you really want to remove the plugin '%@'?" = "Do you really want to remove the plugin '%@'?";
 "Compose in secure fields (no learning)" = "Compose in secure fields (no learning)";
 "Remove Caps Lock delay" = "Remove Caps Lock delay";
+"Input method behaviour:" = "Input method behaviour:";
+"Tapping Shift switches to English" = "Tapping Shift switches to English";
 "Uninstall ChiaKey…" = "Uninstall ChiaKey…";
 "Uninstall ChiaKey?" = "Uninstall ChiaKey?";
 "ChiaKey will be removed from Input Sources and deleted. This window will close. Log out and back in to finish the removal." = "ChiaKey will be removed from Input Sources and deleted. This window will close. Log out and back in to finish the removal.";

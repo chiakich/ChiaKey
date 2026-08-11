@@ -92,6 +92,13 @@ static BOOL OVCIsSecureInputActive(id client) {
   return IsSecureEventInputEnabled() || OVCClientReportsSecureInput(client);
 }
 
+// Defaults to on: the toggle predates this preference, so only an explicit
+// "false" turns it off.
+static BOOL OVCShiftTogglesTemporaryEnglish() {
+  OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
+  return kvm.stringValueForKey("ShiftTogglesTemporaryEnglish") != "false";
+}
+
 static BOOL OVCAllowsSecureInputComposition() {
   OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
   return kvm.stringValueForKey("AllowSecureInputComposition") == "true";
@@ -614,8 +621,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
     // handles caps lock and shift here
     BOOL shiftPressed = OVCEventIsShiftPressed(event);
-    if (shiftPressed && !_shiftKeyPressedForTemporaryEnglish &&
-        !OVCEventHasCommandControlOrOption(event)) {
+    if (!OVCShiftTogglesTemporaryEnglish()) {
+      _shiftKeyPressedForTemporaryEnglish = NO;
+      _shiftKeyTapCanceled = NO;
+    } else if (shiftPressed && !_shiftKeyPressedForTemporaryEnglish &&
+               !OVCEventHasCommandControlOrOption(event)) {
       _shiftKeyPressedForTemporaryEnglish = YES;
       _shiftKeyTapCanceled = NO;
       _shiftKeyPressedAt = [event timestamp];
