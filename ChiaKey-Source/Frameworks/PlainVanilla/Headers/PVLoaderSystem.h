@@ -61,6 +61,11 @@ class PVLoaderContext : public OVBase {
   virtual void clear();
   virtual bool handleKeyEvent(OVKey* key);
 
+  // Runs text that the IME code commits on its own -- text that never went
+  // through the sandwich -- through the activated output filters, so that
+  // filters such as the full-width one still apply to it.
+  virtual const string applyOutputFilters(const string& text);
+
   // called by the platform-dependent IME code
   virtual bool shouldUpdateCandidate();
   virtual bool shouldUpdateBufferedTexts();
@@ -852,18 +857,28 @@ inline const string PVLoaderContext::residueComposingTextBeforeDeactivation() {
 
   string committedText = OVStringHelper::Join(committedTextSegments);
   // cerr << "new text: " << committedText << endl;
-  for (vector<OVEventHandlingContext*>::iterator iter =
-           m_sandwich->outputFilters.begin();
-       iter != m_sandwich->outputFilters.end(); ++iter) {
-    if (!committedText.length()) break;
-
-    string newText =
-        (*iter)->filterText(committedText, m_loader->loaderService());
-    if (newText != committedText) committedText = newText;
-  }
+  committedText = applyOutputFilters(committedText);
   // cerr << "new text: " << committedText << endl;
 
   return committedText;
+}
+
+inline const string PVLoaderContext::applyOutputFilters(const string& text) {
+  if (!text.length()) return text;
+  if (!shouldEnter(m_loader ? m_loader->loaderService() : 0, true)) return text;
+
+  string filteredText = text;
+  for (vector<OVEventHandlingContext*>::iterator iter =
+           m_sandwich->outputFilters.begin();
+       iter != m_sandwich->outputFilters.end(); ++iter) {
+    if (!filteredText.length()) break;
+
+    string newText =
+        (*iter)->filterText(filteredText, m_loader->loaderService());
+    if (newText != filteredText) filteredText = newText;
+  }
+
+  return filteredText;
 }
 
 inline bool PVLoaderContext::handleKeyEvent(OVKey* key) {

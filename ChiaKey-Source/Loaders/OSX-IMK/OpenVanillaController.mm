@@ -291,18 +291,31 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   _context->activate();
 }
 
-- (void)sendTemporaryEnglishStringToClient:(NSString *)text sender:(id)sender {
+- (void)sendTemporaryEnglishStringToClient:(NSString *)text
+                          useOutputFilters:(BOOL)useOutputFilters
+                                    sender:(id)sender {
   if (![text length]) return;
 
   PVCombinedUTF16TextBuffer combinedBuffer(*(_context->composingText()),
                                            *(_context->readingText()));
   string pendingText = combinedBuffer.composedText();
   if (pendingText.size()) {
+    pendingText = _context->applyOutputFilters(pendingText);
     [_composingBuffer setString:[NSString stringWithUTF8String:pendingText.c_str()]];
     _commitFromOurselves = YES;
     [self commitComposition:sender];
     _context->clear();
     [self _resetUI];
+  }
+
+  // We commit this text ourselves instead of running it through the sandwich,
+  // so the output filters -- the full-width one above all -- have to be
+  // applied here or they would silently not apply to temporary English.
+  if (useOutputFilters) {
+    string filteredText =
+        _context->applyOutputFilters(string([text UTF8String]));
+    text = [NSString stringWithUTF8String:filteredText.c_str()];
+    if (![text length]) return;
   }
 
   [sender insertText:text replacementRange:NSMakeRange(NSNotFound, NSNotFound)];
@@ -809,7 +822,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     if (_temporaryEnglishMode || _bridgingToASCIISource) {
       NSString *temporaryEnglishText = OVCTextForTemporaryEnglishMode(event);
       if (temporaryEnglishText) {
+        // The ASCII bridge stands in for the system's ASCII input source,
+        // which types half-width, so only the temporary English mode takes
+        // the output filters.
         [self sendTemporaryEnglishStringToClient:temporaryEnglishText
+                                useOutputFilters:_temporaryEnglishMode
                                           sender:sender];
         return YES;
       }
