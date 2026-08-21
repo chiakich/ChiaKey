@@ -99,6 +99,19 @@ static BOOL ChiaKeyDisableInputSourceWithID(NSString *inputSourceID) {
   return YES;
 }
 
+static BOOL ChiaKeyInputSourceIsEnabled(NSString *inputSourceID) {
+  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
+  if (!source) {
+    return NO;
+  }
+
+  CFBooleanRef enabled = (CFBooleanRef)TISGetInputSourceProperty(
+      source, kTISPropertyInputSourceIsEnabled);
+  BOOL isEnabled = enabled && CFBooleanGetValue(enabled);
+  CFRelease(source);
+  return isEnabled;
+}
+
 static NSString *ChiaKeyInputSourceID() {
   NSBundle *mainBundle = [NSBundle mainBundle];
   NSString *inputSourceID =
@@ -121,6 +134,13 @@ static int ChiaKeyRegisterInputMethod() {
     NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
           bundleURL, registerStatus);
     return 1;
+  }
+
+  // The enabled state lives in the user's HIToolbox preferences, keyed by input
+  // source ID, so it survives an update untouched. Enabling an already-enabled
+  // source is pointless work on the silent auto-update path.
+  if (ChiaKeyInputSourceIsEnabled(inputSourceID)) {
+    return 0;
   }
 
   if (!ChiaKeyEnableInputSourceWithID(inputSourceID)) {
