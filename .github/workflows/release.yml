@@ -320,11 +320,20 @@ jobs:
         if: ${{ inputs.dry_run == false }}
         run: |
           set -euo pipefail
+          # Tag the exact commit the package was built from. Rebasing onto a
+          # concurrent push first would move HEAD to a tree that was never
+          # built, so the branch push is allowed to fail instead: a rejected
+          # non-fast-forward stops the release before anything is published.
+          built="$(git rev-parse HEAD)"
+          git tag "${{ steps.version.outputs.tag }}" "${built}"
+
           if [[ "${{ steps.bump.outputs.committed }}" == "true" ]]; then
-            git pull --rebase origin "${{ github.ref_name }}"
-            git push origin "HEAD:${{ github.ref_name }}"
+            if ! git push origin "${built}:${{ github.ref_name }}"; then
+              echo "Push rejected: ${{ github.ref_name }} moved while this release was building." >&2
+              echo "Re-run the workflow so the package matches the tagged source." >&2
+              exit 1
+            fi
           fi
-          git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Publish GitHub Release
