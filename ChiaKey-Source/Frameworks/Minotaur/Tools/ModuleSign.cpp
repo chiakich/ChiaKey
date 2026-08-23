@@ -83,15 +83,39 @@ int ModulePackageTool(bool signFunction, const string& inPackageRoot,
   pair<char*, size_t> block;
   block.second = secret.size() + binData.second;
   block.first = (char*)calloc(1, block.second);
+  if (!block.first) {
+    cerr << "Out of memory" << endl;
+    free(binData.first);
+    free(keyData.first);
+    delete plist;
+    return 1;
+  }
   memcpy(block.first, secret.data(), secret.size());
+  // Must match YKSignedModuleLoadingSystem: the digest covers the binary too.
+  memcpy(block.first + secret.size(), binData.first, binData.second);
   free(binData.first);
 
   char* digest = Minos::Digest(block.first, block.second);
   free(block.first);
+  if (!digest) {
+    cerr << "Cannot compute digest" << endl;
+    free(keyData.first);
+    delete plist;
+    return 1;
+  }
 
   if (signFunction) {
     pair<char*, size_t> encryptedDigest = Minos::Encrypt(
         pair<char*, size_t>(digest, Minos::DigestSize()), keyData);
+
+    if (!encryptedDigest.first || !encryptedDigest.second) {
+      cerr << "Cannot sign: the RSA implementation is not available in this "
+              "source distribution" << endl;
+      free(keyData.first);
+      free(digest);
+      delete plist;
+      return 1;
+    }
 
     ostringstream sstr;
     sstr << hex;
@@ -118,14 +142,14 @@ int ModulePackageTool(bool signFunction, const string& inPackageRoot,
 
       pair<char*, size_t> binSig = Minos::BinaryFromHexString(sig);
       if (binSig.first && binSig.second) {
-        pair<char*, size_t> decryptedDigest = Minos::GetBack(binSig, keyData);
+        pair<char*, size_t> recoveredDigest = Minos::GetBack(binSig, keyData);
 
-        if (decryptedDigest.first && decryptedDigest.second) {
-          if (decryptedDigest.second == Minos::DigestSize()) {
-            valid = Minos::LazyMatch(digest, decryptedDigest.first,
+        if (recoveredDigest.first && recoveredDigest.second) {
+          if (recoveredDigest.second == Minos::DigestSize()) {
+            valid = Minos::LazyMatch(digest, recoveredDigest.first,
                                      Minos::DigestSize());
           }
-          free(decryptedDigest.first);
+          free(recoveredDigest.first);
         }
 
         free(binSig.first);

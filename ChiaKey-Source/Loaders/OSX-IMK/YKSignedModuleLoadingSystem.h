@@ -107,25 +107,33 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
     pair<char*, size_t> block;
     block.second = secret.size() + binData.second;
     block.first = (char*)calloc(1, block.second);
+    if (!block.first) {
+      free(binData.first);
+      return 0;
+    }
     memcpy(block.first, secret.data(), secret.size());
+    // The binary itself has to be part of the digest, otherwise the signature
+    // only covers the identifier and the binary can be swapped freely.
+    memcpy(block.first + secret.size(), binData.first, binData.second);
     free(binData.first);
 
     char* digest = Minos::Digest(block.first, block.second);
     free(block.first);
+    if (!digest) return 0;
 
     bool valid = false;
 
     string sig = dict->stringValueForKey(kMinotaurModulePackageSignature);
     pair<char*, size_t> binSig = Minos::BinaryFromHexString(sig);
     if (binSig.first && binSig.second) {
-      pair<char*, size_t> decryptedDigest = Minos::GetBack(binSig, keyData);
+      pair<char*, size_t> recoveredDigest = Minos::GetBack(binSig, keyData);
 
-      if (decryptedDigest.first && decryptedDigest.second) {
-        if (decryptedDigest.second == Minos::DigestSize()) {
-          valid = Minos::LazyMatch(digest, decryptedDigest.first,
+      if (recoveredDigest.first && recoveredDigest.second) {
+        if (recoveredDigest.second == Minos::DigestSize()) {
+          valid = Minos::LazyMatch(digest, recoveredDigest.first,
                                    Minos::DigestSize());
         }
-        free(decryptedDigest.first);
+        free(recoveredDigest.first);
       }
 
       free(binSig.first);
@@ -133,7 +141,11 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
 
     free(digest);
 
-    if (!valid) return 0;
+    if (!valid) {
+      NSLog(@"Refusing to load module with unverified signature: %s",
+            path.c_str());
+      return 0;
+    }
 
     string mpver = dict->stringValueForKey(kMinotaurModulePackageVersion);
     if (mpId.length() && mpver.length()) m_versionMap[mpId] = mpver;

@@ -6,19 +6,50 @@ file for terms.
 
 #include "Minotaur.h"
 
+#if defined(__APPLE__)
+#include <CommonCrypto/CommonDigest.h>
+#else
+#include <openssl/sha.h>
+#endif
+
 namespace Minotaur {
 
 // 160 bits
 size_t Minos::DigestSize() { return 20; }
 
 char* Minos::Digest(const char* block, size_t blockSize) {
-  return (char*)block;
+  if (!block) return 0;
+
+  char* digest = (char*)calloc(1, DigestSize());
+  if (!digest) return 0;
+
+#if defined(__APPLE__)
+  // Fed in chunks because CC_LONG is 32-bit but a module binary may be larger.
+  CC_SHA1_CTX ctx;
+  CC_SHA1_Init(&ctx);
+  size_t remaining = blockSize;
+  const char* cursor = block;
+  while (remaining) {
+    CC_LONG chunk = (CC_LONG)(remaining > 0x10000000 ? 0x10000000 : remaining);
+    CC_SHA1_Update(&ctx, cursor, chunk);
+    cursor += chunk;
+    remaining -= chunk;
+  }
+  CC_SHA1_Final((unsigned char*)digest, &ctx);
+#else
+  SHA1((const unsigned char*)block, blockSize, (unsigned char*)digest);
+#endif
+
+  return digest;
 }
 
 pair<char*, size_t> Minos::Encrypt(const char* dataBlock, size_t blockSize,
                                    const char* RSAKey, size_t keySize,
                                    bool encryptWithPrivateKey) {
-  return pair<char*, size_t>((char*)dataBlock, blockSize);
+  // The RSA implementation is not part of this source distribution. Returning
+  // the input unchanged would make every caller treat unsigned data as signed,
+  // so this fails closed instead. See ValidateFile().
+  return pair<char*, size_t>(0, 0);
 }
 
 pair<char*, size_t> Minos::Encrypt(const pair<char*, size_t>& block,
@@ -38,14 +69,20 @@ pair<char*, size_t> Minos::GetBack(const pair<char*, size_t>& block,
 pair<char*, size_t> Minos::GetBack(const char* encodedBlock, size_t blockSize,
                                    const char* RSAKey, size_t keySize,
                                    bool decryptWithPublicKey) {
-  return pair<char*, size_t>((char*)encodedBlock, blockSize);
+  // Fails closed for the same reason as Encrypt(): without the RSA
+  // implementation there is no way to recover a trustworthy digest, and
+  // handing the caller back the untrusted input would authenticate it.
+  return pair<char*, size_t>(0, 0);
 }
 
 bool Minos::LazyMatch(const char* b1, const char* b2, size_t size) {
-  for (size_t i = 0; i < size; ++i)
-    if (b1[i] != b2[i]) return false;
+  if (!b1 || !b2) return false;
 
-  return true;
+  unsigned char diff = 0;
+  for (size_t i = 0; i < size; ++i)
+    diff |= (unsigned char)b1[i] ^ (unsigned char)b2[i];
+
+  return diff == 0;
 }
 
 bool Minos::ValidateFile(const string& filename,
@@ -100,32 +137,41 @@ pair<char*, size_t> Minos::BinaryFromHexString(const string& str) {
 
   result.second = str.size() / 2;
   result.first = (char*)calloc(1, result.second);
+  if (!result.first) {
+    result.second = 0;
+    return result;
+  }
 
   const char* map1 = "0123456789abcdef";
   const char* map2 = "0123456789ABCDEF";
 
   size_t s = str.size();
   for (size_t i = 0; i < s; i += 2) {
-    const char* p;
-    unsigned char hi = 0, lo = 0;
+    unsigned char nibble[2] = {0, 0};
 
-    p = strchr(map1, str[i]);
-    if (p) {
-      hi = (unsigned char)(p - map1);
-    } else {
-      p = strchr(map2, str[i]);
-      if (p) hi = (unsigned char)(p - map2);
+    for (size_t j = 0; j < 2; ++j) {
+      // strchr() would also match the terminating NUL, and an unmapped
+      // character used to fall through as 0 -- both let a malformed signature
+      // decode into plausible bytes.
+      char c = str[i + j];
+      const char* p = c ? strchr(map1, c) : 0;
+      if (p) {
+        nibble[j] = (unsigned char)(p - map1);
+        continue;
+      }
+
+      p = c ? strchr(map2, c) : 0;
+      if (!p) {
+        free(result.first);
+        result.first = 0;
+        result.second = 0;
+        return result;
+      }
+
+      nibble[j] = (unsigned char)(p - map2);
     }
 
-    p = strchr(map1, str[i + 1]);
-    if (p) {
-      lo = (unsigned char)(p - map1);
-    } else {
-      p = strchr(map2, str[i + 1]);
-      if (p) lo = (unsigned char)(p - map2);
-    }
-
-    result.first[i / 2] = (hi << 4) | lo;
+    result.first[i / 2] = (char)((nibble[0] << 4) | nibble[1]);
   }
 
   return result;
