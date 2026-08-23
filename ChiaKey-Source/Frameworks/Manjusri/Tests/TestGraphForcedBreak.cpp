@@ -12,12 +12,12 @@ using namespace Manjusri;
 
 static int failures = 0;
 
-#define CHECK(cond)                                        \
-  do {                                                     \
-    if (!(cond)) {                                         \
+#define CHECK(cond)                                         \
+  do {                                                      \
+    if (!(cond)) {                                          \
       cerr << "FAIL " << __LINE__ << ": " << #cond << endl; \
-      failures++;                                          \
-    }                                                      \
+      failures++;                                           \
+    }                                                       \
   } while (0)
 
 static OVSQLiteConnection* BuildFixture() {
@@ -56,42 +56,45 @@ int main() {
   }
 
   Node::SetPhraseLengthBonus(1.0);
-  LanguageModel lm(db, 0, false, false, false, false, false);
-  Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+  // Scoped so the statements it prepared are finalized before the
+  // borrowed connection is closed below.
+  {
+    LanguageModel lm(db, 0, false, false, false, false, false);
+    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
 
-  // The graph seeds BOS/EOS itself, so readings start at index 1 and the
-  // boundary between them is index 2.
-  Graph graph(&lm);
-  graph.clear();
-  graph.insertQueryBlockAndBuild("R1", 1);
-  graph.insertQueryBlockAndBuild("R2", 2);
+    // The graph seeds BOS/EOS itself, so readings start at index 1 and the
+    // boundary between them is index 2.
+    Graph graph(&lm);
+    graph.clear();
+    graph.insertQueryBlockAndBuild("R1", 1);
+    graph.insertQueryBlockAndBuild("R2", 2);
 
-  CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!PHRASE$");
-  CHECK(CandidatesInclude(graph, 1, "PHRASE"));
+    CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!PHRASE$");
+    CHECK(CandidatesInclude(graph, 1, "PHRASE"));
 
-  CHECK(graph.toggleForcedBreakAt(2));
-  CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
-  CHECK(!CandidatesInclude(graph, 1, "PHRASE"));
+    CHECK(graph.toggleForcedBreakAt(2));
+    CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
+    CHECK(!CandidatesInclude(graph, 1, "PHRASE"));
 
-  CHECK(graph.toggleForcedBreakAt(2));
-  CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!PHRASE$");
-  CHECK(CandidatesInclude(graph, 1, "PHRASE"));
+    CHECK(graph.toggleForcedBreakAt(2));
+    CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!PHRASE$");
+    CHECK(CandidatesInclude(graph, 1, "PHRASE"));
 
-  // And it keeps toggling rather than latching either way.
-  CHECK(graph.toggleForcedBreakAt(2));
-  CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
+    // And it keeps toggling rather than latching either way.
+    CHECK(graph.toggleForcedBreakAt(2));
+    CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
 
-  // Breaks at other boundaries are independent.
-  graph.clear();
-  graph.insertQueryBlockAndBuild("R1", 1);
-  graph.insertQueryBlockAndBuild("R2", 2);
-  CHECK(graph.toggleForcedBreakAt(2));
-  CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
-  // Out of bounds: index 0 is BOS, and the last block is EOS.
-  CHECK(!graph.toggleForcedBreakAt(0));
-  CHECK(!graph.toggleForcedBreakAt(3));
-  CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
-
+    // Breaks at other boundaries are independent.
+    graph.clear();
+    graph.insertQueryBlockAndBuild("R1", 1);
+    graph.insertQueryBlockAndBuild("R2", 2);
+    CHECK(graph.toggleForcedBreakAt(2));
+    CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
+    // Out of bounds: index 0 is BOS, and the last block is EOS.
+    CHECK(!graph.toggleForcedBreakAt(0));
+    CHECK(!graph.toggleForcedBreakAt(3));
+    CHECK(FastPathAsString(graph.fastWalk("", Location(0, 0))) == "!ONETWO$");
+  }
   delete db;
 
   if (failures) {

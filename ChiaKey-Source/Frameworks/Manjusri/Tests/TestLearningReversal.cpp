@@ -25,12 +25,12 @@ using namespace OpenVanilla;
 
 static int failures = 0;
 
-#define CHECK(cond)                                        \
-  do {                                                     \
-    if (!(cond)) {                                         \
+#define CHECK(cond)                                         \
+  do {                                                      \
+    if (!(cond)) {                                          \
       cerr << "FAIL " << __LINE__ << ": " << #cond << endl; \
-      failures++;                                          \
-    }                                                      \
+      failures++;                                           \
+    }                                                       \
   } while (0)
 
 // COMMON is the lexicon's answer for reading Z; RARE is what the user wants.
@@ -147,30 +147,33 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    LanguageModel lm(db, 0, false, false, false, true, true);
-    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
-    lm.loadUserBigramCache();
-    lm.loadUserCandidateOverrideCache();
+    // Scoped so the statements it prepared are finalized before the
+    // borrowed connection is closed below.
+    {
+      LanguageModel lm(db, 0, false, false, false, true, true);
+      Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+      lm.loadUserBigramCache();
+      lm.loadUserCandidateOverrideCache();
 
-    CHECK(Type(&lm, pz, "RARE") == "PCOMMON");
-    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
-    CHECK(OverrideFor(db, "user_candidate_override_cache", "Z") == "RARE");
-    CHECK(BreadthFor(db, "Z") == 1);
+      CHECK(Type(&lm, pz, "RARE") == "PCOMMON");
+      lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+      CHECK(OverrideFor(db, "user_candidate_override_cache", "Z") == "RARE");
+      CHECK(BreadthFor(db, "Z") == 1);
 
-    // The correction took effect...
-    CHECK(Type(&lm, pz, "") == "PRARE");
+      // The correction took effect...
+      CHECK(Type(&lm, pz, "") == "PRARE");
 
-    // ...and now the user takes it back.
-    Type(&lm, pz, "COMMON");
-    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+      // ...and now the user takes it back.
+      Type(&lm, pz, "COMMON");
+      lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
 
-    CHECK(RowCount(db, "SELECT * FROM user_candidate_override_cache") == 0);
-    CHECK(RowCount(db, "SELECT * FROM user_context_override_cache") == 0);
-    // The breadth ratchet goes with it: an abandoned correction must not let a
-    // later one generalise on evidence the user has disowned.
-    CHECK(BreadthFor(db, "Z") == 0);
-    CHECK(Type(&lm, pz, "") == "PCOMMON");
-
+      CHECK(RowCount(db, "SELECT * FROM user_candidate_override_cache") == 0);
+      CHECK(RowCount(db, "SELECT * FROM user_context_override_cache") == 0);
+      // The breadth ratchet goes with it: an abandoned correction must not let
+      // a later one generalise on evidence the user has disowned.
+      CHECK(BreadthFor(db, "Z") == 0);
+      CHECK(Type(&lm, pz, "") == "PCOMMON");
+    }
     delete db;
   }
 
@@ -183,31 +186,36 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    LanguageModel lm(db, 0, false, false, false, true, true);
-    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
-    lm.loadUserBigramCache();
-    lm.loadUserCandidateOverrideCache();
+    // Scoped so the statements it prepared are finalized before the
+    // borrowed connection is closed below.
+    {
+      LanguageModel lm(db, 0, false, false, false, true, true);
+      Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+      lm.loadUserBigramCache();
+      lm.loadUserCandidateOverrideCache();
 
-    // Three distinct preceding contexts (BOS, P, Q) reach the breadth the
-    // context-free override needs to apply everywhere.
-    Type(&lm, z, "RARE");
-    Type(&lm, pz, "RARE");
-    Type(&lm, qz, "RARE");
-    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+      // Three distinct preceding contexts (BOS, P, Q) reach the breadth the
+      // context-free override needs to apply everywhere.
+      Type(&lm, z, "RARE");
+      Type(&lm, pz, "RARE");
+      Type(&lm, qz, "RARE");
+      lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
 
-    CHECK(BreadthFor(db, "Z") == LanguageModel::c_overrideGeneralizationContexts);
-    CHECK(OverrideFor(db, "user_candidate_override_cache", "Z") == "RARE");
-    CHECK(RowCount(db, "SELECT * FROM user_context_override_cache") == 3);
+      CHECK(BreadthFor(db, "Z") ==
+            LanguageModel::c_overrideGeneralizationContexts);
+      CHECK(OverrideFor(db, "user_candidate_override_cache", "Z") == "RARE");
+      CHECK(RowCount(db, "SELECT * FROM user_context_override_cache") == 3);
 
-    // RARE is already what comes out here, so picking it again is the user
-    // confirming, not correcting.
-    CHECK(Type(&lm, pz, "RARE") == "PRARE");
-    lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
+      // RARE is already what comes out here, so picking it again is the user
+      // confirming, not correcting.
+      CHECK(Type(&lm, pz, "RARE") == "PRARE");
+      lm.saveUserBigramCacheAndCandidateOverrideCache(true, true);
 
-    CHECK(OverrideFor(db, "user_candidate_override_cache", "Z") == "RARE");
-    CHECK(OverrideFor(db, "user_context_override_cache", "P Z") == "RARE");
-    CHECK(BreadthFor(db, "Z") == LanguageModel::c_overrideGeneralizationContexts);
-
+      CHECK(OverrideFor(db, "user_candidate_override_cache", "Z") == "RARE");
+      CHECK(OverrideFor(db, "user_context_override_cache", "P Z") == "RARE");
+      CHECK(BreadthFor(db, "Z") ==
+            LanguageModel::c_overrideGeneralizationContexts);
+    }
     delete db;
   }
 

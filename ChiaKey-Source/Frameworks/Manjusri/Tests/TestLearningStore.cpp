@@ -12,12 +12,12 @@ using namespace Manjusri;
 
 static int failures = 0;
 
-#define CHECK(cond)                                                       \
-  do {                                                                    \
-    if (!(cond)) {                                                        \
-      cerr << "FAIL " << __LINE__ << ": " << #cond << endl;               \
-      failures++;                                                         \
-    }                                                                     \
+#define CHECK(cond)                                         \
+  do {                                                      \
+    if (!(cond)) {                                          \
+      cerr << "FAIL " << __LINE__ << ": " << #cond << endl; \
+      failures++;                                           \
+    }                                                       \
   } while (0)
 
 static void TestEvictionPrefersLeastUsed() {
@@ -29,7 +29,7 @@ static void TestEvictionPrefersLeastUsed() {
 
   store.learn("d", "4");  // full: must drop a single-selection entry
 
-  CHECK(store.peek("b") != 0);          // twice-selected survives
+  CHECK(store.peek("b") != 0);  // twice-selected survives
   CHECK(store.peek("d") != 0);
   CHECK(store.size() == 3);
   // a was the least recently used single-selection entry
@@ -64,7 +64,8 @@ static void TestEvictionRanksByCountWhenNothingIsSingle() {
   CHECK(store.peek("a") != 0);
   CHECK(store.peek("b") != 0);
 
-  // now a(3), b(2), d(1): the fresh single-selection entry is the cheapest again
+  // now a(3), b(2), d(1): the fresh single-selection entry is the cheapest
+  // again
   store.learn("e", "5");
   CHECK(store.peek("d") == 0);
   CHECK(store.peek("a") != 0);
@@ -160,15 +161,20 @@ static OVSQLiteConnection* MakeLegacyUserDB(const string& path) {
   assert(db);
   // the pre-migration shapes, as created by older ChiaKey and by the Phrase
   // Editor's CREATE TABLE IF NOT EXISTS
-  db->execute("CREATE TABLE user_bigram_cache (qstring, previous, current, probability)");
+  db->execute(
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability)");
   db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
-  db->execute("CREATE TABLE user_unigrams (qstring, current, probability, backoff)");
+  db->execute(
+      "CREATE TABLE user_unigrams (qstring, current, probability, backoff)");
   db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
   db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
   db->execute("INSERT INTO unigrams VALUES('x', 'X', -1.0, -0.5)");
   // a legacy row with no selection_count/last_used, plus a duplicate qstring
-  db->execute("INSERT INTO user_candidate_override_cache VALUES('legacy', 'L1')");
-  db->execute("INSERT INTO user_candidate_override_cache VALUES('legacy', 'L2')");
+  db->execute(
+      "INSERT INTO user_candidate_override_cache VALUES('legacy', 'L1')");
+  db->execute(
+      "INSERT INTO user_candidate_override_cache VALUES('legacy', 'L2')");
   return db;
 }
 
@@ -176,10 +182,12 @@ static OVSQLiteConnection* MakeLegacyUserDB(const string& path) {
 // working after the migration, or its learning silently stops persisting.
 static void TestOldBuildStillWrites(OVSQLiteConnection* db) {
   CHECK(db->execute("DELETE FROM user_bigram_cache") == SQLITE_OK);
-  CHECK(db->execute("INSERT INTO user_bigram_cache VALUES('oq','op','oc',-1.5)") ==
+  CHECK(db->execute(
+            "INSERT INTO user_bigram_cache VALUES('oq','op','oc',-1.5)") ==
         SQLITE_OK);
   CHECK(db->execute("DELETE FROM user_candidate_override_cache") == SQLITE_OK);
-  CHECK(db->execute("INSERT INTO user_candidate_override_cache VALUES('oq','oc')") ==
+  CHECK(db->execute(
+            "INSERT INTO user_candidate_override_cache VALUES('oq','oc')") ==
         SQLITE_OK);
 }
 
@@ -190,16 +198,20 @@ static void TestRollsBackInlineStatColumns() {
   remove(path.c_str());
   OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
   assert(db);
-  db->execute("CREATE TABLE user_candidate_override_cache "
-              "(qstring, current, selection_count DEFAULT 1, last_used DEFAULT 0)");
-  db->execute("CREATE TABLE user_bigram_cache "
-              "(qstring, previous, current, probability, "
-              "selection_count DEFAULT 1, last_used DEFAULT 0)");
-  db->execute("INSERT INTO user_candidate_override_cache VALUES('q','V',7,1234)");
+  db->execute(
+      "CREATE TABLE user_candidate_override_cache "
+      "(qstring, current, selection_count DEFAULT 1, last_used DEFAULT 0)");
+  db->execute(
+      "CREATE TABLE user_bigram_cache "
+      "(qstring, previous, current, probability, "
+      "selection_count DEFAULT 1, last_used DEFAULT 0)");
+  db->execute(
+      "INSERT INTO user_candidate_override_cache VALUES('q','V',7,1234)");
 
   LanguageModel::MigrateUserLearningTables(db);
 
-  CHECK(!UserTableHasColumn(db, "user_candidate_override_cache", "selection_count"));
+  CHECK(!UserTableHasColumn(db, "user_candidate_override_cache",
+                            "selection_count"));
   CHECK(!UserTableHasColumn(db, "user_bigram_cache", "selection_count"));
   CHECK(CountRows(db, "user_candidate_override_cache") == 1);
 
@@ -215,9 +227,13 @@ static void TestRollsBackInlineStatColumns() {
     delete s;
   }
 
-  LanguageModel lm(db, 0, false, false, false, true, true);
-  lm.loadUserCandidateOverrideCache();
-  CHECK(lm.fetchCachedOverrideSelection("q") == "V");
+  // Scoped so the statements it prepared are finalized before the
+  // borrowed connection is closed below.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.loadUserCandidateOverrideCache();
+    CHECK(lm.fetchCachedOverrideSelection("q") == "V");
+  }
 
   TestOldBuildStillWrites(db);
 
@@ -407,30 +423,35 @@ static void TestFailedSaveKeepsLearningDirty() {
   CHECK(sqlite3_open(path.c_str(), &blocker) == SQLITE_OK);
   CHECK(sqlite3_exec(blocker, "BEGIN IMMEDIATE", 0, 0, 0) == SQLITE_OK);
 
-  LanguageModel lm(db, 0, false, false, false, true, true);
-  lm.cacheOverrideSelection("q1", "A");
-  lm.cacheUserBigram("p q1", "P", "A");
+  // Scoped so the statements it prepared are finalized before the
+  // borrowed connection is closed below.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.cacheOverrideSelection("q1", "A");
+    lm.cacheUserBigram("p q1", "P", "A");
 
-  CHECK(!lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
-  CHECK(CountRows(db, "user_candidate_override_cache") == 1);  // only 'legacy'
-  CHECK(CountRows(db, "user_bigram_cache") == 0);
+    CHECK(!lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    CHECK(CountRows(db, "user_candidate_override_cache") ==
+          1);  // only 'legacy'
+    CHECK(CountRows(db, "user_bigram_cache") == 0);
 
-  sqlite3_exec(blocker, "COMMIT", 0, 0, 0);
-  sqlite3_close(blocker);
+    sqlite3_exec(blocker, "COMMIT", 0, 0, 0);
+    sqlite3_close(blocker);
 
-  // the retry finds the work still outstanding and lands it
-  CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
-  CHECK(CountRows(db, "user_candidate_override_cache") == 2);
-  CHECK(CountRows(db, "user_bigram_cache") == 1);
-  CHECK(lm.fetchCachedOverrideSelection("q1") == "A");
+    // the retry finds the work still outstanding and lands it
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    CHECK(CountRows(db, "user_candidate_override_cache") == 2);
+    CHECK(CountRows(db, "user_bigram_cache") == 1);
+    CHECK(lm.fetchCachedOverrideSelection("q1") == "A");
+  }
 
   delete db;
   remove(path.c_str());
 }
 
 // Flushing has to be all or nothing. Clearing memory while the tables survive
-// just means the next load brings the discarded learning back, and the IME would
-// have told the user it was gone.
+// just means the next load brings the discarded learning back, and the IME
+// would have told the user it was gone.
 static void TestFlushRefusedWhileEditorHoldsLock() {
   const string path = TempPath("learningstore-flushlock.db");
   const string lockPath = TempPath("learningstore-flushlock.lock");
@@ -514,9 +535,9 @@ static void TestRevertingAnOverrideDropsItsBreadth() {
   remove(path.c_str());
 }
 
-// A cache hit is handed straight back now, so what goes into the cache has to be
-// sorted; otherwise the walk would read whatever row SQLite happened to yield
-// first.
+// A cache hit is handed straight back now, so what goes into the cache has to
+// be sorted; otherwise the walk would read whatever row SQLite happened to
+// yield first.
 static void TestCachedBigramsComeBackSorted() {
   const string path = TempPath("learningstore-bigramsort.db");
   remove(path.c_str());
@@ -524,8 +545,9 @@ static void TestCachedBigramsComeBackSorted() {
   assert(db);
   db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
   db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
-  db->execute("CREATE TABLE user_bigram_cache "
-              "(qstring, previous, current, probability)");
+  db->execute(
+      "CREATE TABLE user_bigram_cache "
+      "(qstring, previous, current, probability)");
   db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
   // deliberately inserted worst-first
   db->execute("INSERT INTO bigrams VALUES('p q', 'P', 'WORST', -3.0)");
@@ -533,22 +555,26 @@ static void TestCachedBigramsComeBackSorted() {
   db->execute("INSERT INTO bigrams VALUES('p q', 'P', 'MIDDLE', -1.5)");
   LanguageModel::MigrateUserLearningTables(db);
 
-  LanguageModel lm(db, 0, false, false, false, true, true);
+  // Scoped so the statements it prepared are finalized before the
+  // borrowed connection is closed below.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
 
-  BigramVector first = lm.findBigrams("p q");
-  CHECK(first.size() == 3);
-  if (first.size() == 3) CHECK(first[0].current == "BEST");
+    BigramVector first = lm.findBigrams("p q");
+    CHECK(first.size() == 3);
+    if (first.size() == 3) CHECK(first[0].current == "BEST");
 
-  // second call comes from m_bigramCache
-  BigramVector cached = lm.findBigrams("p q");
-  CHECK(cached.size() == 3);
-  if (cached.size() == 3) CHECK(cached[0].current == "BEST");
+    // second call comes from m_bigramCache
+    BigramVector cached = lm.findBigrams("p q");
+    CHECK(cached.size() == 3);
+    if (cached.size() == 3) CHECK(cached[0].current == "BEST");
 
-  // and a learned entry still outranks the lexicon on a cache hit
-  lm.cacheUserBigram("p q", "P", "LEARNED");
-  BigramVector merged = lm.findBigrams("p q");
-  CHECK(merged.size() == 4);
-  if (merged.size() == 4) CHECK(merged[0].current == "LEARNED");
+    // and a learned entry still outranks the lexicon on a cache hit
+    lm.cacheUserBigram("p q", "P", "LEARNED");
+    BigramVector merged = lm.findBigrams("p q");
+    CHECK(merged.size() == 4);
+    if (merged.size() == 4) CHECK(merged[0].current == "LEARNED");
+  }
 
   delete db;
   remove(path.c_str());
