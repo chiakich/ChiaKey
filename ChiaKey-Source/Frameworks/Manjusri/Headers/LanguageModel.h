@@ -723,6 +723,8 @@ inline void LanguageModel::MigrateUserLearningTables(
       "SELECT 1 FROM user_learning_stats "
       "WHERE store = 'schema' AND qstring = 'override_breadth_grandfathered'");
   bool alreadyDone = grandfathered && grandfathered->step() == SQLITE_ROW;
+  // A cursor left open here makes the rebuild's DROP TABLE fail as locked.
+  grandfathered.reset();
 
   if (!alreadyDone) {
     userDB->execute(
