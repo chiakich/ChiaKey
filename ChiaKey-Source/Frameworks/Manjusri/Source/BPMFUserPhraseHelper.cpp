@@ -23,6 +23,77 @@ namespace Manjusri {
 
 using namespace Formosa::Mandarin;
 
+namespace {
+
+// Every table the export block carries. The two original ones come first so a
+// file written here keeps the layout older builds expect to read.
+struct LearningCacheTable {
+  const char* name;
+  const char* columns;
+};
+
+const LearningCacheTable kLearningCacheTables[] = {
+    {"user_bigram_cache", "qstring, previous, current, probability"},
+    {"user_candidate_override_cache", "qstring, current"},
+    {"user_context_override_cache", "qstring, current"},
+    {"user_learning_stats", "store, qstring, selection_count, last_used"},
+};
+
+const size_t kLearningCacheTableCount =
+    sizeof(kLearningCacheTables) / sizeof(kLearningCacheTables[0]);
+
+bool TableExists(OVSQLiteConnection* db, const char* schema,
+                 const char* table) {
+  OVSQLiteStatementRef statement = db->prepare(
+      "SELECT COUNT(*) FROM %s.sqlite_master WHERE type = 'table' AND "
+      "name = %Q",
+      schema, table);
+  if (!statement) return false;
+
+  bool exists = false;
+  while (statement->step() == SQLITE_ROW) exists = statement->intOfColumn(0) > 0;
+  return exists;
+}
+
+// Replaces the learning tables with the ones in an export database. All or
+// nothing: a failure part way through used to leave the caller with its caches
+// emptied while the import still reported success.
+bool RestoreLearningCaches(OVSQLiteConnection* db, const string& exportPath) {
+  if (db->execute("ATTACH DATABASE %Q AS export", exportPath.c_str()) !=
+      SQLITE_OK)
+    return false;
+
+  bool ok = db->execute("BEGIN") == SQLITE_OK;
+
+  for (size_t i = 0; ok && i < kLearningCacheTableCount; ++i) {
+    const LearningCacheTable& table = kLearningCacheTables[i];
+
+    // A file written by an older build has nothing for the newer stores, and
+    // keeping what is already there beats replacing it with nothing.
+    if (!TableExists(db, "export", table.name)) continue;
+
+    // OR REPLACE because these tables carry a unique key on qstring and an
+    // older or hand-made export may hold duplicates -- which used to abort the
+    // restore after the DELETE had already run.
+    if (db->execute("CREATE TABLE IF NOT EXISTS %s (%s)", table.name,
+                    table.columns) != SQLITE_OK ||
+        db->execute("DELETE FROM %s", table.name) != SQLITE_OK ||
+        db->execute("INSERT OR REPLACE INTO %s (%s) SELECT %s FROM export.%s",
+                    table.name, table.columns, table.columns,
+                    table.name) != SQLITE_OK) {
+      ok = false;
+    }
+  }
+
+  if (ok) ok = db->execute("COMMIT") == SQLITE_OK;
+  if (!ok) db->execute("ROLLBACK");
+
+  db->execute("DETACH DATABASE export");
+  return ok;
+}
+
+}  // namespace
+
 const pair<string, size_t> BPMFUserPhraseHelper::QString(
     const string& bpmfString) {
   size_t size = 0;
@@ -141,6 +212,8 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     dbHex += line;
   }
 
+  bool cacheRestored = true;
+
   pair<char*, size_t> binData = Minotaur::Minos::BinaryFromHexString(dbHex);
   if (binData.first) {
     string cacheData(binData.first, binData.second);
@@ -150,34 +223,25 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     // ours) costs the caller its learning cache, not the phrases it just
     // imported above.
     if (DecryptExportDatabase(cacheData)) {
+      cacheRestored = false;
+
       string cacheImportTempFile = OVDirectoryHelper::GenerateTempFilename();
       FILE* f = OVFileHelper::OpenStream(cacheImportTempFile, "wb");
       if (f) {
         fwrite(cacheData.data(), 1, cacheData.size(), f);
         fclose(f);
 
-        int result = 0;
-        result = db->execute("ATTACH DATABASE %Q AS export",
-                             cacheImportTempFile.c_str());
-        result = db->execute("DELETE FROM user_bigram_cache");
-        result = db->execute(
-            "INSERT INTO user_bigram_cache (qstring, previous, current, "
-            "probability) SELECT qstring, previous, current, probability FROM "
-            "export.user_bigram_cache");
-        result = db->execute("DELETE FROM user_candidate_override_cache");
-        result = db->execute(
-            "INSERT INTO user_candidate_override_cache (qstring, current) "
-            "SELECT qstring, current FROM "
-            "export.user_candidate_override_cache");
-        result = db->execute("DETACH DATABASE export");
+        cacheRestored = RestoreLearningCaches(db, cacheImportTempFile);
         OVPathHelper::RemoveEverythingAtPath(cacheImportTempFile);
       }
     }
   }
 
-
   ifs.close();
-  return true;
+
+  // The phrases above are committed either way; the caller still has to hear
+  // that the learning data did not come back.
+  return cacheRestored;
 }
 
 bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
@@ -209,18 +273,18 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
 
   db->execute("ATTACH DATABASE %Q AS export KEY %Q",
               cacheExportTempFile.c_str(), MANJUSRI_EXPORT_KEY);
-  db->execute(
-      "CREATE TABLE export.user_bigram_cache (qstring, previous, current, "
-      "probability)");
-  db->execute(
-      "CREATE TABLE export.user_candidate_override_cache (qstring, current)");
-  db->execute(
-      "INSERT INTO export.user_bigram_cache (qstring, previous, current, "
-      "probability) SELECT qstring, previous, current, probability FROM "
-      "user_bigram_cache");
-  db->execute(
-      "INSERT INTO export.user_candidate_override_cache (qstring, current) "
-      "SELECT qstring, current FROM user_candidate_override_cache");
+  for (size_t i = 0; i < kLearningCacheTableCount; ++i) {
+    const LearningCacheTable& table = kLearningCacheTables[i];
+
+    db->execute("CREATE TABLE export.%s (%s)", table.name, table.columns);
+
+    // A user database that predates one of these tables exports it empty,
+    // which is also what it holds.
+    if (!TableExists(db, "main", table.name)) continue;
+
+    db->execute("INSERT INTO export.%s (%s) SELECT %s FROM %s", table.name,
+                table.columns, table.columns, table.name);
+  }
   db->execute("DETACH DATABASE export");
 
   pair<char*, size_t> data = OVFileHelper::SlurpFile(cacheExportTempFile);

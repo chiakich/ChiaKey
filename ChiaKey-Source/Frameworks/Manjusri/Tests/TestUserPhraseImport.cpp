@@ -53,6 +53,18 @@ static OVSQLiteConnection* OpenUserDB(const string& path) {
       "CREATE TABLE user_bigram_cache (qstring, previous, current, "
       "probability)");
   db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
+  // The newer learning stores, with the unique keys the IME's incremental
+  // saves rely on -- a restore has to survive them.
+  db->execute("CREATE TABLE user_context_override_cache (qstring, current)");
+  db->execute(
+      "CREATE UNIQUE INDEX user_context_override_cache_qstring_unique "
+      "ON user_context_override_cache (qstring)");
+  db->execute(
+      "CREATE TABLE user_learning_stats "
+      "(store, qstring, selection_count, last_used)");
+  db->execute(
+      "CREATE UNIQUE INDEX user_learning_stats_key "
+      "ON user_learning_stats (store, qstring)");
   return db;
 }
 
@@ -111,6 +123,28 @@ static string BuildCacheDatabaseFile() {
   if (data.size() % kPageSize || (unsigned char)data[20] != kReserved) {
     return string();
   }
+  return data;
+}
+
+// A cache database with the schema and rows a caller passes in, so a test can
+// forge an export from an older build or one with a drifted schema.
+static string BuildCacheDatabaseFileWithSQL(const string& sql) {
+  string path = TempPath("export-cache-custom.db");
+  remove(path.c_str());
+
+  sqlite3* raw = 0;
+  if (sqlite3_open(path.c_str(), &raw) != SQLITE_OK) return string();
+
+  int reserved = (int)kReserved;
+  sqlite3_exec(raw, "PRAGMA page_size=1024", 0, 0, 0);
+  sqlite3_file_control(raw, "main", SQLITE_FCNTL_RESERVE_BYTES, &reserved);
+  sqlite3_exec(raw, sql.c_str(), 0, 0, 0);
+  sqlite3_close(raw);
+
+  ifstream ifs(path.c_str(), ios::binary);
+  string data((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+  ifs.close();
+  remove(path.c_str());
   return data;
 }
 
@@ -376,6 +410,103 @@ static void TestUnreadableBlockKeepsPhrasesAndCache() {
   delete db;
 }
 
+// The newer stores travel with a backup too, so restoring one brings them back.
+static void TestImportsAllLearningTables() {
+  string block = BuildCacheDatabaseFileWithSQL(
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability);"
+      "CREATE TABLE user_candidate_override_cache (qstring, current);"
+      "CREATE TABLE user_context_override_cache (qstring, current);"
+      "CREATE TABLE user_learning_stats "
+      "(store, qstring, selection_count, last_used);"
+      "INSERT INTO user_bigram_cache VALUES ('aJ wl', 'a', 'b', '-1.0');"
+      "INSERT INTO user_candidate_override_cache VALUES ('aJ', 'c');"
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd');"
+      "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 3, 12345);");
+  CHECK(!block.empty());
+  string path = WriteExportFile("all-tables-export.txt", block);
+
+  OVSQLiteConnection* db = OpenUserDB(TempPath("import-all-tables.db"));
+  CHECK(db != 0);
+  if (!db) return;
+
+  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_bigram_cache") == 1);
+  CHECK(CountRows(db, "user_candidate_override_cache") == 1);
+  CHECK(CountRows(db, "user_context_override_cache") == 1);
+  CHECK(CountRows(db, "user_learning_stats") == 1);
+  CHECK(FirstTextValue(db, "SELECT current FROM user_context_override_cache") ==
+        "d");
+  delete db;
+}
+
+// An export from an older build carries only the two original tables. What it
+// says nothing about must be left alone, not wiped.
+static void TestOlderExportLeavesNewerTablesAlone() {
+  string path = WriteExportFile("older-export.txt", BuildCacheDatabaseFile());
+
+  OVSQLiteConnection* db = OpenUserDB(TempPath("import-older.db"));
+  CHECK(db != 0);
+  if (!db) return;
+  db->execute("INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd')");
+  db->execute(
+      "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 3, 12345)");
+
+  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_bigram_cache") == 2);
+  CHECK(CountRows(db, "user_context_override_cache") == 1);
+  CHECK(CountRows(db, "user_learning_stats") == 1);
+  delete db;
+}
+
+// Duplicate keys used to abort the restore after the tables had been emptied,
+// and the import still reported success.
+static void TestDuplicateKeysDoNotEmptyCaches() {
+  string block = BuildCacheDatabaseFileWithSQL(
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability);"
+      "CREATE TABLE user_candidate_override_cache (qstring, current);"
+      "CREATE TABLE user_context_override_cache (qstring, current);"
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd');"
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'e');");
+  CHECK(!block.empty());
+  string path = WriteExportFile("duplicate-export.txt", block);
+
+  OVSQLiteConnection* db = OpenUserDB(TempPath("import-duplicate.db"));
+  CHECK(db != 0);
+  if (!db) return;
+
+  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_context_override_cache") == 1);
+  delete db;
+}
+
+// A restore that cannot complete must leave every cache as it was, and say so.
+static void TestFailedRestoreRollsBackAndReportsFailure() {
+  // user_learning_stats without last_used: the restore's SELECT names a column
+  // this file does not have, and that failure comes after the earlier tables
+  // have already been emptied and refilled.
+  string block = BuildCacheDatabaseFileWithSQL(
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability);"
+      "CREATE TABLE user_candidate_override_cache (qstring, current);"
+      "CREATE TABLE user_learning_stats (store, qstring, selection_count);"
+      "INSERT INTO user_bigram_cache VALUES ('aJ wl', 'a', 'b', '-1.0');");
+  CHECK(!block.empty());
+  string path = WriteExportFile("broken-export.txt", block);
+
+  OVSQLiteConnection* db = OpenUserDB(TempPath("import-broken.db"));
+  CHECK(db != 0);
+  if (!db) return;
+  db->execute("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
+
+  CHECK(!BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_unigrams") == 2);
+  CHECK(CountRows(db, "user_bigram_cache") == 1);
+  CHECK(FirstTextValue(db, "SELECT current FROM user_bigram_cache") == "z");
+  delete db;
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -388,6 +519,10 @@ int main(int argc, char** argv) {
   TestImportsLegacyExport();
   TestImportsPlaintextExport();
   TestUnreadableBlockKeepsPhrasesAndCache();
+  TestImportsAllLearningTables();
+  TestOlderExportLeavesNewerTablesAlone();
+  TestDuplicateKeysDoNotEmptyCaches();
+  TestFailedRestoreRollsBackAndReportsFailure();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;
