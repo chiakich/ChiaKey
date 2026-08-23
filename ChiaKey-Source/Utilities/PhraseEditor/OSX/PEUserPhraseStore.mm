@@ -30,6 +30,14 @@ static NSString *const kChiaKeyLoaderName = @"ChiaKey";
 static NSString *const kChiaKeyIMEBundleIdentifier =
     @"com.chiakey.inputmethod.ChiaKey";
 static const NSTimeInterval kChangeNotificationThrottle = 0.5;
+// An import is read whole and copied several times over (UTF-16 string, line
+// array, hex string, decoded blob, temp file), so an unbounded file turns into
+// a multi-gigabyte spike. The limits only have to rule out that, not second
+// guess how much a long-time user has accumulated: a phrase line measures
+// 45-90 bytes, so a million of them is around 60 MB, and the hex-encoded
+// learning database that follows them doubles whatever it holds.
+static const unsigned long long kPEMaxImportFileSize = 256ULL * 1024 * 1024;
+static const NSUInteger kPEMaxLearningBlobSize = 96 * 1024 * 1024;
 // Keep the editing lock visibly fresh, well within the staleness timeout.
 static const NSTimeInterval kEditingLockRefreshInterval = 60.0;
 
@@ -1012,6 +1020,17 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 
 - (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy {
   if (!_userDB) return NO;
+
+  NSDictionary *attributes =
+      [[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL];
+  if (!attributes) return NO;
+  unsigned long long fileSize = [attributes fileSize];
+  if (fileSize > kPEMaxImportFileSize) {
+    NSLog(@"Refusing to import %@: %llu bytes exceeds the %llu byte limit",
+          path, fileSize, kPEMaxImportFileSize);
+    return NO;
+  }
+
   NSString *content = [NSString stringWithContentsOfFile:path
                                                 encoding:NSUTF8StringEncoding
                                                    error:NULL];
@@ -1096,6 +1115,14 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
       [hex appendString:line];
     }
 
+    if ([hex length] / 2 > kPEMaxLearningBlobSize) {
+      NSLog(@"Ignoring the learning database in %@: %lu bytes exceeds the %lu "
+            @"byte limit",
+            path, (unsigned long)([hex length] / 2),
+            (unsigned long)kPEMaxLearningBlobSize);
+      [hex setString:@""];
+    }
+
     NSData *blob = PEHexDecode(hex);
     // Files written by Yahoo! KeyKey carry this block encrypted (SQLite SEE);
     // ours are in the clear. DecryptExportDatabase tells the two apart and
@@ -1103,11 +1130,15 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     // the caller its learning caches but not the phrases imported above.
     std::string cacheData((const char *)[blob bytes], [blob length]);
     if (!Manjusri::DecryptExportDatabase(cacheData)) cacheData.clear();
-    blob = [NSData dataWithBytes:cacheData.data() length:cacheData.size()];
 
-    if ([blob length]) {
+    if (cacheData.size()) {
       NSString *tempPath = [self _tempDatabasePath];
-      if ([blob writeToFile:tempPath atomically:YES]) {
+      // Wraps the decrypted bytes instead of copying them again: on a large
+      // backup every extra copy of this block is another spike.
+      NSData *decoded = [NSData dataWithBytesNoCopy:(void *)cacheData.data()
+                                             length:cacheData.size()
+                                       freeWhenDone:NO];
+      if ([decoded writeToFile:tempPath atomically:YES]) {
         char *attach = sqlite3_mprintf("ATTACH DATABASE %Q AS export",
                                        [tempPath UTF8String]);
         sqlite3_exec(_userDB, attach, NULL, NULL, NULL);
