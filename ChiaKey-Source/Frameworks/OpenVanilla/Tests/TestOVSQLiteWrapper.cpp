@@ -22,7 +22,7 @@ TEST(SQLiteWrapper) {
     CHECK_EQUAL(SQLITE_OK, connection->execute(
                                "insert into foobar values('hello', 'world');"));
 
-    // Scoped so the statement is finalized before the connection below.
+    // Scoped: the statement must be finalized before delete connection.
     {
       OVSQLiteStatementRef statement =
           connection->prepare("select * from foobar where key = ?");

@@ -144,8 +144,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    // Scoped so the statements it prepared are finalized before the
-    // borrowed connection is closed below.
+    // Scoped: statements must be finalized before delete db below.
     {
       LanguageModel lm(db, 0, false, false, false, true, true);
       Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
@@ -183,8 +182,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    // Scoped so the statements it prepared are finalized before the
-    // borrowed connection is closed below.
+    // Scoped: statements must be finalized before delete db below.
     {
       LanguageModel lm(db, 0, false, false, false, true, true);
       Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);

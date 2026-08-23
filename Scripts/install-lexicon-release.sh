@@ -77,10 +77,8 @@ curl() {
     "$@"
 }
 
-# DNS, connection, and TLS failures say nothing about whether an update
-# exists, so the caller retries them sooner than the daily cadence instead of
-# writing the day off. An HTTP error or a bad manifest is a real answer and
-# gets the normal exit code, so a broken release is not hammered.
+# Connection-level failures get their own code so the caller can retry them
+# sooner. An HTTP error or a bad manifest is a real answer and does not.
 NETWORK_FAILURE_STATUS=75
 
 curl_status_is_network_failure() {
@@ -485,9 +483,7 @@ if [[ -z "${MANIFEST_URL}" ]]; then
     if (( MIRROR_STATUS == 0 )); then
       MANIFEST_URL="${R2_LEXICON_MANIFEST_URL}"
     else
-      # The mirror's own failure belongs in the log. Silencing it made a total
-      # network outage read as "GitHub is down", because GitHub was the only
-      # host the log ever named.
+      # Silencing this made a total outage read as "GitHub is down".
       echo "Mirror unavailable (curl ${MIRROR_STATUS}); falling back to GitHub." >&2
       : > "${MANIFEST_FILE}"
       MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/lexicon-manifest.json"
@@ -499,8 +495,7 @@ if [[ ! -s "${MANIFEST_FILE}" ]]; then
   download "Downloading manifest" "${MANIFEST_FILE}" "${MANIFEST_URL}"
 fi
 
-# Both sources unreachable, not one: worth stating outright so the fallback is
-# not blamed for an outage that took out the mirror too.
+# Say so outright, or the fallback gets blamed for the mirror's outage too.
 if (( MIRROR_STATUS != 0 )) && curl_status_is_network_failure "${MIRROR_STATUS}"; then
   echo "Note: the mirror was unreachable; this manifest came from GitHub."
 fi

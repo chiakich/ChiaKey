@@ -89,10 +89,6 @@ pair<string, time_t> OVLoaderUserPersistence::fetchValueWithTimestampByKey(
       result.second = OVDateTimeHelper::GetTimeIntervalSince1970FromString(
           find->textOfColumn(0));
     }
-
-    // Leaving this open kept sqlite3_close() at SQLITE_BUSY, so a lexicon
-    // reload never released the old database file and the updater deleted it
-    // out from under a live vnode.
   }
 
   return result;

@@ -21,10 +21,7 @@ static NSString *const ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey =
     @"ChiaKeyLexiconAutoUpdateRetryAfter";
 static const NSTimeInterval kChiaKeyLexiconAutoUpdateCheckInterval =
     24.0 * 60.0 * 60.0;
-// A daily cadence is what keeps the CDN from being hammered, so only a failure
-// that never reached it earns a sooner retry. The re-arm timer below is hourly,
-// which is the real floor; 15 minutes just means a relaunch inside the hour
-// also retries.
+// The hourly re-arm timer below is the real floor.
 static const NSTimeInterval kChiaKeyLexiconAutoUpdateNetworkRetryInterval =
     15.0 * 60.0;
 // Keep in sync with NETWORK_FAILURE_STATUS in install-lexicon-release.sh.
@@ -379,8 +376,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       _isBooleanPreferenceEnabled:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
 }
 
-// A pending retry is the only thing that overrides the daily throttle, so the
-// CDN still sees at most one reachable check per day per machine.
+// A pending retry is the only thing that overrides the daily throttle.
 - (BOOL)_shouldRunSilentLexiconUpdate {
   if (![self _isSilentLexiconUpdateEnabled]) {
     return NO;
@@ -404,8 +400,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
     }
   }
 
-  // Claimed before the work starts so the next timer tick cannot re-enter a
-  // check still running; a network failure re-arms the retry afterwards.
+  // Claimed before the work starts so the next tick cannot re-enter it.
   [defaults removeObjectForKey:ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey];
   [defaults setObject:now
                forKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];
@@ -460,18 +455,13 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       NSDate *retryAfter = nil;
 
       if (networkFailure) {
-        // Neither source was reachable, which says nothing about whether an
-        // update exists. Burning the whole daily slot on it left the machine a
-        // day behind for a blip that cleared in minutes -- a DNS-less moment
-        // right after wake was enough.
+        // A blip that clears in minutes should not cost the whole day.
         retryAfter = [NSDate dateWithTimeIntervalSinceNow:
                                  kChiaKeyLexiconAutoUpdateNetworkRetryInterval];
         [defaults setObject:retryAfter
                      forKey:ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey];
       }
 
-      // One legible header line: nothing parses this, it is read by a human
-      // asking why the lexicon is not current.
       NSString *summary;
       if (status == 0) {
         summary = @"ok";

@@ -67,13 +67,8 @@ static NSString *UserDataPath(NSString *name) {
 - (NSMutableArray *)_lexiconCandidatePaths;
 @end
 
-// CFFIXED_USER_HOME redirects NSHomeDirectory(), but the store's last-resort
-// candidate is a bundle-identifier lookup for the installed IME, which no
-// environment variable moves. On a machine with ChiaKey installed that made
-// every lexicon lookup here reach the real app's bundled database -- so the
-// "no lexicon at all" case could never happen, and the others would have
-// passed even with a broken fixture. Dropping the candidates outside the
-// temporary home leaves the real resolution logic under test.
+// CFFIXED_USER_HOME cannot move the store's bundle lookup, so with ChiaKey
+// installed the "no lexicon at all" case could never happen.
 @interface PEConfinedStore : PEUserPhraseStore
 @end
 

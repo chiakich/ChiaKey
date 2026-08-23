@@ -227,8 +227,7 @@ static void TestRollsBackInlineStatColumns() {
     }
   }
 
-  // Scoped so the statements it prepared are finalized before the
-  // borrowed connection is closed below.
+  // Scoped: statements must be finalized before delete db below.
   {
     LanguageModel lm(db, 0, false, false, false, true, true);
     lm.loadUserCandidateOverrideCache();
@@ -423,8 +422,7 @@ static void TestFailedSaveKeepsLearningDirty() {
   CHECK(sqlite3_open(path.c_str(), &blocker) == SQLITE_OK);
   CHECK(sqlite3_exec(blocker, "BEGIN IMMEDIATE", 0, 0, 0) == SQLITE_OK);
 
-  // Scoped so the statements it prepared are finalized before the
-  // borrowed connection is closed below.
+  // Scoped: statements must be finalized before delete db below.
   {
     LanguageModel lm(db, 0, false, false, false, true, true);
     lm.cacheOverrideSelection("q1", "A");
@@ -555,8 +553,7 @@ static void TestCachedBigramsComeBackSorted() {
   db->execute("INSERT INTO bigrams VALUES('p q', 'P', 'MIDDLE', -1.5)");
   LanguageModel::MigrateUserLearningTables(db);
 
-  // Scoped so the statements it prepared are finalized before the
-  // borrowed connection is closed below.
+  // Scoped: statements must be finalized before delete db below.
   {
     LanguageModel lm(db, 0, false, false, false, true, true);
 

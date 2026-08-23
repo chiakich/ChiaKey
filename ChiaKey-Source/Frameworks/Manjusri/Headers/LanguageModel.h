@@ -651,8 +651,7 @@ inline bool LanguageModel::userPhraseWritesSuspended() {
   return (time(NULL) - st.st_mtime) < kEditingLockTimeout;
 }
 
-// PRAGMA rather than a SELECT that is expected to fail: probing by failure
-// logged a SQLite error per table on every launch.
+// A SELECT expected to fail logged a SQLite error per table on every launch.
 inline bool UserTableHasColumn(OVSQLiteConnection* userDB, const char* table,
                                const char* column) {
   OVSQLiteStatementRef probe =
@@ -1231,8 +1230,7 @@ inline LanguageModel::LanguageModel(
 }
 
 inline LanguageModel::~LanguageModel() {
-  // Explicitly, and before the connection: these are members, so leaving them
-  // to their own destructors would release them after the delete below.
+  // Members would otherwise be released after the delete below.
   m_selectUnigram.reset();
   m_selectBigram.reset();
   m_insertUserUnigram.reset();

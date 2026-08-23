@@ -47,10 +47,7 @@ using namespace std;
 
 class OVSQLiteStatement;
 
-// A statement has to be finalized before the connection it was prepared
-// against is closed, or sqlite3_close() refuses and the database file stays
-// open. Owning statements by value is what makes forgetting that impossible;
-// hand the raw pointer (via get()) only to code that does not take ownership.
+// Owned by value: an unfinalized statement makes sqlite3_close() fail.
 using OVSQLiteStatementRef = std::unique_ptr<OVSQLiteStatement>;
 
 class OVSQLiteConnection {
@@ -127,11 +124,7 @@ inline OVSQLiteConnection::OVSQLiteConnection(sqlite3* connection,
 inline OVSQLiteConnection::~OVSQLiteConnection() {
   int result = sqlite3_close(m_connection);
 
-  // A non-OK close means an unfinalized statement still holds this connection.
-  // sqlite3_close() then leaves the database open and its file descriptor live,
-  // so a file the updater has already deleted stays deleted-but-open.
-  // Swallowing this is what let a statement leak reach production as a vnode
-  // unlinked while in use.
+  // Non-OK means a leaked statement is still holding the file open.
   if (result != SQLITE_OK) {
     cerr << "OVSQLiteConnection: could not close '" << m_filename
          << "': " << sqlite3_errmsg(m_connection) << " (" << result << ")"

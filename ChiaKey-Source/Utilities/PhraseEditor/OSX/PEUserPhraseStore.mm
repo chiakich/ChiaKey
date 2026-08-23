@@ -593,9 +593,8 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
 
 #pragma mark Reading derivation
 
-// Split out from _lexiconDB so a test can confine the search: the
-// bundle-identifier lookup below reaches the installed IME regardless of
-// CFFIXED_USER_HOME, which otherwise makes "no lexicon anywhere" untestable.
+// Split out so a test can confine the search: the bundle lookup below reaches
+// the installed IME regardless of CFFIXED_USER_HOME.
 - (NSMutableArray *)_lexiconCandidatePaths {
   NSMutableArray *candidates = [NSMutableArray array];
   // The lexicon auto-updater installs here; prefer it.

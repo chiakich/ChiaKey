@@ -127,10 +127,7 @@ class Engine::Impl {
 
     module_.finalize();
 
-    // sqliteService_ owns the lexicon connection and is declared before
-    // module_, so it is destroyed after it. Closing it here instead would
-    // close the connection while the module's LanguageModel still holds
-    // prepared statements against it, which sqlite3_close() refuses.
+    // Declared before module_, so destroyed after it: its statements go first.
   }
 
   bool initialize(const EngineConfig& config, std::string* errorMessage) {

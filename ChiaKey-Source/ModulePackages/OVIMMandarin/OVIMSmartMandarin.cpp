@@ -1262,9 +1262,6 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
                             fetch->textOfColumn(0), fetch->textOfColumn(1),
                             fetch->textOfColumn(2), fetch->doubleOfColumn(3));
           }
-
-          // oldUserDB is closed right below; an open statement would keep
-          // sqlite3_close() at SQLITE_BUSY and leak the file handle.
         } else {
           // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "prepare failed"
           // << endl;
