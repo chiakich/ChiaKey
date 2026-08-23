@@ -43,6 +43,38 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app
 
+      # The built-in updater refuses any package that is not signed with a
+      # Developer ID Installer certificate and notarized, so publishing an
+      # ad-hoc build would ship a release nobody can install through the
+      # updater. Bail out before the tag is created rather than after.
+      - name: Require signing and notarization secrets
+        if: ${{ inputs.dry_run == false }}
+        env:
+          APP_CERT_P12: ${{ secrets.APP_CERT_P12 }}
+          APP_SIGN_IDENTITY: ${{ secrets.APP_SIGN_IDENTITY }}
+          INSTALLER_CERT_P12: ${{ secrets.INSTALLER_CERT_P12 }}
+          INSTALLER_SIGN_IDENTITY: ${{ secrets.INSTALLER_SIGN_IDENTITY }}
+          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          # Plain string, not an array: an empty array under `set -u` is an
+          # unbound variable on the runner's bash 3.2.
+          missing=""
+          for name in APP_CERT_P12 APP_SIGN_IDENTITY INSTALLER_CERT_P12 \
+                      INSTALLER_SIGN_IDENTITY NOTARY_API_KEY_P8 \
+                      NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID; do
+            eval "value=\${${name}:-}"
+            [[ -n "${value}" ]] || missing="${missing} ${name}"
+          done
+          if [[ -n "${missing}" ]]; then
+            echo "Cannot publish a release: missing secrets:${missing}" >&2
+            echo "Configure them, or re-run with dry_run to build only." >&2
+            exit 1
+          fi
+          echo "Signing and notarization secrets present."
+
       - name: Compute next version tag
         id: version
         run: |
@@ -123,9 +155,9 @@ jobs:
       - name: Build release package
         id: build
         env:
-          # Signing / notarization are optional. They activate only when the
-          # matching repository secrets are configured; otherwise the package
-          # is built ad-hoc (unsigned), which still succeeds.
+          # A publishing run requires all of these (enforced by the preflight
+          # step above). They stay optional here so a dry run can still build
+          # an ad-hoc (unsigned) package without any secrets configured.
           APP_CERT_P12: ${{ secrets.APP_CERT_P12 }}
           APP_CERT_PASSWORD: ${{ secrets.APP_CERT_PASSWORD }}
           INSTALLER_CERT_P12: ${{ secrets.INSTALLER_CERT_P12 }}
@@ -186,6 +218,20 @@ jobs:
           pkg="$(ls -t artifacts/release/*.pkg | head -n1)"
           echo "Built: $pkg"
           echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
+
+          # Same gate the updater applies, checked here so a signing or
+          # notarization failure cannot reach the appcast. Output is captured
+          # rather than piped because both tools exit non-zero on rejection.
+          if [[ "${{ inputs.dry_run }}" != "true" ]]; then
+            pkgutil --check-signature "$pkg" >signature.txt 2>&1 || true
+            cat signature.txt
+            grep -q "Developer ID Installer" signature.txt \
+              || { echo "Package is not signed with a Developer ID Installer certificate." >&2; exit 1; }
+            /usr/sbin/spctl --assess --type install --verbose=4 "$pkg" >gatekeeper.txt 2>&1 || true
+            cat gatekeeper.txt
+            grep -q "Notarized Developer ID" gatekeeper.txt \
+              || { echo "Package is not notarized or was rejected by Gatekeeper." >&2; exit 1; }
+          fi
 
           lexicon_version="$(cat artifacts/release/lexicon-version.txt 2>/dev/null || true)"
           echo "Bundled lexicon: ${lexicon_version:-<unknown>}"
