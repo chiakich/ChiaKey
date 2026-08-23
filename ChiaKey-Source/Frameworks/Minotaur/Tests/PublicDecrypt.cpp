@@ -17,6 +17,12 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  // Minos::GetBack() fails closed without the RSA implementation, so this can
+  // only ever report a decode failure. See Tests/ValidateFile.cpp.
+  cerr << "note: RSA is unavailable in this source distribution; decoding "
+          "always fails"
+       << endl;
+
   pair<char*, size_t> phrase = OVFileHelper::SlurpFile(argv[1]);
   pair<char*, size_t> key = OVFileHelper::SlurpFile(argv[2]);
 

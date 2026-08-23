@@ -222,15 +222,29 @@ jobs:
           # Same gate the updater applies, checked here so a signing or
           # notarization failure cannot reach the appcast. Output is captured
           # rather than piped because both tools exit non-zero on rejection.
-          if [[ "${{ inputs.dry_run }}" != "true" ]]; then
-            pkgutil --check-signature "$pkg" >signature.txt 2>&1 || true
-            cat signature.txt
-            grep -q "Developer ID Installer" signature.txt \
-              || { echo "Package is not signed with a Developer ID Installer certificate." >&2; exit 1; }
-            /usr/sbin/spctl --assess --type install --verbose=4 "$pkg" >gatekeeper.txt 2>&1 || true
-            cat gatekeeper.txt
-            grep -q "Notarized Developer ID" gatekeeper.txt \
-              || { echo "Package is not notarized or was rejected by Gatekeeper." >&2; exit 1; }
+          #
+          # A dry run reports instead of failing: an unsigned ad-hoc build is
+          # expected there, but running the checks anyway is the only way to
+          # rehearse them -- otherwise these greps first execute during a real
+          # publish, and a reworded tool output would surface only then.
+          gate_failed=""
+          pkgutil --check-signature "$pkg" >signature.txt 2>&1 || true
+          cat signature.txt
+          grep -q "Developer ID Installer" signature.txt \
+            || gate_failed="Package is not signed with a Developer ID Installer certificate."
+          /usr/sbin/spctl --assess --type install --verbose=4 "$pkg" >gatekeeper.txt 2>&1 || true
+          cat gatekeeper.txt
+          grep -q "Notarized Developer ID" gatekeeper.txt \
+            || gate_failed="${gate_failed:+${gate_failed} }Package is not notarized or was rejected by Gatekeeper."
+
+          if [[ -n "${gate_failed}" ]]; then
+            if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "Dry run: ${gate_failed}" >&2
+              echo "Dry run: ${gate_failed}" >>"$GITHUB_STEP_SUMMARY"
+            else
+              echo "${gate_failed}" >&2
+              exit 1
+            fi
           fi
 
           lexicon_version="$(cat artifacts/release/lexicon-version.txt 2>/dev/null || true)"

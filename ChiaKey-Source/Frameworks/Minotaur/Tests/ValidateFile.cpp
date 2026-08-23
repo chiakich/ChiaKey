@@ -17,6 +17,14 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  // Minos::GetBack() fails closed because the RSA implementation is not part
+  // of this source distribution, so the verdict below is always negative and
+  // says nothing about the file. Left in place for whoever restores the
+  // signature verification.
+  cerr << "note: signature verification is unavailable in this source "
+          "distribution; the result below is always negative"
+       << endl;
+
   pair<char*, size_t> sigfile = OVFileHelper::SlurpFile(argv[2]);
   pair<char*, size_t> key = OVFileHelper::SlurpFile(argv[3]);
 

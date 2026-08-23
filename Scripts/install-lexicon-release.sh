@@ -592,7 +592,10 @@ fi
 # download locations: a tampered manifest could otherwise point the install at
 # any host and supply a matching digest for whatever it serves.
 GITHUB_RELEASE_PREFIX="https://github.com/${REPO}/releases/download/"
-CDN_LEXICON_PREFIX="https://cdn.chiaki.ch/chiakey/lexicon/"
+# Derived from the mirror URL rather than repeating the host: if the CDN base
+# moves, the allowlist moves with it instead of silently rejecting every
+# artifact the new manifests point at.
+CDN_LEXICON_PREFIX="${R2_LEXICON_MANIFEST_URL%/*}/"
 
 validate_artifact_url() {
   local label="$1" url="$2"
@@ -665,12 +668,23 @@ checksum_list_entry() {
   ' "${CHECKSUM_DOWNLOAD}"
 }
 
-# Both origins have to agree on the digest before the file is trusted.
+# Both origins have to agree on the digest before the file is trusted. The
+# fifth argument says whether a missing entry is fatal: nothing guarantees the
+# checksum list covers the manifest's optional artifacts, and refusing to
+# install over an absent metadata line would strand every client on an old
+# lexicon. The database entry stays mandatory -- it is the file being trusted.
 verify_against_checksum_list() {
   local label="$1" filename="$2" manifest_sha="$3" file="$4"
+  local required="${5:-1}"
   local listed
 
   if ! listed="$(checksum_list_entry "${filename}")"; then
+    if [[ "${required}" != "1" ]]; then
+      echo "Note: ${filename} is not listed in ${CHECKSUM_FILENAME}; verifying it against the manifest only." >&2
+      verify_sha256 "${file}" "$(normalize_sha256 "${manifest_sha}")"
+      return 0
+    fi
+
     echo "${label} ${filename} is not listed in ${CHECKSUM_FILENAME}." >&2
     exit 1
   fi
@@ -688,7 +702,7 @@ verify_against_checksum_list() {
 verify_against_checksum_list "database" "${DB_FILENAME}" "${DB_SHA}" "${DB_DOWNLOAD}"
 if [[ -n "${METADATA_DOWNLOAD}" ]]; then
   verify_against_checksum_list "metadata" "${METADATA_FILENAME}" \
-    "${METADATA_SHA}" "${METADATA_DOWNLOAD}"
+    "${METADATA_SHA}" "${METADATA_DOWNLOAD}" 0
 fi
 
 validate_database_health "${DB_DOWNLOAD}"

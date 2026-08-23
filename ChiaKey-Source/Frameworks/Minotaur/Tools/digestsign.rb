@@ -5,6 +5,9 @@
 #file for terms.
 #
 
+# NOTE: the signatures this produces cannot be verified by anything in
+# this tree -- Minos::GetBack() fails closed because the RSA half of
+# Minotaur is not part of this source distribution.
 require "digest/sha1"
 require "openssl"
 require "base64"

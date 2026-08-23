@@ -241,6 +241,17 @@ static void TestRejectsOversizedFile(void) {
 
   CHECK(![store importUserPhraseDBFromFile:path]);
   CHECK(CountRows("user_unigrams") == 0);
+
+  // And through a symlink: the link's own size is a few dozen bytes, but
+  // reading it follows the link, so a size check that does not would let the
+  // whole file in.
+  NSString *link = TempPath(@"oversized-link.txt");
+  [[NSFileManager defaultManager] removeItemAtPath:link error:NULL];
+  CHECK([[NSFileManager defaultManager] createSymbolicLinkAtPath:link
+                                            withDestinationPath:path
+                                                          error:NULL]);
+  CHECK(![store importUserPhraseDBFromFile:link]);
+  CHECK(CountRows("user_unigrams") == 0);
   [store release];
 }
 

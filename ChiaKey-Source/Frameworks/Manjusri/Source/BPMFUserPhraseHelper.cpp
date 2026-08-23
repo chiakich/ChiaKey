@@ -30,14 +30,35 @@ namespace {
 struct LearningCacheTable {
   const char* name;
   const char* columns;
+  // The unique key the IME's incremental saves rely on. Created only together
+  // with the table: without it INSERT OR REPLACE has nothing to conflict on
+  // and quietly appends instead. Mirrors
+  // LanguageModel::MigrateUserLearningTables().
+  const char* uniqueIndex;
 };
 
 const LearningCacheTable kLearningCacheTables[] = {
-    {"user_bigram_cache", "qstring, previous, current, probability"},
-    {"user_candidate_override_cache", "qstring, current"},
-    {"user_context_override_cache", "qstring, current"},
-    {"user_learning_stats", "store, qstring, selection_count, last_used"},
+    {"user_bigram_cache", "qstring, previous, current, probability",
+     "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
+     "ON user_bigram_cache (qstring)"},
+    {"user_candidate_override_cache", "qstring, current",
+     "CREATE UNIQUE INDEX IF NOT EXISTS "
+     "user_candidate_override_cache_qstring_unique "
+     "ON user_candidate_override_cache (qstring)"},
+    {"user_context_override_cache", "qstring, current",
+     "CREATE UNIQUE INDEX IF NOT EXISTS "
+     "user_context_override_cache_qstring_unique "
+     "ON user_context_override_cache (qstring)"},
+    {"user_learning_stats", "store, qstring, selection_count, last_used",
+     "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
+     "ON user_learning_stats (store, qstring)"},
 };
+
+// Ceilings mirroring the phrase editor's importer (PEUserPhraseStore.mm): the
+// file is read whole and copied several times over on the way in, so an
+// unbounded one turns into a multi-gigabyte spike.
+const unsigned long long kMaxImportFileSize = 256ULL * 1024 * 1024;
+const size_t kMaxLearningBlobSize = 96UL * 1024 * 1024;
 
 const size_t kLearningCacheTableCount =
     sizeof(kLearningCacheTables) / sizeof(kLearningCacheTables[0]);
@@ -72,12 +93,21 @@ bool RestoreLearningCaches(OVSQLiteConnection* db, const string& exportPath) {
     // keeping what is already there beats replacing it with nothing.
     if (!TableExists(db, "export", table.name)) continue;
 
+    if (!TableExists(db, "main", table.name)) {
+      if (db->execute("CREATE TABLE %s (%s)", table.name, table.columns) !=
+          SQLITE_OK) {
+        ok = false;
+        continue;
+      }
+      // Safe to index unconditionally here: the table was just created, so it
+      // holds no duplicates for the unique key to trip over.
+      db->execute("%s", table.uniqueIndex);
+    }
+
     // OR REPLACE because these tables carry a unique key on qstring and an
     // older or hand-made export may hold duplicates -- which used to abort the
     // restore after the DELETE had already run.
-    if (db->execute("CREATE TABLE IF NOT EXISTS %s (%s)", table.name,
-                    table.columns) != SQLITE_OK ||
-        db->execute("DELETE FROM %s", table.name) != SQLITE_OK ||
+    if (db->execute("DELETE FROM %s", table.name) != SQLITE_OK ||
         db->execute("INSERT OR REPLACE INTO %s (%s) SELECT %s FROM export.%s",
                     table.name, table.columns, table.columns,
                     table.name) != SQLITE_OK) {
@@ -133,6 +163,15 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
   ifstream ifs;
   OVFileHelper::OpenIFStream(ifs, filename, ios_base::in);
   if (!ifs.is_open()) return false;
+
+  // Bounded before anything is read: this importer serves the CLI and the IME,
+  // and it used to accept a file of any size.
+  ifs.seekg(0, ios_base::end);
+  streamoff fileSize = ifs.tellg();
+  ifs.seekg(0, ios_base::beg);
+  if (fileSize < 0 || (unsigned long long)fileSize > kMaxImportFileSize) {
+    return false;
+  }
 
   string line;
   getline(ifs, line);
@@ -201,12 +240,24 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
   }
 
   string dbHex;
+  bool blobTooLarge = false;
   while (!ifs.eof()) {
     getline(ifs, line);
     // cerr << "hex: " << line << endl;
 
     if (dbEnd.match(line)) {
       break;
+    }
+
+    if (blobTooLarge) continue;
+
+    // Checked before appending, so a block that arrives as one huge line is
+    // never held whole either. An oversized block costs the caller its
+    // learning cache, like one that cannot be read.
+    if ((dbHex.size() + line.size()) / 2 > kMaxLearningBlobSize) {
+      blobTooLarge = true;
+      dbHex.clear();
+      continue;
     }
 
     dbHex += line;

@@ -140,6 +140,12 @@ Scripts/test-user-phrase-import.sh
 Scripts/test-legacy-import.sh
 ```
 
+驗證 Phrase Editor 匯入的檔案格式處理：export → import round trip（含四張 learning table）、缺 header、註解與空行、CRLF、legacy 機率正規化，以及匯入檔與內嵌 learning DB 的大小上限。跑兩份 binary，第二份把上限調低（`-DPE_MAX_IMPORT_FILE_SIZE` / `-DPE_MAX_LEARNING_BLOB_SIZE`），才不用為了測上限寫幾百 MB 到磁碟。同樣透過 `CFFIXED_USER_HOME` 導到暫存 home：
+
+```sh
+Scripts/test-phrase-editor-import.sh
+```
+
 量測智慧注音 walker 的 top-1 準確率。這不是 pass/fail 測試，是給「會動到排序的改動」用的比較工具（詞長加成、個人學習權重等），所以命名為 `eval-`：
 
 ```sh

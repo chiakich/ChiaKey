@@ -13,6 +13,7 @@
 
 #import <AppKit/AppKit.h>
 #include <sqlite3.h>
+#include <sys/stat.h>
 
 #include <string>
 #include <vector>
@@ -1031,10 +1032,17 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 - (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy {
   if (!_userDB) return NO;
 
-  NSDictionary *attributes =
-      [[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL];
-  if (!attributes) return NO;
-  unsigned long long fileSize = [attributes fileSize];
+  // stat(), not -attributesOfItemAtPath:, which reports a symlink's own size
+  // (the length of its target path) while -stringWithContentsOfFile: below
+  // follows the link -- a symlink to a huge file would sail past this limit.
+  // Anything but a regular file has no meaningful size to check at all.
+  struct stat info;
+  if (stat([path fileSystemRepresentation], &info) != 0) return NO;
+  if (!S_ISREG(info.st_mode)) {
+    NSLog(@"Refusing to import %@: not a regular file", path);
+    return NO;
+  }
+  unsigned long long fileSize = (unsigned long long)info.st_size;
   if (fileSize > kPEMaxImportFileSize) {
     NSLog(@"Refusing to import %@: %llu bytes exceeds the %llu byte limit",
           path, fileSize, kPEMaxImportFileSize);
@@ -1081,14 +1089,17 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
       }
       if (blobTooLarge) return;
 
-      [hex appendString:line];
-      // Checked as it grows, so an oversized block is never held whole.
-      if ([hex length] / 2 > kPEMaxLearningBlobSize) {
+      // Checked before appending, so a block that arrives as one huge line is
+      // never held whole either.
+      if (([hex length] + [line length]) / 2 > kPEMaxLearningBlobSize) {
         NSLog(@"Ignoring the learning database in %@: over the %lu byte limit",
               path, (unsigned long)kPEMaxLearningBlobSize);
         blobTooLarge = YES;
         [hex setString:@""];
+        return;
       }
+
+      [hex appendString:line];
       return;
     }
 
