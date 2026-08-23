@@ -116,10 +116,10 @@ const string OVIMGenericContext::combineQueryString() {
 
 OVIMGenericContext::OVIMGenericContext(OVIMGeneric* module)
     : m_module(module),
-      m_selectStatement(0),
-      m_insertStatement(0),
-      m_updateStatement(0),
-      m_findOrderStatement(0) {}
+      m_selectStatement(),
+      m_insertStatement(),
+      m_updateStatement(),
+      m_findOrderStatement() {}
 
 void OVIMGenericContext::startSession(OVLoaderService* loaderService) {
   // loaderService->logger(OVIMGENERIC_IDENTIFIER_PREFIX) << "session started"
@@ -180,25 +180,10 @@ void OVIMGenericContext::stopSession(OVLoaderService* loaderService) {
   m_components.clear();
 
   if (m_module->m_userDatabaseConnection) {
-    if (m_selectStatement) {
-      delete m_selectStatement;
-      m_selectStatement = 0;
-    }
-
-    if (m_insertStatement) {
-      delete m_insertStatement;
-      m_insertStatement = 0;
-    }
-
-    if (m_findOrderStatement) {
-      delete m_findOrderStatement;
-      m_findOrderStatement = 0;
-    }
-
-    if (m_updateStatement) {
-      delete m_updateStatement;
-      m_updateStatement = 0;
-    }
+    m_selectStatement.reset();
+    m_insertStatement.reset();
+    m_findOrderStatement.reset();
+    m_updateStatement.reset();
 
     m_module->m_userDatabaseConnection->execute("COMMIT");
   }

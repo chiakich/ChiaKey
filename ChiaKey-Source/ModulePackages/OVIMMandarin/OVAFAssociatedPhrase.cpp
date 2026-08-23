@@ -44,7 +44,7 @@ OVAFAssociatedPhraseContext::OVAFAssociatedPhraseContext(
 }
 
 OVAFAssociatedPhraseContext::~OVAFAssociatedPhraseContext() {
-  if (m_selectStatement) delete m_selectStatement;
+  m_selectStatement.reset();
 }
 
 void OVAFAssociatedPhraseContext::startSession(OVLoaderService* loaderService) {

@@ -38,38 +38,35 @@ class LMDBHelper {
         cerr << "failed to create table: cooked_information" << endl;
     }
 
-    OVSQLiteStatement* selectMax =
+    OVSQLiteStatementRef selectMax =
         m_connection->prepare("SELECT MAX(probability) from unigrams");
     if (selectMax) {
       while (selectMax->step() == SQLITE_ROW) {
         m_maxUnigramProbability = selectMax->doubleOfColumn(0);
         // cerr << "max probability: " << m_maxUnigramProbability << endl;
       }
-      delete selectMax;
     }
 
     // make it non-zero
     if (m_maxUnigramProbability == 0.0) m_maxUnigramProbability = -0.0000001;
 
-    OVSQLiteStatement* selectMin =
+    OVSQLiteStatementRef selectMin =
         m_connection->prepare("SELECT MIN(probability) from unigrams");
     if (selectMin) {
       while (selectMin->step() == SQLITE_ROW) {
         m_minUnigramProbability = selectMin->doubleOfColumn(0);
       }
-      delete selectMin;
     }
 
     // make it non-zero
     if (m_minUnigramProbability == 0.0) m_minUnigramProbability = -99.0;
 
-    OVSQLiteStatement* findUNK = m_connection->prepare(
+    OVSQLiteStatementRef findUNK = m_connection->prepare(
         "SELECT probability FROM unigrams WHERE qstring = %Q", "*");
     if (findUNK) {
       while (findUNK->step() == SQLITE_ROW) {
         m_UNKProbability = findUNK->doubleOfColumn(0);
       }
-      delete findUNK;
     }
   }
 
@@ -80,7 +77,7 @@ class LMDBHelper {
   const string version() {
     string result;
 
-    OVSQLiteStatement* statement = m_connection->prepare(
+    OVSQLiteStatementRef statement = m_connection->prepare(
         "SELECT value FROM cooked_information WHERE key = ?");
     if (!statement) return result;
 
@@ -91,7 +88,6 @@ class LMDBHelper {
         ;
     }
 
-    delete statement;
     return result;
   }
 
@@ -112,7 +108,7 @@ class LMDBHelper {
   size_t countUnigramOccurances(const string& phrase) {
     size_t occurances = 0;
 
-    OVSQLiteStatement* statement = m_connection->prepare(
+    OVSQLiteStatementRef statement = m_connection->prepare(
         "SELECT COUNT(*) FROM unigrams WHERE current = ?");
     if (!statement) return occurances;
 
@@ -122,7 +118,6 @@ class LMDBHelper {
       while (statement->step() == SQLITE_ROW)
         ;
     }
-    delete statement;
 
     return occurances;
   }
@@ -132,7 +127,7 @@ class LMDBHelper {
     size_t occurances = 0;
     string qstring = BPMFUserPhraseHelper::QString(bpmf).first;
 
-    OVSQLiteStatement* statement = m_connection->prepare(
+    OVSQLiteStatementRef statement = m_connection->prepare(
         "SELECT COUNT(*) FROM unigrams WHERE current = ? and qstring = ?");
     if (!statement) return occurances;
 
@@ -143,7 +138,6 @@ class LMDBHelper {
       while (statement->step() == SQLITE_ROW)
         ;
     }
-    delete statement;
 
     return occurances;
   }
@@ -151,7 +145,7 @@ class LMDBHelper {
   size_t countBigramOccurances(const string& phrase) {
     size_t occurances = 0;
 
-    OVSQLiteStatement* statement;
+    OVSQLiteStatementRef statement;
     statement =
         m_connection->prepare("SELECT COUNT(*) FROM bigrams WHERE current = ?");
     if (statement) {
@@ -161,7 +155,6 @@ class LMDBHelper {
         while (statement->step() == SQLITE_ROW)
           ;
       }
-      delete statement;
     }
 
     statement = m_connection->prepare(
@@ -173,7 +166,6 @@ class LMDBHelper {
         while (statement->step() == SQLITE_ROW)
           ;
       }
-      delete statement;
     }
 
     return occurances;
@@ -186,7 +178,7 @@ class LMDBHelper {
     string qstring = BPMFUserPhraseHelper::QString(bpmf).first;
     string qs = string("%") + qstring;
 
-    OVSQLiteStatement* statement;
+    OVSQLiteStatementRef statement;
     statement = m_connection->prepare(
         "SELECT COUNT(*) FROM bigrams WHERE current = ? and qstring like ?");
     if (statement) {
@@ -197,7 +189,6 @@ class LMDBHelper {
         while (statement->step() == SQLITE_ROW)
           ;
       }
-      delete statement;
     }
 
     qs = qstring + string("%");
@@ -211,7 +202,6 @@ class LMDBHelper {
         while (statement->step() == SQLITE_ROW)
           ;
       }
-      delete statement;
     }
 
     return occurances;
@@ -270,7 +260,7 @@ class LMDBHelper {
   }
 
   void ensurePhraseOrder(const vector<string>& phrases) {
-    OVSQLiteStatement* find = m_connection->prepare(
+    OVSQLiteStatementRef find = m_connection->prepare(
         "SELECT probability FROM unigrams WHERE current = ?");
     vector<double> scores;
     if (find) {
@@ -308,13 +298,11 @@ class LMDBHelper {
             scores[i], phrases[i].c_str());
       }
       cout << endl;
-
-      delete find;
     }
   }
 
   void showUnigramInfo(const vector<string>& phrases) {
-    OVSQLiteStatement* find = m_connection->prepare(
+    OVSQLiteStatementRef find = m_connection->prepare(
         "SELECT qstring, probability FROM unigrams WHERE current = ?");
 
     for (vector<string>::const_iterator pi = phrases.begin();
@@ -330,10 +318,6 @@ class LMDBHelper {
         cout << endl;
       }
     }
-
-    if (find) {
-      delete find;
-    }
   }
 
   //
@@ -345,7 +329,7 @@ class LMDBHelper {
  protected:
   double findHigestScoreForQueryString(const string& qstring) {
     double result = m_UNKProbability;
-    OVSQLiteStatement* statement = m_connection->prepare(
+    OVSQLiteStatementRef statement = m_connection->prepare(
         "SELECT max(probability) FROM unigrams WHERE qstring = ?");
     if (!statement) return m_UNKProbability;
 
@@ -353,7 +337,6 @@ class LMDBHelper {
       result = statement->doubleOfColumn(0);
     }
 
-    delete statement;
     return result;
   }
 

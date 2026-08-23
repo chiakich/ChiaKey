@@ -1168,7 +1168,7 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
     //            free(cle.first);
     //        }
 
-    OVSQLiteStatement* tryStatement;
+    OVSQLiteStatementRef tryStatement;
 
     tryStatement = userDB->prepare("SELECT * FROM sqlite_master");
     if (tryStatement) {
@@ -1176,7 +1176,6 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
       // new key" << endl;
       while (tryStatement->step() == SQLITE_ROW) {
       }
-      delete tryStatement;
     } else {
       delete userDB;
       userDB = OVSQLiteConnection::Open(dbPath);
@@ -1249,7 +1248,7 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
       // importing" << endl;
 
       if (userDB->execute("BEGIN") == SQLITE_OK) {
-        OVSQLiteStatement* fetch =
+        OVSQLiteStatementRef fetch =
             oldUserDB->prepare("SELECT * FROM user_unigrams");
 
         if (fetch) {
@@ -1266,7 +1265,6 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
 
           // oldUserDB is closed right below; an open statement would keep
           // sqlite3_close() at SQLITE_BUSY and leak the file handle.
-          delete fetch;
         } else {
           // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "prepare failed"
           // << endl;

@@ -69,7 +69,7 @@ class OVCINToSQLiteConvertor {
                       const string& tableName, bool overwriteTable = true) {
     const char* nameStr = tableName.c_str();
     // query if the table exists
-    OVSQLiteStatement* statement;
+    OVSQLiteStatementRef statement;
 
     statement = connection->prepare(
         "SELECT name FROM sqlite_master WHERE name = %Q", nameStr);
@@ -77,14 +77,11 @@ class OVCINToSQLiteConvertor {
     if (!statement) return false;
 
     if (statement->step() == SQLITE_ROW && overwriteTable) {
-      delete statement;
 
       if (connection->execute("DROP TABLE %Q", nameStr) != SQLITE_OK) {
-        delete statement;
         return false;
       }
     } else
-      delete statement;
 
     if (connection->execute("CREATE TABLE %Q (key, value)", nameStr) !=
         SQLITE_OK)
@@ -113,7 +110,6 @@ class OVCINToSQLiteConvertor {
                          keynameProperty.c_str()))
         InsertKeyValue(table->chardefMap(), statement);
 
-    delete statement;
 
     if (connection->execute("COMMIT") != SQLITE_OK) {
       return false;

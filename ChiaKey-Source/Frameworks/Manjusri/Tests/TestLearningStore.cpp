@@ -146,12 +146,11 @@ static const string TempPath(const string& name) {
 }
 
 static int CountRows(OVSQLiteConnection* db, const char* table) {
-  OVSQLiteStatement* s = db->prepare("SELECT COUNT(*) FROM %s", table);
+  OVSQLiteStatementRef s = db->prepare("SELECT COUNT(*) FROM %s", table);
   if (!s) return -1;
 
   int n = -1;
   while (s->step() == SQLITE_ROW) n = s->intOfColumn(0);
-  delete s;
   return n;
 }
 
@@ -216,15 +215,16 @@ static void TestRollsBackInlineStatColumns() {
   CHECK(CountRows(db, "user_candidate_override_cache") == 1);
 
   // the statistics moved to the side table rather than being dropped
-  OVSQLiteStatement* s = db->prepare(
-      "SELECT selection_count, last_used FROM user_learning_stats "
-      "WHERE store = 'override' AND qstring = 'q'");
-  CHECK(s != 0);
-  if (s) {
-    CHECK(s->step() == SQLITE_ROW);
-    CHECK(s->intOfColumn(0) == 7);
-    CHECK(s->intOfColumn(1) == 1234);
-    delete s;
+  {
+    OVSQLiteStatementRef s = db->prepare(
+        "SELECT selection_count, last_used FROM user_learning_stats "
+        "WHERE store = 'override' AND qstring = 'q'");
+    CHECK(s != 0);
+    if (s) {
+      CHECK(s->step() == SQLITE_ROW);
+      CHECK(s->intOfColumn(0) == 7);
+      CHECK(s->intOfColumn(1) == 1234);
+    }
   }
 
   // Scoped so the statements it prepared are finalized before the

@@ -115,7 +115,7 @@ typedef map<string, vector<pair<double, string> > > ReadingMap;
 
 const ReadingMap LoadSingleSyllableReadings(OVSQLiteConnection* db) {
   ReadingMap results;
-  OVSQLiteStatement* statement = db->prepare(
+  OVSQLiteStatementRef statement = db->prepare(
       "SELECT current, qstring, probability FROM unigrams "
       "WHERE length(qstring) = 2");
   if (!statement) return results;
@@ -128,7 +128,6 @@ const ReadingMap LoadSingleSyllableReadings(OVSQLiteConnection* db) {
     results[string(current)].push_back(
         pair<double, string>(statement->doubleOfColumn(2), string(qstring)));
   }
-  delete statement;
 
   for (ReadingMap::iterator iter = results.begin(); iter != results.end();
        ++iter)
@@ -191,7 +190,7 @@ typedef map<string, vector<pair<double, string> > > WordReadingMap;
 const WordReadingMap LoadWordReadings(OVSQLiteConnection* db,
                                       map<string, double>* bestWeight) {
   WordReadingMap results;
-  OVSQLiteStatement* statement =
+  OVSQLiteStatementRef statement =
       db->prepare("SELECT current, qstring, probability FROM unigrams");
   if (!statement) return results;
 
@@ -222,7 +221,6 @@ const WordReadingMap LoadWordReadings(OVSQLiteConnection* db,
     if (hit == bestWeight->end() || probability > (*hit).second)
       (*bestWeight)[word] = probability;
   }
-  delete statement;
 
   for (WordReadingMap::iterator iter = results.begin(); iter != results.end();
        ++iter)

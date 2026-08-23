@@ -32,6 +32,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <memory>
 
 #if defined(__APPLE__)
 #include <OpenVanilla/OpenVanilla.h>
@@ -46,6 +47,12 @@ using namespace std;
 
 class OVSQLiteStatement;
 
+// A statement has to be finalized before the connection it was prepared
+// against is closed, or sqlite3_close() refuses and the database file stays
+// open. Owning statements by value is what makes forgetting that impossible;
+// hand the raw pointer (via get()) only to code that does not take ownership.
+using OVSQLiteStatementRef = std::unique_ptr<OVSQLiteStatement>;
+
 class OVSQLiteConnection {
  public:
   // remember to manage the object returned by this class member function
@@ -56,7 +63,7 @@ class OVSQLiteConnection {
   const char* lastErrorMessage();
 
   int execute(const char* sqlcmd, ...);
-  OVSQLiteStatement* prepare(const char* sqlcmd, ...);
+  OVSQLiteStatementRef prepare(const char* sqlcmd, ...);
 
   // helper for table creation and detection
   bool hasTable(const string& tableName);
@@ -153,19 +160,20 @@ inline int OVSQLiteConnection::execute(const char* sqlcmd, ...) {
   return result;
 }
 
-inline OVSQLiteStatement* OVSQLiteConnection::prepare(const char* sqlcmd, ...) {
+inline OVSQLiteStatementRef OVSQLiteConnection::prepare(const char* sqlcmd,
+                                                        ...) {
   va_list l;
   va_start(l, sqlcmd);
   char* cmd = sqlite3_vmprintf(sqlcmd, l);
   va_end(l);
 
   sqlite3_stmt* stmt;
-  OVSQLiteStatement* result = 0;
+  OVSQLiteStatementRef result;
 
   const char* remainingSt = 0;
   if (sqlite3_prepare_v2(m_connection, cmd, -1, &stmt, &remainingSt) ==
       SQLITE_OK)
-    result = new OVSQLiteStatement(stmt);
+    result.reset(new OVSQLiteStatement(stmt));
   sqlite3_free(cmd);
 
   return result;
@@ -173,15 +181,13 @@ inline OVSQLiteStatement* OVSQLiteConnection::prepare(const char* sqlcmd, ...) {
 
 inline bool OVSQLiteConnection::hasTable(const string& tableName) {
   bool result = false;
-  OVSQLiteStatement* statement = prepare(
+  OVSQLiteStatementRef statement = prepare(
       "SELECT name FROM sqlite_master WHERE name = %Q", tableName.c_str());
   if (statement) {
     if (statement->step() == SQLITE_ROW) {
       result = true;
       while (statement->step() == SQLITE_ROW);
     }
-
-    delete statement;
   }
 
   return result;

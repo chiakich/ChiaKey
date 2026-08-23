@@ -591,9 +591,9 @@ class LanguageModel {
   bool m_cfgUseUserBigramCache;
   bool m_cfgUseUserCandidateOverrideCache;
 
-  OVSQLiteStatement* m_selectBigram;
-  OVSQLiteStatement* m_selectUnigram;
-  OVSQLiteStatement* m_insertUserUnigram;
+  OVSQLiteStatementRef m_selectBigram;
+  OVSQLiteStatementRef m_selectUnigram;
+  OVSQLiteStatementRef m_insertUserUnigram;
 
   double m_maxUnigramProbability;
 
@@ -655,7 +655,7 @@ inline bool LanguageModel::userPhraseWritesSuspended() {
 // logged a SQLite error per table on every launch.
 inline bool UserTableHasColumn(OVSQLiteConnection* userDB, const char* table,
                                const char* column) {
-  OVSQLiteStatement* probe =
+  OVSQLiteStatementRef probe =
       userDB->prepare("PRAGMA table_info(%Q)", table);
   if (!probe) return false;
 
@@ -665,7 +665,6 @@ inline bool UserTableHasColumn(OVSQLiteConnection* userDB, const char* table,
     if (name && string(name) == column) found = true;
   }
 
-  delete probe;
   return found;
 }
 
@@ -721,11 +720,10 @@ inline void LanguageModel::MigrateUserLearningTables(
   // every context. One short of the gate does neither -- dormant on upgrade,
   // and one confirmation restores the ones still wanted. The marker keeps this
   // to a single migration; re-running it would promote entries for free.
-  OVSQLiteStatement* grandfathered = userDB->prepare(
+  OVSQLiteStatementRef grandfathered = userDB->prepare(
       "SELECT 1 FROM user_learning_stats "
       "WHERE store = 'schema' AND qstring = 'override_breadth_grandfathered'");
   bool alreadyDone = grandfathered && grandfathered->step() == SQLITE_ROW;
-  if (grandfathered) delete grandfathered;
 
   if (!alreadyDone) {
     userDB->execute(
@@ -771,7 +769,7 @@ inline void LanguageModel::loadUserBigramCache() {
   // Best entries first so a table larger than the store (an imported file, or a
   // lowered capacity) keeps what the user actually uses; then replayed in
   // reverse so the store's recency order matches what was saved.
-  OVSQLiteStatement* statement = m_connection->prepare(
+  OVSQLiteStatementRef statement = m_connection->prepare(
       "SELECT c.qstring, c.previous, c.current, c.probability, "
       "COALESCE(s.selection_count, 1), COALESCE(s.last_used, 0) "
       "FROM user_bigram_cache c LEFT JOIN user_learning_stats s "
@@ -784,15 +782,14 @@ inline void LanguageModel::loadUserBigramCache() {
   vector<LoadedBigram> rows;
   while (statement->step() == SQLITE_ROW) {
     LoadedBigram row;
-    row.key = SafeColumnText(statement, 0);
-    row.value = Bigram(row.key, SafeColumnText(statement, 1),
-                       SafeColumnText(statement, 2),
+    row.key = SafeColumnText(statement.get(), 0);
+    row.value = Bigram(row.key, SafeColumnText(statement.get(), 1),
+                       SafeColumnText(statement.get(), 2),
                        statement->doubleOfColumn(3));
     row.selectionCount = (size_t)statement->intOfColumn(4);
     row.lastUsed = (time_t)statement->intOfColumn(5);
     rows.push_back(row);
   }
-  delete statement;
 
   for (vector<LoadedBigram>::reverse_iterator iter = rows.rbegin();
        iter != rows.rend(); ++iter)
@@ -867,7 +864,7 @@ inline void LanguageModel::saveUserBigramCache(bool useTransaction) {
 inline void LoadOverrideTable(OVSQLiteConnection* connection,
                              const char* table, const char* store,
                              LearningStore<string>& target) {
-  OVSQLiteStatement* statement = connection->prepare(
+  OVSQLiteStatementRef statement = connection->prepare(
       "SELECT c.qstring, c.current, COALESCE(s.selection_count, 1), "
       "COALESCE(s.last_used, 0) "
       "FROM %s c LEFT JOIN user_learning_stats s "
@@ -880,13 +877,12 @@ inline void LoadOverrideTable(OVSQLiteConnection* connection,
   vector<LoadedOverride> rows;
   while (statement->step() == SQLITE_ROW) {
     LoadedOverride row;
-    row.key = SafeColumnText(statement, 0);
-    row.value = SafeColumnText(statement, 1);
+    row.key = SafeColumnText(statement.get(), 0);
+    row.value = SafeColumnText(statement.get(), 1);
     row.selectionCount = (size_t)statement->intOfColumn(2);
     row.lastUsed = (time_t)statement->intOfColumn(3);
     rows.push_back(row);
   }
-  delete statement;
 
   for (vector<LoadedOverride>::reverse_iterator iter = rows.rbegin();
        iter != rows.rend(); ++iter)
@@ -902,13 +898,13 @@ inline void LanguageModel::loadUserCandidateOverrideCache() {
   LoadOverrideTable(m_connection, "user_context_override_cache",
                     "context_override", m_contextOverrideCache);
 
-  OVSQLiteStatement* breadth = m_connection->prepare(
+  OVSQLiteStatementRef breadth = m_connection->prepare(
       "SELECT qstring, selection_count FROM user_learning_stats "
       "WHERE store = 'override_breadth'");
   if (!breadth) return;
 
   while (breadth->step() == SQLITE_ROW) {
-    const string qstring = SafeColumnText(breadth, 0);
+    const string qstring = SafeColumnText(breadth.get(), 0);
     // A row we have already dropped in memory must not come back: loadConfig()
     // re-reads these tables on every preference change, which can easily land
     // between the drop and the save that clears the row.
@@ -919,7 +915,6 @@ inline void LanguageModel::loadUserCandidateOverrideCache() {
     if (m_overrideContextBreadth[qstring] < count)
       m_overrideContextBreadth[qstring] = count;
   }
-  delete breadth;
 }
 
 inline bool SaveOverrideTable(OVSQLiteConnection* connection, const char* table,
@@ -1168,9 +1163,9 @@ inline LanguageModel::LanguageModel(
       m_externalUnigramDataTable(externalTable),
       m_cfgUseUserTable(useUserTable),
       m_cfgCombineBigramQueryString(combineBigramQueryString),
-      m_selectBigram(0),
-      m_selectUnigram(0),
-      m_insertUserUnigram(0),
+      m_selectBigram(),
+      m_selectUnigram(),
+      m_insertUserUnigram(),
       m_maxUnigramProbability(0.0),
       m_UNKText("*"),
       m_BOSText("!"),
@@ -1185,7 +1180,7 @@ inline LanguageModel::LanguageModel(
       m_contextOverrideCache(overrideStoreCapacity * 2),
       m_unigramTableName("unigrams") {
   // see if table 'supplement.unigrams' exists
-  OVSQLiteStatement* supplementFind =
+  OVSQLiteStatementRef supplementFind =
       m_connection->prepare("SELECT * FROM supplement.unigrams LIMIT 1");
   if (supplementFind) {
     cerr << "LM: Supplement find" << endl;
@@ -1193,7 +1188,6 @@ inline LanguageModel::LanguageModel(
     m_unigramTableName = "supplement.unigrams";
     while (supplementFind->step() == SQLITE_ROW)
       ;
-    delete supplementFind;
   }
 
   if (m_cfgUseUserTable)
@@ -1237,10 +1231,11 @@ inline LanguageModel::LanguageModel(
 }
 
 inline LanguageModel::~LanguageModel() {
-  delete m_selectUnigram;
-  delete m_selectBigram;
-
-  if (m_insertUserUnigram) delete m_insertUserUnigram;
+  // Explicitly, and before the connection: these are members, so leaving them
+  // to their own destructors would release them after the delete below.
+  m_selectUnigram.reset();
+  m_selectBigram.reset();
+  m_insertUserUnigram.reset();
 
   if (m_ownsDBConnection) delete m_connection;
 }
@@ -1481,7 +1476,7 @@ inline bool LanguageModel::addUserUnigram(const string& qstring,
   selectCommand +=
       " WHERE qstring = ? AND current = ? UNION SELECT * from "
       "userdb.user_unigrams WHERE qstring = ? AND current = ?";
-  OVSQLiteStatement* select = m_connection->prepare(selectCommand.c_str());
+  OVSQLiteStatementRef select = m_connection->prepare(selectCommand.c_str());
   if (!select) return false;
 
   select->bindTextToColumn(qstring, 1);
@@ -1492,10 +1487,8 @@ inline bool LanguageModel::addUserUnigram(const string& qstring,
     // we have found something, uh-oh. won't add this in
     while (select->step() == SQLITE_ROW) {
     }
-    delete select;
     return false;
   }
-  delete select;
 
   if (!m_insertUserUnigram) return false;
 
@@ -1521,14 +1514,13 @@ inline double LanguageModel::cachedMaxUnigramProbability() {
   string selectMaxCommand = "SELECT MAX(probability) from '";
   selectMaxCommand += m_unigramTableName;
   selectMaxCommand += "'";
-  OVSQLiteStatement* selectMax =
+  OVSQLiteStatementRef selectMax =
       m_connection->prepare(selectMaxCommand.c_str());
   if (selectMax) {
     while (selectMax->step() == SQLITE_ROW) {
       m_maxUnigramProbability = selectMax->doubleOfColumn(0);
       // cerr << "max probability: " << m_maxUnigramProbability << endl;
     }
-    delete selectMax;
   }
 
   // make it non-zero

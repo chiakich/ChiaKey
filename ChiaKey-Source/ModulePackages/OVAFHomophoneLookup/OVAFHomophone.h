@@ -76,8 +76,8 @@ class OVAFHomophoneContext : public OVEventHandlingContext {
 
  protected:
   OVAFHomophone* m_module;
-  OVSQLiteStatement* m_selectPhone;
-  OVSQLiteStatement* m_selectCandidates;
+  OVSQLiteStatementRef m_selectPhone;
+  OVSQLiteStatementRef m_selectCandidates;
   vector<string> m_phones;
   string m_selectedPhone;
   vector<string> m_candidates;

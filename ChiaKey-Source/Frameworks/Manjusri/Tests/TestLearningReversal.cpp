@@ -99,32 +99,29 @@ static const string Type(LanguageModel* lm, const vector<string>& readings,
 
 static size_t RowCount(OVSQLiteConnection* db, const char* sql) {
   size_t count = 0;
-  OVSQLiteStatement* statement = db->prepare("%s", sql);
+  OVSQLiteStatementRef statement = db->prepare("%s", sql);
   while (statement && statement->step() == SQLITE_ROW) count++;
-  delete statement;
   return count;
 }
 
 static const string OverrideFor(OVSQLiteConnection* db, const char* table,
                                 const char* qstring) {
   string result;
-  OVSQLiteStatement* statement =
+  OVSQLiteStatementRef statement =
       db->prepare("SELECT current FROM %s WHERE qstring = %Q", table, qstring);
   if (statement && statement->step() == SQLITE_ROW)
-    result = SafeColumnText(statement, 0);
-  delete statement;
+    result = SafeColumnText(statement.get(), 0);
   return result;
 }
 
 static size_t BreadthFor(OVSQLiteConnection* db, const char* qstring) {
   size_t result = 0;
-  OVSQLiteStatement* statement = db->prepare(
+  OVSQLiteStatementRef statement = db->prepare(
       "SELECT selection_count FROM user_learning_stats WHERE store = "
       "'override_breadth' AND qstring = %Q",
       qstring);
   if (statement && statement->step() == SQLITE_ROW)
     result = (size_t)statement->intOfColumn(0);
-  delete statement;
   return result;
 }
 

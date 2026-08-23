@@ -74,7 +74,7 @@ pair<string, time_t> OVLoaderUserPersistence::fetchValueWithTimestampByKey(
     return result;
   }
 
-  OVSQLiteStatement* find = connection->prepare(
+  OVSQLiteStatementRef find = connection->prepare(
       "SELECT value FROM %Q WHERE key = ?", tableName.c_str());
 
   if (find) {
@@ -93,7 +93,6 @@ pair<string, time_t> OVLoaderUserPersistence::fetchValueWithTimestampByKey(
     // Leaving this open kept sqlite3_close() at SQLITE_BUSY, so a lexicon
     // reload never released the old database file and the updater deleted it
     // out from under a live vnode.
-    delete find;
   }
 
   return result;

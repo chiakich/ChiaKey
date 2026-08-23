@@ -71,9 +71,9 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     return false;
   }
 
-  OVSQLiteStatement* insert =
+  OVSQLiteStatementRef insert =
       db->prepare("INSERT INTO user_unigrams VALUES(?, ?, ?, ?)");
-  OVSQLiteStatement* select = db->prepare(
+  OVSQLiteStatementRef select = db->prepare(
       "SELECT * FROM user_unigrams where qstring = ? and current = ?");
 
   if (db->execute("BEGIN") != SQLITE_OK) {
@@ -175,8 +175,6 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     }
   }
 
-  delete insert;
-  delete select;
 
   ifs.close();
   return true;
@@ -192,7 +190,7 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
 
   ofs << "MJSR version 1.0.0" << endl;
 
-  OVSQLiteStatement* select = db->prepare("SELECT * FROM user_unigrams");
+  OVSQLiteStatementRef select = db->prepare("SELECT * FROM user_unigrams");
   while (select->step() == SQLITE_ROW) {
     string qstring = select->textOfColumn(0);
     string current = select->textOfColumn(1);
@@ -206,7 +204,6 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
     ofs << current << "\t" << BPMFString(qstring) << "\t" << probability << "\t"
         << backoff << endl;
   }
-  delete select;
 
   string cacheExportTempFile = OVDirectoryHelper::GenerateTempFilename();
 

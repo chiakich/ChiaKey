@@ -65,7 +65,7 @@ class OVAFAssociatedPhraseContext : public OVEventHandlingContext {
 
  protected:
   OVAFAssociatedPhrase* m_module;
-  OVSQLiteStatement* m_selectStatement;
+  OVSQLiteStatementRef m_selectStatement;
   vector<string> m_candidates;
   bool m_keyHandled;
 };

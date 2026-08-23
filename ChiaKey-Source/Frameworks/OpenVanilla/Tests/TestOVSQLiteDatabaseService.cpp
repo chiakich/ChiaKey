@@ -22,24 +22,25 @@ TEST(SQLiteDatabaseService) {
     CHECK_EQUAL(SQLITE_OK, connection->execute(
                                "insert into foobar values('hello', 'world');"));
 
-    OVSQLiteStatement* statement =
-        connection->prepare("select * from foobar where key = ?");
-    CHECK(statement);
+    // Scoped so the statement is finalized before the connection below.
+    {
+      OVSQLiteStatementRef statement =
+          connection->prepare("select * from foobar where key = ?");
+      CHECK(statement);
 
-    if (statement) {
-      CHECK_EQUAL(SQLITE_OK, statement->bindTextToColumn("hello", 1));
+      if (statement) {
+        CHECK_EQUAL(SQLITE_OK, statement->bindTextToColumn("hello", 1));
 
-      size_t rows = 0;
+        size_t rows = 0;
 
-      while (statement->step() == SQLITE_ROW) {
-        CHECK_EQUAL("world", statement->textOfColumn(1));
+        while (statement->step() == SQLITE_ROW) {
+          CHECK_EQUAL("world", statement->textOfColumn(1));
 
-        rows++;
+          rows++;
+        }
+
+        CHECK_EQUAL(1, rows);
       }
-
-      CHECK_EQUAL(1, rows);
-
-      delete statement;
     }
 
     string property = string(OVPropertyStringInternalPrefix) + "name";

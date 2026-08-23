@@ -90,10 +90,10 @@ class OVIMGenericContext : public OVEventHandlingContext {
   OVIMGeneric* m_module;
 
   // for user frequency table
-  OVSQLiteStatement* m_selectStatement;
-  OVSQLiteStatement* m_insertStatement;
-  OVSQLiteStatement* m_updateStatement;
-  OVSQLiteStatement* m_findOrderStatement;
+  OVSQLiteStatementRef m_selectStatement;
+  OVSQLiteStatementRef m_insertStatement;
+  OVSQLiteStatementRef m_updateStatement;
+  OVSQLiteStatementRef m_findOrderStatement;
 
   // last committed string
   string m_lastCommittedString;

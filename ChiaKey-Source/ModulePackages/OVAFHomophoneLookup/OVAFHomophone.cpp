@@ -40,8 +40,8 @@ OVAFHomophoneContext::OVAFHomophoneContext(OVAFHomophone* module)
 }
 
 OVAFHomophoneContext::~OVAFHomophoneContext() {
-  if (m_selectPhone) delete m_selectPhone;
-  if (m_selectCandidates) delete m_selectCandidates;
+  m_selectPhone.reset();
+  m_selectCandidates.reset();
 }
 
 void OVAFHomophoneContext::startSession(OVLoaderService* loaderService) {

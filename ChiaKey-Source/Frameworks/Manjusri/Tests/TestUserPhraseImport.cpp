@@ -57,24 +57,22 @@ static OVSQLiteConnection* OpenUserDB(const string& path) {
 }
 
 static int CountRows(OVSQLiteConnection* db, const string& table) {
-  OVSQLiteStatement* statement =
+  OVSQLiteStatementRef statement =
       db->prepare("SELECT COUNT(*) FROM %s", table.c_str());
   if (!statement) return -1;
   int count = -1;
   if (statement->step() == SQLITE_ROW) count = statement->intOfColumn(0);
-  delete statement;
   return count;
 }
 
 static string FirstTextValue(OVSQLiteConnection* db, const string& sql) {
-  OVSQLiteStatement* statement = db->prepare("%s", sql.c_str());
+  OVSQLiteStatementRef statement = db->prepare("%s", sql.c_str());
   if (!statement) return string();
   string result;
   if (statement->step() == SQLITE_ROW) {
     const char* text = statement->textOfColumn(0);
     if (text) result = text;
   }
-  delete statement;
   return result;
 }
 

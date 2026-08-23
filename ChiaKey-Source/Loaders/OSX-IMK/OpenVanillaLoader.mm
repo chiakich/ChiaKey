@@ -39,7 +39,7 @@ static NSString *const kChiaKeySourceDatabaseArtifactFilename =
 string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
                                 const string &dbAndTableName) {
   string result;
-  OVSQLiteStatement *statement = connection->prepare(
+  OVSQLiteStatementRef statement = connection->prepare(
       "SELECT value FROM %s WHERE KEY = %Q", dbAndTableName.c_str(), "version");
 
   if (statement) {
@@ -48,8 +48,6 @@ string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
       while (statement->step() == SQLITE_ROW)
         ;
     }
-
-    delete statement;
   }
 
   return result;
@@ -847,7 +845,7 @@ using namespace OpenVanilla;
   vector<string> codepoints =
       OVUTF8Helper::SplitStringByCodePoint([phrase UTF8String]);
 
-  OVSQLiteStatement *select = dynamic_cast<OVSQLiteDatabaseService *>(
+  OVSQLiteStatementRef select = dynamic_cast<OVSQLiteDatabaseService *>(
                                   _loaderService->SQLiteDatabaseService())
                                   ->connection()
                                   ->prepare(
@@ -911,10 +909,6 @@ using namespace OpenVanilla;
     [results
         addObject:[NSString stringWithUTF8String:OVStringHelper::Join(*pbi, ",")
                                                      .c_str()]];
-  }
-
-  if (select) {
-    delete select;
   }
 
   return results;

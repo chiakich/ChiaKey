@@ -103,7 +103,7 @@ class OVSQLiteDatabaseService : public OVDatabaseService {
     pair<string, string> exp = OVSQLiteHelper::SQLiteStringFromWildcard(filter);
 
     vector<string> result;
-    OVSQLiteStatement* statement = m_connection->prepare(
+    OVSQLiteStatementRef statement = m_connection->prepare(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE %Q "
         "ESCAPE %Q ORDER BY name",
         exp.first.c_str(), exp.second.c_str());
@@ -111,8 +111,6 @@ class OVSQLiteDatabaseService : public OVDatabaseService {
       while (statement->step() == SQLITE_ROW) {
         result.push_back(statement->textOfColumn(0));
       }
-
-      delete statement;
     }
 
     return result;
@@ -129,7 +127,7 @@ class OVSQLiteDatabaseService : public OVDatabaseService {
 
   virtual const string valueForPropertyInTable(const string& property,
                                                const string& name) {
-    OVSQLiteStatement* statement = m_connection->prepare(
+    OVSQLiteStatementRef statement = m_connection->prepare(
         "SELECT VALUE FROM %Q WHERE KEY = ?", name.c_str());
     string result;
 
@@ -142,8 +140,6 @@ class OVSQLiteDatabaseService : public OVDatabaseService {
         while (statement->step() == SQLITE_ROW)
           ;
       }
-
-      delete statement;
     }
 
     return result;
@@ -179,14 +175,12 @@ class OVSQLiteDatabaseService : public OVDatabaseService {
 inline const vector<string> OVSQLiteKeyValueDataTable::valuesForKey(
     const string& key) {
   vector<string> result;
-  OVSQLiteStatement* statement = m_source->connection()->prepare(
+  OVSQLiteStatementRef statement = m_source->connection()->prepare(
       "SELECT value FROM %Q WHERE key = %Q", m_tableName.c_str(), key.c_str());
   if (statement) {
     while (statement->step() == SQLITE_ROW) {
       result.push_back(statement->textOfColumn(0));
     }
-
-    delete statement;
   }
 
   return result;
@@ -195,7 +189,7 @@ inline const vector<string> OVSQLiteKeyValueDataTable::valuesForKey(
 inline const vector<string> OVSQLiteKeyValueDataTable::keysForValue(
     const string& value) {
   vector<string> result;
-  OVSQLiteStatement* statement =
+  OVSQLiteStatementRef statement =
       m_source->connection()->prepare("SELECT key FROM %Q WHERE value = %Q",
                                       m_tableName.c_str(), value.c_str());
   if (statement) {
@@ -207,8 +201,6 @@ inline const vector<string> OVSQLiteKeyValueDataTable::keysForValue(
         result.push_back(key);
       }
     }
-
-    delete statement;
   }
 
   return result;
@@ -220,7 +212,7 @@ OVSQLiteKeyValueDataTable::valuesForKey(const OVWildcard& expression) {
       OVSQLiteHelper::SQLiteStringFromWildcard(expression);
 
   vector<pair<string, string> > result;
-  OVSQLiteStatement* statement = m_source->connection()->prepare(
+  OVSQLiteStatementRef statement = m_source->connection()->prepare(
       "SELECT key, value FROM %Q WHERE key like %Q escape %Q",
       m_tableName.c_str(), exp.first.c_str(), exp.second.c_str());
   if (statement) {
@@ -228,8 +220,6 @@ OVSQLiteKeyValueDataTable::valuesForKey(const OVWildcard& expression) {
       result.push_back(pair<string, string>(statement->textOfColumn(0),
                                             statement->textOfColumn(1)));
     }
-
-    delete statement;
   }
 
   return result;
