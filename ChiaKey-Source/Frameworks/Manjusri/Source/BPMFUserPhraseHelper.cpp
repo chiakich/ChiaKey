@@ -271,8 +271,11 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
 
   string cacheExportTempFile = OVDirectoryHelper::GenerateTempFilename();
 
-  db->execute("ATTACH DATABASE %Q AS export KEY %Q",
-              cacheExportTempFile.c_str(), MANJUSRI_EXPORT_KEY);
+  // No KEY: macOS's libsqlite3 carries a codec, so passing one really did
+  // encrypt the file -- with a scheme neither importer can read, because they
+  // attach it without a key and DecryptExportDatabase only knows the legacy
+  // KeyKey cipher. Every backup lost its learning data on restore.
+  db->execute("ATTACH DATABASE %Q AS export", cacheExportTempFile.c_str());
   for (size_t i = 0; i < kLearningCacheTableCount; ++i) {
     const LearningCacheTable& table = kLearningCacheTables[i];
 

@@ -507,6 +507,53 @@ static void TestFailedRestoreRollsBackAndReportsFailure() {
   delete db;
 }
 
+// Export then import, which is the one path the synthesised blobs above never
+// covered: the exporter used to hand ATTACH a KEY, and macOS's libsqlite3
+// honours it, so a real backup came back with its learning data dropped.
+static void TestExportImportRoundTrip() {
+  string exportPath = TempPath("round-trip-export.txt");
+  remove(exportPath.c_str());
+
+  OVSQLiteConnection* source = OpenUserDB(TempPath("round-trip-source.db"));
+  CHECK(source != 0);
+  if (!source) return;
+  // A real qstring, so Export can render it back as composed Bopomofo and the
+  // import accepts the line.
+  pair<string, size_t> reading = BPMFUserPhraseHelper::QString(
+      "\xe3\x84\x98\xe3\x84\x9c\xcb\x8b,\xe3\x84\x95\xcb\x8b");
+  CHECK(reading.second == 2);
+  source->execute("INSERT INTO user_unigrams VALUES (%Q, %Q, '-3.0', '0.0')",
+                  reading.first.c_str(), "\xe6\xb8\xac\xe8\xa9\xa6");
+  source->execute(
+      "INSERT INTO user_bigram_cache VALUES ('aJ wl', 'a', 'b', '-1.0')");
+  source->execute("INSERT INTO user_candidate_override_cache VALUES ('aJ', 'c')");
+  source->execute(
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd')");
+  source->execute(
+      "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 3, 99)");
+
+  CHECK(BPMFUserPhraseHelper::Export(source, exportPath));
+  delete source;
+
+  OVSQLiteConnection* target = OpenUserDB(TempPath("round-trip-target.db"));
+  CHECK(target != 0);
+  if (!target) return;
+
+  CHECK(BPMFUserPhraseHelper::Import(target, exportPath));
+  CHECK(CountRows(target, "user_unigrams") == 1);
+  CHECK(CountRows(target, "user_bigram_cache") == 1);
+  CHECK(CountRows(target, "user_candidate_override_cache") == 1);
+  CHECK(CountRows(target, "user_context_override_cache") == 1);
+  CHECK(CountRows(target, "user_learning_stats") == 1);
+  CHECK(FirstTextValue(target,
+                       "SELECT current FROM user_context_override_cache") ==
+        "d");
+  CHECK(FirstTextValue(target,
+                       "SELECT selection_count FROM user_learning_stats") ==
+        "3");
+  delete target;
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -523,6 +570,7 @@ int main(int argc, char** argv) {
   TestOlderExportLeavesNewerTablesAlone();
   TestDuplicateKeysDoNotEmptyCaches();
   TestFailedRestoreRollsBackAndReportsFailure();
+  TestExportImportRoundTrip();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;

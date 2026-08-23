@@ -829,7 +829,9 @@ static NSData *PEHexDecode(NSString *hex) {
   // simply never look at it because their import names its columns explicitly.
   NSString *tempPath = [self _tempDatabasePath];
   char *sql = sqlite3_mprintf(
-      "ATTACH DATABASE %Q AS export KEY 'mjsrexport';"
+      // No KEY: see BPMFUserPhraseHelper::Export -- macOS's libsqlite3 really
+      // does encrypt when given one, and nothing can read it back.
+      "ATTACH DATABASE %Q AS export;"
       "CREATE TABLE export.user_bigram_cache "
       "(qstring, previous, current, probability);"
       "CREATE TABLE export.user_candidate_override_cache (qstring, current);"

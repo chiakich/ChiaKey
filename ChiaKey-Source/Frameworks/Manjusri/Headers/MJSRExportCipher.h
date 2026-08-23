@@ -14,8 +14,10 @@ file for terms.
 #include <cstring>
 #include <string>
 
-// The passphrase the exporter passes to SQLite SEE; also what ChiaKey's own
-// Export still hands to ATTACH ... KEY, where it is a no-op.
+// The passphrase Yahoo! KeyKey passed to SQLite SEE, and so the key this file
+// derives its keystream from. ChiaKey's own Export writes the block in the
+// clear and must not hand this to ATTACH ... KEY: macOS's libsqlite3 has a
+// codec, so that encrypts the file into something no importer can read.
 #define MANJUSRI_EXPORT_KEY "mjsrexport"
 
 namespace Manjusri {
