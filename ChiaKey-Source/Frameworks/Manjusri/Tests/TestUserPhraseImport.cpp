@@ -610,6 +610,16 @@ static void TestOversizedFileIsRefused() {
 // An oversized learning block costs the caller that block, not the phrases in
 // front of it -- the same deal as a block that cannot be read.
 static void TestOversizedLearningBlockIsSkipped() {
+#if MJSR_MAX_LEARNING_BLOB_SIZE > (1UL * 1024 * 1024)
+  // Crossing the shipping limit would mean writing ~192 MB of hex, so this one
+  // only runs when the build lowers it (Scripts/test-user-phrase-import.sh
+  // passes -DMJSR_MAX_LEARNING_BLOB_SIZE=65536UL).
+  cout << "  (skipping the learning-block limit test: build with "
+          "-DMJSR_MAX_LEARNING_BLOB_SIZE lowered to run it)"
+       << endl;
+  return;
+#endif
+
   // A real cache database padded past the limit with rows, not filler: a block
   // of arbitrary bytes would be rejected as unreadable anyway and the test
   // would pass without the limit ever running. This one would restore.
@@ -635,7 +645,9 @@ static void TestOversizedLearningBlockIsSkipped() {
   if (!db) return;
   db->execute("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
 
-  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  // Reported, not silently swallowed: the phrases landed but the learning data
+  // in the file did not.
+  CHECK(!BPMFUserPhraseHelper::Import(db, path));
   CHECK(CountRows(db, "user_unigrams") == 2);
   // Untouched: the block was dropped, not restored.
   CHECK(CountRows(db, "user_bigram_cache") == 1);

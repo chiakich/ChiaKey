@@ -4,6 +4,8 @@
 
 #import "TakaoCINTable.h"
 
+#include <sys/stat.h>
+
 #import "TakaoSettings.h"
 
 NSString *const TakaoCINTableDisplayNameKey = @"displayName";
@@ -146,17 +148,20 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
 #pragma mark Inspection
 
 + (NSDictionary *)inspectFileAtPath:(NSString *)path error:(NSError **)error {
-  NSFileManager *manager = [NSFileManager defaultManager];
-
-  NSDictionary *attributes = [manager attributesOfItemAtPath:path error:NULL];
-  if (!attributes) {
+  // stat(), not -attributesOfItemAtPath:, which reports a symlink's own size
+  // (the length of its target path) while -dataWithContentsOfFile: below
+  // follows the link -- a symlink to a huge file would sail past the limit.
+  // Anything but a regular file has no meaningful size to check at all.
+  struct stat info;
+  if (stat([path fileSystemRepresentation], &info) != 0 ||
+      !S_ISREG(info.st_mode)) {
     if (error)
       *error = [self errorWithCode:TakaoCINTableErrorUnreadable
                        description:LFLSTR(@"The file could not be read.")];
     return nil;
   }
 
-  if ([attributes fileSize] > kMaximumTableFileSize) {
+  if ((unsigned long long)info.st_size > kMaximumTableFileSize) {
     if (error)
       *error = [self
           errorWithCode:TakaoCINTableErrorTooLarge

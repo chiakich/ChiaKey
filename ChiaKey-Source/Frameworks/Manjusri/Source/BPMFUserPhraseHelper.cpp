@@ -179,6 +179,9 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
   streamoff fileSize = ifs.tellg();
   ifs.seekg(0, ios_base::beg);
   if (fileSize < 0 || (unsigned long long)fileSize > kMaxImportFileSize) {
+    cerr << "Refusing to import " << filename << ": " << fileSize
+         << " bytes exceeds the " << kMaxImportFileSize << " byte limit"
+         << endl;
     return false;
   }
 
@@ -261,9 +264,10 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     if (blobTooLarge) continue;
 
     // Checked before appending, so a block that arrives as one huge line is
-    // never held whole either. An oversized block costs the caller its
-    // learning cache, like one that cannot be read.
+    // never held whole either.
     if ((dbHex.size() + line.size()) / 2 > kMaxLearningBlobSize) {
+      cerr << "Learning database in " << filename << " exceeds the "
+           << kMaxLearningBlobSize << " byte limit; skipping it" << endl;
       blobTooLarge = true;
       dbHex.clear();
       continue;
@@ -272,7 +276,10 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     dbHex += line;
   }
 
-  bool cacheRestored = true;
+  // A block we refused to read is learning data that did not come back, so it
+  // is reported like a failed restore. (A block we *cannot* read -- truncated,
+  // or encrypted with someone else's key -- stays a success; see below.)
+  bool cacheRestored = !blobTooLarge;
 
   pair<char*, size_t> binData = Minotaur::Minos::BinaryFromHexString(dbHex);
   if (binData.first) {
