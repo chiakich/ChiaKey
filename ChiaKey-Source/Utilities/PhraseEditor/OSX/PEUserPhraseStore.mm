@@ -36,8 +36,16 @@ static const NSTimeInterval kChangeNotificationThrottle = 0.5;
 // guess how much a long-time user has accumulated: a phrase line measures
 // 45-90 bytes, so a million of them is around 60 MB, and the hex-encoded
 // learning database that follows them doubles whatever it holds.
-static const unsigned long long kPEMaxImportFileSize = 256ULL * 1024 * 1024;
-static const NSUInteger kPEMaxLearningBlobSize = 96 * 1024 * 1024;
+// Overridable so the tests can exercise both limits without writing hundreds
+// of megabytes to disk.
+#ifndef PE_MAX_IMPORT_FILE_SIZE
+#define PE_MAX_IMPORT_FILE_SIZE (256ULL * 1024 * 1024)
+#endif
+#ifndef PE_MAX_LEARNING_BLOB_SIZE
+#define PE_MAX_LEARNING_BLOB_SIZE (96UL * 1024 * 1024)
+#endif
+static const unsigned long long kPEMaxImportFileSize = PE_MAX_IMPORT_FILE_SIZE;
+static const NSUInteger kPEMaxLearningBlobSize = PE_MAX_LEARNING_BLOB_SIZE;
 // Keep the editing lock visibly fresh, well within the staleness timeout.
 static const NSTimeInterval kEditingLockRefreshInterval = 60.0;
 
@@ -1038,15 +1046,6 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
                                                    error:NULL];
   if (!content) return NO;
 
-  NSArray *lines =
-      [content componentsSeparatedByCharactersInSet:[NSCharacterSet
-                                                        newlineCharacterSet]];
-  if (![lines count] ||
-      [(NSString *)[lines objectAtIndex:0] rangeOfString:@"MJSR version 1.0.0"]
-              .location == NSNotFound) {
-    return NO;
-  }
-
   sqlite3_stmt *insert = NULL;
   if (sqlite3_prepare_v2(_userDB,
                          "INSERT INTO user_unigrams VALUES (?, ?, ?, ?)", -1,
@@ -1054,16 +1053,49 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     return NO;
   }
 
+  // Walked line by line instead of split into an array of lines first: one
+  // NSString object per line costs more than the file itself once a backup
+  // runs to hundreds of thousands of phrases, and that array was what made the
+  // size limit above expensive rather than merely a backstop.
+  NSMutableString *hex = [NSMutableString string];
+  __block BOOL headerChecked = NO;
+  __block BOOL headerValid = NO;
+  __block BOOL sawDatabaseSection = NO;
+  __block BOOL blobTooLarge = NO;
+
   sqlite3_exec(_userDB, "BEGIN", NULL, NULL, NULL);
-  NSUInteger lineIndex = 1;
-  BOOL sawDatabaseSection = NO;
-  for (; lineIndex < [lines count]; lineIndex++) {
-    NSString *line = [lines objectAtIndex:lineIndex];
-    if ([line hasPrefix:@"#"]) continue;
+
+  [content enumerateLinesUsingBlock:^(NSString *line, BOOL *stop) {
+    if (!headerChecked) {
+      headerChecked = YES;
+      headerValid =
+          [line rangeOfString:@"MJSR version 1.0.0"].location != NSNotFound;
+      if (!headerValid) *stop = YES;
+      return;
+    }
+
+    if (sawDatabaseSection) {
+      if ([line rangeOfString:@"</database>"].location != NSNotFound) {
+        *stop = YES;
+        return;
+      }
+      if (blobTooLarge) return;
+
+      [hex appendString:line];
+      // Checked as it grows, so an oversized block is never held whole.
+      if ([hex length] / 2 > kPEMaxLearningBlobSize) {
+        NSLog(@"Ignoring the learning database in %@: over the %lu byte limit",
+              path, (unsigned long)kPEMaxLearningBlobSize);
+        blobTooLarge = YES;
+        [hex setString:@""];
+      }
+      return;
+    }
+
+    if ([line hasPrefix:@"#"]) return;
     if ([line rangeOfString:@"<database>"].location != NSNotFound) {
       sawDatabaseSection = YES;
-      lineIndex++;
-      break;
+      return;
     }
 
     NSMutableArray *fields = [NSMutableArray array];
@@ -1071,7 +1103,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
                                     [NSCharacterSet whitespaceCharacterSet]]) {
       if ([tok length]) [fields addObject:tok];
     }
-    if ([fields count] < 2) continue;
+    if ([fields count] < 2) return;
 
     NSString *phrase = [fields objectAtIndex:0];
     NSString *reading = [fields objectAtIndex:1];
@@ -1081,8 +1113,8 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     for (NSUInteger i = 0; i < [phrase length]; codePoints++) {
       i = NSMaxRange([phrase rangeOfComposedCharacterSequenceAtIndex:i]);
     }
-    if (!qstring.size() || qstring.size() / 2 != codePoints) continue;
-    if ([self _phraseExistsWithQstring:qstring phrase:phrase]) continue;
+    if (!qstring.size() || qstring.size() / 2 != codePoints) return;
+    if ([self _phraseExistsWithQstring:qstring phrase:phrase]) return;
 
     // A legacy file carries probabilities estimated against Yahoo! KeyKey's
     // lexicon, and they are read as-is: user_unigrams is UNIONed straight into
@@ -1104,27 +1136,16 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     sqlite3_bind_text(insert, 3, prob, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(insert, 4, backoff, -1, SQLITE_TRANSIENT);
     sqlite3_step(insert);
-  }
-  sqlite3_exec(_userDB, "COMMIT", NULL, NULL, NULL);
+  }];
+
+  // A file that never identified itself has inserted nothing; unwind the
+  // transaction rather than commit an empty one.
+  sqlite3_exec(_userDB, headerValid ? "COMMIT" : "ROLLBACK", NULL, NULL, NULL);
   sqlite3_finalize(insert);
+  if (!headerValid) return NO;
 
   // Restore the learning-data blob, if present.
   if (sawDatabaseSection) {
-    NSMutableString *hex = [NSMutableString string];
-    for (; lineIndex < [lines count]; lineIndex++) {
-      NSString *line = [lines objectAtIndex:lineIndex];
-      if ([line rangeOfString:@"</database>"].location != NSNotFound) break;
-      [hex appendString:line];
-    }
-
-    if ([hex length] / 2 > kPEMaxLearningBlobSize) {
-      NSLog(@"Ignoring the learning database in %@: %lu bytes exceeds the %lu "
-            @"byte limit",
-            path, (unsigned long)([hex length] / 2),
-            (unsigned long)kPEMaxLearningBlobSize);
-      [hex setString:@""];
-    }
-
     NSData *blob = PEHexDecode(hex);
     // Files written by Yahoo! KeyKey carry this block encrypted (SQLite SEE);
     // ours are in the clear. DecryptExportDatabase tells the two apart and
