@@ -83,7 +83,7 @@ NETWORK_FAILURE_STATUS=75
 
 curl_status_is_network_failure() {
   case "$1" in
-    5|6|7|28|35|56) return 0 ;;
+    5|6|7|18|28|35|52|55|56) return 0 ;;
     *) return 1 ;;
   esac
 }
