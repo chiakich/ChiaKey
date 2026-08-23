@@ -51,12 +51,15 @@ class OVCINToSQLiteConvertor {
 
     if (!statement) return false;
 
-    if (statement->step() == SQLITE_ROW && overwriteTable) {
+    bool tableExists = statement->step() == SQLITE_ROW;
+    // The DDL below fails as locked while this cursor is still open.
+    statement.reset();
 
+    if (tableExists && overwriteTable) {
       if (connection->execute("DROP TABLE %Q", nameStr) != SQLITE_OK) {
         return false;
       }
-    } else
+    }
 
     if (connection->execute("CREATE TABLE %Q (key, value)", nameStr) !=
         SQLITE_OK)
