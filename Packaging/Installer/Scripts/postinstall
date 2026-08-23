@@ -56,13 +56,29 @@ remove_duplicate() {
 }
 
 # Only prune once we are sure which copy to keep; never leave zero copies.
+# Scoped to the locations this install owns -- the system domain, the chosen
+# target location and the console user's home. A system-wide install runs as
+# root, so sweeping every /Users/* would delete other accounts' installs.
 if [ -n "${keep_canon}" ]; then
   remove_duplicate "/${APP_REL}"
   remove_duplicate "/${LEGACY_REL}"
-  for home in /Users/*; do
+  for home in "${2:-}" "${console_home}"; do
+    [ -n "${home}" ] || continue
     [ -d "${home}" ] || continue
     remove_duplicate "${home}/${APP_REL}"
     remove_duplicate "${home}/${LEGACY_REL}"
+  done
+
+  # Another account's per-user copy still shadows the system-wide one for that
+  # account, so report it instead of removing it on their behalf.
+  for home in /Users/*; do
+    [ -d "${home}" ] || continue
+    for rel in "${APP_REL}" "${LEGACY_REL}"; do
+      [ -e "${home}/${rel}" ] || continue
+      other_canon="$(canon "${home}/${rel}" || true)"
+      [ "${other_canon}" = "${keep_canon}" ] && continue
+      echo "ChiaKey postinstall: leaving another account's copy in place: ${home}/${rel}" >&2
+    done
   done
 fi
 
