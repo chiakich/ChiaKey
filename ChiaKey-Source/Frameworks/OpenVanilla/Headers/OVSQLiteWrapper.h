@@ -30,6 +30,9 @@
 
 #include <sqlite3.h>
 
+#include <cassert>
+#include <iostream>
+
 #if defined(__APPLE__)
 #include <OpenVanilla/OpenVanilla.h>
 #else
@@ -116,8 +119,17 @@ inline OVSQLiteConnection::OVSQLiteConnection(sqlite3* connection,
 
 inline OVSQLiteConnection::~OVSQLiteConnection() {
   int result = sqlite3_close(m_connection);
-  if (result) {
-    ;
+
+  // A non-OK close means an unfinalized statement still holds this connection.
+  // sqlite3_close() then leaves the database open and its file descriptor live,
+  // so a file the updater has already deleted stays deleted-but-open.
+  // Swallowing this is what let a statement leak reach production as a vnode
+  // unlinked while in use.
+  if (result != SQLITE_OK) {
+    cerr << "OVSQLiteConnection: could not close '" << m_filename
+         << "': " << sqlite3_errmsg(m_connection) << " (" << result << ")"
+         << endl;
+    assert(result == SQLITE_OK);
   }
 }
 
@@ -166,8 +178,7 @@ inline bool OVSQLiteConnection::hasTable(const string& tableName) {
   if (statement) {
     if (statement->step() == SQLITE_ROW) {
       result = true;
-      while (statement->step() == SQLITE_ROW)
-        ;
+      while (statement->step() == SQLITE_ROW);
     }
 
     delete statement;
