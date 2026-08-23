@@ -593,10 +593,10 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
 
 #pragma mark Reading derivation
 
-- (sqlite3 *)_lexiconDB {
-  if (_lexTried) return _lexDB;
-  _lexTried = YES;
-
+// Split out from _lexiconDB so a test can confine the search: the
+// bundle-identifier lookup below reaches the installed IME regardless of
+// CFFIXED_USER_HOME, which otherwise makes "no lexicon anywhere" untestable.
+- (NSMutableArray *)_lexiconCandidatePaths {
   NSMutableArray *candidates = [NSMutableArray array];
   // The lexicon auto-updater installs here; prefer it.
   NSString *activeDir = [[self _userDataDirectory]
@@ -637,8 +637,15 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
                       stringByAppendingPathComponent:@"KeyKeySource.db"]];
   }
 
+  return candidates;
+}
+
+- (sqlite3 *)_lexiconDB {
+  if (_lexTried) return _lexDB;
+  _lexTried = YES;
+
   NSFileManager *fm = [NSFileManager defaultManager];
-  for (NSString *path in candidates) {
+  for (NSString *path in [self _lexiconCandidatePaths]) {
     if (![fm fileExistsAtPath:path]) continue;
     sqlite3 *db = NULL;
     if (sqlite3_open_v2([path UTF8String], &db, SQLITE_OPEN_READONLY, NULL) ==

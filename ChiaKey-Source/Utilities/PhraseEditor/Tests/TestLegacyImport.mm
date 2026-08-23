@@ -63,6 +63,30 @@ static NSString *UserDataPath(NSString *name) {
       stringByAppendingPathComponent:name];
 }
 
+@interface PEUserPhraseStore (TestingSeam)
+- (NSMutableArray *)_lexiconCandidatePaths;
+@end
+
+// CFFIXED_USER_HOME redirects NSHomeDirectory(), but the store's last-resort
+// candidate is a bundle-identifier lookup for the installed IME, which no
+// environment variable moves. On a machine with ChiaKey installed that made
+// every lexicon lookup here reach the real app's bundled database -- so the
+// "no lexicon at all" case could never happen, and the others would have
+// passed even with a broken fixture. Dropping the candidates outside the
+// temporary home leaves the real resolution logic under test.
+@interface PEConfinedStore : PEUserPhraseStore
+@end
+
+@implementation PEConfinedStore
+- (NSMutableArray *)_lexiconCandidatePaths {
+  NSMutableArray *confined = [NSMutableArray array];
+  for (NSString *path in [super _lexiconCandidatePaths]) {
+    if ([path hasPrefix:g_home]) [confined addObject:path];
+  }
+  return confined;
+}
+@end
+
 static void Exec(sqlite3 *db, const string &sql) {
   sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL);
 }
@@ -235,7 +259,7 @@ static void ResetUserDatabase() {
 // kept, including the phrases the same file brought over.
 static void TestLegacyImportNormalizesAndFilters() {
   ResetUserDatabase();
-  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  PEUserPhraseStore *store = [[PEConfinedStore alloc] init];
   CHECK([store isAvailable]);
   CHECK([store isLexiconAvailable]);
 
@@ -258,7 +282,7 @@ static void TestLegacyImportNormalizesAndFilters() {
 // against this same lexicon, and its probabilities mean what they say.
 static void TestOrdinaryImportKeepsFileValues() {
   ResetUserDatabase();
-  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  PEUserPhraseStore *store = [[PEConfinedStore alloc] init];
   CHECK([store isAvailable]);
 
   CHECK([store importUserPhraseDBFromFile:WriteExportFile(@"own-export.txt")]);
@@ -309,7 +333,7 @@ static string TextOfOverride(const string &qstring) {
 // taught this input method since installing it.
 static void TestLegacyImportMergesInsteadOfReplacing() {
   ResetUserDatabase();
-  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  PEUserPhraseStore *store = [[PEConfinedStore alloc] init];
   SeedExistingLearning();
 
   CHECK([store
@@ -327,7 +351,7 @@ static void TestLegacyImportMergesInsteadOfReplacing() {
 // Restoring one of our own backups is a restore: the file replaces the tables.
 static void TestOrdinaryImportReplacesCaches() {
   ResetUserDatabase();
-  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  PEUserPhraseStore *store = [[PEConfinedStore alloc] init];
   SeedExistingLearning();
 
   CHECK([store importUserPhraseDBFromFile:WriteExportFile(@"restore.txt")]);
@@ -348,7 +372,7 @@ static void TestMissingLexiconDropsNothing() {
                                           toPath:stashed
                                            error:NULL];
 
-  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  PEUserPhraseStore *store = [[PEConfinedStore alloc] init];
   CHECK(![store isLexiconAvailable]);
   CHECK([store
       importLegacyUserPhraseDBFromFile:WriteExportFile(@"no-lexicon.txt")]);
