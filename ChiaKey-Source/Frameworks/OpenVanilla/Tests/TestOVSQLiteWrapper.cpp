@@ -26,7 +26,7 @@ TEST(SQLiteWrapper) {
     {
       OVSQLiteStatementRef statement =
           connection->prepare("select * from foobar where key = ?");
-      CHECK(statement);
+      CHECK(statement != nullptr);
 
       if (statement) {
         CHECK_EQUAL(SQLITE_OK, statement->bindTextToColumn("hello", 1));

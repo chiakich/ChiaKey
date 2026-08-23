@@ -104,11 +104,11 @@ class OVCINToSQLiteConvertor {
     string keynameProperty =
         string(OVPropertyStringInternalPrefix) + string(OVCINKeynameString);
 
-    if (InsertKeyValue(table->propertyMap(), statement,
+    if (InsertKeyValue(table->propertyMap(), statement.get(),
                        OVPropertyStringInternalPrefix))
-      if (InsertKeyValue(table->keynameMap(), statement,
+      if (InsertKeyValue(table->keynameMap(), statement.get(),
                          keynameProperty.c_str()))
-        InsertKeyValue(table->chardefMap(), statement);
+        InsertKeyValue(table->chardefMap(), statement.get());
 
 
     if (connection->execute("COMMIT") != SQLITE_OK) {
