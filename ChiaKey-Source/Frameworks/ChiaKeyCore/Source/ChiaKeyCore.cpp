@@ -13,6 +13,7 @@
 
 #include "OVIMSmartMandarin.h"
 
+#include <memory>
 #include <sstream>
 #include <utility>
 
@@ -110,7 +111,7 @@ class Engine::Impl {
   Impl(OVSQLiteDatabaseService* sqliteService, const EnginePaths& paths,
        const EngineConfig& config)
       : sqliteService_(sqliteService),
-        loaderService_(config.locale, nullptr, sqliteService_),
+        loaderService_(config.locale, nullptr, sqliteService_.get()),
         candidateService_(&loaderService_) {
     pathInfo_.loadedPath = paths.loadedPath;
     pathInfo_.resourcePath = paths.resourcePath;
@@ -125,8 +126,11 @@ class Engine::Impl {
     }
 
     module_.finalize();
-    delete sqliteService_;
-    sqliteService_ = nullptr;
+
+    // sqliteService_ owns the lexicon connection and is declared before
+    // module_, so it is destroyed after it. Closing it here instead would
+    // close the connection while the module's LanguageModel still holds
+    // prepared statements against it, which sqlite3_close() refuses.
   }
 
   bool initialize(const EngineConfig& config, std::string* errorMessage) {
@@ -277,7 +281,7 @@ class Engine::Impl {
 
  private:
   OVPathInfo pathInfo_;
-  OVSQLiteDatabaseService* sqliteService_;
+  std::unique_ptr<OVSQLiteDatabaseService> sqliteService_;
   PVLoaderService loaderService_;
   OVIMSmartMandarin module_;
   OVEventHandlingContext* context_ = nullptr;
