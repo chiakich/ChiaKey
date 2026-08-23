@@ -17,8 +17,18 @@ static NSString *const ChiaKeyGlobalPreferencesFilename =
     @"com.chiakey.ChiaKey.plist";
 static NSString *const ChiaKeyLexiconAutoUpdateEnabledPreferenceKey =
     @"ShouldAutoUpdateLexicon";
+static NSString *const ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey =
+    @"ChiaKeyLexiconAutoUpdateRetryAfter";
 static const NSTimeInterval kChiaKeyLexiconAutoUpdateCheckInterval =
     24.0 * 60.0 * 60.0;
+// A daily cadence is what keeps the CDN from being hammered, so only a failure
+// that never reached it earns a sooner retry. The re-arm timer below is hourly,
+// which is the real floor; 15 minutes just means a relaunch inside the hour
+// also retries.
+static const NSTimeInterval kChiaKeyLexiconAutoUpdateNetworkRetryInterval =
+    15.0 * 60.0;
+// Keep in sync with NETWORK_FAILURE_STATUS in install-lexicon-release.sh.
+static const int kChiaKeyLexiconInstallerNetworkFailureStatus = 75;
 static const NSInteger kChiaKeyLexiconAutoUpdateMinimumAgeDays = 3;
 
 static NSString *const ChiaKeyApplicationAutoUpdateLastCheckDefaultsKey =
@@ -369,21 +379,35 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
       _isBooleanPreferenceEnabled:ChiaKeyLexiconAutoUpdateEnabledPreferenceKey];
 }
 
+// A pending retry is the only thing that overrides the daily throttle, so the
+// CDN still sees at most one reachable check per day per machine.
 - (BOOL)_shouldRunSilentLexiconUpdate {
   if (![self _isSilentLexiconUpdateEnabled]) {
     return NO;
   }
 
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-  NSDate *lastCheck =
-      [defaults objectForKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];
-  if ([lastCheck isKindOfClass:[NSDate class]] &&
-      [[NSDate date] timeIntervalSinceDate:lastCheck] <
-          kChiaKeyLexiconAutoUpdateCheckInterval) {
-    return NO;
+  NSDate *now = [NSDate date];
+  NSDate *retryAfter =
+      [defaults objectForKey:ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey];
+  BOOL retryPending = [retryAfter isKindOfClass:[NSDate class]];
+
+  if (retryPending) {
+    if ([now timeIntervalSinceDate:retryAfter] < 0) return NO;
+  } else {
+    NSDate *lastCheck =
+        [defaults objectForKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];
+    if ([lastCheck isKindOfClass:[NSDate class]] &&
+        [now timeIntervalSinceDate:lastCheck] <
+            kChiaKeyLexiconAutoUpdateCheckInterval) {
+      return NO;
+    }
   }
 
-  [defaults setObject:[NSDate date]
+  // Claimed before the work starts so the next timer tick cannot re-enter a
+  // check still running; a network failure re-arms the retry afterwards.
+  [defaults removeObjectForKey:ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey];
+  [defaults setObject:now
                forKey:ChiaKeyLexiconAutoUpdateLastCheckDefaultsKey];
   [defaults synchronize];
   return YES;
@@ -430,10 +454,37 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
           [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
               autorelease];
       int status = [task terminationStatus];
+      BOOL networkFailure =
+          status == kChiaKeyLexiconInstallerNetworkFailureStatus;
       NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-      NSString *result = [NSString stringWithFormat:@"status=%d\n%@",
-                                                    status,
-                                                    output ? output : @""];
+      NSDate *retryAfter = nil;
+
+      if (networkFailure) {
+        // Neither source was reachable, which says nothing about whether an
+        // update exists. Burning the whole daily slot on it left the machine a
+        // day behind for a blip that cleared in minutes -- a DNS-less moment
+        // right after wake was enough.
+        retryAfter = [NSDate dateWithTimeIntervalSinceNow:
+                                 kChiaKeyLexiconAutoUpdateNetworkRetryInterval];
+        [defaults setObject:retryAfter
+                     forKey:ChiaKeyLexiconAutoUpdateRetryAfterDefaultsKey];
+      }
+
+      // One legible header line: nothing parses this, it is read by a human
+      // asking why the lexicon is not current.
+      NSString *summary;
+      if (status == 0) {
+        summary = @"ok";
+      } else if (networkFailure) {
+        summary = [NSString stringWithFormat:@"unreachable, retrying after %@",
+                                             retryAfter];
+      } else {
+        summary = [NSString stringWithFormat:@"failed (status=%d)", status];
+      }
+
+      NSString *result =
+          [NSString stringWithFormat:@"%@  %@\n%@", [NSDate date], summary,
+                                     output ? output : @""];
       [defaults setObject:result
                    forKey:ChiaKeyLexiconAutoUpdateLastResultDefaultsKey];
       [defaults synchronize];
@@ -445,7 +496,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
                                withObject:nil
                             waitUntilDone:NO];
       } else {
-        NSLog(@"ChiaKey lexicon auto-update failed: %@", output);
+        NSLog(@"ChiaKey lexicon auto-update %@: %@", summary, output);
       }
     }
 

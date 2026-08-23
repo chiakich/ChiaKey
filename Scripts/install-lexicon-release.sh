@@ -77,6 +77,34 @@ curl() {
     "$@"
 }
 
+# DNS, connection, and TLS failures say nothing about whether an update
+# exists, so the caller retries them sooner than the daily cadence instead of
+# writing the day off. An HTTP error or a bad manifest is a real answer and
+# gets the normal exit code, so a broken release is not hammered.
+NETWORK_FAILURE_STATUS=75
+
+curl_status_is_network_failure() {
+  case "$1" in
+    5|6|7|28|35|56) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+download() {
+  local label="$1" dest="$2" url="$3" status=0
+
+  echo "${label}:"
+  echo "  ${url}"
+  curl --output "${dest}" "${url}" || status=$?
+  if (( status != 0 )); then
+    if curl_status_is_network_failure "${status}"; then
+      echo "Could not reach ${url} (curl ${status})." >&2
+      exit "${NETWORK_FAILURE_STATUS}"
+    fi
+    exit "${status}"
+  fi
+}
+
 lexicon_version_in_dir() {
   /usr/bin/ruby -rjson - "$1/metadata.json" \
     "$1/lexicon-manifest.json" <<'RUBY' 2>/dev/null || true
@@ -444,22 +472,37 @@ R2_LEXICON_MANIFEST_URL="https://cdn.chiaki.ch/chiakey/lexicon/lexicon-manifest.
 # cannot strand anyone on an old lexicon. An explicit --tag always names a
 # specific GitHub release directly, since the R2 mirror only ever holds the
 # single latest one.
+MIRROR_STATUS=0
+
 if [[ -z "${MANIFEST_URL}" ]]; then
   if [[ -n "${TAG}" ]]; then
     MANIFEST_URL="https://github.com/${REPO}/releases/download/${TAG}/lexicon-manifest.json"
-  elif curl --fail --output "${MANIFEST_FILE}" "${R2_LEXICON_MANIFEST_URL}" 2>/dev/null; then
-    echo "Using manifest mirror:"
-    echo "  ${R2_LEXICON_MANIFEST_URL}"
-    MANIFEST_URL="${R2_LEXICON_MANIFEST_URL}"
   else
-    MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/lexicon-manifest.json"
+    echo "Trying manifest mirror:"
+    echo "  ${R2_LEXICON_MANIFEST_URL}"
+    curl --output "${MANIFEST_FILE}" "${R2_LEXICON_MANIFEST_URL}" || MIRROR_STATUS=$?
+
+    if (( MIRROR_STATUS == 0 )); then
+      MANIFEST_URL="${R2_LEXICON_MANIFEST_URL}"
+    else
+      # The mirror's own failure belongs in the log. Silencing it made a total
+      # network outage read as "GitHub is down", because GitHub was the only
+      # host the log ever named.
+      echo "Mirror unavailable (curl ${MIRROR_STATUS}); falling back to GitHub." >&2
+      : > "${MANIFEST_FILE}"
+      MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/lexicon-manifest.json"
+    fi
   fi
 fi
 
 if [[ ! -s "${MANIFEST_FILE}" ]]; then
-  echo "Downloading manifest:"
-  echo "  ${MANIFEST_URL}"
-  curl --output "${MANIFEST_FILE}" "${MANIFEST_URL}"
+  download "Downloading manifest" "${MANIFEST_FILE}" "${MANIFEST_URL}"
+fi
+
+# Both sources unreachable, not one: worth stating outright so the fallback is
+# not blamed for an outage that took out the mirror too.
+if (( MIRROR_STATUS != 0 )) && curl_status_is_network_failure "${MIRROR_STATUS}"; then
+  echo "Note: the mirror was unreachable; this manifest came from GitHub."
 fi
 
 ARTIFACT_INFO="$(
@@ -546,15 +589,11 @@ fi
 DB_DOWNLOAD="${TMP_DIR}/${DB_FILENAME}"
 METADATA_DOWNLOAD=""
 
-echo "Downloading database:"
-echo "  ${DB_URL}"
-curl --output "${DB_DOWNLOAD}" "${DB_URL}"
+download "Downloading database" "${DB_DOWNLOAD}" "${DB_URL}"
 
 if [[ -n "${METADATA_URL}" ]]; then
   METADATA_DOWNLOAD="${TMP_DIR}/${METADATA_FILENAME}"
-  echo "Downloading metadata:"
-  echo "  ${METADATA_URL}"
-  curl --output "${METADATA_DOWNLOAD}" "${METADATA_URL}"
+  download "Downloading metadata" "${METADATA_DOWNLOAD}" "${METADATA_URL}"
 fi
 
 verify_sha256() {
