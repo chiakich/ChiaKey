@@ -507,6 +507,7 @@ manifest = JSON.parse(File.read(manifest_path))
 
 db = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "chiakey-source-db" }
 metadata = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "metadata" }
+checksums = manifest.fetch("artifacts").find { |artifact| artifact["kind"] == "checksum" }
 
 abort "manifest does not contain a chiakey-source-db artifact" unless db
 
@@ -519,14 +520,20 @@ fields = [
   metadata&.fetch("url", ""),
   metadata&.fetch("filename", ""),
   metadata&.fetch("sha256", ""),
-  manifest.fetch("generated_at", "")
+  manifest.fetch("generated_at", ""),
+  checksums&.fetch("url", ""),
+  checksums&.fetch("filename", ""),
+  checksums&.fetch("sha256", "")
 ]
 
-puts fields.join("\t")
+# Unit separator, not a tab: tab is IFS whitespace, so `read` in the caller
+# would collapse the empty fields of an absent optional artifact and shift
+# every later value into the wrong variable.
+puts fields.join("\x1f")
 RUBY
 )"
 
-IFS=$'\t' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_URL METADATA_FILENAME METADATA_SHA GENERATED_AT <<<"${ARTIFACT_INFO}"
+IFS=$'\x1f' read -r VERSION DB_SCHEMA_VERSION DB_URL DB_FILENAME DB_SHA METADATA_URL METADATA_FILENAME METADATA_SHA GENERATED_AT CHECKSUM_URL CHECKSUM_FILENAME CHECKSUM_SHA <<<"${ARTIFACT_INFO}"
 
 if [[ -z "${TAG}" ]]; then
   TAG="${VERSION}"
@@ -581,9 +588,49 @@ if [[ "${DB_SCHEMA_VERSION}" != "1" ]]; then
   exit 1
 fi
 
+# The manifest is not signed, so it must not be able to name arbitrary
+# download locations: a tampered manifest could otherwise point the install at
+# any host and supply a matching digest for whatever it serves.
+GITHUB_RELEASE_PREFIX="https://github.com/${REPO}/releases/download/"
+CDN_LEXICON_PREFIX="https://cdn.chiaki.ch/chiakey/lexicon/"
+
+validate_artifact_url() {
+  local label="$1" url="$2"
+
+  case "${url}" in
+    "${GITHUB_RELEASE_PREFIX}"*|"${CDN_LEXICON_PREFIX}"*) return 0 ;;
+  esac
+
+  echo "Refusing ${label} from an unexpected location: ${url}" >&2
+  echo "Allowed prefixes:" >&2
+  echo "  ${GITHUB_RELEASE_PREFIX}" >&2
+  echo "  ${CDN_LEXICON_PREFIX}" >&2
+  exit 1
+}
+
+validate_artifact_url "database" "${DB_URL}"
+[[ -n "${METADATA_URL}" ]] && validate_artifact_url "metadata" "${METADATA_URL}"
+
+# SHA256SUMS is the cross-check on the unsigned manifest. It is published as a
+# GitHub release asset, a different origin from the CDN that serves both the
+# mirrored manifest and the database, so a tampered CDN cannot hand out a
+# swapped lexicon together with a digest that matches it. Required rather than
+# optional: anyone able to rewrite the manifest could just leave it out.
+if [[ -z "${CHECKSUM_URL}" ]]; then
+  echo "Lexicon manifest has no checksum artifact; refusing to install." >&2
+  exit 1
+fi
+if [[ "${CHECKSUM_URL}" != "${GITHUB_RELEASE_PREFIX}"* ]]; then
+  echo "Checksum artifact must be a ${REPO} release asset: ${CHECKSUM_URL}" >&2
+  exit 1
+fi
+validate_manifest_path_component "checksum filename" "${CHECKSUM_FILENAME}"
+
 DB_DOWNLOAD="${TMP_DIR}/${DB_FILENAME}"
 METADATA_DOWNLOAD=""
+CHECKSUM_DOWNLOAD="${TMP_DIR}/${CHECKSUM_FILENAME}"
 
+download "Downloading checksums" "${CHECKSUM_DOWNLOAD}" "${CHECKSUM_URL}"
 download "Downloading database" "${DB_DOWNLOAD}" "${DB_URL}"
 
 if [[ -n "${METADATA_URL}" ]]; then
@@ -605,9 +652,43 @@ verify_sha256() {
   fi
 }
 
-verify_sha256 "${DB_DOWNLOAD}" "${DB_SHA}"
+normalize_sha256() {
+  printf '%s' "$1" | /usr/bin/tr 'A-F' 'a-f'
+}
+
+# Digest recorded for one filename in the checksum list, or failure if absent.
+checksum_list_entry() {
+  /usr/bin/awk -v want="$1" '
+    { name = $2; sub(/^\*/, "", name)
+      if (name == want) { print tolower($1); found = 1; exit } }
+    END { if (!found) exit 1 }
+  ' "${CHECKSUM_DOWNLOAD}"
+}
+
+# Both origins have to agree on the digest before the file is trusted.
+verify_against_checksum_list() {
+  local label="$1" filename="$2" manifest_sha="$3" file="$4"
+  local listed
+
+  if ! listed="$(checksum_list_entry "${filename}")"; then
+    echo "${label} ${filename} is not listed in ${CHECKSUM_FILENAME}." >&2
+    exit 1
+  fi
+
+  if [[ "${listed}" != "$(normalize_sha256 "${manifest_sha}")" ]]; then
+    echo "${label} digest disagrees between the manifest and ${CHECKSUM_FILENAME}." >&2
+    echo "  manifest:  ${manifest_sha}" >&2
+    echo "  checksums: ${listed}" >&2
+    exit 1
+  fi
+
+  verify_sha256 "${file}" "${listed}"
+}
+
+verify_against_checksum_list "database" "${DB_FILENAME}" "${DB_SHA}" "${DB_DOWNLOAD}"
 if [[ -n "${METADATA_DOWNLOAD}" ]]; then
-  verify_sha256 "${METADATA_DOWNLOAD}" "${METADATA_SHA}"
+  verify_against_checksum_list "metadata" "${METADATA_FILENAME}" \
+    "${METADATA_SHA}" "${METADATA_DOWNLOAD}"
 fi
 
 validate_database_health "${DB_DOWNLOAD}"

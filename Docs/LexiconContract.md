@@ -58,6 +58,22 @@ Optional metadata artifact fields：
 3. `filename`
 4. `sha256`
 
+必要 checksum artifact fields：
+
+1. `kind`: 必須是 `checksum`
+2. `url`: 必須是 `https://github.com/<REPO>/releases/download/` 底下的 release asset
+3. `filename`
+4. `sha256`
+
+Manifest 本身沒有簽章，因此 installer 不能只信任 manifest 裡的 `sha256`：serve manifest 與 database 的 CDN 若被竄改，可以同時給出被替換的 DB 與相符的 digest。checksum artifact（`SHA256SUMS`）發布在 GitHub release，與 CDN 是不同 origin，installer 必須要求 database 與 metadata 的 digest 在 manifest 與 `SHA256SUMS` 兩邊一致才安裝。缺少 checksum artifact 一律視為驗證失敗——否則竄改者只要把它拿掉就能繞過。
+
+同理，installer 只接受下列 prefix 底下的 artifact URL：
+
+```text
+https://github.com/<REPO>/releases/download/
+https://cdn.chiaki.ch/chiakey/lexicon/
+```
+
 目前接受的 database schema version：
 
 ```text
