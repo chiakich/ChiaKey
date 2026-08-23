@@ -651,14 +651,22 @@ inline bool LanguageModel::userPhraseWritesSuspended() {
   return (time(NULL) - st.st_mtime) < kEditingLockTimeout;
 }
 
+// PRAGMA rather than a SELECT that is expected to fail: probing by failure
+// logged a SQLite error per table on every launch.
 inline bool UserTableHasColumn(OVSQLiteConnection* userDB, const char* table,
                                const char* column) {
   OVSQLiteStatement* probe =
-      userDB->prepare("SELECT %s FROM %s LIMIT 1", column, table);
+      userDB->prepare("PRAGMA table_info(%Q)", table);
   if (!probe) return false;
 
+  bool found = false;
+  while (probe->step() == SQLITE_ROW) {
+    const char* name = probe->textOfColumn(1);
+    if (name && string(name) == column) found = true;
+  }
+
   delete probe;
-  return true;
+  return found;
 }
 
 // Rebuilds one learning table in its original column shape, moving the
