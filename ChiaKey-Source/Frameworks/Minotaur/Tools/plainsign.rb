@@ -5,9 +5,7 @@
 #file for terms.
 #
 
-# NOTE: as with digestsign.rb, nothing in this tree can verify the output:
-# Minotaur's RSA implementation is absent, so Minos::GetBack() fails
-# closed.
+# NOTE: nothing in this tree can verify the output; Minotaur has no RSA.
 require "digest/sha1"
 require "openssl"
 require "base64"

@@ -33,9 +33,8 @@ build() {
     -o "$output"
 }
 
-# CFFIXED_USER_HOME moves NSHomeDirectory() into the temporary directory, the
-# only thing that keeps the store off the real user profile; each test refuses
-# to run if it did not take effect.
+# CFFIXED_USER_HOME is what keeps the store off the real user profile; each
+# test refuses to run if it did not take effect.
 run_suite() {
   local binary="$1" home="$2"
   mkdir -p "$home"
@@ -46,9 +45,8 @@ run_suite() {
 build "$TMP_BASE/TestPhraseEditorImport"
 run_suite "$TMP_BASE/TestPhraseEditorImport" "$TMP_BASE/home-default"
 
-# Lowered limits: the two size guards, without writing hundreds of megabytes.
-# The file limit stays at 1 MiB so a real export still gets through it and the
-# blob limit is what rejects the learning block.
+# Lowered limits, so the size guards can be reached cheaply. The file limit
+# stays at 1 MiB so a real export gets past it and the blob limit is what bites.
 build "$TMP_BASE/TestPhraseEditorImportLimits" \
   -DPE_TEST_SMALL_LIMITS \
   -DPE_MAX_IMPORT_FILE_SIZE=1048576ULL \

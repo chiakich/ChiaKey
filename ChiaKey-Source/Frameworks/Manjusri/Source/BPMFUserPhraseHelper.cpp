@@ -25,15 +25,13 @@ using namespace Formosa::Mandarin;
 
 namespace {
 
-// Every table the export block carries. The two original ones come first so a
-// file written here keeps the layout older builds expect to read.
+// Every table the export block carries. The two original ones come first so
+// older builds still find the layout they expect.
 struct LearningCacheTable {
   const char* name;
   const char* columns;
-  // The unique key the IME's incremental saves rely on. Created only together
-  // with the table: without it INSERT OR REPLACE has nothing to conflict on
-  // and quietly appends instead. Mirrors
-  // LanguageModel::MigrateUserLearningTables().
+  // Without it INSERT OR REPLACE has nothing to conflict on and quietly
+  // appends. Mirrors LanguageModel::MigrateUserLearningTables().
   const char* uniqueIndex;
 };
 
@@ -54,11 +52,8 @@ const LearningCacheTable kLearningCacheTables[] = {
      "ON user_learning_stats (store, qstring)"},
 };
 
-// Ceilings mirroring the phrase editor's importer (PEUserPhraseStore.mm): the
-// file is read whole and copied several times over on the way in, so an
-// unbounded one turns into a multi-gigabyte spike. Overridable so the tests can
-// reach the learning-block limit without writing hundreds of megabytes; the
-// file limit is reachable with a sparse file, so it stays as shipped there.
+// As in the phrase editor's importer: the file is read whole and copied
+// several times over. Overridable for the tests.
 #ifndef MJSR_MAX_IMPORT_FILE_SIZE
 #define MJSR_MAX_IMPORT_FILE_SIZE (256ULL * 1024 * 1024)
 #endif
@@ -85,9 +80,8 @@ bool TableExists(OVSQLiteConnection* db, const char* schema,
   return exists;
 }
 
-// Replaces the learning tables with the ones in an export database. All or
-// nothing: a failure part way through used to leave the caller with its caches
-// emptied while the import still reported success.
+// All or nothing: a failure part way through used to leave the caches emptied
+// while the import still reported success.
 bool RestoreLearningCaches(OVSQLiteConnection* db, const string& exportPath) {
   if (db->execute("ATTACH DATABASE %Q AS export", exportPath.c_str()) !=
       SQLITE_OK)
@@ -98,8 +92,7 @@ bool RestoreLearningCaches(OVSQLiteConnection* db, const string& exportPath) {
   for (size_t i = 0; ok && i < kLearningCacheTableCount; ++i) {
     const LearningCacheTable& table = kLearningCacheTables[i];
 
-    // A file written by an older build has nothing for the newer stores, and
-    // keeping what is already there beats replacing it with nothing.
+    // An older file has nothing for the newer stores; keep what is here.
     if (!TableExists(db, "export", table.name)) continue;
 
     if (!TableExists(db, "main", table.name)) {
@@ -108,14 +101,12 @@ bool RestoreLearningCaches(OVSQLiteConnection* db, const string& exportPath) {
         ok = false;
         continue;
       }
-      // Safe to index unconditionally here: the table was just created, so it
-      // holds no duplicates for the unique key to trip over.
+      // Just created, so no duplicates for the unique key to trip over.
       db->execute("%s", table.uniqueIndex);
     }
 
-    // OR REPLACE because these tables carry a unique key on qstring and an
-    // older or hand-made export may hold duplicates -- which used to abort the
-    // restore after the DELETE had already run.
+    // OR REPLACE: an older or hand-made export may hold duplicates, which
+    // used to abort the restore after the DELETE had already run.
     if (db->execute("DELETE FROM %s", table.name) != SQLITE_OK ||
         db->execute("INSERT OR REPLACE INTO %s (%s) SELECT %s FROM export.%s",
                     table.name, table.columns, table.columns,
@@ -173,8 +164,7 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
   OVFileHelper::OpenIFStream(ifs, filename, ios_base::in);
   if (!ifs.is_open()) return false;
 
-  // Bounded before anything is read: this importer serves the CLI and the IME,
-  // and it used to accept a file of any size.
+  // Bounded before anything is read.
   ifs.seekg(0, ios_base::end);
   streamoff fileSize = ifs.tellg();
   ifs.seekg(0, ios_base::beg);
@@ -263,8 +253,7 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
 
     if (blobTooLarge) continue;
 
-    // Checked before appending, so a block that arrives as one huge line is
-    // never held whole either.
+    // Before appending, so one huge line is never held whole either.
     if ((dbHex.size() + line.size()) / 2 > kMaxLearningBlobSize) {
       cerr << "Learning database in " << filename << " exceeds the "
            << kMaxLearningBlobSize << " byte limit; skipping it" << endl;
@@ -276,9 +265,7 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
     dbHex += line;
   }
 
-  // A block we refused to read is learning data that did not come back, so it
-  // is reported like a failed restore. (A block we *cannot* read -- truncated,
-  // or encrypted with someone else's key -- stays a success; see below.)
+  // Refusing a block for size is reported; a block we *cannot* read is not.
   bool cacheRestored = !blobTooLarge;
 
   pair<char*, size_t> binData = Minotaur::Minos::BinaryFromHexString(dbHex);
@@ -306,8 +293,7 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db,
 
   ifs.close();
 
-  // The phrases above are committed either way; the caller still has to hear
-  // that the learning data did not come back.
+  // The phrases are committed either way; this reports the learning data.
   return cacheRestored;
 }
 
@@ -338,18 +324,15 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
 
   string cacheExportTempFile = OVDirectoryHelper::GenerateTempFilename();
 
-  // No KEY: macOS's libsqlite3 carries a codec, so passing one really did
-  // encrypt the file -- with a scheme neither importer can read, because they
-  // attach it without a key and DecryptExportDatabase only knows the legacy
-  // KeyKey cipher. Every backup lost its learning data on restore.
+  // No KEY: macOS's libsqlite3 has a codec, so passing one really encrypted
+  // the file, and neither importer can read that back.
   db->execute("ATTACH DATABASE %Q AS export", cacheExportTempFile.c_str());
   for (size_t i = 0; i < kLearningCacheTableCount; ++i) {
     const LearningCacheTable& table = kLearningCacheTables[i];
 
     db->execute("CREATE TABLE export.%s (%s)", table.name, table.columns);
 
-    // A user database that predates one of these tables exports it empty,
-    // which is also what it holds.
+    // A database predating the table exports it empty, which is what it holds.
     if (!TableExists(db, "main", table.name)) continue;
 
     db->execute("INSERT INTO export.%s (%s) SELECT %s FROM %s", table.name,

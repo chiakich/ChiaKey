@@ -46,9 +46,7 @@ char* Minos::Digest(const char* block, size_t blockSize) {
 pair<char*, size_t> Minos::Encrypt(const char* dataBlock, size_t blockSize,
                                    const char* RSAKey, size_t keySize,
                                    bool encryptWithPrivateKey) {
-  // The RSA implementation is not part of this source distribution. Returning
-  // the input unchanged would make every caller treat unsigned data as signed,
-  // so this fails closed instead. See ValidateFile().
+  // No RSA here: passing the input back would authenticate unsigned data.
   return pair<char*, size_t>(0, 0);
 }
 
@@ -69,9 +67,7 @@ pair<char*, size_t> Minos::GetBack(const pair<char*, size_t>& block,
 pair<char*, size_t> Minos::GetBack(const char* encodedBlock, size_t blockSize,
                                    const char* RSAKey, size_t keySize,
                                    bool decryptWithPublicKey) {
-  // Fails closed for the same reason as Encrypt(): without the RSA
-  // implementation there is no way to recover a trustworthy digest, and
-  // handing the caller back the untrusted input would authenticate it.
+  // Fails closed for the same reason as Encrypt().
   return pair<char*, size_t>(0, 0);
 }
 
@@ -150,9 +146,7 @@ pair<char*, size_t> Minos::BinaryFromHexString(const string& str) {
     unsigned char nibble[2] = {0, 0};
 
     for (size_t j = 0; j < 2; ++j) {
-      // strchr() would also match the terminating NUL, and an unmapped
-      // character used to fall through as 0 -- both let a malformed signature
-      // decode into plausible bytes.
+      // strchr() matches the NUL too, and an unmapped char used to decode as 0.
       char c = str[i + j];
       const char* p = c ? strchr(map1, c) : 0;
       if (p) {

@@ -31,14 +31,8 @@ static NSString *const kChiaKeyLoaderName = @"ChiaKey";
 static NSString *const kChiaKeyIMEBundleIdentifier =
     @"com.chiakey.inputmethod.ChiaKey";
 static const NSTimeInterval kChangeNotificationThrottle = 0.5;
-// An import is read whole and copied several times over (UTF-16 string, line
-// array, hex string, decoded blob, temp file), so an unbounded file turns into
-// a multi-gigabyte spike. The limits only have to rule out that, not second
-// guess how much a long-time user has accumulated: a phrase line measures
-// 45-90 bytes, so a million of them is around 60 MB, and the hex-encoded
-// learning database that follows them doubles whatever it holds.
-// Overridable so the tests can exercise both limits without writing hundreds
-// of megabytes to disk.
+// Generous on purpose: a phrase line is 45-90 bytes, so a million of them
+// already comes to 60 MB. Overridable for the tests.
 #ifndef PE_MAX_IMPORT_FILE_SIZE
 #define PE_MAX_IMPORT_FILE_SIZE (256ULL * 1024 * 1024)
 #endif
@@ -838,8 +832,7 @@ static NSData *PEHexDecode(NSString *hex) {
   // simply never look at it because their import names its columns explicitly.
   NSString *tempPath = [self _tempDatabasePath];
   char *sql = sqlite3_mprintf(
-      // No KEY: see BPMFUserPhraseHelper::Export -- macOS's libsqlite3 really
-      // does encrypt when given one, and nothing can read it back.
+      // No KEY: see BPMFUserPhraseHelper::Export.
       "ATTACH DATABASE %Q AS export;"
       "CREATE TABLE export.user_bigram_cache "
       "(qstring, previous, current, probability);"
@@ -1033,9 +1026,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
   if (!_userDB) return NO;
 
   // stat(), not -attributesOfItemAtPath:, which reports a symlink's own size
-  // (the length of its target path) while -stringWithContentsOfFile: below
-  // follows the link -- a symlink to a huge file would sail past this limit.
-  // Anything but a regular file has no meaningful size to check at all.
+  // while the read below follows the link.
   struct stat info;
   if (stat([path fileSystemRepresentation], &info) != 0) return NO;
   if (!S_ISREG(info.st_mode)) {
@@ -1061,10 +1052,8 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     return NO;
   }
 
-  // Walked line by line instead of split into an array of lines first: one
-  // NSString object per line costs more than the file itself once a backup
-  // runs to hundreds of thousands of phrases, and that array was what made the
-  // size limit above expensive rather than merely a backstop.
+  // Walked line by line: an array of lines costs one NSString per line, which
+  // outweighs the file itself once a backup runs to hundreds of thousands.
   NSMutableString *hex = [NSMutableString string];
   __block BOOL headerChecked = NO;
   __block BOOL headerValid = NO;
@@ -1089,8 +1078,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
       }
       if (blobTooLarge) return;
 
-      // Checked before appending, so a block that arrives as one huge line is
-      // never held whole either.
+      // Before appending, so one huge line is never held whole either.
       if (([hex length] + [line length]) / 2 > kPEMaxLearningBlobSize) {
         NSLog(@"Ignoring the learning database in %@: over the %lu byte limit",
               path, (unsigned long)kPEMaxLearningBlobSize);
@@ -1149,8 +1137,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     sqlite3_step(insert);
   }];
 
-  // A file that never identified itself has inserted nothing; unwind the
-  // transaction rather than commit an empty one.
+  // Nothing was inserted if the header never matched; unwind instead.
   sqlite3_exec(_userDB, headerValid ? "COMMIT" : "ROLLBACK", NULL, NULL, NULL);
   sqlite3_finalize(insert);
   if (!headerValid) return NO;
@@ -1167,8 +1154,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 
     if (cacheData.size()) {
       NSString *tempPath = [self _tempDatabasePath];
-      // Wraps the decrypted bytes instead of copying them again: on a large
-      // backup every extra copy of this block is another spike.
+      // Wraps the bytes rather than copying the whole block again.
       NSData *decoded = [NSData dataWithBytesNoCopy:(void *)cacheData.data()
                                              length:cacheData.size()
                                        freeWhenDone:NO];

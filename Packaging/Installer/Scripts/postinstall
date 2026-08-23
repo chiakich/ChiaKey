@@ -56,9 +56,8 @@ remove_duplicate() {
 }
 
 # Only prune once we are sure which copy to keep; never leave zero copies.
-# Scoped to the locations this install owns -- the system domain, the chosen
-# target location and the console user's home. A system-wide install runs as
-# root, so sweeping every /Users/* would delete other accounts' installs.
+# Scoped to what this install owns: as root, sweeping /Users/* would delete
+# other accounts' installs.
 if [ -n "${keep_canon}" ]; then
   remove_duplicate "/${APP_REL}"
   remove_duplicate "/${LEGACY_REL}"
@@ -69,8 +68,7 @@ if [ -n "${keep_canon}" ]; then
     remove_duplicate "${home}/${LEGACY_REL}"
   done
 
-  # Another account's per-user copy still shadows the system-wide one for that
-  # account, so report it instead of removing it on their behalf.
+  # Still shadows the system-wide copy for that account, so say so.
   for home in /Users/*; do
     [ -d "${home}" ] || continue
     for rel in "${APP_REL}" "${LEGACY_REL}"; do

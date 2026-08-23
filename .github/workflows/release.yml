@@ -43,10 +43,8 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app
 
-      # The built-in updater refuses any package that is not signed with a
-      # Developer ID Installer certificate and notarized, so publishing an
-      # ad-hoc build would ship a release nobody can install through the
-      # updater. Bail out before the tag is created rather than after.
+      # The updater refuses anything not Developer ID-signed and notarized, so
+      # an ad-hoc build must not become a release. Checked before the tag.
       - name: Require signing and notarization secrets
         if: ${{ inputs.dry_run == false }}
         env:
@@ -59,8 +57,7 @@ jobs:
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
         run: |
           set -euo pipefail
-          # Plain string, not an array: an empty array under `set -u` is an
-          # unbound variable on the runner's bash 3.2.
+          # Not an array: an empty one is unbound under `set -u` on bash 3.2.
           missing=""
           for name in APP_CERT_P12 APP_SIGN_IDENTITY INSTALLER_CERT_P12 \
                       INSTALLER_SIGN_IDENTITY NOTARY_API_KEY_P8 \
@@ -155,9 +152,8 @@ jobs:
       - name: Build release package
         id: build
         env:
-          # A publishing run requires all of these (enforced by the preflight
-          # step above). They stay optional here so a dry run can still build
-          # an ad-hoc (unsigned) package without any secrets configured.
+          # Optional here so a dry run can build unsigned; a publishing run
+          # requires them all (see the preflight step).
           APP_CERT_P12: ${{ secrets.APP_CERT_P12 }}
           APP_CERT_PASSWORD: ${{ secrets.APP_CERT_PASSWORD }}
           INSTALLER_CERT_P12: ${{ secrets.INSTALLER_CERT_P12 }}
@@ -219,14 +215,8 @@ jobs:
           echo "Built: $pkg"
           echo "pkg=$pkg" >>"$GITHUB_OUTPUT"
 
-          # Same gate the updater applies, checked here so a signing or
-          # notarization failure cannot reach the appcast. Output is captured
-          # rather than piped because both tools exit non-zero on rejection.
-          #
-          # A dry run reports instead of failing: an unsigned ad-hoc build is
-          # expected there, but running the checks anyway is the only way to
-          # rehearse them -- otherwise these greps first execute during a real
-          # publish, and a reworded tool output would surface only then.
+          # The gate the updater applies. A dry run runs it but only reports,
+          # so the greps are not first executed during a real publish.
           gate_failed=""
           pkgutil --check-signature "$pkg" >signature.txt 2>&1 || true
           cat signature.txt
@@ -334,10 +324,8 @@ jobs:
         if: ${{ inputs.dry_run == false }}
         run: |
           set -euo pipefail
-          # Tag the exact commit the package was built from. Rebasing onto a
-          # concurrent push first would move HEAD to a tree that was never
-          # built, so the branch push is allowed to fail instead: a rejected
-          # non-fast-forward stops the release before anything is published.
+          # Tag the commit the package was built from, and let the branch push
+          # fail rather than rebasing onto a tree that was never built.
           built="$(git rev-parse HEAD)"
           git tag "${{ steps.version.outputs.tag }}" "${built}"
 

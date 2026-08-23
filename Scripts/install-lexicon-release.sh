@@ -526,9 +526,8 @@ fields = [
   checksums&.fetch("sha256", "")
 ]
 
-# Unit separator, not a tab: tab is IFS whitespace, so `read` in the caller
-# would collapse the empty fields of an absent optional artifact and shift
-# every later value into the wrong variable.
+# Unit separator, not a tab: tab is IFS whitespace, so `read` would collapse
+# the empty fields of an absent artifact and shift every later value.
 puts fields.join("\x1f")
 RUBY
 )"
@@ -588,13 +587,9 @@ if [[ "${DB_SCHEMA_VERSION}" != "1" ]]; then
   exit 1
 fi
 
-# The manifest is not signed, so it must not be able to name arbitrary
-# download locations: a tampered manifest could otherwise point the install at
-# any host and supply a matching digest for whatever it serves.
+# The manifest is unsigned, so it must not be able to name arbitrary hosts.
 GITHUB_RELEASE_PREFIX="https://github.com/${REPO}/releases/download/"
-# Derived from the mirror URL rather than repeating the host: if the CDN base
-# moves, the allowlist moves with it instead of silently rejecting every
-# artifact the new manifests point at.
+# Derived from the mirror URL so the two cannot drift apart.
 CDN_LEXICON_PREFIX="${R2_LEXICON_MANIFEST_URL%/*}/"
 
 validate_artifact_url() {
@@ -614,11 +609,8 @@ validate_artifact_url() {
 validate_artifact_url "database" "${DB_URL}"
 [[ -n "${METADATA_URL}" ]] && validate_artifact_url "metadata" "${METADATA_URL}"
 
-# SHA256SUMS is the cross-check on the unsigned manifest. It is published as a
-# GitHub release asset, a different origin from the CDN that serves both the
-# mirrored manifest and the database, so a tampered CDN cannot hand out a
-# swapped lexicon together with a digest that matches it. Required rather than
-# optional: anyone able to rewrite the manifest could just leave it out.
+# The cross-check on the unsigned manifest: SHA256SUMS lives on GitHub, a
+# different origin from the CDN. Required, or dropping it would bypass it.
 if [[ -z "${CHECKSUM_URL}" ]]; then
   echo "Lexicon manifest has no checksum artifact; refusing to install." >&2
   exit 1
@@ -668,11 +660,8 @@ checksum_list_entry() {
   ' "${CHECKSUM_DOWNLOAD}"
 }
 
-# Both origins have to agree on the digest before the file is trusted. The
-# fifth argument says whether a missing entry is fatal: nothing guarantees the
-# checksum list covers the manifest's optional artifacts, and refusing to
-# install over an absent metadata line would strand every client on an old
-# lexicon. The database entry stays mandatory -- it is the file being trusted.
+# Both origins have to agree before the file is trusted. $5: nothing
+# guarantees the list covers the manifest's optional artifacts.
 verify_against_checksum_list() {
   local label="$1" filename="$2" manifest_sha="$3" file="$4"
   local required="${5:-1}"

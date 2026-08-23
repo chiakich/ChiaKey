@@ -112,8 +112,7 @@ class YKSignedModuleLoadingSystem : public PVCommonPackageLoadingSystem {
       return 0;
     }
     memcpy(block.first, secret.data(), secret.size());
-    // The binary itself has to be part of the digest, otherwise the signature
-    // only covers the identifier and the binary can be swapped freely.
+    // Without this the signature covers only the identifier.
     memcpy(block.first + secret.size(), binData.first, binData.second);
     free(binData.first);
 

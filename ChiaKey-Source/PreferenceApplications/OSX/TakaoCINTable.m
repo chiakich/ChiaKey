@@ -149,9 +149,7 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
 
 + (NSDictionary *)inspectFileAtPath:(NSString *)path error:(NSError **)error {
   // stat(), not -attributesOfItemAtPath:, which reports a symlink's own size
-  // (the length of its target path) while -dataWithContentsOfFile: below
-  // follows the link -- a symlink to a huge file would sail past the limit.
-  // Anything but a regular file has no meaningful size to check at all.
+  // while -dataWithContentsOfFile: below follows the link.
   struct stat info;
   if (stat([path fileSystemRepresentation], &info) != 0 ||
       !S_ISREG(info.st_mode)) {

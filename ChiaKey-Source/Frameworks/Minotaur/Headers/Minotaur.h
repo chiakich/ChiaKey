@@ -20,9 +20,8 @@ using namespace std;
 // longer than the key you want to encodes
 class Minos {
  public:
-  // The RSA implementation is absent from this source distribution, so
-  // Encrypt() and GetBack() always fail (return a null pointer). Callers must
-  // treat that as "not signed" -- signature verification cannot succeed.
+  // No RSA in this source distribution: Encrypt() and GetBack() always fail,
+  // so signature verification cannot succeed.
   // use free() instead of delete[]
   static pair<char*, size_t> GetBack(const char* encodedBlock, size_t blockSize,
                                      const char* RSAKey, size_t keySize,

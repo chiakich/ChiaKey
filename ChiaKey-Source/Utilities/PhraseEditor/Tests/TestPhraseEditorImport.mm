@@ -1,13 +1,8 @@
 //
 //  TestPhraseEditorImport.mm
 //
-//  Covers PEUserPhraseStore's MJSR import: the line walk (header, comments,
-//  CRLF, the <database> section), the export/import round trip including the
-//  learning tables, and the two size limits.
-//
-//  Runs against a temporary home (CFFIXED_USER_HOME), the same way
-//  TestLegacyImport does, so it never touches the real profile -- main()
-//  refuses to run if the store resolves anywhere else.
+//  Runs against a temporary home (CFFIXED_USER_HOME), as TestLegacyImport
+//  does; main() refuses to run if the store resolves anywhere else.
 //
 
 #import <Foundation/Foundation.h>
@@ -31,8 +26,7 @@ static NSString *gFileDir = nil;  // import/export files, kept across resets
 
 // ---------------------------------------------------------------- fixtures
 
-// Deliberately not inside gDir: ResetStoreDirectory() wipes that, and an
-// export written there would be deleted before it could be imported back.
+// Not inside gDir: ResetStoreDirectory() wipes that between tests.
 static NSString *TempPath(NSString *name) {
   return [gFileDir stringByAppendingPathComponent:name];
 }
@@ -117,8 +111,7 @@ static NSString *const kPhraseLines =
 
 // ------------------------------------------------------------------- tests
 
-// The whole point of the format: everything a backup carries comes back,
-// learning tables included.
+// Everything a backup carries comes back, learning tables included.
 static void TestExportImportRoundTrip(void) {
   ResetStoreDirectory();
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
@@ -136,7 +129,7 @@ static void TestExportImportRoundTrip(void) {
   CHECK([store exportUserPhraseDBToFile:exportPath]);
   [store release];
 
-  // A clean database, so anything present afterwards came from the file.
+  // Clean, so anything present afterwards came from the file.
   ResetStoreDirectory();
   PEUserPhraseStore *restored = [[PEUserPhraseStore alloc] init];
   CHECK([restored isAvailable]);
@@ -190,9 +183,7 @@ static void TestSkipsCommentsAndBlankLines(void) {
   [store release];
 }
 
-// A CRLF file used to arrive as real lines interleaved with empty ones, which
-// the field count happened to skip; the line walk sees one break per line.
-// Either way the phrases have to land -- this pins that.
+// The phrases have to land either way; the line walk sees one break per line.
 static void TestHandlesCRLF(void) {
   ResetStoreDirectory();
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
@@ -207,8 +198,7 @@ static void TestHandlesCRLF(void) {
   [store release];
 }
 
-// A legacy file's probabilities were estimated against another lexicon, so an
-// imported phrase gets what a hand-added one gets instead.
+// Estimated against another lexicon, so an imported phrase is renormalized.
 static void TestLegacyImportRenormalizesProbability(void) {
   ResetStoreDirectory();
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
@@ -225,8 +215,7 @@ static void TestLegacyImportRenormalizesProbability(void) {
 
 #ifdef PE_TEST_SMALL_LIMITS
 
-// Built with the limits lowered, so the guards can be exercised without
-// writing hundreds of megabytes.
+// Built with the limits lowered, so the guards are cheap to reach.
 static void TestRejectsOversizedFile(void) {
   ResetStoreDirectory();
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
@@ -242,9 +231,7 @@ static void TestRejectsOversizedFile(void) {
   CHECK(![store importUserPhraseDBFromFile:path]);
   CHECK(CountRows("user_unigrams") == 0);
 
-  // And through a symlink: the link's own size is a few dozen bytes, but
-  // reading it follows the link, so a size check that does not would let the
-  // whole file in.
+  // And through a symlink, whose own size is a few dozen bytes.
   NSString *link = TempPath(@"oversized-link.txt");
   [[NSFileManager defaultManager] removeItemAtPath:link error:NULL];
   CHECK([[NSFileManager defaultManager] createSymbolicLinkAtPath:link
@@ -255,12 +242,8 @@ static void TestRejectsOversizedFile(void) {
   [store release];
 }
 
-// An oversized learning block costs the caller that block only: the phrases
-// still land, and whatever was already learned stays put.
-//
-// The block is a real export, not filler -- a blob of arbitrary hex would be
-// rejected as unreadable anyway, and the test would pass without the size
-// guard ever running. This one would restore if it were allowed through.
+// A real export, not filler: arbitrary hex would be rejected as unreadable
+// anyway and the test would pass without the size guard running.
 static void TestOversizedLearningBlobIsIgnored(void) {
   ResetStoreDirectory();
   PEUserPhraseStore *source = [[PEUserPhraseStore alloc] init];
@@ -282,7 +265,7 @@ static void TestOversizedLearningBlobIsIgnored(void) {
   ExecOnUserDB("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
 
   CHECK([store importUserPhraseDBFromFile:path]);
-  // The marker survives, so the block really was skipped rather than restored.
+  // The marker survives, so the block was skipped rather than restored.
   CHECK(CountRows("user_bigram_cache") == 1);
   CHECK([FirstTextValue("SELECT current FROM user_bigram_cache")
       isEqualToString:@"z"]);

@@ -70,8 +70,7 @@ static OVSQLiteConnection* OpenUserDB(const string& path) {
   return db;
 }
 
-// A user database from before the newer learning stores were added, so the
-// import has to create them itself.
+// From before the newer learning stores, so the import must create them.
 static OVSQLiteConnection* OpenLegacyUserDB(const string& path) {
   remove(path.c_str());
   OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
@@ -153,8 +152,7 @@ static string BuildCacheDatabaseFile() {
   return data;
 }
 
-// A cache database with the schema and rows a caller passes in, so a test can
-// forge an export from an older build or one with a drifted schema.
+// A cache database with the schema and rows a caller passes in.
 static string BuildCacheDatabaseFileWithSQL(const string& sql) {
   string path = TempPath("export-cache-custom.db");
   remove(path.c_str());
@@ -437,7 +435,7 @@ static void TestUnreadableBlockKeepsPhrasesAndCache() {
   delete db;
 }
 
-// The newer stores travel with a backup too, so restoring one brings them back.
+// The newer stores travel with a backup too.
 static void TestImportsAllLearningTables() {
   string block = BuildCacheDatabaseFileWithSQL(
       "CREATE TABLE user_bigram_cache (qstring, previous, current, "
@@ -467,8 +465,7 @@ static void TestImportsAllLearningTables() {
   delete db;
 }
 
-// An export from an older build carries only the two original tables. What it
-// says nothing about must be left alone, not wiped.
+// An older export carries only the two original tables; the rest must survive.
 static void TestOlderExportLeavesNewerTablesAlone() {
   string path = WriteExportFile("older-export.txt", BuildCacheDatabaseFile());
 
@@ -486,8 +483,7 @@ static void TestOlderExportLeavesNewerTablesAlone() {
   delete db;
 }
 
-// Duplicate keys used to abort the restore after the tables had been emptied,
-// and the import still reported success.
+// Duplicates used to abort the restore after the tables had been emptied.
 static void TestDuplicateKeysDoNotEmptyCaches() {
   string block = BuildCacheDatabaseFileWithSQL(
       "CREATE TABLE user_bigram_cache (qstring, previous, current, "
@@ -508,11 +504,10 @@ static void TestDuplicateKeysDoNotEmptyCaches() {
   delete db;
 }
 
-// A restore that cannot complete must leave every cache as it was, and say so.
+// A restore that cannot complete leaves every cache as it was, and says so.
 static void TestFailedRestoreRollsBackAndReportsFailure() {
-  // user_learning_stats without last_used: the restore's SELECT names a column
-  // this file does not have, and that failure comes after the earlier tables
-  // have already been emptied and refilled.
+  // user_learning_stats without last_used, so the restore fails only after the
+  // earlier tables have been emptied and refilled.
   string block = BuildCacheDatabaseFileWithSQL(
       "CREATE TABLE user_bigram_cache (qstring, previous, current, "
       "probability);"
@@ -534,9 +529,8 @@ static void TestFailedRestoreRollsBackAndReportsFailure() {
   delete db;
 }
 
-// Export then import, which is the one path the synthesised blobs above never
-// covered: the exporter used to hand ATTACH a KEY, and macOS's libsqlite3
-// honours it, so a real backup came back with its learning data dropped.
+// The one path the synthesised blobs above never covered: the exporter used to
+// hand ATTACH a KEY, and macOS's libsqlite3 honours it.
 static void TestExportImportRoundTrip() {
   string exportPath = TempPath("round-trip-export.txt");
   remove(exportPath.c_str());
@@ -544,8 +538,7 @@ static void TestExportImportRoundTrip() {
   OVSQLiteConnection* source = OpenUserDB(TempPath("round-trip-source.db"));
   CHECK(source != 0);
   if (!source) return;
-  // A real qstring, so Export can render it back as composed Bopomofo and the
-  // import accepts the line.
+  // A real qstring, or Export cannot render it back as composed Bopomofo.
   pair<string, size_t> reading = BPMFUserPhraseHelper::QString(
       "\xe3\x84\x98\xe3\x84\x9c\xcb\x8b,\xe3\x84\x95\xcb\x8b");
   CHECK(reading.second == 2);
@@ -581,8 +574,7 @@ static void TestExportImportRoundTrip() {
   delete target;
 }
 
-// A file larger than the importer accepts is refused before it is read at all.
-// Grown with truncate() so the size is real without the bytes being written.
+// Grown with truncate(), so the size is real without writing the bytes.
 static void TestOversizedFileIsRefused() {
   string path = WriteExportFile("oversized-export.txt",
                                 BuildCacheDatabaseFile());
@@ -595,8 +587,7 @@ static void TestOversizedFileIsRefused() {
   CHECK(CountRows(db, "user_unigrams") == 2);
   delete db;
 
-  // 256 MiB + 1: past the shipping limit, and a hole rather than 256 MiB of
-  // writes.
+  // Past the shipping limit, as a hole rather than 256 MiB of writes.
   CHECK(truncate(path.c_str(), (off_t)(256LL * 1024 * 1024) + 1) == 0);
 
   db = OpenUserDB(TempPath("import-size.db"));
@@ -607,22 +598,19 @@ static void TestOversizedFileIsRefused() {
   delete db;
 }
 
-// An oversized learning block costs the caller that block, not the phrases in
-// front of it -- the same deal as a block that cannot be read.
+// An oversized block costs the caller that block, not the phrases before it.
 static void TestOversizedLearningBlockIsSkipped() {
 #if MJSR_MAX_LEARNING_BLOB_SIZE > (1UL * 1024 * 1024)
-  // Crossing the shipping limit would mean writing ~192 MB of hex, so this one
-  // only runs when the build lowers it (Scripts/test-user-phrase-import.sh
-  // passes -DMJSR_MAX_LEARNING_BLOB_SIZE=65536UL).
+  // Crossing the shipping limit needs ~192 MB of hex; the suite's build lowers
+  // it (see Scripts/test-user-phrase-import.sh).
   cout << "  (skipping the learning-block limit test: build with "
           "-DMJSR_MAX_LEARNING_BLOB_SIZE lowered to run it)"
        << endl;
   return;
 #endif
 
-  // A real cache database padded past the limit with rows, not filler: a block
-  // of arbitrary bytes would be rejected as unreadable anyway and the test
-  // would pass without the limit ever running. This one would restore.
+  // A real database, not filler: arbitrary bytes would be rejected as
+  // unreadable anyway and the test would pass without the limit running.
   string sql =
       "CREATE TABLE user_bigram_cache (qstring, previous, current, "
       "probability);"
@@ -645,8 +633,7 @@ static void TestOversizedLearningBlockIsSkipped() {
   if (!db) return;
   db->execute("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
 
-  // Reported, not silently swallowed: the phrases landed but the learning data
-  // in the file did not.
+  // Reported: the phrases landed but the learning data did not.
   CHECK(!BPMFUserPhraseHelper::Import(db, path));
   CHECK(CountRows(db, "user_unigrams") == 2);
   // Untouched: the block was dropped, not restored.
@@ -655,9 +642,8 @@ static void TestOversizedLearningBlockIsSkipped() {
   delete db;
 }
 
-// Restoring into a database that predates a learning table has to create it
-// *with* its unique key, or the INSERT OR REPLACE below silently appends and
-// the IME's own incremental saves do the same afterwards.
+// A database predating a learning table needs it created *with* its unique
+// key, or INSERT OR REPLACE silently appends -- here and in the IME after.
 static void TestCreatesMissingTableWithItsUniqueKey() {
   string block = BuildCacheDatabaseFileWithSQL(
       "CREATE TABLE user_bigram_cache (qstring, previous, current, "
@@ -667,7 +653,7 @@ static void TestCreatesMissingTableWithItsUniqueKey() {
       "CREATE TABLE user_learning_stats "
       "(store, qstring, selection_count, last_used);"
       "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd');"
-      // Two rows on one key: only the last may survive the restore.
+      // Two rows on one key: only the last may survive.
       "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 3, 99);"
       "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 7, 100);");
   CHECK(!block.empty());
