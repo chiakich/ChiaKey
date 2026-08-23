@@ -11,9 +11,15 @@ trap 'rm -rf "$TMP_BASE"' EXIT
 
 # The test includes BPMFUserPhraseHelper.cpp (it exercises the file-local
 # export-block decryptor), so that source is not compiled separately here.
+# The learning-block limit is lowered to 64 KiB so the test can cross it with a
+# few hundred KiB of hex instead of the 192 MiB the shipping value would need.
+# It stays well above the ~20 KiB block a real export carries, so every other
+# test still runs against a block the importer accepts. The file-size limit is
+# left as shipped: a sparse file reaches it for free.
 clang++ \
   -std=c++17 \
   -DOV_USE_SQLITE \
+  -DMJSR_MAX_LEARNING_BLOB_SIZE=65536UL \
   -I"$HEADER_SHIMS" \
   -I"$SOURCE_DIR/Frameworks/OpenVanilla/Headers" \
   -I"$SOURCE_DIR/Frameworks/PlainVanilla/Headers" \

@@ -11,6 +11,8 @@
 //
 // The source file is included rather than linked so the test can drive
 // Import() directly.
+#include <unistd.h>
+
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -66,6 +68,31 @@ static OVSQLiteConnection* OpenUserDB(const string& path) {
       "CREATE UNIQUE INDEX user_learning_stats_key "
       "ON user_learning_stats (store, qstring)");
   return db;
+}
+
+// A user database from before the newer learning stores were added, so the
+// import has to create them itself.
+static OVSQLiteConnection* OpenLegacyUserDB(const string& path) {
+  remove(path.c_str());
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+  if (!db) return 0;
+  db->execute(
+      "CREATE TABLE user_unigrams (qstring, current, probability, backoff)");
+  db->execute(
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability)");
+  db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
+  return db;
+}
+
+static bool HasIndex(OVSQLiteConnection* db, const string& name) {
+  OVSQLiteStatementRef statement = db->prepare(
+      "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = %Q",
+      name.c_str());
+  if (!statement) return false;
+  bool found = false;
+  if (statement->step() == SQLITE_ROW) found = statement->intOfColumn(0) > 0;
+  return found;
 }
 
 static int CountRows(OVSQLiteConnection* db, const string& table) {
@@ -554,6 +581,100 @@ static void TestExportImportRoundTrip() {
   delete target;
 }
 
+// A file larger than the importer accepts is refused before it is read at all.
+// Grown with truncate() so the size is real without the bytes being written.
+static void TestOversizedFileIsRefused() {
+  string path = WriteExportFile("oversized-export.txt",
+                                BuildCacheDatabaseFile());
+
+  // Control: the same file imports before it is padded.
+  OVSQLiteConnection* db = OpenUserDB(TempPath("import-size-control.db"));
+  CHECK(db != 0);
+  if (!db) return;
+  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_unigrams") == 2);
+  delete db;
+
+  // 256 MiB + 1: past the shipping limit, and a hole rather than 256 MiB of
+  // writes.
+  CHECK(truncate(path.c_str(), (off_t)(256LL * 1024 * 1024) + 1) == 0);
+
+  db = OpenUserDB(TempPath("import-size.db"));
+  CHECK(db != 0);
+  if (!db) return;
+  CHECK(!BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_unigrams") == 0);
+  delete db;
+}
+
+// An oversized learning block costs the caller that block, not the phrases in
+// front of it -- the same deal as a block that cannot be read.
+static void TestOversizedLearningBlockIsSkipped() {
+  // A real cache database padded past the limit with rows, not filler: a block
+  // of arbitrary bytes would be rejected as unreadable anyway and the test
+  // would pass without the limit ever running. This one would restore.
+  string sql =
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability);"
+      "CREATE TABLE user_candidate_override_cache (qstring, current);";
+  for (int i = 0; i < 2500; ++i) {
+    char row[128];
+    snprintf(row, sizeof(row),
+             "INSERT INTO user_bigram_cache VALUES ('k%d', 'p%d', 'c%d', "
+             "'-1.0');",
+             i, i, i);
+    sql += row;
+  }
+  string block = BuildCacheDatabaseFileWithSQL(sql);
+  // The importer measures the decoded size, which is what this block is.
+  CHECK(block.size() > MJSR_MAX_LEARNING_BLOB_SIZE);
+  string path = WriteExportFile("oversized-block-export.txt", block);
+
+  OVSQLiteConnection* db = OpenUserDB(TempPath("import-oversized-block.db"));
+  CHECK(db != 0);
+  if (!db) return;
+  db->execute("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
+
+  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  CHECK(CountRows(db, "user_unigrams") == 2);
+  // Untouched: the block was dropped, not restored.
+  CHECK(CountRows(db, "user_bigram_cache") == 1);
+  CHECK(FirstTextValue(db, "SELECT current FROM user_bigram_cache") == "z");
+  delete db;
+}
+
+// Restoring into a database that predates a learning table has to create it
+// *with* its unique key, or the INSERT OR REPLACE below silently appends and
+// the IME's own incremental saves do the same afterwards.
+static void TestCreatesMissingTableWithItsUniqueKey() {
+  string block = BuildCacheDatabaseFileWithSQL(
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability);"
+      "CREATE TABLE user_candidate_override_cache (qstring, current);"
+      "CREATE TABLE user_context_override_cache (qstring, current);"
+      "CREATE TABLE user_learning_stats "
+      "(store, qstring, selection_count, last_used);"
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd');"
+      // Two rows on one key: only the last may survive the restore.
+      "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 3, 99);"
+      "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 7, 100);");
+  CHECK(!block.empty());
+  string path = WriteExportFile("missing-table-export.txt", block);
+
+  OVSQLiteConnection* db = OpenLegacyUserDB(TempPath("import-missing-table.db"));
+  CHECK(db != 0);
+  if (!db) return;
+
+  CHECK(BPMFUserPhraseHelper::Import(db, path));
+  CHECK(HasIndex(db, "user_context_override_cache_qstring_unique"));
+  CHECK(HasIndex(db, "user_learning_stats_key"));
+  CHECK(CountRows(db, "user_context_override_cache") == 1);
+  CHECK(CountRows(db, "user_learning_stats") == 1);
+  CHECK(FirstTextValue(db, "SELECT selection_count FROM user_learning_stats") ==
+        "7");
+  delete db;
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -571,6 +692,9 @@ int main(int argc, char** argv) {
   TestDuplicateKeysDoNotEmptyCaches();
   TestFailedRestoreRollsBackAndReportsFailure();
   TestExportImportRoundTrip();
+  TestOversizedFileIsRefused();
+  TestOversizedLearningBlockIsSkipped();
+  TestCreatesMissingTableWithItsUniqueKey();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;

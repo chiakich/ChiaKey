@@ -56,9 +56,18 @@ const LearningCacheTable kLearningCacheTables[] = {
 
 // Ceilings mirroring the phrase editor's importer (PEUserPhraseStore.mm): the
 // file is read whole and copied several times over on the way in, so an
-// unbounded one turns into a multi-gigabyte spike.
-const unsigned long long kMaxImportFileSize = 256ULL * 1024 * 1024;
-const size_t kMaxLearningBlobSize = 96UL * 1024 * 1024;
+// unbounded one turns into a multi-gigabyte spike. Overridable so the tests can
+// reach the learning-block limit without writing hundreds of megabytes; the
+// file limit is reachable with a sparse file, so it stays as shipped there.
+#ifndef MJSR_MAX_IMPORT_FILE_SIZE
+#define MJSR_MAX_IMPORT_FILE_SIZE (256ULL * 1024 * 1024)
+#endif
+#ifndef MJSR_MAX_LEARNING_BLOB_SIZE
+#define MJSR_MAX_LEARNING_BLOB_SIZE (96UL * 1024 * 1024)
+#endif
+
+const unsigned long long kMaxImportFileSize = MJSR_MAX_IMPORT_FILE_SIZE;
+const size_t kMaxLearningBlobSize = MJSR_MAX_LEARNING_BLOB_SIZE;
 
 const size_t kLearningCacheTableCount =
     sizeof(kLearningCacheTables) / sizeof(kLearningCacheTables[0]);

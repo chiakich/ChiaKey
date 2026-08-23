@@ -128,7 +128,7 @@ Scripts/test-ios-core-syntax.sh
 Scripts/test-learning-store.sh
 ```
 
-驗證使用者詞庫匯入（`MJSR version 1.0.0` 匯出檔）。重點是 `<database>` 區塊：舊版 Yahoo! 奇摩輸入法用 SQLite SEE 加密，ChiaKey 自己匯出則是明文，Import 兩種都要吃。測試裡有兩組取自真實 KeyKey 匯出檔的 golden vector（只有 SQLite 檔頭與亂數 nonce，不含任何詞彙資料），改動金鑰推導、模式、IV 位置或 counter 規則都會被擋下來。自帶 fixture，不需要詞庫：
+驗證使用者詞庫匯入（`MJSR version 1.0.0` 匯出檔）。重點是 `<database>` 區塊：舊版 Yahoo! 奇摩輸入法用 SQLite SEE 加密，ChiaKey 自己匯出則是明文，Import 兩種都要吃。測試裡有兩組取自真實 KeyKey 匯出檔的 golden vector（只有 SQLite 檔頭與亂數 nonce，不含任何詞彙資料），改動金鑰推導、模式、IV 位置或 counter 規則都會被擋下來。也涵蓋 export → import round trip、匯入失敗時的 rollback，以及匯入檔與內嵌 learning DB 的大小上限（learning DB 的上限用 `-DMJSR_MAX_LEARNING_BLOB_SIZE` 調低，才不用寫 192MB；檔案上限用 sparse file 直接測出貨值）。自帶 fixture，不需要詞庫：
 
 ```sh
 Scripts/test-user-phrase-import.sh
