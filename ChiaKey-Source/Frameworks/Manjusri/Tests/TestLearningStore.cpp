@@ -190,6 +190,54 @@ static void TestOldBuildStillWrites(OVSQLiteConnection* db) {
         SQLITE_OK);
 }
 
+// The rollback also has to survive a second migration pass: the grandfather
+// marker is already there, so its probe hits a row. An open cursor left over
+// from that probe makes the rebuild's DROP TABLE fail as locked, which the
+// migration cannot see -- and a dev install sharing this database with the
+// release install can perfectly well re-add the columns after the marker.
+static void TestRollsBackAfterGrandfatherMarkerExists() {
+  const string path = TempPath("learningstore-rollback-again.db");
+  remove(path.c_str());
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+  assert(db);
+  db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
+  db->execute(
+      "CREATE TABLE user_bigram_cache "
+      "(qstring, previous, current, probability)");
+
+  // first pass writes the marker
+  LanguageModel::MigrateUserLearningTables(db);
+
+  // then an older build re-adds the inline columns
+  db->execute("ALTER TABLE user_bigram_cache ADD COLUMN selection_count");
+  db->execute("ALTER TABLE user_bigram_cache ADD COLUMN last_used");
+  db->execute(
+      "INSERT INTO user_bigram_cache VALUES('bq','bp','bc',-2.5,4,99)");
+
+  LanguageModel::MigrateUserLearningTables(db);
+
+  CHECK(!UserTableHasColumn(db, "user_bigram_cache", "selection_count"));
+  CHECK(!db->hasTable("user_bigram_cache_rebuild"));
+  CHECK(CountRows(db, "user_bigram_cache") == 1);
+
+  {
+    OVSQLiteStatementRef s = db->prepare(
+        "SELECT selection_count, last_used FROM user_learning_stats "
+        "WHERE store = 'bigram' AND qstring = 'bq'");
+    CHECK(s != 0);
+    if (s) {
+      CHECK(s->step() == SQLITE_ROW);
+      CHECK(s->intOfColumn(0) == 4);
+      CHECK(s->intOfColumn(1) == 99);
+    }
+  }
+
+  TestOldBuildStillWrites(db);
+
+  delete db;
+  remove(path.c_str());
+}
+
 // A database that an interim build left with inline stat columns has to come
 // back to the original shape, keeping both the rows and the statistics.
 static void TestRollsBackInlineStatColumns() {
@@ -588,6 +636,7 @@ int main(int argc, char** argv) {
   TestLoadDoesNotClobberNewerMemory();
   TestMigrationAndRoundTrip();
   TestRollsBackInlineStatColumns();
+  TestRollsBackAfterGrandfatherMarkerExists();
   TestContextKeyedOverrides();
   TestPreExistingOverridesAreGrandfathered();
   TestFailedSaveKeepsLearningDirty();
