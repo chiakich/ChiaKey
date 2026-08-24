@@ -50,7 +50,7 @@
                     <imageView id="aboutMascotImageView">
                         <rect key="frame" x="98" y="264" width="24" height="24"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" animates="YES" imageScaling="proportionallyUpOrDown" image="chiaki" id="aboutMascotCell"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="center" animates="NO" imageScaling="proportionallyUpOrDown" image="chiaki" id="aboutMascotCell"/>
                     </imageView>
                     <textField verticalHuggingPriority="750" id="aboutAuthorLabel">
                         <rect key="frame" x="123" y="268" width="185" height="16"/>

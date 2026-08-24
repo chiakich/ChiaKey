@@ -17,9 +17,23 @@ static void CVApplyAboutTextStyle(NSView *view) {
   }
 }
 
+// NSImageView animates its GIF off an NSTimer that AppKit does not stop when
+// the window stops being visible, and this process outlives every window it
+// opens: one look at the About box kept the mascot decoding until logout.
+static void CVSetAboutImageAnimation(NSView *view, BOOL animates) {
+  if ([view isKindOfClass:[NSImageView class]]) {
+    [(NSImageView *)view setAnimates:animates];
+  }
+
+  for (NSView *subview in [view subviews]) {
+    CVSetAboutImageAnimation(subview, animates);
+  }
+}
+
 @implementation CVAboutController
 
 - (void)dealloc {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
   [_wordCountController release];
   [super dealloc];
 }
@@ -92,6 +106,25 @@ static void CVApplyAboutTextStyle(NSView *view) {
   [_authorLabel setAttributedStringValue:attributed];
 }
 
+// Occlusion rather than just close: a window left open behind another one, on
+// another Space or minimized is equally invisible and equally not worth
+// animating.
+- (void)_syncMascotAnimation {
+  BOOL visible = [[self window] isVisible] &&
+                 ([[self window] occlusionState] &
+                  NSWindowOcclusionStateVisible) != 0;
+  CVSetAboutImageAnimation([[self window] contentView], visible);
+}
+
+- (void)_windowOcclusionStateChanged:(NSNotification *)notification {
+  [self _syncMascotAnimation];
+}
+
+- (void)_windowWillClose:(NSNotification *)notification {
+  // -isVisible is still YES at this point, so settle it outright.
+  CVSetAboutImageAnimation([[self window] contentView], NO);
+}
+
 - (void)awakeFromNib {
   [self _applyVersionToTitle];
   [self _linkifyAuthorLabel];
@@ -100,6 +133,16 @@ static void CVApplyAboutTextStyle(NSView *view) {
                                                                 alpha:1.0]];
   CVApplyAboutTextStyle([[self window] contentView]);
   defaultWindowSize = [[self window] frame].size;
+
+  NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+  [center addObserver:self
+             selector:@selector(_windowOcclusionStateChanged:)
+                 name:NSWindowDidChangeOcclusionStateNotification
+               object:[self window]];
+  [center addObserver:self
+             selector:@selector(_windowWillClose:)
+                 name:NSWindowWillCloseNotification
+               object:[self window]];
 }
 
 - (void)_updateContent {
@@ -151,12 +194,14 @@ static void CVApplyAboutTextStyle(NSView *view) {
     [[self window] center];
   }
   [[self window] orderFront:self];
+  [self _syncMascotAnimation];
 }
 - (IBAction)launchCustomerCare:(id)sender {
   [[NSWorkspace sharedWorkspace]
       openURL:[NSURL URLWithString:
                          @"https://github.com/chiakich/ChiaKey/issues"]];
   [[self window] orderOut:self];
+  [self _syncMascotAnimation];
 }
 
 @end
