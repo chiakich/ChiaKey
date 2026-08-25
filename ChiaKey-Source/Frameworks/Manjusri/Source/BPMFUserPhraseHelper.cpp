@@ -308,11 +308,20 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db,
   ofs << "MJSR version 1.0.0" << endl;
 
   OVSQLiteStatementRef select = db->prepare("SELECT * FROM user_unigrams");
+  if (!select) return false;
   while (select->step() == SQLITE_ROW) {
-    string qstring = select->textOfColumn(0);
-    string current = select->textOfColumn(1);
-    string probability = select->textOfColumn(2);
-    string backoff = select->textOfColumn(3);
+    // A legacy import can leave NULL columns behind, and textOfColumn() hands
+    // back SQLite's raw NULL pointer for those.
+    const char* qstringText = select->textOfColumn(0);
+    const char* currentText = select->textOfColumn(1);
+    const char* probabilityText = select->textOfColumn(2);
+    const char* backoffText = select->textOfColumn(3);
+    if (!qstringText || !currentText) continue;
+
+    string qstring = qstringText;
+    string current = currentText;
+    string probability = probabilityText ? probabilityText : "-1.0";
+    string backoff = backoffText ? backoffText : "0.0";
 
     if (OVWildcard::Match(qstring, "*punctuation*") ||
         OVWildcard::Match(qstring, "*passthru*"))

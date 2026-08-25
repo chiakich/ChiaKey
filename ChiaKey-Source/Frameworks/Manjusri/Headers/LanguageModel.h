@@ -1356,16 +1356,11 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
     m_selectBigram->bindTextToColumn(queryString, 1);
 
     while (m_selectBigram->step() == SQLITE_ROW) {
-      if (!filter)
-        results.push_back(Bigram(queryString, m_selectBigram->textOfColumn(1),
-                                 m_selectBigram->textOfColumn(2),
+      const string previous = SafeColumnText(m_selectBigram.get(), 1);
+      const string current = SafeColumnText(m_selectBigram.get(), 2);
+      if (!filter || filter->shouldPass(current))
+        results.push_back(Bigram(queryString, previous, current,
                                  m_selectBigram->doubleOfColumn(3)));
-      else {
-        if (filter->shouldPass(m_selectBigram->textOfColumn(2)))
-          results.push_back(Bigram(queryString, m_selectBigram->textOfColumn(1),
-                                   m_selectBigram->textOfColumn(2),
-                                   m_selectBigram->doubleOfColumn(3)));
-      }
     }
 
     // Sort before caching, not after merging: what goes in the cache has to be
@@ -1418,18 +1413,13 @@ inline const UnigramVector LanguageModel::findUnigrams(
   set<string> strset;
 
   while (m_selectUnigram->step() == SQLITE_ROW) {
-    if (!filter)
-      results.push_back(Unigram(queryString, m_selectUnigram->textOfColumn(1),
+    const string current = SafeColumnText(m_selectUnigram.get(), 1);
+    if (!filter || filter->shouldPass(current))
+      results.push_back(Unigram(queryString, current,
                                 m_selectUnigram->doubleOfColumn(2),
                                 m_selectUnigram->doubleOfColumn(3)));
-    else {
-      if (filter->shouldPass(m_selectUnigram->textOfColumn(1)))
-        results.push_back(Unigram(queryString, m_selectUnigram->textOfColumn(1),
-                                  m_selectUnigram->doubleOfColumn(2),
-                                  m_selectUnigram->doubleOfColumn(3)));
-    }
 
-    strset.insert(m_selectUnigram->textOfColumn(1));
+    strset.insert(current);
   }
 
   stable_sort(results.begin(), results.end(), GramCompare<Unigram>());
