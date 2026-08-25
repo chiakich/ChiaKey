@@ -53,4 +53,15 @@ build "$TMP_BASE/TestPhraseEditorImportLimits" \
   -DPE_MAX_LEARNING_BLOB_SIZE=64UL
 run_suite "$TMP_BASE/TestPhraseEditorImportLimits" "$TMP_BASE/home-limits"
 
+# The multi-owner editing lock protocol; needs only the coordination header.
+clang++ \
+  -std=c++17 \
+  -ObjC++ \
+  -fno-objc-arc \
+  -I"$SOURCE_DIR/Loaders/OSX-IMK" \
+  "$TESTS_DIR/TestEditingLockCoordination.mm" \
+  -framework Foundation \
+  -o "$TMP_BASE/TestEditingLockCoordination"
+TMPDIR="$TMP_BASE/lock-home/" "$TMP_BASE/TestEditingLockCoordination"
+
 echo "Phrase editor import tests passed."

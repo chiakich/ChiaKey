@@ -31,6 +31,8 @@
 
 #import <Foundation/Foundation.h>
 
+#include <errno.h>
+#include <signal.h>
 #include <unistd.h>
 
 #define ChiaKeyPhraseEditorDidBeginEditingNotification \
@@ -87,50 +89,88 @@ static inline BOOL ChiaKeyUserPhraseEditingLockIsActive(
          ChiaKeyPhraseEditorSessionTimeout;
 }
 
-// The lock carries its owner's PID so that overlapping editing sessions
-// (e.g. Phrase Editor open while Preferences runs an import) do not tear
-// down each other's lock: the first claimer owns it, later sessions just
-// keep the mtime fresh, and only the owner's end removes the file. The IME
-// only ever looks at existence + mtime, never at the contents.
+// The lock carries the PID of every live claimant, one per line, so that
+// overlapping editing sessions (e.g. Phrase Editor open while Preferences
+// runs an import) do not tear down each other's lock: each session adds
+// itself on claim and removes only itself on release; the file goes away
+// with the last live claimant. A dead PID (crashed session) is dropped
+// whenever the list is rewritten. The IME only ever looks at existence +
+// mtime, never at the contents, so older builds that wrote a single PID
+// interoperate: their file reads as a one-entry list, and they refuse to
+// remove a multi-entry file they do not recognise as their own.
 
 static inline NSString *ChiaKeyEditingLockOwnerTag(void) {
   return [NSString stringWithFormat:@"%d", (int)getpid()];
 }
 
+static inline NSArray *ChiaKeyLiveEditingLockOwners(NSString *path) {
+  NSString *contents = [[[NSString alloc]
+      initWithData:[NSData dataWithContentsOfFile:path]
+          encoding:NSUTF8StringEncoding] autorelease];
+  NSMutableArray *live = [NSMutableArray array];
+  for (NSString *line in
+       [contents componentsSeparatedByCharactersInSet:
+                     [NSCharacterSet newlineCharacterSet]]) {
+    int pid = [line intValue];
+    if (pid <= 0) continue;
+    // Gone only when the kernel says so; EPERM still means alive.
+    if (kill((pid_t)pid, 0) != 0 && errno == ESRCH) continue;
+    NSString *tag = [NSString stringWithFormat:@"%d", pid];
+    if (![live containsObject:tag]) [live addObject:tag];
+  }
+  return live;
+}
+
+static inline void ChiaKeyWriteEditingLockOwners(NSString *path,
+                                                 NSArray *owners) {
+  [[[owners componentsJoinedByString:@"\n"]
+      dataUsingEncoding:NSUTF8StringEncoding] writeToFile:path
+                                               atomically:YES];
+}
+
 static inline void ChiaKeyClaimUserPhraseEditingLock(
     NSString *userDataDirectory) {
   NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
+  NSMutableArray *owners = [NSMutableArray array];
   if (ChiaKeyUserPhraseEditingLockIsActive(userDataDirectory)) {
-    ChiaKeyTouchCoordinationFile(path);  // piggyback on the current owner
-  } else {
-    [[ChiaKeyEditingLockOwnerTag() dataUsingEncoding:NSUTF8StringEncoding]
-        writeToFile:path
-         atomically:YES];
+    [owners addObjectsFromArray:ChiaKeyLiveEditingLockOwners(path)];
   }
+  NSString *me = ChiaKeyEditingLockOwnerTag();
+  if (![owners containsObject:me]) [owners addObject:me];
+  ChiaKeyWriteEditingLockOwners(path, owners);
 }
 
 static inline void ChiaKeyRefreshUserPhraseEditingLock(
     NSString *userDataDirectory) {
   NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
   if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
-    ChiaKeyTouchCoordinationFile(path);
+    // Re-list this session if a write raced it out; also advances the mtime.
+    NSArray *owners = ChiaKeyLiveEditingLockOwners(path);
+    NSString *me = ChiaKeyEditingLockOwnerTag();
+    if (![owners containsObject:me]) {
+      ChiaKeyWriteEditingLockOwners(
+          path, [owners arrayByAddingObject:me]);
+    } else {
+      ChiaKeyTouchCoordinationFile(path);
+    }
   } else {
     // Someone removed it (e.g. another session's end); reclaim.
-    [[ChiaKeyEditingLockOwnerTag() dataUsingEncoding:NSUTF8StringEncoding]
-        writeToFile:path
-         atomically:YES];
+    ChiaKeyWriteEditingLockOwners(
+        path, [NSArray arrayWithObject:ChiaKeyEditingLockOwnerTag()]);
   }
 }
 
-// Returns YES if this process owned (and removed) the lock; NO if another
-// live session still holds it.
+// Removes this session from the lock. Returns YES when no other live session
+// remains and the file was removed; NO while another claimant still holds it.
 static inline BOOL ChiaKeyReleaseUserPhraseEditingLockIfOwner(
     NSString *userDataDirectory) {
   NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
-  NSString *owner = [[[NSString alloc] initWithData:[NSData dataWithContentsOfFile:path]
-                                           encoding:NSUTF8StringEncoding]
-      autorelease];
-  if ([owner length] && ![owner isEqualToString:ChiaKeyEditingLockOwnerTag()]) {
+  NSMutableArray *owners =
+      [[ChiaKeyLiveEditingLockOwners(path) mutableCopy] autorelease];
+  [owners removeObject:ChiaKeyEditingLockOwnerTag()];
+  if ([owners count]) {
+    // Another live session is still editing: hand the lock over to it.
+    ChiaKeyWriteEditingLockOwners(path, owners);
     return NO;
   }
   [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
