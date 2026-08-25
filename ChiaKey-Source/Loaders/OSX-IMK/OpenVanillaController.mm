@@ -593,6 +593,15 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
   // Our own client and context still need their composition settled, whether or
   // not we are the active context -- both are per-controller state.
+  //
+  // A prompt (the search/eval panel) parks a placeholder space in the
+  // composing buffer for IMK's sake; it is not user text and committing it
+  // would write a stray space into the client.
+  PVLoaderService *promptService = [OpenVanillaLoader sharedLoaderService];
+  if (promptService && promptService->prompt().size() &&
+      [_composingBuffer isEqualToString:@" "]) {
+    [_composingBuffer setString:@""];
+  }
   _commitFromOurselves = YES;
   [self commitComposition:sender];
 
