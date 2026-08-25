@@ -574,7 +574,15 @@ class LanguageModel {
   virtual void setUserPhraseEditingLockPath(const string& path);
   virtual bool userPhraseWritesSuspended();
 
+  // The dirty flag next to the lock advanced: the Phrase Editor committed,
+  // and an import may have replaced the learning tables wholesale, so what is
+  // on disk supersedes everything held here -- pending writes included.
+  // Returns true after flushing; the caller's load repopulates the stores.
+  virtual bool dropUserLearningDataIfChangedExternally();
+
  protected:
+  static long long DirtyFlagStamp(const struct stat& st);
+
   virtual double cachedMaxUnigramProbability();
 
   // Only call once the override writes are known to have reached the disk.
@@ -636,10 +644,57 @@ class LanguageModel {
 
   string m_unigramTableName;
   string m_userPhraseEditingLockPath;
+  string m_userPhraseDirtyFlagPath;
+  long long m_lastSeenUserPhraseDirtyStamp = 0;
 };
 
 inline void LanguageModel::setUserPhraseEditingLockPath(const string& path) {
   m_userPhraseEditingLockPath = path;
+
+  // The dirty flag lives next to the lock; its mtime advances on every
+  // Phrase Editor commit (see ChiaKeyUserPhraseCoordination.h).
+  m_userPhraseDirtyFlagPath.clear();
+  const string lockSuffix = ".editing";
+  if (path.length() > lockSuffix.length() &&
+      path.compare(path.length() - lockSuffix.length(), lockSuffix.length(),
+                   lockSuffix) == 0) {
+    m_userPhraseDirtyFlagPath =
+        path.substr(0, path.length() - lockSuffix.length()) + ".dirty";
+  }
+
+  struct stat st;
+  m_lastSeenUserPhraseDirtyStamp =
+      (m_userPhraseDirtyFlagPath.length() &&
+       stat(m_userPhraseDirtyFlagPath.c_str(), &st) == 0)
+          ? DirtyFlagStamp(st)
+          : 0;
+}
+
+// Sub-second, or two editor commits inside one second look identical.
+inline long long LanguageModel::DirtyFlagStamp(const struct stat& st) {
+#if defined(__APPLE__)
+  return (long long)st.st_mtimespec.tv_sec * 1000000000LL +
+         (long long)st.st_mtimespec.tv_nsec;
+#else
+  return (long long)st.st_mtime * 1000000000LL;
+#endif
+}
+
+inline bool LanguageModel::dropUserLearningDataIfChangedExternally() {
+  if (!m_userPhraseDirtyFlagPath.length()) return false;
+
+  struct stat st;
+  if (stat(m_userPhraseDirtyFlagPath.c_str(), &st) != 0) return false;
+  if (DirtyFlagStamp(st) <= m_lastSeenUserPhraseDirtyStamp) return false;
+
+  m_lastSeenUserPhraseDirtyStamp = DirtyFlagStamp(st);
+  m_userBigramCache.flush();
+  m_candidateOverrideCache.flush();
+  m_contextOverrideCache.flush();
+  m_overrideContextBreadth.clear();
+  m_dirtyContextBreadth.clear();
+  m_pendingBreadthDeletes.clear();
+  return true;
 }
 
 inline bool LanguageModel::userPhraseWritesSuspended() {
@@ -768,6 +823,8 @@ inline void LanguageModel::MigrateUserLearningTables(
 }
 
 inline void LanguageModel::loadUserBigramCache() {
+  dropUserLearningDataIfChangedExternally();
+
   if (!m_cfgUseUserBigramCache) return;
 
   // Best entries first so a table larger than the store (an imported file, or a
@@ -895,6 +952,8 @@ inline void LoadOverrideTable(OVSQLiteConnection* connection,
 }
 
 inline void LanguageModel::loadUserCandidateOverrideCache() {
+  dropUserLearningDataIfChangedExternally();
+
   if (!m_cfgUseUserCandidateOverrideCache) return;
 
   LoadOverrideTable(m_connection, "user_candidate_override_cache", "override",
@@ -1019,6 +1078,14 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
   // Editor session in progress: keep the caches in memory; they will be
   // written at the first save after the session ends.
   if (userPhraseWritesSuspended()) return false;
+
+  // The editor changed the tables since the last load: memory is stale and
+  // must not be written back over what the user just imported or edited.
+  if (dropUserLearningDataIfChangedExternally()) {
+    loadUserBigramCache();
+    loadUserCandidateOverrideCache();
+    return false;
+  }
 
   if (m_userCacheTimer.elapsedSeconds() < 3.5 && !forced) return false;
 

@@ -154,6 +154,19 @@ static int CountRows(OVSQLiteConnection* db, const char* table) {
   return n;
 }
 
+static string FirstText(OVSQLiteConnection* db, const char* sql) {
+  OVSQLiteStatementRef s = db->prepare("%s", sql);
+  if (!s) return "";
+
+  string text;
+  while (s->step() == SQLITE_ROW) {
+    const char* column = s->textOfColumn(0);
+    if (column) text = column;
+    break;
+  }
+  return text;
+}
+
 static OVSQLiteConnection* MakeLegacyUserDB(const string& path) {
   remove(path.c_str());
   OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
@@ -541,6 +554,46 @@ static void TestFlushRefusedWhileEditorHoldsLock() {
   remove(path.c_str());
 }
 
+// The Phrase Editor's dirty flag advanced: an import may have replaced the
+// tables wholesale, so what is on disk supersedes what is held in memory.
+static void TestExternalChangeSupersedesMemory() {
+  const string path = TempPath("learningstore-external.db");
+  const string lockPath = TempPath("learningstore-external.editing");
+  const string dirtyPath = TempPath("learningstore-external.dirty");
+  remove(lockPath.c_str());
+  remove(dirtyPath.c_str());
+
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.setUserPhraseEditingLockPath(lockPath);
+    lm.cacheOverrideSelection("q1", "A");
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+
+    // The editor replaces the table wholesale and touches the dirty flag.
+    CHECK(db->execute("UPDATE user_candidate_override_cache "
+                      "SET current = 'B'") == SQLITE_OK);
+    FILE* dirty = fopen(dirtyPath.c_str(), "w");
+    CHECK(dirty != 0);
+    if (dirty) fclose(dirty);
+
+    // A reload yields to the disk, dropping the resident entry.
+    lm.loadUserCandidateOverrideCache();
+    CHECK(lm.fetchCachedOverrideSelection("q1") == "B");
+
+    // And nothing stale is owed back to the tables.
+    CHECK(!lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    CHECK(FirstText(db, "SELECT current FROM user_candidate_override_cache") ==
+          "B");
+  }
+
+  delete db;
+  remove(path.c_str());
+  remove(dirtyPath.c_str());
+}
+
 // Taking a reading back to the lexicon's own answer drops the breadth with it,
 // so a later correction has to earn its way to being general again.
 static void TestRevertingAnOverrideDropsItsBreadth() {
@@ -643,6 +696,7 @@ int main(int argc, char** argv) {
   TestPreExistingOverridesAreGrandfathered();
   TestFailedSaveKeepsLearningDirty();
   TestFlushRefusedWhileEditorHoldsLock();
+  TestExternalChangeSupersedesMemory();
   TestRevertingAnOverrideDropsItsBreadth();
   TestCachedBigramsComeBackSorted();
 
