@@ -219,8 +219,23 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     _composingBuffer = [NSMutableString new];
 
     [[OpenVanillaLoader sharedLock] lock];
-    _context = [OpenVanillaLoader sharedLoader]->createContext();
+    // The loader boots on a background thread; a very early client can take
+    // this lock before that thread does, and sharedLoader is then still NULL.
+    // Wait it out instead of dereferencing it -- once boot holds the lock,
+    // this blocks there anyway.
+    int patience = 500;
+    while (![OpenVanillaLoader sharedLoader] && patience-- > 0) {
+      [[OpenVanillaLoader sharedLock] unlock];
+      usleep(10000);
+      [[OpenVanillaLoader sharedLock] lock];
+    }
+    PVLoader *loader = [OpenVanillaLoader sharedLoader];
+    _context = loader ? loader->createContext() : 0;
     [[OpenVanillaLoader sharedLock] unlock];
+    if (!_context) {
+      [self release];
+      return nil;
+    }
   }
 
   return self;

@@ -561,7 +561,13 @@ using namespace OpenVanilla;
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
   [[OpenVanillaLoader sharedLock] lock];
 
-  if (_loader) return true;
+  if (_loader) {
+    // Returning with the shared lock held would deadlock every controller's
+    // initWithServer: from here on.
+    [[OpenVanillaLoader sharedLock] unlock];
+    [pool drain];
+    return true;
+  }
 
   vector<string> cppLoadPaths;
 
@@ -800,6 +806,7 @@ using namespace OpenVanilla;
   return result;
 }
 - (bool)importUserPhraseDBFromFile:(NSString *)path {
+  if (!_loader || !_loaderPolicy) return false;
   string ufn = [path UTF8String];
   OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
   OVSQLiteConnection *db =
@@ -959,6 +966,8 @@ using namespace OpenVanilla;
 }
 - (void)userPhraseDBAddNewRow:(NSString *)phrase reading:(NSString *)reading {
   if (![phrase length]) return;
+  // A chiakey:// URL can arrive before the background start: finishes.
+  if (!_loader) return;
   // Queue additions while the Phrase Editor owns the DB; replayed on end.
   if ([self userPhraseEditingSessionActive]) {
     [self _queuePendingPhrase:phrase reading:reading];
@@ -974,6 +983,7 @@ using namespace OpenVanilla;
 #pragma mark Phrase Editor coordination
 
 - (NSString *)userDataDirectory {
+  if (!_loaderPolicy) return nil;
   OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
   return [NSString stringWithUTF8String:pathInfo.writablePath.c_str()];
 }
@@ -1017,10 +1027,13 @@ using namespace OpenVanilla;
     _userPhraseDB->execute("COMMIT");
   }
 
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+  if (_loader) _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 
 - (void)userPhraseDBDidChangeExternally {
+  // A distributed notification can arrive before the background start:
+  // finishes building the loader.
+  if (!_loader) return;
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 
