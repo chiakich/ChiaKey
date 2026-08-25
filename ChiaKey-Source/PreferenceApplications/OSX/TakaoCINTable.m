@@ -4,7 +4,9 @@
 
 #import "TakaoCINTable.h"
 
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #import "TakaoSettings.h"
 
@@ -148,11 +150,19 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
 #pragma mark Inspection
 
 + (NSDictionary *)inspectFileAtPath:(NSString *)path error:(NSError **)error {
-  // stat(), not -attributesOfItemAtPath:, which reports a symlink's own size
-  // while -dataWithContentsOfFile: below follows the link.
+  // fstat() the descriptor that is actually read, so the file cannot be
+  // swapped between the checks and the read; a symlink's own size never
+  // enters into it either.
+  int fd = open([path fileSystemRepresentation], O_RDONLY);
+  if (fd < 0) {
+    if (error)
+      *error = [self errorWithCode:TakaoCINTableErrorUnreadable
+                       description:LFLSTR(@"The file could not be read.")];
+    return nil;
+  }
   struct stat info;
-  if (stat([path fileSystemRepresentation], &info) != 0 ||
-      !S_ISREG(info.st_mode)) {
+  if (fstat(fd, &info) != 0 || !S_ISREG(info.st_mode)) {
+    close(fd);
     if (error)
       *error = [self errorWithCode:TakaoCINTableErrorUnreadable
                        description:LFLSTR(@"The file could not be read.")];
@@ -160,6 +170,7 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
   }
 
   if ((unsigned long long)info.st_size > kMaximumTableFileSize) {
+    close(fd);
     if (error)
       *error = [self
           errorWithCode:TakaoCINTableErrorTooLarge
@@ -167,8 +178,11 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
     return nil;
   }
 
-  NSData *data = [NSData dataWithContentsOfFile:path];
-  if (!data) {
+  NSFileHandle *handle =
+      [[[NSFileHandle alloc] initWithFileDescriptor:fd
+                                     closeOnDealloc:YES] autorelease];
+  NSData *data = [handle readDataOfLength:(NSUInteger)info.st_size];
+  if (![data length] && info.st_size > 0) {
     if (error)
       *error = [self errorWithCode:TakaoCINTableErrorUnreadable
                        description:LFLSTR(@"The file could not be read.")];

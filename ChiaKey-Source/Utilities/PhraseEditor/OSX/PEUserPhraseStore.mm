@@ -12,8 +12,10 @@
 #import "PEUserPhraseStore.h"
 
 #import <AppKit/AppKit.h>
+#include <fcntl.h>
 #include <sqlite3.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <string>
 #include <vector>
@@ -1028,24 +1030,32 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 - (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy {
   if (!_userDB) return NO;
 
-  // stat(), not -attributesOfItemAtPath:, which reports a symlink's own size
-  // while the read below follows the link.
+  // fstat() the descriptor that is actually read, so the file cannot be
+  // swapped between the checks and the read; a symlink's own size never
+  // enters into it either.
+  int fd = open([path fileSystemRepresentation], O_RDONLY);
+  if (fd < 0) return NO;
   struct stat info;
-  if (stat([path fileSystemRepresentation], &info) != 0) return NO;
-  if (!S_ISREG(info.st_mode)) {
+  if (fstat(fd, &info) != 0 || !S_ISREG(info.st_mode)) {
     NSLog(@"Refusing to import %@: not a regular file", path);
+    close(fd);
     return NO;
   }
   unsigned long long fileSize = (unsigned long long)info.st_size;
   if (fileSize > kPEMaxImportFileSize) {
     NSLog(@"Refusing to import %@: %llu bytes exceeds the %llu byte limit",
           path, fileSize, kPEMaxImportFileSize);
+    close(fd);
     return NO;
   }
 
-  NSString *content = [NSString stringWithContentsOfFile:path
-                                                encoding:NSUTF8StringEncoding
-                                                   error:NULL];
+  NSFileHandle *handle =
+      [[[NSFileHandle alloc] initWithFileDescriptor:fd
+                                     closeOnDealloc:YES] autorelease];
+  NSData *raw = [handle readDataOfLength:(NSUInteger)fileSize];
+  NSString *content =
+      [[[NSString alloc] initWithData:raw
+                             encoding:NSUTF8StringEncoding] autorelease];
   if (!content) return NO;
 
   sqlite3_stmt *insert = NULL;
