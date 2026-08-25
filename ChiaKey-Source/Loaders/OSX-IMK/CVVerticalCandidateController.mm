@@ -183,9 +183,9 @@
     string candidate = list->candidateAtIndex(fromIndex + index);
     string keyString = panel->candidateKeyAtIndex(index).receivedString();
 
-    NSAttributedString *c = [[NSAttributedString alloc]
+    NSAttributedString *c = [[[NSAttributedString alloc]
         initWithString:[NSString stringWithUTF8String:candidate.c_str()]
-            attributes:attributes];
+            attributes:attributes] autorelease];
     NSString *k = [NSString stringWithUTF8String:keyString.c_str()];
     NSMutableDictionary *d = [NSMutableDictionary dictionary];
     [d setValue:c forKey:@"candidate"];

@@ -88,8 +88,8 @@ NSPoint c_lastLocation;
                                    NSParagraphStyleAttributeName,
                                    [NSColor whiteColor],
                                    NSForegroundColorAttributeName, nil];
-  NSAttributedString *a =
-      [[NSAttributedString alloc] initWithString:message attributes:attributes];
+  NSAttributedString *a = [[[NSAttributedString alloc]
+      initWithString:message attributes:attributes] autorelease];
   [_messageTextField setAttributedStringValue:a];
   float width = [_messageTextField bounds].size.width;
   NSRect rect = [a boundingRectWithSize:NSMakeSize(width, 1600)
