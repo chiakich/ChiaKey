@@ -11,12 +11,14 @@
 #import <unistd.h>
 
 NSString *const ChiaKeyUpdateErrorDomain = @"ChiaKeyUpdate";
+NSString *const ChiaKeyUpdateSharedDefaultsSuiteName = @"com.chiakey.ChiaKey";
+NSString *const ChiaKeyIncludeBetaReleasesDefaultsKey =
+    @"ChiaKeyApplicationIncludeBetaReleases";
 
 static NSString *const ChiaKeyUpdateManifestURL =
     @"https://cdn.chiaki.ch/chiakey/appcast.json";
 static NSString *const ChiaKeyApplicationReleasesURL =
     @"https://api.github.com/repos/chiakich/ChiaKey/releases";
-static NSString *const ChiaKeySharedDefaultsSuite = @"com.chiakey.ChiaKey";
 static NSString *const ChiaKeySkippedApplicationVersionKey =
     @"ChiaKeySkippedApplicationVersion";
 static NSString *const ChiaKeyIMEBundleIdentifierString =
@@ -72,7 +74,7 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
 
 - (NSUserDefaults *)_sharedDefaults {
   return [[[NSUserDefaults alloc]
-      initWithSuiteName:ChiaKeySharedDefaultsSuite] autorelease];
+      initWithSuiteName:ChiaKeyUpdateSharedDefaultsSuiteName] autorelease];
 }
 
 - (BOOL)isVersionSkipped:(NSString *)tag {
@@ -144,7 +146,13 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
   NSBundle *bundle = [path length] ? [NSBundle bundleWithPath:path] : nil;
   if (!bundle) return nil;
 
-  NSString *version = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"];
+  // CFBundleVersion must stay purely numeric, so the release tag -- which may
+  // carry a pre-release suffix like "-beta.2" -- is stamped into its own key.
+  // Without the suffix a beta install reports its stable core and semver
+  // precedence then hides every later beta of, and the final, that version.
+  NSString *version = [bundle objectForInfoDictionaryKey:@"ChiaKeyReleaseTag"];
+  if (![version length])
+    version = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"];
   if (![version length])
     version = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
 

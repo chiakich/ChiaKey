@@ -138,6 +138,12 @@ jobs:
           )
           for plist in "${plists[@]}"; do
             /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.version.outputs.core }}" "$plist"
+            # CFBundleVersion must stay purely numeric, so the full tag (with
+            # any -beta.N) rides in its own key; installedApplicationVersion in
+            # ChiaKeyUpdateService.m prefers it, otherwise a beta install
+            # reports its stable core and never sees later betas.
+            /usr/libexec/PlistBuddy -c "Delete :ChiaKeyReleaseTag" "$plist" 2>/dev/null || true
+            /usr/libexec/PlistBuddy -c "Add :ChiaKeyReleaseTag string ${{ steps.version.outputs.tag }}" "$plist"
           done
           if git diff --quiet -- "${plists[@]}"; then
             echo "CFBundleVersion already ${{ steps.version.outputs.core }}; nothing to commit."

@@ -13,6 +13,12 @@
 
 extern NSString *const ChiaKeyUpdateErrorDomain;
 
+// Preferences shared between the Preferences app, the Updater app and this
+// service. Anything both sides must see goes through this suite, not through
+// either app's own standardUserDefaults.
+extern NSString *const ChiaKeyUpdateSharedDefaultsSuiteName;
+extern NSString *const ChiaKeyIncludeBetaReleasesDefaultsKey;
+
 @interface ChiaKeyUpdateRelease : NSObject {
   NSString *_tag;
   NSString *_releaseURL;
