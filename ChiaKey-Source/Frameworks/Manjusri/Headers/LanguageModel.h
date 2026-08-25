@@ -425,6 +425,18 @@ inline const string SafeColumnText(OVSQLiteStatement* statement, int column) {
   return text ? string(text) : string();
 }
 
+// For a reading used as a LIKE prefix: readings are plain reading strings, but
+// nothing above guarantees they never contain a wildcard byte.
+inline const string EscapeLikePattern(const string& text) {
+  string escaped;
+  for (string::size_type i = 0; i < text.size(); ++i) {
+    char c = text[i];
+    if (c == '%' || c == '_' || c == '\\') escaped += '\\';
+    escaped += c;
+  }
+  return escaped;
+}
+
 // Row shapes for the two-pass load in loadUser*Cache().
 struct LoadedBigram {
   string key;
@@ -591,7 +603,16 @@ class LanguageModel {
     m_contextOverrideCache.markClean();
     m_dirtyContextBreadth.clear();
     m_pendingBreadthDeletes.clear();
+    m_dirtyBreadthContexts.clear();
+    m_pendingBreadthContextClears.clear();
   }
+
+  static const string BreadthContextKey(const string& previousQString,
+                                        const string& qstring) {
+    return qstring + "\t" + previousQString;
+  }
+
+  virtual bool breadthContextCounted(const string& contextKey);
 
   OVSQLiteConnection* m_connection;
   bool m_ownsDBConnection;
@@ -639,6 +660,13 @@ class LanguageModel {
   map<string, size_t> m_overrideContextBreadth;
   set<string> m_dirtyContextBreadth;
   set<string> m_pendingBreadthDeletes;
+
+  // (reading, context) pairs already counted toward the breadth above, kept
+  // durably (store 'override_breadth_ctx') so evicting a context entry cannot
+  // let the same context count twice. Keyed "reading\tprevious" so a revert
+  // can drop every row belonging to one reading by prefix.
+  set<string> m_dirtyBreadthContexts;
+  set<string> m_pendingBreadthContextClears;  // readings whose rows go away
 
   OVBenchmark m_userCacheTimer;
 
@@ -694,6 +722,8 @@ inline bool LanguageModel::dropUserLearningDataIfChangedExternally() {
   m_overrideContextBreadth.clear();
   m_dirtyContextBreadth.clear();
   m_pendingBreadthDeletes.clear();
+  m_dirtyBreadthContexts.clear();
+  m_pendingBreadthContextClears.clear();
   return true;
 }
 
@@ -1049,6 +1079,17 @@ inline bool LanguageModel::writeUserCandidateOverrideCache() {
             (*iter).c_str()) != SQLITE_OK)
       return false;
 
+  // Clears first: a context re-counted after a revert in the same save window
+  // is in the dirty set below and survives its own reading's clear.
+  for (set<string>::iterator iter = m_pendingBreadthContextClears.begin();
+       iter != m_pendingBreadthContextClears.end(); ++iter)
+    if (m_connection->execute(
+            "DELETE FROM user_learning_stats "
+            "WHERE store = 'override_breadth_ctx' AND qstring LIKE %Q "
+            "ESCAPE '\\'",
+            (EscapeLikePattern(*iter) + "\t%").c_str()) != SQLITE_OK)
+      return false;
+
   for (set<string>::iterator iter = m_dirtyContextBreadth.begin();
        iter != m_dirtyContextBreadth.end(); ++iter)
     if (m_connection->execute(
@@ -1056,6 +1097,15 @@ inline bool LanguageModel::writeUserCandidateOverrideCache() {
             "(store, qstring, selection_count, last_used) "
             "VALUES('override_breadth', %Q, %d, 0)",
             (*iter).c_str(), (int)m_overrideContextBreadth[*iter]) != SQLITE_OK)
+      return false;
+
+  for (set<string>::iterator iter = m_dirtyBreadthContexts.begin();
+       iter != m_dirtyBreadthContexts.end(); ++iter)
+    if (m_connection->execute(
+            "INSERT OR REPLACE INTO user_learning_stats "
+            "(store, qstring, selection_count, last_used) "
+            "VALUES('override_breadth_ctx', %Q, 1, 0)",
+            (*iter).c_str()) != SQLITE_OK)
       return false;
 
   return true;
@@ -1104,7 +1154,8 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
   if (!m_userBigramCache.hasPendingWrites() &&
       !m_candidateOverrideCache.hasPendingWrites() &&
       !m_contextOverrideCache.hasPendingWrites() &&
-      m_dirtyContextBreadth.empty() && m_pendingBreadthDeletes.empty())
+      m_dirtyContextBreadth.empty() && m_pendingBreadthDeletes.empty() &&
+      m_dirtyBreadthContexts.empty() && m_pendingBreadthContextClears.empty())
     return false;
 
   m_userCacheTimer.start();
@@ -1179,6 +1230,15 @@ inline void LanguageModel::removeCachedSelection(const string& qstring) {
     m_dirtyContextBreadth.erase(qstring);
     m_pendingBreadthDeletes.insert(qstring);
   }
+
+  // The contexts counted so far are no longer evidence either; forgetting
+  // them is what lets a future correction earn its way to general again.
+  m_pendingBreadthContextClears.insert(qstring);
+  const string prefix = qstring + "\t";
+  for (set<string>::iterator iter = m_dirtyBreadthContexts.lower_bound(prefix);
+       iter != m_dirtyBreadthContexts.end() &&
+       iter->compare(0, prefix.size(), prefix) == 0;)
+    m_dirtyBreadthContexts.erase(iter++);
 }
 
 inline const string LanguageModel::fetchCachedOverrideSelection(
@@ -1197,17 +1257,45 @@ inline void LanguageModel::cacheContextOverrideSelection(
   if (!m_cfgUseUserCandidateOverrideCache) return;
 
   const string key = combineBigramQueryString(previousQString, qstring);
-  bool isNewContext = (m_contextOverrideCache.peek(key) == 0);
+  const string contextKey = BreadthContextKey(previousQString, qstring);
+  // Breadth counts *distinct* contexts the user has ever corrected in. A
+  // resident entry is not enough evidence of newness: once the entry has been
+  // evicted, re-correcting in the same context used to count it again, so the
+  // counted pairs are also remembered durably.
+  // A row whose clear is still queued (a revert this save window) is already
+  // gone as far as counting is concerned.
+  bool counted = m_dirtyBreadthContexts.count(contextKey) ||
+                 (!m_pendingBreadthContextClears.count(qstring) &&
+                  breadthContextCounted(contextKey));
+  bool isNewContext = m_contextOverrideCache.peek(key) == 0 && !counted;
   m_contextOverrideCache.learn(key, current);
 
-  // Breadth counts contexts the user has ever corrected in, so only a key that
-  // was not already present may advance it.
   if (isNewContext) {
-    m_overrideContextBreadth[qstring]++;
-    m_dirtyContextBreadth.insert(qstring);
-    // Outranks a delete queued earlier in the same save window.
-    m_pendingBreadthDeletes.erase(qstring);
+    size_t& breadth = m_overrideContextBreadth[qstring];
+    // Beyond the generalization gate the count means nothing more; capping it
+    // also caps how many counted pairs one reading ever stores.
+    if (breadth < c_overrideGeneralizationContexts) {
+      breadth++;
+      m_dirtyContextBreadth.insert(qstring);
+      m_dirtyBreadthContexts.insert(contextKey);
+      // Outranks a delete queued earlier in the same save window. The queued
+      // context clear stays: it only removes rows the revert invalidated,
+      // and this pair is re-inserted after the clear runs.
+      m_pendingBreadthDeletes.erase(qstring);
+    }
   }
+}
+
+inline bool LanguageModel::breadthContextCounted(const string& contextKey) {
+  OVSQLiteStatementRef statement = m_connection->prepare(
+      "SELECT 1 FROM user_learning_stats WHERE store = 'override_breadth_ctx' "
+      "AND qstring = %Q",
+      contextKey.c_str());
+  if (!statement) return false;
+
+  bool counted = false;
+  while (statement->step() == SQLITE_ROW) counted = true;
+  return counted;
 }
 
 inline void LanguageModel::removeCachedContextSelection(
@@ -1636,6 +1724,8 @@ inline bool LanguageModel::flushUserCache() {
   m_overrideContextBreadth.clear();
   m_dirtyContextBreadth.clear();
   m_pendingBreadthDeletes.clear();
+  m_dirtyBreadthContexts.clear();
+  m_pendingBreadthContextClears.clear();
   return true;
 }
 };  // namespace Manjusri

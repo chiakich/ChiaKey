@@ -594,6 +594,59 @@ static void TestExternalChangeSupersedesMemory() {
   remove(dirtyPath.c_str());
 }
 
+// Breadth counts distinct contexts; evicting the context entry and correcting
+// in the same context again must not count that context twice.
+static void TestEvictionDoesNotRecountContext() {
+  const string path = TempPath("learningstore-recount.db");
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    // Context store capacity 2 (override capacity * 2), so two corrections
+    // for another reading evict q1's context entry.
+    LanguageModel lm(db, 0, false, false, false, true, true, 100, 1);
+    lm.cacheContextOverrideSelection("p1", "q1", "A");
+    lm.cacheContextOverrideSelection("x1", "r1", "B");
+    lm.cacheContextOverrideSelection("x2", "r1", "B");  // q1@p1 evicted
+
+    // The same context corrected again is not new evidence.
+    lm.cacheContextOverrideSelection("p1", "q1", "A");
+    lm.cacheContextOverrideSelection("p2", "q1", "A");
+    CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
+
+    // A genuinely new third context still generalizes.
+    lm.cacheContextOverrideSelection("p3", "q1", "A");
+    CHECK(lm.overrideGeneralizesAcrossContexts("q1"));
+
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    CHECK(FirstText(db, "SELECT COUNT(*) FROM user_learning_stats "
+                        "WHERE store = 'override_breadth_ctx'") == "5");
+
+    // The counted pair survives a save + eviction round trip too: correcting
+    // an evicted context again after the save adds no new pair row.
+    lm.cacheContextOverrideSelection("x3", "r1", "B");
+    lm.cacheContextOverrideSelection("x4", "r1", "B");  // q1@p3 evicted
+    lm.cacheContextOverrideSelection("p3", "q1", "A");
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    // +x3 only: r1 reached the gate, so x4 is not recorded, and re-correcting
+    // the evicted q1@p3 adds nothing because its pair row already exists.
+    CHECK(FirstText(db, "SELECT COUNT(*) FROM user_learning_stats "
+                        "WHERE store = 'override_breadth_ctx'") == "6");
+
+    // A revert forgets the counted contexts along with the breadth.
+    lm.removeCachedSelection("q1");
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    CHECK(FirstText(db, "SELECT COUNT(*) FROM user_learning_stats "
+                        "WHERE store = 'override_breadth_ctx' "
+                        "AND qstring LIKE 'q1%'") == "0");
+    CHECK(FirstText(db, "SELECT COUNT(*) FROM user_learning_stats "
+                        "WHERE store = 'override_breadth_ctx'") == "3");
+  }
+
+  delete db;
+  remove(path.c_str());
+}
+
 // Taking a reading back to the lexicon's own answer drops the breadth with it,
 // so a later correction has to earn its way to being general again.
 static void TestRevertingAnOverrideDropsItsBreadth() {
@@ -697,6 +750,7 @@ int main(int argc, char** argv) {
   TestFailedSaveKeepsLearningDirty();
   TestFlushRefusedWhileEditorHoldsLock();
   TestExternalChangeSupersedesMemory();
+  TestEvictionDoesNotRecountContext();
   TestRevertingAnOverrideDropsItsBreadth();
   TestCachedBigramsComeBackSorted();
 
