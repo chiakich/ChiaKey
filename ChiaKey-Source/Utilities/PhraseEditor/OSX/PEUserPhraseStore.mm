@@ -119,6 +119,9 @@ static std::string PEEscapeForLike(const std::string &s) {
 - (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy;
 - (NSSet *)_keysOfTable:(NSString *)table;
 - (NSSet *)_keysOf:(NSString *)exportTable missingFrom:(NSString *)table;
+- (BOOL)_table:(const char *)table existsInSchema:(const char *)schema;
+- (BOOL)_restoreLearningCachesFromDatabase:(NSString *)path
+                                    legacy:(BOOL)legacy;
 - (NSUInteger)_dropLearningEntriesUnknownToLexicon:(NSDictionary *)scope;
 @end
 
@@ -1142,7 +1145,9 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
   sqlite3_finalize(insert);
   if (!headerValid) return NO;
 
-  // Restore the learning-data blob, if present.
+  // Restore the learning-data blob, if present. Refusing the block for size
+  // is reported; a block we cannot read is not (matches the C++ importer).
+  BOOL cacheRestored = !blobTooLarge;
   if (sawDatabaseSection) {
     NSData *blob = PEHexDecode(hex);
     // Files written by Yahoo! KeyKey carry this block encrypted (SQLite SEE);
@@ -1153,102 +1158,148 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     if (!Manjusri::DecryptExportDatabase(cacheData)) cacheData.clear();
 
     if (cacheData.size()) {
+      cacheRestored = NO;
       NSString *tempPath = [self _tempDatabasePath];
       // Wraps the bytes rather than copying the whole block again.
       NSData *decoded = [NSData dataWithBytesNoCopy:(void *)cacheData.data()
                                              length:cacheData.size()
                                        freeWhenDone:NO];
       if ([decoded writeToFile:tempPath atomically:YES]) {
-        char *attach = sqlite3_mprintf("ATTACH DATABASE %Q AS export",
-                                       [tempPath UTF8String]);
-        sqlite3_exec(_userDB, attach, NULL, NULL, NULL);
-        sqlite3_free(attach);
-
-        // Restoring one of our own backups means restoring it: the file is a
-        // snapshot of these tables and replaces them wholesale. A legacy file
-        // is a different thing -- it comes from another input method while
-        // ChiaKey is already in use, so it merges, and on a collision the
-        // entry the user has been training here wins. Same rule as the
-        // plain-text files: importing never overwrites current work.
-        if (!legacy) {
-          sqlite3_exec(_userDB,
-                       "DELETE FROM user_bigram_cache;"
-                       "DELETE FROM user_candidate_override_cache;"
-                       "DELETE FROM user_learning_stats;"
-                       "DELETE FROM user_context_override_cache;",
-                       NULL, NULL, NULL);
-        }
-
-        // OR REPLACE/IGNORE because the cache tables carry a unique key on
-        // qstring, and a hand-made or foreign blob may hold duplicates -- a
-        // legacy KeyKey blob in particular keeps one row per (qstring,
-        // previous) pair, where ours keeps one row per qstring.
-        const char *conflict = legacy ? "OR IGNORE" : "OR REPLACE";
-        NSSet *newBigrams = nil;
-        NSSet *newOverrides = nil;
-        if (legacy) {
-          // Only entries this file actually adds are subject to the
-          // reachability filter below -- "imported minus already here", not
-          // just "imported". A key the file and the user share keeps the
-          // user's value (OR IGNORE above), and judging that value against
-          // the file's intent would delete something this import never
-          // touched, stats and all.
-          newBigrams = [self _keysOf:@"export.user_bigram_cache"
-                         missingFrom:@"user_bigram_cache"];
-          newOverrides = [self _keysOf:@"export.user_candidate_override_cache"
-                           missingFrom:@"user_candidate_override_cache"];
-        }
-
-        char *sql = sqlite3_mprintf(
-            "INSERT %s INTO user_bigram_cache (qstring, previous, "
-            "current, probability) SELECT qstring, previous, current, "
-            "probability FROM export.user_bigram_cache;"
-            "INSERT %s INTO user_candidate_override_cache "
-            "(qstring, current) "
-            "SELECT qstring, current FROM "
-            "export.user_candidate_override_cache;",
-            conflict, conflict);
-        sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
-        sqlite3_free(sql);
-
-        // Separate step: a file written by an older ChiaKey has no stats table,
-        // and that failure must not abort the DETACH. Entries without stats
-        // fall back to a single selection when the IME loads them.
-        sql = sqlite3_mprintf(
-            "INSERT %s INTO user_learning_stats "
-            "(store, qstring, selection_count, last_used) "
-            "SELECT store, qstring, selection_count, last_used "
-            "FROM export.user_learning_stats",
-            conflict);
-        sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
-        sqlite3_free(sql);
-
-        sql = sqlite3_mprintf(
-            "INSERT %s INTO user_context_override_cache "
-            "(qstring, current) SELECT qstring, current "
-            "FROM export.user_context_override_cache",
-            conflict);
-        sqlite3_exec(_userDB, sql, NULL, NULL, NULL);
-        sqlite3_free(sql);
-
-        sqlite3_exec(_userDB, "DETACH DATABASE export", NULL, NULL, NULL);
+        cacheRestored = [self _restoreLearningCachesFromDatabase:tempPath
+                                                          legacy:legacy];
         [[NSFileManager defaultManager] removeItemAtPath:tempPath error:NULL];
-
-        // After the phrases are in, so an entry naming a phrase this file also
-        // brought over counts as reachable.
-        if (legacy) {
-          [self _dropLearningEntriesUnknownToLexicon:@{
-            @"user_bigram_cache" : newBigrams ? newBigrams : [NSSet set],
-            @"user_candidate_override_cache" : newOverrides ? newOverrides
-                                                            : [NSSet set],
-          }];
-        }
       }
     }
   }
 
   [self _markDirtyAndScheduleChangeNotification];
-  return YES;
+  // The phrases are committed either way; this reports the learning data.
+  return cacheRestored;
+}
+
+- (BOOL)_table:(const char *)table existsInSchema:(const char *)schema {
+  char *sql = sqlite3_mprintf(
+      "SELECT COUNT(*) FROM %s.sqlite_master WHERE type = 'table' AND "
+      "name = %Q",
+      schema, table);
+  sqlite3_stmt *st = NULL;
+  BOOL exists = NO;
+  if (sqlite3_prepare_v2(_userDB, sql, -1, &st, NULL) == SQLITE_OK) {
+    while (sqlite3_step(st) == SQLITE_ROW)
+      exists = sqlite3_column_int(st, 0) > 0;
+    sqlite3_finalize(st);
+  }
+  sqlite3_free(sql);
+  return exists;
+}
+
+// Mirrors BPMFUserPhraseHelper's RestoreLearningCaches: all or nothing, so a
+// failure part way through cannot leave the caches emptied while the import
+// still reports success.
+- (BOOL)_restoreLearningCachesFromDatabase:(NSString *)path
+                                    legacy:(BOOL)legacy {
+  static const struct {
+    const char *name;
+    const char *columns;
+    // Without it INSERT OR REPLACE has nothing to conflict on and quietly
+    // appends. Mirrors LanguageModel::MigrateUserLearningTables().
+    const char *uniqueIndex;
+  } tables[] = {
+      {"user_bigram_cache", "qstring, previous, current, probability",
+       "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
+       "ON user_bigram_cache (qstring)"},
+      {"user_candidate_override_cache", "qstring, current",
+       "CREATE UNIQUE INDEX IF NOT EXISTS "
+       "user_candidate_override_cache_qstring_unique "
+       "ON user_candidate_override_cache (qstring)"},
+      {"user_context_override_cache", "qstring, current",
+       "CREATE UNIQUE INDEX IF NOT EXISTS "
+       "user_context_override_cache_qstring_unique "
+       "ON user_context_override_cache (qstring)"},
+      {"user_learning_stats", "store, qstring, selection_count, last_used",
+       "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
+       "ON user_learning_stats (store, qstring)"},
+  };
+
+  char *attach =
+      sqlite3_mprintf("ATTACH DATABASE %Q AS export", [path UTF8String]);
+  int attached = sqlite3_exec(_userDB, attach, NULL, NULL, NULL);
+  sqlite3_free(attach);
+  if (attached != SQLITE_OK) return NO;
+
+  NSSet *newBigrams = nil;
+  NSSet *newOverrides = nil;
+  if (legacy) {
+    // Only entries this file actually adds are subject to the reachability
+    // filter below -- "imported minus already here", not just "imported". A
+    // key the file and the user share keeps the user's value (OR IGNORE
+    // below), and judging that value against the file's intent would delete
+    // something this import never touched, stats and all.
+    newBigrams = [self _keysOf:@"export.user_bigram_cache"
+                   missingFrom:@"user_bigram_cache"];
+    newOverrides = [self _keysOf:@"export.user_candidate_override_cache"
+                     missingFrom:@"user_candidate_override_cache"];
+  }
+
+  BOOL ok = sqlite3_exec(_userDB, "BEGIN", NULL, NULL, NULL) == SQLITE_OK;
+
+  for (size_t i = 0; ok && i < sizeof(tables) / sizeof(tables[0]); i++) {
+    // An older or foreign file has nothing for the newer stores; keep what
+    // is here.
+    if (![self _table:tables[i].name existsInSchema:"export"]) continue;
+
+    if (![self _table:tables[i].name existsInSchema:"main"]) {
+      char *create = sqlite3_mprintf("CREATE TABLE %s (%s)", tables[i].name,
+                                     tables[i].columns);
+      ok = sqlite3_exec(_userDB, create, NULL, NULL, NULL) == SQLITE_OK;
+      sqlite3_free(create);
+      if (!ok) break;
+      // Just created, so no duplicates for the unique key to trip over.
+      sqlite3_exec(_userDB, tables[i].uniqueIndex, NULL, NULL, NULL);
+    }
+
+    // Restoring one of our own backups means restoring it: the file is a
+    // snapshot of these tables and replaces them wholesale. A legacy file
+    // is a different thing -- it comes from another input method while
+    // ChiaKey is already in use, so it merges, and on a collision the
+    // entry the user has been training here wins. Same rule as the
+    // plain-text files: importing never overwrites current work.
+    if (!legacy) {
+      char *del = sqlite3_mprintf("DELETE FROM %s", tables[i].name);
+      ok = sqlite3_exec(_userDB, del, NULL, NULL, NULL) == SQLITE_OK;
+      sqlite3_free(del);
+      if (!ok) break;
+    }
+
+    // OR REPLACE/IGNORE because the cache tables carry a unique key on
+    // qstring, and a hand-made or foreign blob may hold duplicates -- a
+    // legacy KeyKey blob in particular keeps one row per (qstring,
+    // previous) pair, where ours keeps one row per qstring.
+    char *ins = sqlite3_mprintf("INSERT %s INTO %s (%s) SELECT %s FROM "
+                                "export.%s",
+                                legacy ? "OR IGNORE" : "OR REPLACE",
+                                tables[i].name, tables[i].columns,
+                                tables[i].columns, tables[i].name);
+    ok = sqlite3_exec(_userDB, ins, NULL, NULL, NULL) == SQLITE_OK;
+    sqlite3_free(ins);
+  }
+
+  if (ok) ok = sqlite3_exec(_userDB, "COMMIT", NULL, NULL, NULL) == SQLITE_OK;
+  if (!ok) sqlite3_exec(_userDB, "ROLLBACK", NULL, NULL, NULL);
+
+  sqlite3_exec(_userDB, "DETACH DATABASE export", NULL, NULL, NULL);
+
+  // After the phrases are in, so an entry naming a phrase this file also
+  // brought over counts as reachable.
+  if (ok && legacy) {
+    [self _dropLearningEntriesUnknownToLexicon:@{
+      @"user_bigram_cache" : newBigrams ? newBigrams : [NSSet set],
+      @"user_candidate_override_cache" : newOverrides ? newOverrides
+                                                      : [NSSet set],
+    }];
+  }
+
+  return ok;
 }
 
 @end

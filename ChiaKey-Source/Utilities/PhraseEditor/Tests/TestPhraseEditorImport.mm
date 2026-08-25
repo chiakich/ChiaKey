@@ -147,6 +147,79 @@ static void TestExportImportRoundTrip(void) {
   [restored release];
 }
 
+// Hex for the <database> section, as the exporter writes it.
+static NSString *HexEncode(NSData *data) {
+  const unsigned char *bytes = (const unsigned char *)[data bytes];
+  NSMutableString *hex = [NSMutableString stringWithCapacity:[data length] * 2];
+  for (NSUInteger i = 0; i < [data length]; i++)
+    [hex appendFormat:@"%02x", bytes[i]];
+  return hex;
+}
+
+// An export whose learning blob holds exactly the given schema and rows.
+static NSString *WriteExportWithBlobSQL(NSString *name, const char *sql) {
+  NSString *dbPath = TempPath([name stringByAppendingString:@".db"]);
+  [[NSFileManager defaultManager] removeItemAtPath:dbPath error:NULL];
+  sqlite3 *db = NULL;
+  if (sqlite3_open([dbPath UTF8String], &db) != SQLITE_OK) return nil;
+  sqlite3_exec(db, sql, NULL, NULL, NULL);
+  sqlite3_close(db);
+
+  NSData *blob = [NSData dataWithContentsOfFile:dbPath];
+  NSString *contents = [NSString
+      stringWithFormat:@"MJSR version 1.0.0\n%@<database>\n%@\n</database>\n",
+                       kPhraseLines, HexEncode(blob)];
+  return WriteFile(name, contents);
+}
+
+// A restore that fails part way must roll back, not leave the caches emptied.
+static void TestFailedRestoreKeepsCurrentCaches(void) {
+  ResetStoreDirectory();
+  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  ExecOnUserDB(
+      "INSERT INTO user_bigram_cache VALUES ('aJ wl', 'a', 'b', '-1.0');"
+      "INSERT INTO user_learning_stats VALUES ('bigram', 'aJ wl', 2, 42);");
+
+  // One column where four are expected: the INSERT ... SELECT fails after
+  // the DELETE has already run inside the transaction.
+  NSString *path = WriteExportWithBlobSQL(
+      @"bad-schema.txt", "CREATE TABLE user_bigram_cache (qstring);"
+                         "INSERT INTO user_bigram_cache VALUES ('x');");
+  CHECK(![store importUserPhraseDBFromFile:path]);
+  // The phrases still land; the learning tables are untouched.
+  CHECK(CountRows("user_unigrams") == 2);
+  CHECK(CountRows("user_bigram_cache") == 1);
+  CHECK([FirstTextValue("SELECT current FROM user_bigram_cache")
+      isEqualToString:@"b"]);
+  CHECK(CountRows("user_learning_stats") == 1);
+  [store release];
+}
+
+// A file from an older ChiaKey has no context/stats tables; restoring it
+// must not drop what is here.
+static void TestOlderExportKeepsNewerStores(void) {
+  ResetStoreDirectory();
+  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  ExecOnUserDB(
+      "INSERT INTO user_bigram_cache VALUES ('old', 'a', 'b', '-1.0');"
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd');"
+      "INSERT INTO user_learning_stats VALUES ('context', 'aJ wl', 3, 99);");
+
+  NSString *path = WriteExportWithBlobSQL(
+      @"older-export.txt",
+      "CREATE TABLE user_bigram_cache (qstring, previous, current, "
+      "probability);"
+      "INSERT INTO user_bigram_cache VALUES ('new', 'c', 'd', '-1.0');");
+  CHECK([store importUserPhraseDBFromFile:path]);
+  // The table the file carries is replaced; the ones it lacks are kept.
+  CHECK(CountRows("user_bigram_cache") == 1);
+  CHECK([FirstTextValue("SELECT qstring FROM user_bigram_cache")
+      isEqualToString:@"new"]);
+  CHECK(CountRows("user_context_override_cache") == 1);
+  CHECK(CountRows("user_learning_stats") == 1);
+  [store release];
+}
+
 static void TestRejectsFileWithoutHeader(void) {
   ResetStoreDirectory();
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
@@ -264,7 +337,8 @@ static void TestOversizedLearningBlobIsIgnored(void) {
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
   ExecOnUserDB("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
 
-  CHECK([store importUserPhraseDBFromFile:path]);
+  // Skipping the block for size is reported, as in the C++ importer.
+  CHECK(![store importUserPhraseDBFromFile:path]);
   // The marker survives, so the block was skipped rather than restored.
   CHECK(CountRows("user_bigram_cache") == 1);
   CHECK([FirstTextValue("SELECT current FROM user_bigram_cache")
@@ -305,6 +379,8 @@ int main(int argc, char **argv) {
   TestOversizedLearningBlobIsIgnored();
 #else
   TestExportImportRoundTrip();
+  TestFailedRestoreKeepsCurrentCaches();
+  TestOlderExportKeepsNewerStores();
   TestRejectsFileWithoutHeader();
   TestRejectsMissingFile();
   TestSkipsCommentsAndBlankLines();
