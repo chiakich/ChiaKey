@@ -783,7 +783,9 @@ inline PVLoaderContext::~PVLoaderContext() {
   delete m_candidateService;
   if (m_sandwich) delete m_sandwich;
 
-  m_loader->unregisterContext(this);
+  // NULL when the loader was already torn down (shutDown nullifies every
+  // context), which is the order things go at logout.
+  if (m_loader) m_loader->unregisterContext(this);
 }
 
 inline void PVLoaderContext::invalidate() {
