@@ -83,11 +83,13 @@ fi
 if [ -n "${keep_app}" ]; then
   app_bin="${keep_app}/Contents/MacOS/ChiaKey"
   echo "ChiaKey postinstall: registering input source with ${app_bin}" >&2
-  # A system-wide install runs this as root, so drop into the console user's GUI
-  # session (launchctl asuser needs root) to register the input source. A
+  # A system-wide install runs this as root. launchctl asuser only adopts the
+  # console user's Mach bootstrap, not their uid, so sudo -u drops privilege as
+  # well -- otherwise TIS registers the input source for root, not the user. A
   # per-user install already runs as that user, so invoke the binary directly.
   if [ "$(/usr/bin/id -u)" = "0" ] && [ -n "${console_uid:-}" ]; then
-    /bin/launchctl asuser "${console_uid}" "${app_bin}" install
+    /bin/launchctl asuser "${console_uid}" \
+      /usr/bin/sudo -u "${console_user}" "${app_bin}" install
     install_status=$?
   else
     "${app_bin}" install
