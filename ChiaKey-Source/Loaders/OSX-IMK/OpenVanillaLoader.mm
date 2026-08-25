@@ -875,7 +875,9 @@ using namespace OpenVanilla;
     if (select) {
       select->bindTextToColumn(*cpi, 1);
       while (select->step() == SQLITE_ROW) {
-        string b = select->textOfColumn(0);
+        const char *qstringText = select->textOfColumn(0);
+        if (!qstringText) continue;
+        string b = qstringText;
 
         if (exp.match(b)) continue;
 
@@ -885,7 +887,7 @@ using namespace OpenVanilla;
       select->reset();
     }
 
-    vector<string> extBpmfs = tbl->keysForValue(*cpi);
+    vector<string> extBpmfs = tbl ? tbl->keysForValue(*cpi) : vector<string>();
     for (vector<string>::iterator ebi = extBpmfs.begin(); ebi != extBpmfs.end();
          ++ebi) {
       if (dedup.find(*ebi) == dedup.end()) {
@@ -894,15 +896,27 @@ using namespace OpenVanilla;
       }
     }
 
-    if (!bpmfs.size()) {
+    if (!bpmfs.size() && tbl) {
       bpmfs = tbl->keysForValue("ㄅ");
     }
 
+    // A character with no reading at all: no reading can cover the phrase
+    // character for character, so hand back nothing and let the caller skip.
+    if (!bpmfs.size()) {
+      phraseBPMFs.clear();
+      break;
+    }
+
+    // The product is per-character and the only caller takes the first (most
+    // probable) combination, so cap the exponential tail a long phrase of
+    // ambiguous characters would otherwise build on the main thread.
+    const size_t kMaxReadingCombinations = 64;
     vector<vector<string> > npb;
     for (vector<vector<string> >::const_iterator pbi = phraseBPMFs.begin();
-         pbi != phraseBPMFs.end(); ++pbi) {
-      for (vector<string>::const_iterator bi = bpmfs.begin(); bi != bpmfs.end();
-           ++bi) {
+         pbi != phraseBPMFs.end() && npb.size() < kMaxReadingCombinations;
+         ++pbi) {
+      for (vector<string>::const_iterator bi = bpmfs.begin();
+           bi != bpmfs.end() && npb.size() < kMaxReadingCombinations; ++bi) {
         vector<string> newEntry = *pbi;
         newEntry.push_back(BPMF::FromAbsoluteOrderString(*bi).composedString());
         npb.push_back(newEntry);
@@ -910,6 +924,8 @@ using namespace OpenVanilla;
     }
     phraseBPMFs = npb;
   }
+
+  delete tbl;
 
   for (vector<vector<string> >::const_iterator pbi = phraseBPMFs.begin();
        pbi != phraseBPMFs.end(); ++pbi) {
@@ -938,10 +954,14 @@ using namespace OpenVanilla;
 // SQLite -- never computed positionally. Assumes _userPhraseDB is open.
 - (void)_insertUserPhrase:(NSString *)phrase reading:(NSString *)reading {
   if (![phrase length]) return;
-  NSString *composed =
-      [reading length]
-          ? reading
-          : [[self _readingsForPhrase:phrase] objectAtIndex:0];
+  NSString *composed = reading;
+  if (![composed length]) {
+    NSArray *derived = [self _readingsForPhrase:phrase];
+    // No reading at all (e.g. the lookup tables are unavailable): skip the
+    // phrase rather than throw on an empty array.
+    if (![derived count]) return;
+    composed = [derived objectAtIndex:0];
+  }
   _userPhraseDB->execute(
       "INSERT INTO user_unigrams (qstring, current, probability, backoff) "
       "VALUES (%Q, %Q, %f, %f)",
