@@ -353,7 +353,9 @@ static void TestOrdinaryImportReplacesCaches() {
 
   CHECK(CountRows("user_bigram_cache") == 2);  // only what the file holds
   CHECK(TextOfOverride(Q("\u3111\u3129\u3122\u02ca")) == "\xe6\xac\x8a");
-  CHECK(CountRows("user_learning_stats") == 0);
+  // A store the file has no table for (an older export) is kept, not wiped --
+  // same rule as the C++ importer's RestoreLearningCaches.
+  CHECK(CountRows("user_learning_stats") == 1);
   [store release];
 }
 
