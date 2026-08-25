@@ -561,9 +561,11 @@ static void TestRevertingAnOverrideDropsItsBreadth() {
     CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
 
     // a reload in between (loadConfig() does this on every preference change)
-    // must not resurrect the row we just dropped
+    // must not resurrect the row we just dropped -- neither the breadth nor
+    // the override entry itself
     lm.loadUserCandidateOverrideCache();
     CHECK(!lm.overrideGeneralizesAcrossContexts("q1"));
+    CHECK(lm.fetchCachedOverrideSelection("q1") == "");
     CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
   }
 

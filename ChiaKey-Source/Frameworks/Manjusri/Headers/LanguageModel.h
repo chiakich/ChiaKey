@@ -198,6 +198,9 @@ class LearningStore {
   bool loadEntry(const string& key, const ValueType& value,
                  size_t selectionCount, time_t lastUsed) {
     if (m_map.find(key) != m_map.end()) return false;
+    // A row already dropped in memory must not come back: a reload can easily
+    // land between the drop and the save that deletes the row on disk.
+    if (m_pendingDeletes.count(key)) return false;
     if (m_map.size() >= m_capacity) return false;
 
     // Clamp rather than trust the row: a garbled count would otherwise open a
