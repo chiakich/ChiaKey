@@ -739,17 +739,25 @@ inline void RollBackInlineLearningStats(OVSQLiteConnection* userDB,
 
   if (userDB->execute("BEGIN") != SQLITE_OK) return;
 
-  userDB->execute(
-      "INSERT OR REPLACE INTO user_learning_stats "
-      "(store, qstring, selection_count, last_used) "
-      "SELECT %Q, qstring, selection_count, last_used FROM %s",
-      store, table);
-  userDB->execute("CREATE TABLE %s_rebuild (%s)", table, columns);
-  userDB->execute("INSERT INTO %s_rebuild SELECT %s FROM %s", table, columns,
-                  table);
-  userDB->execute("DROP TABLE %s", table);
-  userDB->execute("ALTER TABLE %s_rebuild RENAME TO %s", table, table);
-  userDB->execute("COMMIT");
+  bool ok =
+      userDB->execute(
+          "INSERT OR REPLACE INTO user_learning_stats "
+          "(store, qstring, selection_count, last_used) "
+          "SELECT %Q, qstring, selection_count, last_used FROM %s",
+          store, table) == SQLITE_OK &&
+      userDB->execute("CREATE TABLE %s_rebuild (%s)", table, columns) ==
+          SQLITE_OK &&
+      userDB->execute("INSERT INTO %s_rebuild SELECT %s FROM %s", table,
+                      columns, table) == SQLITE_OK &&
+      userDB->execute("DROP TABLE %s", table) == SQLITE_OK &&
+      userDB->execute("ALTER TABLE %s_rebuild RENAME TO %s", table, table) ==
+          SQLITE_OK;
+
+  // A failure mid-rebuild (the DB busy under another process is the ordinary
+  // case) must not leave the transaction open for whoever writes next; the
+  // untouched table is simply rebuilt on another launch.
+  if (!ok || userDB->execute("COMMIT") != SQLITE_OK)
+    userDB->execute("ROLLBACK");
 }
 
 inline void LanguageModel::MigrateUserLearningTables(
@@ -785,18 +793,21 @@ inline void LanguageModel::MigrateUserLearningTables(
   grandfathered.reset();
 
   if (!alreadyDone) {
-    userDB->execute(
-        "INSERT OR REPLACE INTO user_learning_stats "
-        "(store, qstring, selection_count, last_used) "
-        "SELECT 'override_breadth', qstring, %d, 0 "
-        "FROM user_candidate_override_cache WHERE qstring NOT IN "
-        "(SELECT qstring FROM user_learning_stats WHERE "
-        "store = 'override_breadth')",
-        (int)c_overrideGeneralizationContexts - 1);
-    userDB->execute(
-        "INSERT OR REPLACE INTO user_learning_stats "
-        "(store, qstring, selection_count, last_used) "
-        "VALUES('schema', 'override_breadth_grandfathered', 1, 0)");
+    // The marker only lands once the credit did, or a busy DB here would
+    // skip the grandfathering forever while claiming it happened.
+    if (userDB->execute(
+            "INSERT OR REPLACE INTO user_learning_stats "
+            "(store, qstring, selection_count, last_used) "
+            "SELECT 'override_breadth', qstring, %d, 0 "
+            "FROM user_candidate_override_cache WHERE qstring NOT IN "
+            "(SELECT qstring FROM user_learning_stats WHERE "
+            "store = 'override_breadth')",
+            (int)c_overrideGeneralizationContexts - 1) == SQLITE_OK) {
+      userDB->execute(
+          "INSERT OR REPLACE INTO user_learning_stats "
+          "(store, qstring, selection_count, last_used) "
+          "VALUES('schema', 'override_breadth_grandfathered', 1, 0)");
+    }
   }
 
   RollBackInlineLearningStats(userDB, "user_bigram_cache", "bigram",
