@@ -101,15 +101,24 @@ static NSString *const ChiaKeyIMEBundleIdentifierString =
 - (BOOL)acquireInstallLock {
   if (_installLockDescriptor >= 0) return YES;
 
-  // /var/tmp is shared between users and survives logout, and flock releases
-  // automatically if we crash, so a stale lock cannot wedge updates forever.
-  const char *path = "/var/tmp/com.chiakey.ChiaKey.update.lock";
-  int descriptor = open(path, O_RDONLY | O_CREAT, 0666);
+  // /var/tmp survives logout, and flock releases automatically if we crash,
+  // so a stale lock cannot wedge updates forever. Per-uid and 0600: installs
+  // are per-user, and one world-writable file would let any local user hold
+  // the lock and silently suppress everyone else's automatic updates.
+  char path[128];
+  snprintf(path, sizeof(path), "/var/tmp/com.chiakey.ChiaKey.update.%d.lock",
+           (int)getuid());
+  int descriptor = open(path, O_RDONLY | O_CREAT | O_NOFOLLOW, 0600);
   if (descriptor < 0) return YES;  // Cannot lock: do not block the update.
 
-  // open() honours umask, so a file created by the first user could otherwise
-  // be unopenable by the next one.
-  fchmod(descriptor, 0666);
+  // /var/tmp is world-writable, so another user can squat the path first;
+  // a file we do not own must not get to gate our updates.
+  struct stat lockInfo;
+  if (fstat(descriptor, &lockInfo) != 0 || lockInfo.st_uid != getuid() ||
+      !S_ISREG(lockInfo.st_mode)) {
+    close(descriptor);
+    return YES;
+  }
 
   if (flock(descriptor, LOCK_EX | LOCK_NB) != 0) {
     close(descriptor);
