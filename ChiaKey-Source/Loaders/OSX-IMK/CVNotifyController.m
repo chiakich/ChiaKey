@@ -169,6 +169,10 @@ NSPoint c_lastLocation;
 }
 - (void)fadeNotifyWindow {
   [_waitTimer invalidate];
+  _waitTimer = nil;
+  // A click may have started the fade already; a second repeating timer
+  // would orphan the first, and the orphan would over-release via close.
+  if (_fadeTimer) return;
   [CVNotifyController removeInstanceCount];
   _fadeTimer = [NSTimer scheduledTimerWithTimeInterval:0.1
                                                 target:self
@@ -177,16 +181,18 @@ NSPoint c_lastLocation;
                                                repeats:YES];
 }
 - (void)close {
+  // The controller owns itself (notify: never releases it); the autorelease
+  // below is that release and must happen exactly once.
+  if (_closed) return;
+  _closed = YES;
+  [_waitTimer invalidate];
+  _waitTimer = nil;
   [_fadeTimer invalidate];
+  _fadeTimer = nil;
   [[self window] orderOut:self];
   [self autorelease];
 }
 - (IBAction)fade {
-  [CVNotifyController removeInstanceCount];
-  _fadeTimer = [NSTimer scheduledTimerWithTimeInterval:0.1
-                                                target:self
-                                              selector:@selector(doFade)
-                                              userInfo:nil
-                                               repeats:YES];
+  [self fadeNotifyWindow];
 }
 @end

@@ -14,6 +14,7 @@
   NSColor *_foregroundColor;
   NSTimer *_waitTimer;
   NSTimer *_fadeTimer;
+  BOOL _closed;
 }
 
 #pragma mark Class Methods
