@@ -20,8 +20,6 @@ static NSString *const ChiaKeyApplicationLatestPackageSHA256DefaultsKey =
     @"ChiaKeyLatestApplicationPackageSHA256";
 static NSString *const ChiaKeyApplicationLatestPackageURLDefaultsKey =
     @"ChiaKeyLatestApplicationPackageURL";
-static NSString *const ChiaKeyApplicationIncludeBetaDefaultsKey =
-    @"ChiaKeyApplicationIncludeBetaReleases";
 static NSString *const ChiaKeyLatestApplicationDefaultsKey =
     @"ChiaKeyLatestApplicationVersion";
 static NSString *const ChiaKeyLatestApplicationCheckDefaultsKey =
@@ -338,9 +336,7 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
 - (void)awakeFromNib {
   [_applicationProgressIndicator setHidden:YES];
   [_lexiconProgressIndicator setHidden:YES];
-  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-  [_applicationIncludeBetaCheckBox
-      setIntValue:[defaults boolForKey:ChiaKeyApplicationIncludeBetaDefaultsKey]];
+  [_applicationIncludeBetaCheckBox setIntValue:[self _includeBetaReleases]];
   [_applicationAutoUpdateCheckBox
       setIntValue:[self _isGlobalPreferenceEnabled:
                             ChiaKeyApplicationAutoUpdateEnabledPreferenceKey]];
@@ -886,10 +882,32 @@ static NSString *const ChiaKeySourceDatabaseArtifactFilename =
                      enabled:([_applicationAutoUpdateCheckBox intValue] == 1)];
 }
 
+// Through the shared suite: the background Updater reads this too, and a
+// value written to this app's own defaults would never reach it.
+- (NSUserDefaults *)_updateSharedDefaults {
+  return [[[NSUserDefaults alloc]
+      initWithSuiteName:ChiaKeyUpdateSharedDefaultsSuiteName] autorelease];
+}
+
+- (BOOL)_includeBetaReleases {
+  NSUserDefaults *shared = [self _updateSharedDefaults];
+  id value = [shared objectForKey:ChiaKeyIncludeBetaReleasesDefaultsKey];
+  if (value) return [value boolValue];
+
+  // The toggle used to live in this app's own defaults; carry an opt-in over.
+  BOOL legacy = [[NSUserDefaults standardUserDefaults]
+      boolForKey:ChiaKeyIncludeBetaReleasesDefaultsKey];
+  if (legacy) {
+    [shared setBool:YES forKey:ChiaKeyIncludeBetaReleasesDefaultsKey];
+    [shared synchronize];
+  }
+  return legacy;
+}
+
 - (IBAction)toggleIncludeBetaReleases:(id)sender {
-  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSUserDefaults *defaults = [self _updateSharedDefaults];
   [defaults setBool:([_applicationIncludeBetaCheckBox intValue] == 1)
-             forKey:ChiaKeyApplicationIncludeBetaDefaultsKey];
+             forKey:ChiaKeyIncludeBetaReleasesDefaultsKey];
   [defaults synchronize];
   [self _setAvailableRelease:nil];
   _didAutoCheckOnShow = NO;

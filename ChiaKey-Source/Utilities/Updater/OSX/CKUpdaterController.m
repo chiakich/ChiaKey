@@ -229,8 +229,11 @@ static BOOL CKFrontmostApplicationIsFullScreen(void) {
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
   _service = [[ChiaKeyUpdateService alloc] init];
 
-  BOOL includeBeta = [[[NSUserDefaults standardUserDefaults]
-      objectForKey:@"ChiaKeyApplicationIncludeBetaReleases"] boolValue];
+  // From the shared suite: the toggle is set by the Preferences app, whose
+  // own defaults domain this background app cannot see.
+  BOOL includeBeta = [[[[[NSUserDefaults alloc]
+      initWithSuiteName:ChiaKeyUpdateSharedDefaultsSuiteName] autorelease]
+      objectForKey:ChiaKeyIncludeBetaReleasesDefaultsKey] boolValue];
 
   [_service fetchLatestReleaseIncludingBeta:includeBeta
                                  completion:^(ChiaKeyUpdateRelease *release,
