@@ -683,6 +683,16 @@ int Eval(const vector<string>& args) {
     }
   }
 
+  vector<GoldRow> rows = LoadGold(gold);
+  if (rows.empty()) {
+    cerr << "no usable rows in " << gold << endl;
+    delete db;
+    return 1;
+  }
+
+  // Scoped so the statements the model holds are finalized before the
+  // connection goes: ~OVSQLiteConnection asserts on a busy close.
+  {
   LanguageModel lm(db, 0, useUserTable, false, false, useUserTable,
                    useUserTable);
   if (useUserTable) {
@@ -697,13 +707,6 @@ int Eval(const vector<string>& args) {
   if (HasArg(args, "--unigram-promotion"))
     Node::SetUnigramPromotion(
         (Score)atof(ArgValue(args, "--unigram-promotion", "1.0").c_str()));
-
-  vector<GoldRow> rows = LoadGold(gold);
-  if (rows.empty()) {
-    cerr << "no usable rows in " << gold << endl;
-    delete db;
-    return 1;
-  }
 
   ofstream mismatches;
   if (mismatchPath.size()) {
@@ -761,6 +764,7 @@ int Eval(const vector<string>& args) {
     cout << "exact match, no inferred readings: " << cleanExact << "/"
          << cleanRows << " ("
          << (100.0 * (double)cleanExact / (double)cleanRows) << "%)" << endl;
+  }
 
   delete db;
   return 0;
@@ -856,6 +860,16 @@ int Replay(const vector<string>& args) {
     return 1;
   }
 
+  vector<GoldRow> rows = LoadGold(gold);
+  if (rows.empty()) {
+    cerr << "no usable rows in " << gold << endl;
+    delete db;
+    return 1;
+  }
+
+  // Scoped so the statements the model holds are finalized before the
+  // connection goes: ~OVSQLiteConnection asserts on a busy close.
+  {
   LanguageModel lm(db, 0, true, false, false, true, true);
   lm.loadUserBigramCache();
   lm.loadUserCandidateOverrideCache();
@@ -870,13 +884,6 @@ int Replay(const vector<string>& args) {
   if (HasArg(args, "--learned-score"))
     LanguageModel::SetLearnedBigramScore(
         atof(ArgValue(args, "--learned-score", "0.0").c_str()));
-
-  vector<GoldRow> rows = LoadGold(gold);
-  if (rows.empty()) {
-    cerr << "no usable rows in " << gold << endl;
-    delete db;
-    return 1;
-  }
 
   cout << "sentences per pass: " << rows.size() << endl;
 
@@ -935,6 +942,7 @@ int Replay(const vector<string>& args) {
          << (100.0 * (double)firstTry / (double)rows.size())
          << "%), manual selections " << selections << ", unreachable "
          << unreachable << endl;
+  }
   }
 
   delete db;
