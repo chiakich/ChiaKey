@@ -45,6 +45,12 @@ inline ostream& operator<<(ostream& stream, const FastPath& path) {
 typedef pair<pair<string, size_t>, NodeSet::const_iterator> Candidate;
 typedef vector<Candidate> CandidateVector;
 
+// where a listed candidate came from: the reading's own unigram list, or a
+// bigram keyed by the text preceding it
+enum CandidateOrigin { kCandidateOriginUnigram = 0, kCandidateOriginBigram = 1 };
+typedef pair<Candidate, CandidateOrigin> AnnotatedCandidate;
+typedef vector<AnnotatedCandidate> AnnotatedCandidateVector;
+
 const string PathAsString(const Path& path);
 
 inline const string PathAsString(const Path& path) {
@@ -227,6 +233,14 @@ class Graph {
   // search
   CandidateVector candidatesAtIndex(size_t atIndex,
                                     bool cursorAtEndOfBlock = false) const;
+
+  // bigram-aware variant: within each node, candidates whose bigram (keyed by
+  // the previous text) exists are listed first and tagged, so a host UI can
+  // surface context-suggested picks; an unmatched previous degrades to the
+  // unigram-only order of candidatesAtIndex()
+  AnnotatedCandidateVector annotatedCandidatesAtIndex(
+      size_t atIndex, const string& previous,
+      bool cursorAtEndOfBlock = false) const;
 
   bool overrideNodeCandidate(const Node& queryNode, const string& currentText,
                              bool cacheSelection = true);
@@ -700,6 +714,50 @@ inline CandidateVector Graph::candidatesAtIndex(size_t atIndex,
         results.push_back(Candidate(
             pair<string, size_t>(*citer, (size_t)(citer - candidates.begin())),
             *iter));
+      }
+    }
+  }
+  return results;
+}
+
+inline AnnotatedCandidateVector Graph::annotatedCandidatesAtIndex(
+    size_t atIndex, const string& previous, bool cursorAtEndOfBlock) const {
+  AnnotatedCandidateVector results;
+  vector<NodeSet::const_iterator> nodes;
+
+  if (!cursorAtEndOfBlock)
+    nodes = FindNodesOverlapping(m_nodes, Location(atIndex, 0));
+  else
+    nodes = FindNodesPreceding(m_nodes, Location(atIndex, 0));
+
+  sort(nodes.begin(), nodes.end(), NodeSetIteratorCompareByLength());
+
+  set<string> strset;
+  for (vector<NodeSet::const_iterator>::iterator iter = nodes.begin();
+       iter != nodes.end(); ++iter) {
+    vector<string> bigrams = (**iter).bigramCandidates(previous);
+    for (vector<string>::iterator biter = bigrams.begin();
+         biter != bigrams.end(); ++biter) {
+      if (strset.find(*biter) == strset.end()) {
+        strset.insert(*biter);
+        results.push_back(AnnotatedCandidate(
+            Candidate(
+                pair<string, size_t>(*biter, (size_t)(biter - bigrams.begin())),
+                *iter),
+            kCandidateOriginBigram));
+      }
+    }
+
+    vector<string> candidates = (**iter).candidates();
+    for (vector<string>::iterator citer = candidates.begin();
+         citer != candidates.end(); ++citer) {
+      if (strset.find(*citer) == strset.end()) {
+        strset.insert(*citer);
+        results.push_back(AnnotatedCandidate(
+            Candidate(pair<string, size_t>(
+                          *citer, (size_t)(citer - candidates.begin())),
+                      *iter),
+            kCandidateOriginUnigram));
       }
     }
   }

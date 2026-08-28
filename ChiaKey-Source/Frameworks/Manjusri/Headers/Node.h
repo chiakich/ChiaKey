@@ -72,6 +72,9 @@ class Node {
   void adjustScoreWithSelection(const string& currentText);
   void cancelOverride();
   const vector<string> candidates() const;
+  // texts of the bigrams keyed by the given previous text, best first; empty
+  // when no bigram was built for that context
+  const vector<string> bigramCandidates(const string& previous) const;
   const StringScorePair findHighestScorePair(const string& previous = "") const;
 
   // Length prior credit per extra syllable (0 for single-syllable/overridden); lets a phrase outscore a char-split.
@@ -314,6 +317,20 @@ inline const vector<string> Node::candidates() const {
   vector<string> results;
   for (StringScorePairVector::const_iterator iter = m_unigramCurrents.begin();
        iter != m_unigramCurrents.end(); ++iter)
+    results.push_back((*iter).first);
+
+  return results;
+}
+
+inline const vector<string> Node::bigramCandidates(
+    const string& previous) const {
+  vector<string> results;
+  map<string, StringScorePairVector>::const_iterator miter =
+      m_bigramMap.find(previous);
+  if (miter == m_bigramMap.end()) return results;
+
+  for (StringScorePairVector::const_iterator iter = (*miter).second.begin();
+       iter != (*miter).second.end(); ++iter)
     results.push_back((*iter).first);
 
   return results;

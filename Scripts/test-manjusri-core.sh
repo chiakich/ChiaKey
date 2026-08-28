@@ -34,6 +34,8 @@ build_and_run() {
 build_and_run TestNode "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp"
 build_and_run TestGraphForcedBreak "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp" \
   -DOV_USE_SQLITE -lsqlite3
+build_and_run TestGraphBigramCandidates "$SOURCE_DIR/Frameworks/Manjusri/Source/Node.cpp" \
+  -DOV_USE_SQLITE -lsqlite3
 build_and_run TestMandarinSyllable "$SOURCE_DIR/Frameworks/Formosa/Source/Mandarin.cpp"
 
 echo "Manjusri core tests passed."
