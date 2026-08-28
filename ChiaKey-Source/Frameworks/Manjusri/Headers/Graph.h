@@ -45,10 +45,17 @@ inline ostream& operator<<(ostream& stream, const FastPath& path) {
 typedef pair<pair<string, size_t>, NodeSet::const_iterator> Candidate;
 typedef vector<Candidate> CandidateVector;
 
-// where a listed candidate came from: the reading's own unigram list, or a
-// bigram keyed by the text preceding it
 enum CandidateOrigin { kCandidateOriginUnigram = 0, kCandidateOriginBigram = 1 };
-typedef pair<Candidate, CandidateOrigin> AnnotatedCandidate;
+
+struct AnnotatedCandidate {
+  AnnotatedCandidate(const string& t, NodeSet::const_iterator n,
+                     CandidateOrigin o)
+      : text(t), node(n), origin(o) {}
+
+  string text;
+  NodeSet::const_iterator node;
+  CandidateOrigin origin;
+};
 typedef vector<AnnotatedCandidate> AnnotatedCandidateVector;
 
 const string PathAsString(const Path& path);
@@ -234,10 +241,7 @@ class Graph {
   CandidateVector candidatesAtIndex(size_t atIndex,
                                     bool cursorAtEndOfBlock = false) const;
 
-  // bigram-aware variant: within each node, candidates whose bigram (keyed by
-  // the previous text) exists are listed first and tagged, so a host UI can
-  // surface context-suggested picks; an unmatched previous degrades to the
-  // unigram-only order of candidatesAtIndex()
+  // candidatesAtIndex() with each node's order refined by the preceding text
   AnnotatedCandidateVector annotatedCandidatesAtIndex(
       size_t atIndex, const string& previous,
       bool cursorAtEndOfBlock = false) const;
@@ -262,6 +266,8 @@ class Graph {
   void resetSource();
   bool crossesForcedBreak(const Location& location) const;
   void rebuild(StringFilter* filter = 0);
+  vector<NodeSet::const_iterator> nodesAtIndex(size_t atIndex,
+                                               bool cursorAtEndOfBlock) const;
 
   LanguageModel* m_LM;
 
@@ -434,47 +440,49 @@ inline void Graph::build(StringFilter* filter) {
       continue;
     }
 
-    // now we build the blocks in relation to the preceding nodes
+    // now we build the block in relation to the preceding nodes; the set
+    // keeps one node per (location, qstring), so grams from every preceding
+    // reading are merged into that node -- building one node per predecessor
+    // used to leave only the first predecessor's bigrams alive
+    Node node(location, subblock);
+    string cachedCurrentText;
+
     for (vector<NodeSet::const_iterator>::iterator pniter =
              precedingNodes.begin();
          pniter != precedingNodes.end(); ++pniter) {
       const Node& pnode = **pniter;
-      Node node(location, subblock);
 
-      // builds the bigram
       node.addSortedBigrams(m_LM->findBigrams(
           m_LM->combineBigramQueryString(pnode.queryString(), subblock),
           filter));
-
-      // build the unigram backoffs
       node.addUnigramBackoffs(
           m_LM->findUnigrams(pnode.queryString(), true, filter));
-
-      // then the unigrams
-      node.addSortedUnigrams(currentUnigrams);
 
       // candidate cache: a correction made after this exact preceding reading
       // wins; the context-free entry is a fallback and only applies once the
       // user has made the same correction after several different readings.
-      string cachedCurrentText = m_LM->fetchCachedContextOverrideSelection(
-          pnode.queryString(), subblock);
-      if (!cachedCurrentText.size() &&
-          m_LM->overrideGeneralizesAcrossContexts(subblock))
-        cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
-
-      if (cachedCurrentText.size()) {
-        node.adjustScoreWithSelection(cachedCurrentText);
-
-        // because alias subblock comes next (with same location with aliased
-        // qstring), we want to ignore it
-        aliasToIgnore.insert(location);
-      }
-
-      // put in the node
-      m_nodes.insert(node);
-      builtBlocks++;
-      // cerr << "built 2" << endl;
+      if (!cachedCurrentText.size())
+        cachedCurrentText = m_LM->fetchCachedContextOverrideSelection(
+            pnode.queryString(), subblock);
     }
+
+    node.addSortedUnigrams(currentUnigrams);
+
+    if (!cachedCurrentText.size() &&
+        m_LM->overrideGeneralizesAcrossContexts(subblock))
+      cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
+
+    if (cachedCurrentText.size()) {
+      node.adjustScoreWithSelection(cachedCurrentText);
+
+      // because alias subblock comes next (with same location with aliased
+      // qstring), we want to ignore it
+      aliasToIgnore.insert(location);
+    }
+
+    m_nodes.insert(node);
+    builtBlocks++;
+    // cerr << "built 2" << endl;
   }
 
   // cerr << builtBlocks << " blocks actually built" << endl;
@@ -689,9 +697,8 @@ inline vector<Path> Graph::walkMemoized(const string& previous,
 
 inline StringVector Graph::queryBlocks() const { return m_source; }
 
-inline CandidateVector Graph::candidatesAtIndex(size_t atIndex,
-                                                bool cursorAtEndOfBlock) const {
-  CandidateVector results;
+inline vector<NodeSet::const_iterator> Graph::nodesAtIndex(
+    size_t atIndex, bool cursorAtEndOfBlock) const {
   vector<NodeSet::const_iterator> nodes;
 
   if (!cursorAtEndOfBlock)
@@ -700,8 +707,14 @@ inline CandidateVector Graph::candidatesAtIndex(size_t atIndex,
     nodes = FindNodesPreceding(m_nodes, Location(atIndex, 0));
 
   sort(nodes.begin(), nodes.end(), NodeSetIteratorCompareByLength());
+  return nodes;
+}
 
-  // cerr << nodes.size() << " results" << endl;
+inline CandidateVector Graph::candidatesAtIndex(size_t atIndex,
+                                                bool cursorAtEndOfBlock) const {
+  CandidateVector results;
+  vector<NodeSet::const_iterator> nodes =
+      nodesAtIndex(atIndex, cursorAtEndOfBlock);
 
   set<string> strset;
   for (vector<NodeSet::const_iterator>::iterator iter = nodes.begin();
@@ -723,42 +736,21 @@ inline CandidateVector Graph::candidatesAtIndex(size_t atIndex,
 inline AnnotatedCandidateVector Graph::annotatedCandidatesAtIndex(
     size_t atIndex, const string& previous, bool cursorAtEndOfBlock) const {
   AnnotatedCandidateVector results;
-  vector<NodeSet::const_iterator> nodes;
-
-  if (!cursorAtEndOfBlock)
-    nodes = FindNodesOverlapping(m_nodes, Location(atIndex, 0));
-  else
-    nodes = FindNodesPreceding(m_nodes, Location(atIndex, 0));
-
-  sort(nodes.begin(), nodes.end(), NodeSetIteratorCompareByLength());
+  vector<NodeSet::const_iterator> nodes =
+      nodesAtIndex(atIndex, cursorAtEndOfBlock);
 
   set<string> strset;
   for (vector<NodeSet::const_iterator>::iterator iter = nodes.begin();
        iter != nodes.end(); ++iter) {
-    vector<string> bigrams = (**iter).bigramCandidates(previous);
-    for (vector<string>::iterator biter = bigrams.begin();
-         biter != bigrams.end(); ++biter) {
-      if (strset.find(*biter) == strset.end()) {
-        strset.insert(*biter);
+    const vector<pair<string, bool> > ordered =
+        (**iter).candidatesForContext(previous);
+    for (vector<pair<string, bool> >::const_iterator citer = ordered.begin();
+         citer != ordered.end(); ++citer) {
+      if (strset.insert((*citer).first).second)
         results.push_back(AnnotatedCandidate(
-            Candidate(
-                pair<string, size_t>(*biter, (size_t)(biter - bigrams.begin())),
-                *iter),
-            kCandidateOriginBigram));
-      }
-    }
-
-    vector<string> candidates = (**iter).candidates();
-    for (vector<string>::iterator citer = candidates.begin();
-         citer != candidates.end(); ++citer) {
-      if (strset.find(*citer) == strset.end()) {
-        strset.insert(*citer);
-        results.push_back(AnnotatedCandidate(
-            Candidate(pair<string, size_t>(
-                          *citer, (size_t)(citer - candidates.begin())),
-                      *iter),
-            kCandidateOriginUnigram));
-      }
+            (*citer).first, *iter,
+            (*citer).second ? kCandidateOriginBigram
+                            : kCandidateOriginUnigram));
     }
   }
   return results;

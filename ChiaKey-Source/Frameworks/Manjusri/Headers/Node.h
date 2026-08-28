@@ -72,9 +72,10 @@ class Node {
   void adjustScoreWithSelection(const string& currentText);
   void cancelOverride();
   const vector<string> candidates() const;
-  // texts of the bigrams keyed by the given previous text, best first; empty
-  // when no bigram was built for that context
-  const vector<string> bigramCandidates(const string& previous) const;
+  // candidates() with entries the context outscores (findHighestScorePair's
+  // gating) moved to the front and flagged, so the list agrees with the walk
+  const vector<pair<string, bool> > candidatesForContext(
+      const string& previous) const;
   const StringScorePair findHighestScorePair(const string& previous = "") const;
 
   // Length prior credit per extra syllable (0 for single-syllable/overridden); lets a phrase outscore a char-split.
@@ -322,16 +323,50 @@ inline const vector<string> Node::candidates() const {
   return results;
 }
 
-inline const vector<string> Node::bigramCandidates(
+inline const vector<pair<string, bool> > Node::candidatesForContext(
     const string& previous) const {
-  vector<string> results;
-  map<string, StringScorePairVector>::const_iterator miter =
-      m_bigramMap.find(previous);
-  if (miter == m_bigramMap.end()) return results;
+  vector<pair<string, bool> > results;
+  const vector<string> unigrams = candidates();
 
-  for (StringScorePairVector::const_iterator iter = (*miter).second.begin();
-       iter != (*miter).second.end(); ++iter)
-    results.push_back((*iter).first);
+  // an overridden node already shows the user's pick; don't reorder under it
+  map<string, StringScorePairVector>::const_iterator miter =
+      (previous.size() && !m_overridden) ? m_bigramMap.find(previous)
+                                         : m_bigramMap.end();
+  if (miter == m_bigramMap.end()) {
+    for (vector<string>::const_iterator uiter = unigrams.begin();
+         uiter != unigrams.end(); ++uiter)
+      results.push_back(pair<string, bool>(*uiter, false));
+    return results;
+  }
+
+  Score backoffWeight = Node::c_defaultUNKBackoff;
+  StringScoreMap::const_iterator siter =
+      m_unigramPreviousBackoffs.find(previous);
+  if (siter != m_unigramPreviousBackoffs.end()) backoffWeight = (*siter).second;
+
+  Score unigramTop = m_unigramCurrents.size()
+                         ? m_unigramCurrents[0].second + backoffWeight
+                         : backoffWeight + Node::c_defaultUNKProbability;
+
+  set<string> promoted;
+  const StringScorePairVector& bucket = (*miter).second;
+  for (StringScorePairVector::const_iterator biter = bucket.begin();
+       biter != bucket.end(); ++biter) {
+    if (!((*biter).second > unigramTop)) continue;
+    // a promoted entry that isn't already on top, and stays selectable and
+    // learnable through the unigram list
+    if (unigrams.size() && (*biter).first == unigrams[0]) continue;
+    if (find(unigrams.begin(), unigrams.end(), (*biter).first) ==
+        unigrams.end())
+      continue;
+    if (promoted.insert((*biter).first).second)
+      results.push_back(pair<string, bool>((*biter).first, true));
+  }
+
+  for (vector<string>::const_iterator uiter = unigrams.begin();
+       uiter != unigrams.end(); ++uiter)
+    if (promoted.find(*uiter) == promoted.end())
+      results.push_back(pair<string, bool>(*uiter, false));
 
   return results;
 }
@@ -378,10 +413,16 @@ inline const StringScorePair Node::findHighestScorePair(
 }
 
 inline void Node::addSortedBigrams(const BigramVector& bigrams) {
+  // insert in score order: grams merged from several preceding nodes may
+  // interleave, and readers treat element 0 as the bucket's best
   for (BigramVector::const_iterator iter = bigrams.begin();
-       iter != bigrams.end(); ++iter)
-    m_bigramMap[(*iter).previous].push_back(
-        StringScorePair((*iter).current, (*iter).probability));
+       iter != bigrams.end(); ++iter) {
+    StringScorePairVector& bucket = m_bigramMap[(*iter).previous];
+    StringScorePair entry((*iter).current, (*iter).probability);
+    StringScorePairVector::iterator pos = bucket.begin();
+    while (pos != bucket.end() && (*pos).second >= entry.second) ++pos;
+    bucket.insert(pos, entry);
+  }
 }
 
 inline void Node::addSortedUnigrams(const UnigramVector& unigrams) {

@@ -1,9 +1,6 @@
-// Graph::annotatedCandidatesAtIndex(): with a matching previous text, bigram
-// candidates come first and are tagged as such; with an unmatched (or empty)
-// previous the list degrades to exactly the unigram order that
-// candidatesAtIndex() returns. This is the contract the iOS host relies on to
-// show context-aware picks in the candidate bar.
-#include <cstdio>
+// Graph::annotatedCandidatesAtIndex(): context-promoted candidates lead and
+// are tagged, gated the same way findHighestScorePair() gates the walk, and
+// grams merged from every preceding reading are reachable.
 #include <iostream>
 
 #include "Graph.h"
@@ -22,94 +19,129 @@ static int failures = 0;
     }                                                         \
   } while (0)
 
-static OVSQLiteConnection* BuildFixture(const string& path) {
-  remove(path.c_str());
-  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+static OVSQLiteConnection* BuildFixture() {
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(":memory:");
   if (!db) return 0;
 
   db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
   db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
-  db->execute("CREATE TABLE user_bigram_cache (qstring, previous, current, probability)");
-  db->execute("CREATE TABLE user_candidate_override_cache (qstring, current)");
-  db->execute("CREATE TABLE user_learning_stats (store, qstring, selection_count, last_used)");
-  db->execute("CREATE UNIQUE INDEX user_learning_stats_key ON user_learning_stats (store, qstring)");
-  db->execute("CREATE UNIQUE INDEX ovr_u ON user_candidate_override_cache (qstring)");
-  db->execute("CREATE UNIQUE INDEX big_u ON user_bigram_cache (qstring)");
 
   db->execute("INSERT INTO unigrams VALUES('*', '*', -8.0, 0.0)");
   db->execute("INSERT INTO unigrams VALUES('!', '!', 0.0, 0.0)");
   db->execute("INSERT INTO unigrams VALUES('$', '$', 0.0, 0.0)");
 
   db->execute("INSERT INTO unigrams VALUES('R1', 'A', -1.0, 0.0)");
-  // R2's unigram order is X then Y; the bigram below promotes Y after A
   db->execute("INSERT INTO unigrams VALUES('R2', 'X', -2.0, 0.0)");
   db->execute("INSERT INTO unigrams VALUES('R2', 'Y', -3.0, 0.0)");
+  db->execute("INSERT INTO unigrams VALUES('R2', 'W', -3.5, 0.0)");
+  db->execute("INSERT INTO unigrams VALUES('R3', 'M', -2.0, 0.0)");
+  db->execute("INSERT INTO unigrams VALUES('R3', 'N', -3.0, 0.0)");
+  db->execute("INSERT INTO unigrams VALUES('R1R2', 'P', -2.5, 0.0)");
+
+  // after A: Z passes the gate but has no unigram; X is already the top;
+  // Y passes and should be promoted; W loses to the unigram top
+  db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'Z', -0.2)");
+  db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'X', -0.4)");
   db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'Y', -0.5)");
+  db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'W', -10.0)");
+
+  // R3 is preceded by both the R2 node and the R1R2 phrase node; the R2-keyed
+  // bigram only survives if build() merges grams across preceding readings
+  db->execute("INSERT INTO bigrams VALUES('R2 R3', 'X', 'N', -0.1)");
 
   return db;
 }
 
-int main(int argc, char** argv) {
-  const string tempDir = argc > 1 ? argv[1] : "/tmp";
-  const string path = tempDir + "/graph-bigram-candidates.db";
-  OVSQLiteConnection* db = BuildFixture(path);
+int main() {
+  OVSQLiteConnection* db = BuildFixture();
   if (!db) {
     cerr << "cannot open fixture" << endl;
     return 1;
   }
 
-  // scoped so the model finalizes its statements before the connection closes
   {
-  LanguageModel lm(db, 0, false, false, false, true, true);
-  Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+    LanguageModel lm(db, 0, false, false, false, false, false);
+    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
 
-  Graph graph(&lm);
-  graph.clear();
-  graph.insertQueryBlockAndBuild("R1", 1);
-  graph.insertQueryBlockAndBuild("R2", 2);
+    Graph graph(&lm);
+    graph.clear();
+    graph.insertQueryBlockAndBuild("R1", 1);
+    graph.insertQueryBlockAndBuild("R2", 2);
+    graph.insertQueryBlockAndBuild("R3", 3);
 
-  // baseline: the unigram-only path is untouched
-  {
-    CandidateVector plain = graph.candidatesAtIndex(2);
-    CHECK(plain.size() == 2);
-    CHECK(plain[0].first.first == "X");
-    CHECK(plain[1].first.first == "Y");
-  }
+    // the unigram-only path is untouched; index 2 is covered by the R1R2
+    // phrase node (longest first) and the R2 node
+    {
+      CandidateVector plain = graph.candidatesAtIndex(2);
+      CHECK(plain.size() == 4);
+      CHECK(plain[0].first.first == "P");
+      CHECK(plain[1].first.first == "X");
+      CHECK(plain[2].first.first == "Y");
+      CHECK(plain[3].first.first == "W");
+    }
 
-  // matching previous: the bigram pick leads, tagged, and is deduped from the
-  // unigram tail
-  {
-    AnnotatedCandidateVector annotated =
-        graph.annotatedCandidatesAtIndex(2, "A");
-    CHECK(annotated.size() == 2);
-    CHECK(annotated[0].first.first.first == "Y");
-    CHECK(annotated[0].second == kCandidateOriginBigram);
-    CHECK(annotated[1].first.first.first == "X");
-    CHECK(annotated[1].second == kCandidateOriginUnigram);
-  }
+    // within the R2 node: Y is promoted and tagged; X stays first-of-unigrams
+    // untagged; W failed the gate; Z has no unigram and must not appear
+    {
+      AnnotatedCandidateVector annotated =
+          graph.annotatedCandidatesAtIndex(2, "A");
+      CHECK(annotated.size() == 4);
+      CHECK(annotated[0].text == "P");
+      CHECK(annotated[0].origin == kCandidateOriginUnigram);
+      CHECK(annotated[1].text == "Y");
+      CHECK(annotated[1].origin == kCandidateOriginBigram);
+      CHECK(annotated[2].text == "X");
+      CHECK(annotated[2].origin == kCandidateOriginUnigram);
+      CHECK(annotated[3].text == "W");
+      CHECK(annotated[3].origin == kCandidateOriginUnigram);
+    }
 
-  // unmatched previous: same order and tags as the unigram-only path
-  {
-    AnnotatedCandidateVector annotated =
-        graph.annotatedCandidatesAtIndex(2, "ZZZ");
-    CHECK(annotated.size() == 2);
-    CHECK(annotated[0].first.first.first == "X");
-    CHECK(annotated[0].second == kCandidateOriginUnigram);
-    CHECK(annotated[1].first.first.first == "Y");
-    CHECK(annotated[1].second == kCandidateOriginUnigram);
-  }
+    // unmatched and empty previous both degrade to the plain order
+    {
+      AnnotatedCandidateVector annotated =
+          graph.annotatedCandidatesAtIndex(2, "ZZZ");
+      CHECK(annotated.size() == 4);
+      CHECK(annotated[0].text == "P");
+      CHECK(annotated[1].text == "X");
+      CHECK(annotated[1].origin == kCandidateOriginUnigram);
 
-  // empty previous behaves like unmatched
-  {
-    AnnotatedCandidateVector annotated =
-        graph.annotatedCandidatesAtIndex(2, "");
-    CHECK(annotated.size() == 2);
-    CHECK(annotated[0].second == kCandidateOriginUnigram);
-  }
+      annotated = graph.annotatedCandidatesAtIndex(2, "");
+      CHECK(annotated.size() == 4);
+      CHECK(annotated[1].text == "X");
+      CHECK(annotated[1].origin == kCandidateOriginUnigram);
+    }
+
+    // R3's node kept the bigram keyed by the R2 reading's text even though
+    // the R1R2 phrase node is enumerated first among its predecessors
+    {
+      AnnotatedCandidateVector annotated =
+          graph.annotatedCandidatesAtIndex(3, "X");
+      CHECK(annotated.size() >= 2);
+      CHECK(annotated[0].text == "N");
+      CHECK(annotated[0].origin == kCandidateOriginBigram);
+    }
+
+    // the walk sees the merged bigram too: after committing X, N beats M
+    {
+      const Node& r3node = *(graph.annotatedCandidatesAtIndex(3, "X")[0].node);
+      CHECK(r3node.findHighestScorePair("X").first == "N");
+    }
+
+    // an overridden node is never reordered under the user's pick
+    {
+      CandidateVector plain = graph.candidatesAtIndex(2);
+      graph.overrideNodeCandidate(*(plain[1].second), "X", false);
+
+      AnnotatedCandidateVector annotated =
+          graph.annotatedCandidatesAtIndex(2, "A");
+      CHECK(annotated.size() == 4);
+      CHECK(annotated[1].text == "X");
+      for (size_t i = 0; i < annotated.size(); i++)
+        CHECK(annotated[i].origin == kCandidateOriginUnigram);
+    }
   }
 
   delete db;
-  remove(path.c_str());
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;
