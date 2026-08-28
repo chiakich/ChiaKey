@@ -72,8 +72,8 @@ class Node {
   void adjustScoreWithSelection(const string& currentText);
   void cancelOverride();
   const vector<string> candidates() const;
-  // candidates() with entries the context outscores (findHighestScorePair's
-  // gating) moved to the front and flagged, so the list agrees with the walk
+  // candidates() in place, flagging entries the context outscores per
+  // findHighestScorePair's gating; hoisting is the host's call
   const vector<pair<string, bool> > candidatesForContext(
       const string& previous) const;
   const StringScorePair findHighestScorePair(const string& previous = "") const;
@@ -327,46 +327,41 @@ inline const vector<pair<string, bool> > Node::candidatesForContext(
     const string& previous) const {
   vector<pair<string, bool> > results;
   const vector<string> unigrams = candidates();
+  results.reserve(unigrams.size());
 
-  // an overridden node already shows the user's pick; don't reorder under it
+  // an overridden node already shows the user's pick; don't flag under it
   map<string, StringScorePairVector>::const_iterator miter =
       (previous.size() && !m_overridden) ? m_bigramMap.find(previous)
                                          : m_bigramMap.end();
-  if (miter == m_bigramMap.end()) {
-    for (vector<string>::const_iterator uiter = unigrams.begin();
-         uiter != unigrams.end(); ++uiter)
-      results.push_back(pair<string, bool>(*uiter, false));
-    return results;
-  }
-
-  Score backoffWeight = Node::c_defaultUNKBackoff;
-  StringScoreMap::const_iterator siter =
-      m_unigramPreviousBackoffs.find(previous);
-  if (siter != m_unigramPreviousBackoffs.end()) backoffWeight = (*siter).second;
-
-  Score unigramTop = m_unigramCurrents.size()
-                         ? m_unigramCurrents[0].second + backoffWeight
-                         : backoffWeight + Node::c_defaultUNKProbability;
 
   set<string> promoted;
-  const StringScorePairVector& bucket = (*miter).second;
-  for (StringScorePairVector::const_iterator biter = bucket.begin();
-       biter != bucket.end(); ++biter) {
-    if (!((*biter).second > unigramTop)) continue;
-    // a promoted entry that isn't already on top, and stays selectable and
-    // learnable through the unigram list
-    if (unigrams.size() && (*biter).first == unigrams[0]) continue;
-    if (find(unigrams.begin(), unigrams.end(), (*biter).first) ==
-        unigrams.end())
-      continue;
-    if (promoted.insert((*biter).first).second)
-      results.push_back(pair<string, bool>((*biter).first, true));
+  if (miter != m_bigramMap.end()) {
+    Score backoffWeight = Node::c_defaultUNKBackoff;
+    StringScoreMap::const_iterator siter =
+        m_unigramPreviousBackoffs.find(previous);
+    if (siter != m_unigramPreviousBackoffs.end())
+      backoffWeight = (*siter).second;
+
+    Score unigramTop = m_unigramCurrents.size()
+                           ? m_unigramCurrents[0].second + backoffWeight
+                           : backoffWeight + Node::c_defaultUNKProbability;
+
+    const StringScorePairVector& bucket = (*miter).second;
+    for (StringScorePairVector::const_iterator biter = bucket.begin();
+         biter != bucket.end(); ++biter) {
+      if (!((*biter).second > unigramTop)) continue;
+      // the top entry needs no flag; it is what the walk shows already
+      if (unigrams.size() && (*biter).first == unigrams[0]) continue;
+      promoted.insert((*biter).first);
+    }
   }
 
+  // flags land on unigram entries only, so every flagged pick stays
+  // selectable and learnable
   for (vector<string>::const_iterator uiter = unigrams.begin();
        uiter != unigrams.end(); ++uiter)
-    if (promoted.find(*uiter) == promoted.end())
-      results.push_back(pair<string, bool>(*uiter, false));
+    results.push_back(pair<string, bool>(
+        *uiter, promoted.find(*uiter) != promoted.end()));
 
   return results;
 }

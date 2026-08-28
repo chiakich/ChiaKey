@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 namespace {
@@ -167,29 +168,57 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("expected C++ standalone ㄓ space to compose a non-raw candidate");
   }
 
+  // 冒 + ㄏㄢˋ: the lexicon's bigram promotes 汗, which sits far down the
+  // reading's own unigram order, so a flag here proves the whole path --
+  // per-node previous resolution, the score gate, and list alignment.
   engine->reset();
-  for (char key : keys) {
+  const char contextKeys[] = {'a', 'l', '4', 'c', '0', '4'};
+  for (char key : contextKeys) {
     if (!engine->handleAsciiKey(key)) {
-      return Fail(std::string("C++ engine did not handle pre-candidate key: ") +
-                  key);
+      return Fail(std::string("C++ engine did not handle context key: ") + key);
     }
   }
+
+  state = engine->snapshot();
+  if (state.composingText != "冒汗") {
+    return Fail("expected C++ context reading to compose 冒汗, got: " +
+                state.composingText);
+  }
+
   if (!engine->handleAsciiKey(' ')) {
     return Fail("C++ engine did not handle space to open candidates");
   }
 
   state = engine->snapshot();
   if (!state.candidateState.visible) {
-    return Fail("expected space after 你好 to open the candidate list");
-  }
-  if (state.candidateState.candidates.size() < 2) {
-    return Fail("expected the candidate list to hold multiple candidates");
+    return Fail("expected space to open the candidate list");
   }
   if (state.candidateState.contextPicks.size() !=
       state.candidateState.candidates.size()) {
     return Fail("expected contextPicks to align with the candidate list");
   }
+
+  std::size_t flagged = 0;
+  std::string flaggedText;
+  for (std::size_t index = 0; index < state.candidateState.contextPicks.size();
+       ++index) {
+    if (state.candidateState.contextPicks[index]) {
+      ++flagged;
+      flaggedText = state.candidateState.candidates[index];
+    }
+  }
+  if (flagged != 1 || flaggedText != "汗") {
+    std::ostringstream stream;
+    stream << "expected exactly 汗 flagged as a context pick, got " << flagged
+           << " flagged (" << flaggedText << ")";
+    return Fail(stream.str());
+  }
+
   engine->reset();
+  state = engine->snapshot();
+  if (!state.candidateState.contextPicks.empty()) {
+    return Fail("expected reset to drop the context picks");
+  }
 
   return 0;
 }
@@ -398,6 +427,35 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir,
   composingText = snapshot.composing_text ? snapshot.composing_text : "";
   readingText = snapshot.reading_text ? snapshot.reading_text : "";
   CKC_EngineSnapshotDestroy(&snapshot);
+
+  // mirrors the C++ 冒汗 case, so the C ABI's context_picks copy is covered
+  CKC_EngineReset(engine);
+  const char contextKeys[] = {'a', 'l', '4', 'c', '0', '4', ' '};
+  for (char key : contextKeys) {
+    if (!CKC_EngineHandleAsciiKey(engine, key, modifiers)) {
+      CKC_EngineDestroy(engine);
+      return Fail(std::string("C bridge did not handle context key: ") + key);
+    }
+  }
+
+  snapshot = CKC_EngineCopySnapshot(engine);
+  std::size_t bridgeFlagged = 0;
+  std::string bridgeFlaggedText;
+  if (snapshot.candidate_state.context_picks) {
+    for (std::size_t index = 0;
+         index < snapshot.candidate_state.candidate_count; ++index) {
+      if (snapshot.candidate_state.context_picks[index]) {
+        ++bridgeFlagged;
+        bridgeFlaggedText = snapshot.candidate_state.candidates[index];
+      }
+    }
+  }
+  CKC_EngineSnapshotDestroy(&snapshot);
+  if (bridgeFlagged != 1 || bridgeFlaggedText != "汗") {
+    CKC_EngineDestroy(engine);
+    return Fail("expected the C bridge to flag 汗 as the only context pick");
+  }
+
   CKC_EngineDestroy(engine);
   if (!committedText.empty()) {
     return Fail("C bridge standalone ㄓ space unexpectedly committed: " +

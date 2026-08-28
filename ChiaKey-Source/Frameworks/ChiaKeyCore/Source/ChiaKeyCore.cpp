@@ -269,13 +269,17 @@ class Engine::Impl {
     state.candidateState.candidates =
         CandidateListToVector(panel->candidateList());
 
-    // only when they still describe this exact list; other fillers (or a
-    // stale collection) leave the flags empty rather than misaligned
-    const std::vector<bool>& contextPicks =
-        static_cast<OpenVanilla::OVIMSmartMandarinContext*>(context_)
-            ->latestCandidateContextPicks();
-    if (contextPicks.size() == state.candidateState.candidates.size()) {
-      state.candidateState.contextPicks = contextPicks;
+    // other fillers (associated phrases) share this panel, so take the flags
+    // only when they still describe a list of exactly this length
+    OpenVanilla::OVIMSmartMandarinContext* smartContext =
+        dynamic_cast<OpenVanilla::OVIMSmartMandarinContext*>(context_);
+    if (smartContext && state.candidateState.visible &&
+        !state.candidateState.candidates.empty()) {
+      const std::vector<bool>& contextPicks =
+          smartContext->latestCandidateContextPicks();
+      if (contextPicks.size() == state.candidateState.candidates.size()) {
+        state.candidateState.contextPicks = contextPicks;
+      }
     }
     return state;
   }

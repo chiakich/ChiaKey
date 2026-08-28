@@ -52,6 +52,19 @@ char** CopyStringVector(const std::vector<std::string>& strings) {
   return result;
 }
 
+int* CopyFlagVector(const std::vector<bool>& flags) {
+  if (flags.empty()) return nullptr;
+
+  int* result = static_cast<int*>(std::calloc(flags.size(), sizeof(int)));
+  if (!result) return nullptr;
+
+  for (std::size_t index = 0; index < flags.size(); ++index) {
+    result[index] = flags[index] ? 1 : 0;
+  }
+
+  return result;
+}
+
 CKC_TextRange CopyRange(const ChiaKey::TextRange& range) {
   CKC_TextRange result;
   result.location = range.location;
@@ -133,19 +146,8 @@ CKC_CandidateState CopyCandidateState(
   result.candidates = CopyStringVector(candidateState.candidates);
   result.candidate_count = candidateState.candidates.size();
 
-  result.context_picks = nullptr;
-  if (candidateState.contextPicks.size() == candidateState.candidates.size() &&
-      !candidateState.contextPicks.empty()) {
-    result.context_picks = static_cast<int*>(
-        std::malloc(sizeof(int) * candidateState.contextPicks.size()));
-    if (result.context_picks) {
-      for (std::size_t index = 0; index < candidateState.contextPicks.size();
-           ++index) {
-        result.context_picks[index] =
-            candidateState.contextPicks[index] ? 1 : 0;
-      }
-    }
-  }
+  // the C++ layer only fills these when they align with the list
+  result.context_picks = CopyFlagVector(candidateState.contextPicks);
   result.current_page = candidateState.currentPage;
   result.page_count = candidateState.pageCount;
   result.candidates_per_page = candidateState.candidatesPerPage;

@@ -66,6 +66,7 @@ class ManjusriComposer {
   void clear() {
     m_graph.clear();
     m_latestCandidate.clear();
+    m_latestCandidateContextPicks.clear();
     update();
   }
 
@@ -178,28 +179,21 @@ class ManjusriComposer {
                                    bool candidateCursorAtEndOfTargetBlock) {
     vector<string> results;
 
-    m_latestCandidate =
-        m_graph.candidatesAtIndex(cursor, candidateCursorAtEndOfTargetBlock);
-
-    // tag context picks alongside, so a host can badge or hoist them without
-    // the panel order (and its selection indexes) changing
-    set<string> contextPicks;
+    // the annotated form lists the same candidates in the same order, so the
+    // picks stay aligned by construction rather than by a text lookup
     AnnotatedCandidateVector annotated = m_graph.annotatedCandidatesAtIndex(
-        cursor,
-        previousTextForCandidateLocation(cursor,
-                                         candidateCursorAtEndOfTargetBlock),
-        candidateCursorAtEndOfTargetBlock);
-    for (AnnotatedCandidateVector::iterator aiter = annotated.begin();
-         aiter != annotated.end(); ++aiter)
-      if ((*aiter).origin == kCandidateOriginBigram)
-        contextPicks.insert((*aiter).text);
+        cursor, m_latestFastPath, candidateCursorAtEndOfTargetBlock);
 
+    m_latestCandidate.clear();
     m_latestCandidateContextPicks.clear();
-    for (CandidateVector::iterator iter = m_latestCandidate.begin();
-         iter != m_latestCandidate.end(); ++iter) {
-      results.push_back((*iter).first.first);
-      m_latestCandidateContextPicks.push_back(
-          contextPicks.find((*iter).first.first) != contextPicks.end());
+    for (AnnotatedCandidateVector::iterator iter = annotated.begin();
+         iter != annotated.end(); ++iter) {
+      results.push_back((*iter).text);
+      m_latestCandidate.push_back(Candidate(
+          pair<string, size_t>((*iter).text, (*iter).indexInNode),
+          (*iter).node));
+      m_latestCandidateContextPicks.push_back((*iter).origin ==
+                                              kCandidateOriginBigram);
     }
 
     return results;
@@ -319,28 +313,6 @@ class ManjusriComposer {
   Graph m_graph;
   //      Path m_latestPath;
   FastPath m_latestFastPath;
-
-  // the walked path knows what actually precedes the block at atIndex; an
-  // uncovered index yields "", which degrades the annotated list to plain
-  const string previousTextForCandidateLocation(size_t atIndex,
-                                                bool cursorAtEndOfBlock) {
-    string previous;
-    for (FastPath::const_iterator fpiter = m_latestFastPath.begin();
-         fpiter != m_latestFastPath.end() &&
-         fpiter + 1 != m_latestFastPath.end();
-         ++fpiter) {
-      const Node& node = *((*fpiter).nodePointer);
-      Location loc = node.location();
-      bool covers = cursorAtEndOfBlock
-                        ? (loc.first < atIndex &&
-                           atIndex <= loc.first + loc.second)
-                        : (loc.first <= atIndex &&
-                           atIndex < loc.first + loc.second);
-      if (covers) return previous;
-      previous = (*fpiter).text;
-    }
-    return "";
-  }
 
   CandidateVector m_latestCandidate;
   vector<bool> m_latestCandidateContextPicks;

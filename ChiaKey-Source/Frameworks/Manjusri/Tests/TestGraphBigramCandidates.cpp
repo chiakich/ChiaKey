@@ -1,6 +1,7 @@
-// Graph::annotatedCandidatesAtIndex(): context-promoted candidates lead and
-// are tagged, gated the same way findHighestScorePair() gates the walk, and
-// grams merged from every preceding reading are reachable.
+// Graph::annotatedCandidatesAtIndex(): the list matches candidatesAtIndex()
+// exactly and only flags entries the context outscores, gated the same way
+// findHighestScorePair() gates the walk. The FastPath form resolves each
+// node's own preceding text, including inside a phrase the walk chose.
 #include <iostream>
 
 #include "Graph.h"
@@ -34,22 +35,33 @@ static OVSQLiteConnection* BuildFixture() {
   db->execute("INSERT INTO unigrams VALUES('R2', 'X', -2.0, 0.0)");
   db->execute("INSERT INTO unigrams VALUES('R2', 'Y', -3.0, 0.0)");
   db->execute("INSERT INTO unigrams VALUES('R2', 'W', -3.5, 0.0)");
-  db->execute("INSERT INTO unigrams VALUES('R3', 'M', -2.0, 0.0)");
-  db->execute("INSERT INTO unigrams VALUES('R3', 'N', -3.0, 0.0)");
-  db->execute("INSERT INTO unigrams VALUES('R1R2', 'P', -2.5, 0.0)");
+  // the phrase outscores the A + X split, so the walk covers both blocks
+  db->execute("INSERT INTO unigrams VALUES('R1R2', 'AB', -2.0, 0.0)");
 
-  // after A: Z passes the gate but has no unigram; X is already the top;
-  // Y passes and should be promoted; W loses to the unigram top
+  // after A: Z passes the gate but has no unigram to flag; X is already the
+  // top; Y passes and is flagged; W loses to the unigram top
   db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'Z', -0.2)");
   db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'X', -0.4)");
   db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'Y', -0.5)");
   db->execute("INSERT INTO bigrams VALUES('R1 R2', 'A', 'W', -10.0)");
 
-  // R3 is preceded by both the R2 node and the R1R2 phrase node; the R2-keyed
-  // bigram only survives if build() merges grams across preceding readings
-  db->execute("INSERT INTO bigrams VALUES('R2 R3', 'X', 'N', -0.1)");
-
   return db;
+}
+
+static const vector<string> TextsOf(const AnnotatedCandidateVector& annotated) {
+  vector<string> texts;
+  for (AnnotatedCandidateVector::const_iterator iter = annotated.begin();
+       iter != annotated.end(); ++iter)
+    texts.push_back((*iter).text);
+  return texts;
+}
+
+static const vector<string> TextsOf(const CandidateVector& plain) {
+  vector<string> texts;
+  for (CandidateVector::const_iterator iter = plain.begin();
+       iter != plain.end(); ++iter)
+    texts.push_back((*iter).first.first);
+  return texts;
 }
 
 int main() {
@@ -67,75 +79,62 @@ int main() {
     graph.clear();
     graph.insertQueryBlockAndBuild("R1", 1);
     graph.insertQueryBlockAndBuild("R2", 2);
-    graph.insertQueryBlockAndBuild("R3", 3);
 
-    // the unigram-only path is untouched; index 2 is covered by the R1R2
-    // phrase node (longest first) and the R2 node
-    {
-      CandidateVector plain = graph.candidatesAtIndex(2);
-      CHECK(plain.size() == 4);
-      CHECK(plain[0].first.first == "P");
-      CHECK(plain[1].first.first == "X");
-      CHECK(plain[2].first.first == "Y");
-      CHECK(plain[3].first.first == "W");
-    }
+    const CandidateVector plain = graph.candidatesAtIndex(2);
+    CHECK(TextsOf(plain) ==
+          vector<string>({"AB", "X", "Y", "W"}));
 
-    // within the R2 node: Y is promoted and tagged; X stays first-of-unigrams
-    // untagged; W failed the gate; Z has no unigram and must not appear
+    // flags never reorder: same texts, same order, same node-relative indexes
     {
       AnnotatedCandidateVector annotated =
           graph.annotatedCandidatesAtIndex(2, "A");
-      CHECK(annotated.size() == 4);
-      CHECK(annotated[0].text == "P");
-      CHECK(annotated[0].origin == kCandidateOriginUnigram);
-      CHECK(annotated[1].text == "Y");
-      CHECK(annotated[1].origin == kCandidateOriginBigram);
-      CHECK(annotated[2].text == "X");
-      CHECK(annotated[2].origin == kCandidateOriginUnigram);
-      CHECK(annotated[3].text == "W");
-      CHECK(annotated[3].origin == kCandidateOriginUnigram);
+      CHECK(TextsOf(annotated) == TextsOf(plain));
+      CHECK(annotated.size() == plain.size());
+      for (size_t i = 0; i < annotated.size(); i++) {
+        CHECK(annotated[i].indexInNode == plain[i].first.second);
+        CHECK(annotated[i].node == plain[i].second);
+      }
+
+      // only Y is promoted: Z has no unigram, X is already the top, W fails
+      for (size_t i = 0; i < annotated.size(); i++)
+        CHECK((annotated[i].origin == kCandidateOriginBigram) ==
+              (annotated[i].text == "Y"));
     }
 
-    // unmatched and empty previous both degrade to the plain order
+    // unmatched and empty previous flag nothing at all
     {
+      const char* others[] = {"ZZZ", ""};
+      for (size_t o = 0; o < 2; o++) {
+        AnnotatedCandidateVector annotated =
+            graph.annotatedCandidatesAtIndex(2, others[o]);
+        CHECK(TextsOf(annotated) == TextsOf(plain));
+        for (size_t i = 0; i < annotated.size(); i++)
+          CHECK(annotated[i].origin == kCandidateOriginUnigram);
+      }
+    }
+
+    // the FastPath form derives each node's own previous. The walk covers
+    // both blocks with the phrase AB, so the R2 node's context is the "A"
+    // inside it -- a single caller-supplied previous cannot express this.
+    {
+      FastPath path = graph.fastWalk("", Location(0, 0));
+      CHECK(FastPathAsString(path).find("AB") != string::npos);
+
       AnnotatedCandidateVector annotated =
-          graph.annotatedCandidatesAtIndex(2, "ZZZ");
-      CHECK(annotated.size() == 4);
-      CHECK(annotated[0].text == "P");
-      CHECK(annotated[1].text == "X");
-      CHECK(annotated[1].origin == kCandidateOriginUnigram);
-
-      annotated = graph.annotatedCandidatesAtIndex(2, "");
-      CHECK(annotated.size() == 4);
-      CHECK(annotated[1].text == "X");
-      CHECK(annotated[1].origin == kCandidateOriginUnigram);
+          graph.annotatedCandidatesAtIndex(2, path);
+      CHECK(TextsOf(annotated) == TextsOf(plain));
+      for (size_t i = 0; i < annotated.size(); i++)
+        CHECK((annotated[i].origin == kCandidateOriginBigram) ==
+              (annotated[i].text == "Y"));
     }
 
-    // R3's node kept the bigram keyed by the R2 reading's text even though
-    // the R1R2 phrase node is enumerated first among its predecessors
+    // an overridden node is never flagged under the user's pick
     {
-      AnnotatedCandidateVector annotated =
-          graph.annotatedCandidatesAtIndex(3, "X");
-      CHECK(annotated.size() >= 2);
-      CHECK(annotated[0].text == "N");
-      CHECK(annotated[0].origin == kCandidateOriginBigram);
-    }
-
-    // the walk sees the merged bigram too: after committing X, N beats M
-    {
-      const Node& r3node = *(graph.annotatedCandidatesAtIndex(3, "X")[0].node);
-      CHECK(r3node.findHighestScorePair("X").first == "N");
-    }
-
-    // an overridden node is never reordered under the user's pick
-    {
-      CandidateVector plain = graph.candidatesAtIndex(2);
       graph.overrideNodeCandidate(*(plain[1].second), "X", false);
 
       AnnotatedCandidateVector annotated =
           graph.annotatedCandidatesAtIndex(2, "A");
-      CHECK(annotated.size() == 4);
-      CHECK(annotated[1].text == "X");
+      CHECK(TextsOf(annotated) == TextsOf(plain));
       for (size_t i = 0; i < annotated.size(); i++)
         CHECK(annotated[i].origin == kCandidateOriginUnigram);
     }

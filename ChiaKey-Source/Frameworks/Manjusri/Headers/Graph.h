@@ -47,12 +47,33 @@ typedef vector<Candidate> CandidateVector;
 
 enum CandidateOrigin { kCandidateOriginUnigram = 0, kCandidateOriginBigram = 1 };
 
+// the walked text preceding a node that starts at `start`: the path node
+// ending there, or the composed character just before it inside a longer one
+inline const string PreviousTextOnPath(const FastPath& path, size_t start) {
+  for (FastPath::const_iterator fpiter = path.begin();
+       fpiter != path.end() && fpiter + 1 != path.end(); ++fpiter) {
+    const Node& node = *((*fpiter).nodePointer);
+    size_t begin = node.location().first;
+    size_t end = begin + node.location().second;
+
+    if (end == start) return (*fpiter).text;
+    if (begin < start && start < end) {
+      vector<string> chars =
+          OVUTF8Helper::SplitStringByCodePoint((*fpiter).text);
+      size_t offset = start - begin;
+      return offset <= chars.size() ? chars[offset - 1] : string();
+    }
+  }
+  return string();
+}
+
 struct AnnotatedCandidate {
-  AnnotatedCandidate(const string& t, NodeSet::const_iterator n,
+  AnnotatedCandidate(const string& t, size_t i, NodeSet::const_iterator n,
                      CandidateOrigin o)
-      : text(t), node(n), origin(o) {}
+      : text(t), indexInNode(i), node(n), origin(o) {}
 
   string text;
+  size_t indexInNode;
   NodeSet::const_iterator node;
   CandidateOrigin origin;
 };
@@ -241,9 +262,13 @@ class Graph {
   CandidateVector candidatesAtIndex(size_t atIndex,
                                     bool cursorAtEndOfBlock = false) const;
 
-  // candidatesAtIndex() with each node's order refined by the preceding text
+  // candidatesAtIndex() with context flags; the FastPath form resolves each
+  // node's preceding text from the walked path
   AnnotatedCandidateVector annotatedCandidatesAtIndex(
       size_t atIndex, const string& previous,
+      bool cursorAtEndOfBlock = false) const;
+  AnnotatedCandidateVector annotatedCandidatesAtIndex(
+      size_t atIndex, const FastPath& path,
       bool cursorAtEndOfBlock = false) const;
 
   bool overrideNodeCandidate(const Node& queryNode, const string& currentText,
@@ -268,6 +293,8 @@ class Graph {
   void rebuild(StringFilter* filter = 0);
   vector<NodeSet::const_iterator> nodesAtIndex(size_t atIndex,
                                                bool cursorAtEndOfBlock) const;
+  void annotateNode(NodeSet::const_iterator node, const string& previous,
+                    set<string>& seen, AnnotatedCandidateVector& results) const;
 
   LanguageModel* m_LM;
 
@@ -733,26 +760,47 @@ inline CandidateVector Graph::candidatesAtIndex(size_t atIndex,
   return results;
 }
 
+inline void Graph::annotateNode(NodeSet::const_iterator node,
+                                const string& previous, set<string>& seen,
+                                AnnotatedCandidateVector& results) const {
+  // candidatesForContext keeps candidates() order, so the position doubles as
+  // the node-relative index candidatesAtIndex reports
+  const vector<pair<string, bool> > ordered =
+      (*node).candidatesForContext(previous);
+  for (vector<pair<string, bool> >::const_iterator citer = ordered.begin();
+       citer != ordered.end(); ++citer) {
+    if (seen.insert((*citer).first).second)
+      results.push_back(AnnotatedCandidate(
+          (*citer).first, (size_t)(citer - ordered.begin()), node,
+          (*citer).second ? kCandidateOriginBigram : kCandidateOriginUnigram));
+  }
+}
+
 inline AnnotatedCandidateVector Graph::annotatedCandidatesAtIndex(
     size_t atIndex, const string& previous, bool cursorAtEndOfBlock) const {
   AnnotatedCandidateVector results;
   vector<NodeSet::const_iterator> nodes =
       nodesAtIndex(atIndex, cursorAtEndOfBlock);
 
-  set<string> strset;
+  set<string> seen;
   for (vector<NodeSet::const_iterator>::iterator iter = nodes.begin();
-       iter != nodes.end(); ++iter) {
-    const vector<pair<string, bool> > ordered =
-        (**iter).candidatesForContext(previous);
-    for (vector<pair<string, bool> >::const_iterator citer = ordered.begin();
-         citer != ordered.end(); ++citer) {
-      if (strset.insert((*citer).first).second)
-        results.push_back(AnnotatedCandidate(
-            (*citer).first, *iter,
-            (*citer).second ? kCandidateOriginBigram
-                            : kCandidateOriginUnigram));
-    }
-  }
+       iter != nodes.end(); ++iter)
+    annotateNode(*iter, previous, seen, results);
+  return results;
+}
+
+inline AnnotatedCandidateVector Graph::annotatedCandidatesAtIndex(
+    size_t atIndex, const FastPath& path, bool cursorAtEndOfBlock) const {
+  AnnotatedCandidateVector results;
+  vector<NodeSet::const_iterator> nodes =
+      nodesAtIndex(atIndex, cursorAtEndOfBlock);
+
+  set<string> seen;
+  for (vector<NodeSet::const_iterator>::iterator iter = nodes.begin();
+       iter != nodes.end(); ++iter)
+    annotateNode(*iter,
+                 PreviousTextOnPath(path, (**iter).location().first), seen,
+                 results);
   return results;
 }
 
