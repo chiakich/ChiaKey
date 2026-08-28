@@ -268,6 +268,15 @@ class Engine::Impl {
         panel->currentHightlightIndexInCandidateList();
     state.candidateState.candidates =
         CandidateListToVector(panel->candidateList());
+
+    // only when they still describe this exact list; other fillers (or a
+    // stale collection) leave the flags empty rather than misaligned
+    const std::vector<bool>& contextPicks =
+        static_cast<OpenVanilla::OVIMSmartMandarinContext*>(context_)
+            ->latestCandidateContextPicks();
+    if (contextPicks.size() == state.candidateState.candidates.size()) {
+      state.candidateState.contextPicks = contextPicks;
+    }
     return state;
   }
 

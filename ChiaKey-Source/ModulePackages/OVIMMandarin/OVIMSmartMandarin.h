@@ -181,11 +181,33 @@ class ManjusriComposer {
     m_latestCandidate =
         m_graph.candidatesAtIndex(cursor, candidateCursorAtEndOfTargetBlock);
 
+    // tag context picks alongside, so a host can badge or hoist them without
+    // the panel order (and its selection indexes) changing
+    set<string> contextPicks;
+    AnnotatedCandidateVector annotated = m_graph.annotatedCandidatesAtIndex(
+        cursor,
+        previousTextForCandidateLocation(cursor,
+                                         candidateCursorAtEndOfTargetBlock),
+        candidateCursorAtEndOfTargetBlock);
+    for (AnnotatedCandidateVector::iterator aiter = annotated.begin();
+         aiter != annotated.end(); ++aiter)
+      if ((*aiter).origin == kCandidateOriginBigram)
+        contextPicks.insert((*aiter).text);
+
+    m_latestCandidateContextPicks.clear();
     for (CandidateVector::iterator iter = m_latestCandidate.begin();
-         iter != m_latestCandidate.end(); ++iter)
+         iter != m_latestCandidate.end(); ++iter) {
       results.push_back((*iter).first.first);
+      m_latestCandidateContextPicks.push_back(
+          contextPicks.find((*iter).first.first) != contextPicks.end());
+    }
 
     return results;
+  }
+
+  // aligned with the last collectCandidates() result
+  const vector<bool>& latestCandidateContextPicks() const {
+    return m_latestCandidateContextPicks;
   }
 
   size_t chooseCandidate(size_t index,
@@ -298,7 +320,30 @@ class ManjusriComposer {
   //      Path m_latestPath;
   FastPath m_latestFastPath;
 
+  // the walked path knows what actually precedes the block at atIndex; an
+  // uncovered index yields "", which degrades the annotated list to plain
+  const string previousTextForCandidateLocation(size_t atIndex,
+                                                bool cursorAtEndOfBlock) {
+    string previous;
+    for (FastPath::const_iterator fpiter = m_latestFastPath.begin();
+         fpiter != m_latestFastPath.end() &&
+         fpiter + 1 != m_latestFastPath.end();
+         ++fpiter) {
+      const Node& node = *((*fpiter).nodePointer);
+      Location loc = node.location();
+      bool covers = cursorAtEndOfBlock
+                        ? (loc.first < atIndex &&
+                           atIndex <= loc.first + loc.second)
+                        : (loc.first <= atIndex &&
+                           atIndex < loc.first + loc.second);
+      if (covers) return previous;
+      previous = (*fpiter).text;
+    }
+    return "";
+  }
+
   CandidateVector m_latestCandidate;
+  vector<bool> m_latestCandidateContextPicks;
   string m_composedString;
 
   LanguageModel* m_LM;
@@ -332,6 +377,11 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
       OVCandidateService* candidateService, const OVKey* key,
       OVTextBuffer* readingText, OVTextBuffer* composingText,
       OVLoaderService* loaderService);
+
+  // aligned with the candidate list the composer last collected
+  const vector<bool>& latestCandidateContextPicks() const {
+    return m_manjusri.latestCandidateContextPicks();
+  }
 
  protected:
   const BopomofoKeyboardLayout* currentKeyboardLayout();

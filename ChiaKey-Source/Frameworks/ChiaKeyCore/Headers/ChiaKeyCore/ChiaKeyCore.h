@@ -58,6 +58,8 @@ struct TextRange {
 struct CandidateState {
   bool visible = false;
   std::vector<std::string> candidates;
+  // aligned with candidates; true = the preceding text promotes this pick
+  std::vector<bool> contextPicks;
   std::size_t currentPage = 0;
   std::size_t pageCount = 0;
   std::size_t candidatesPerPage = 0;

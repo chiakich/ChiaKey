@@ -60,6 +60,8 @@ typedef struct CKC_CandidateState {
   int visible;
   char** candidates;
   size_t candidate_count;
+  /* aligned with candidates when non-NULL; 1 = promoted by the preceding text */
+  int* context_picks;
   size_t current_page;
   size_t page_count;
   size_t candidates_per_page;

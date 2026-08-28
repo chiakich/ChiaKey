@@ -167,6 +167,30 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("expected C++ standalone ㄓ space to compose a non-raw candidate");
   }
 
+  engine->reset();
+  for (char key : keys) {
+    if (!engine->handleAsciiKey(key)) {
+      return Fail(std::string("C++ engine did not handle pre-candidate key: ") +
+                  key);
+    }
+  }
+  if (!engine->handleAsciiKey(' ')) {
+    return Fail("C++ engine did not handle space to open candidates");
+  }
+
+  state = engine->snapshot();
+  if (!state.candidateState.visible) {
+    return Fail("expected space after 你好 to open the candidate list");
+  }
+  if (state.candidateState.candidates.size() < 2) {
+    return Fail("expected the candidate list to hold multiple candidates");
+  }
+  if (state.candidateState.contextPicks.size() !=
+      state.candidateState.candidates.size()) {
+    return Fail("expected contextPicks to align with the candidate list");
+  }
+  engine->reset();
+
   return 0;
 }
 

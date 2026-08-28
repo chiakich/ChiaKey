@@ -132,6 +132,20 @@ CKC_CandidateState CopyCandidateState(
   result.visible = candidateState.visible ? 1 : 0;
   result.candidates = CopyStringVector(candidateState.candidates);
   result.candidate_count = candidateState.candidates.size();
+
+  result.context_picks = nullptr;
+  if (candidateState.contextPicks.size() == candidateState.candidates.size() &&
+      !candidateState.contextPicks.empty()) {
+    result.context_picks = static_cast<int*>(
+        std::malloc(sizeof(int) * candidateState.contextPicks.size()));
+    if (result.context_picks) {
+      for (std::size_t index = 0; index < candidateState.contextPicks.size();
+           ++index) {
+        result.context_picks[index] =
+            candidateState.contextPicks[index] ? 1 : 0;
+      }
+    }
+  }
   result.current_page = candidateState.currentPage;
   result.page_count = candidateState.pageCount;
   result.candidates_per_page = candidateState.candidatesPerPage;
@@ -262,6 +276,7 @@ void CKC_EngineSnapshotDestroy(CKC_EngineSnapshot* snapshot) {
   std::free(snapshot->tooltip);
   DestroyStringVector(snapshot->candidate_state.candidates,
                       snapshot->candidate_state.candidate_count);
+  std::free(snapshot->candidate_state.context_picks);
   DestroyStringVector(snapshot->notifications, snapshot->notification_count);
 
   *snapshot = CKC_EngineSnapshot();
