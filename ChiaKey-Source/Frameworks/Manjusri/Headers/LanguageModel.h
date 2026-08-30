@@ -19,6 +19,7 @@ file for terms.
 #include <string>
 #include <vector>
 
+#include "MJSRLearningCacheTables.h"
 #include "OVDependency.h"
 #include "STLDependency.h"
 
@@ -586,14 +587,46 @@ class LanguageModel {
   virtual void setUserPhraseEditingLockPath(const string& path);
   virtual bool userPhraseWritesSuspended();
 
-  // The dirty flag next to the lock advanced: the Phrase Editor committed,
-  // and an import may have replaced the learning tables wholesale, so what is
-  // on disk supersedes everything held here -- pending writes included.
-  // Returns true after flushing; the caller's load repopulates the stores.
+  // The dirty flag next to the lock advanced: the Phrase Editor committed. If
+  // that commit replaced the learning tables (an import or a restore), what is
+  // on disk supersedes everything held here -- pending writes included -- so
+  // the stores are dropped and the caller's load repopulates them. An ordinary
+  // phrase edit advances the same flag and must not cost the user anything, so
+  // the tables themselves are what decides; see userLearningFingerprint().
   virtual bool dropUserLearningDataIfChangedExternally();
 
  protected:
   static long long DirtyFlagStamp(const struct stat& st);
+
+  // Folds the contents of the learning tables into one number. The dirty flag
+  // says the editor committed, never which tables it touched, and the editor's
+  // ordinary add/edit/delete leaves the learning tables alone: comparing this
+  // across a commit is what tells an import apart from a phrase edit. It scans
+  // the tables, which is affordable only because it runs when the flag has
+  // actually advanced -- never on the keystroke path.
+  virtual long long userLearningFingerprint();
+
+  // Drops everything the stores hold in memory, pending writes included.
+  void clearResidentLearningState() {
+    m_userBigramCache.flush();
+    m_candidateOverrideCache.flush();
+    m_contextOverrideCache.flush();
+    m_overrideContextBreadth.clear();
+    clearBreadthBookkeeping();
+  }
+
+  void clearBreadthBookkeeping() {
+    m_dirtyContextBreadth.clear();
+    m_pendingBreadthDeletes.clear();
+    m_dirtyBreadthContexts.clear();
+    m_pendingBreadthContextClears.clear();
+  }
+
+  // Our own writes move the fingerprint too; re-baseline after each one, or the
+  // next editor commit reads them as somebody else's import.
+  void noteUserLearningWritten() {
+    m_lastSeenUserLearningFingerprint = userLearningFingerprint();
+  }
 
   virtual double cachedMaxUnigramProbability();
 
@@ -601,10 +634,7 @@ class LanguageModel {
   void markUserCandidateOverrideCacheClean() {
     m_candidateOverrideCache.markClean();
     m_contextOverrideCache.markClean();
-    m_dirtyContextBreadth.clear();
-    m_pendingBreadthDeletes.clear();
-    m_dirtyBreadthContexts.clear();
-    m_pendingBreadthContextClears.clear();
+    clearBreadthBookkeeping();
   }
 
   static const string BreadthContextKey(const string& previousQString,
@@ -674,6 +704,7 @@ class LanguageModel {
   string m_userPhraseEditingLockPath;
   string m_userPhraseDirtyFlagPath;
   long long m_lastSeenUserPhraseDirtyStamp = 0;
+  long long m_lastSeenUserLearningFingerprint = 0;
 };
 
 inline void LanguageModel::setUserPhraseEditingLockPath(const string& path) {
@@ -696,6 +727,11 @@ inline void LanguageModel::setUserPhraseEditingLockPath(const string& path) {
        stat(m_userPhraseDirtyFlagPath.c_str(), &st) == 0)
           ? DirtyFlagStamp(st)
           : 0;
+
+  // Baseline for the comparison the dirty flag alone cannot make. Set here
+  // because this runs after the tables have been migrated into their current
+  // shape and before anything has been learned.
+  m_lastSeenUserLearningFingerprint = userLearningFingerprint();
 }
 
 // Sub-second, or two editor commits inside one second look identical.
@@ -708,6 +744,39 @@ inline long long LanguageModel::DirtyFlagStamp(const struct stat& st) {
 #endif
 }
 
+inline long long LanguageModel::userLearningFingerprint() {
+  if (!m_connection) return 0;
+
+  long long fingerprint = 0;
+  for (size_t i = 0; i < kLearningCacheTableCount; ++i) {
+    const LearningCacheTable& table = kLearningCacheTables[i];
+
+    // Every column a restore replaces, because a rewrite that keeps the row
+    // count and only changes the values is still a rewrite. A table an older
+    // database has not got yet folds in as absent, and creating it is itself
+    // the change we want to notice.
+    OVSQLiteStatementRef statement =
+        m_connection->prepare("SELECT %s FROM %s", table.columns, table.name);
+    if (!statement) continue;
+
+    const int columns = statement->columnCount();
+    while (statement->step() == SQLITE_ROW) {
+      long long row = (long long)(i + 1);
+      for (int column = 0; column < columns; ++column) {
+        const string text = SafeColumnText(statement.get(), column);
+        row = row * 131 + (long long)text.size();
+        for (size_t at = 0; at < text.size(); ++at)
+          row = row * 131 + (unsigned char)text[at];
+      }
+      // Summed, not chained: SELECT without ORDER BY may hand the same rows
+      // back in a different order after a rewrite.
+      fingerprint += row;
+    }
+  }
+
+  return fingerprint;
+}
+
 inline bool LanguageModel::dropUserLearningDataIfChangedExternally() {
   if (!m_userPhraseDirtyFlagPath.length()) return false;
 
@@ -716,14 +785,17 @@ inline bool LanguageModel::dropUserLearningDataIfChangedExternally() {
   if (DirtyFlagStamp(st) <= m_lastSeenUserPhraseDirtyStamp) return false;
 
   m_lastSeenUserPhraseDirtyStamp = DirtyFlagStamp(st);
-  m_userBigramCache.flush();
-  m_candidateOverrideCache.flush();
-  m_contextOverrideCache.flush();
-  m_overrideContextBreadth.clear();
-  m_dirtyContextBreadth.clear();
-  m_pendingBreadthDeletes.clear();
-  m_dirtyBreadthContexts.clear();
-  m_pendingBreadthContextClears.clear();
+
+  // The editor commits phrase edits and learning-table restores through the
+  // same flag. Dropping on either used to discard every correction learned
+  // while the editor was open -- writes are suspended for the whole session, so
+  // those corrections exist nowhere else yet -- for the sake of an import that
+  // in most cases never happened.
+  const long long fingerprint = userLearningFingerprint();
+  if (fingerprint == m_lastSeenUserLearningFingerprint) return false;
+
+  m_lastSeenUserLearningFingerprint = fingerprint;
+  clearResidentLearningState();
   return true;
 }
 
@@ -961,6 +1033,7 @@ inline void LanguageModel::saveUserBigramCache(bool useTransaction) {
   if (m_connection->execute("COMMIT") != SQLITE_OK) return;
 
   m_userBigramCache.markClean();
+  noteUserLearningWritten();
 }
 
 inline void LoadOverrideTable(OVSQLiteConnection* connection,
@@ -1130,6 +1203,7 @@ inline void LanguageModel::saveUserCandidateOverrideCache(bool useTransaction) {
   if (m_connection->execute("COMMIT") != SQLITE_OK) return;
 
   markUserCandidateOverrideCacheClean();
+  noteUserLearningWritten();
 }
 
 inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
@@ -1184,6 +1258,7 @@ inline bool LanguageModel::saveUserBigramCacheAndCandidateOverrideCache(
 
   m_userBigramCache.markClean();
   markUserCandidateOverrideCacheClean();
+  noteUserLearningWritten();
   return true;
 }
 
@@ -1718,14 +1793,8 @@ inline bool LanguageModel::flushUserCache() {
     return false;
   }
 
-  m_userBigramCache.flush();
-  m_candidateOverrideCache.flush();
-  m_contextOverrideCache.flush();
-  m_overrideContextBreadth.clear();
-  m_dirtyContextBreadth.clear();
-  m_pendingBreadthDeletes.clear();
-  m_dirtyBreadthContexts.clear();
-  m_pendingBreadthContextClears.clear();
+  clearResidentLearningState();
+  noteUserLearningWritten();
   return true;
 }
 };  // namespace Manjusri

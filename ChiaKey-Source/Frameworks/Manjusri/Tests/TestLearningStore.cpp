@@ -594,6 +594,53 @@ static void TestExternalChangeSupersedesMemory() {
   remove(dirtyPath.c_str());
 }
 
+// The same dirty flag advances on an ordinary phrase add/edit/delete, which
+// leaves the learning tables alone. Writes are suspended for the whole editor
+// session, so anything learned during it exists only in memory: dropping on
+// that flag alone threw away every correction the user made while the editor
+// happened to be open.
+static void TestPhraseEditKeepsPendingLearning() {
+  const string path = TempPath("learningstore-phraseedit.db");
+  const string lockPath = TempPath("learningstore-phraseedit.editing");
+  const string dirtyPath = TempPath("learningstore-phraseedit.dirty");
+  remove(lockPath.c_str());
+  remove(dirtyPath.c_str());
+
+  OVSQLiteConnection* db = MakeLegacyUserDB(path);
+  LanguageModel::MigrateUserLearningTables(db);
+
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    lm.setUserPhraseEditingLockPath(lockPath);
+
+    // Learned while the editor holds the lock, so nothing reaches the tables.
+    FILE* lock = fopen(lockPath.c_str(), "w");
+    CHECK(lock != 0);
+    if (lock) fclose(lock);
+    lm.cacheOverrideSelection("q1", "A");
+    CHECK(!lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+
+    // The editor renames a phrase: user_unigrams changes, the learning tables
+    // do not, and the dirty flag advances all the same.
+    CHECK(db->execute("INSERT INTO user_unigrams VALUES "
+                      "('aJ wl', 'X', '-1.0', '0.0')") == SQLITE_OK);
+    FILE* dirty = fopen(dirtyPath.c_str(), "w");
+    CHECK(dirty != 0);
+    if (dirty) fclose(dirty);
+
+    // Session over: the correction is still owed, and this time it lands.
+    remove(lockPath.c_str());
+    CHECK(lm.saveUserBigramCacheAndCandidateOverrideCache(true, true));
+    CHECK(FirstText(db, "SELECT current FROM user_candidate_override_cache "
+                        "WHERE qstring = 'q1'") == "A");
+    CHECK(lm.fetchCachedOverrideSelection("q1") == "A");
+  }
+
+  delete db;
+  remove(path.c_str());
+  remove(dirtyPath.c_str());
+}
+
 // Breadth counts distinct contexts; evicting the context entry and correcting
 // in the same context again must not count that context twice.
 static void TestEvictionDoesNotRecountContext() {
@@ -750,6 +797,7 @@ int main(int argc, char** argv) {
   TestFailedSaveKeepsLearningDirty();
   TestFlushRefusedWhileEditorHoldsLock();
   TestExternalChangeSupersedesMemory();
+  TestPhraseEditKeepsPendingLearning();
   TestEvictionDoesNotRecountContext();
   TestRevertingAnOverrideDropsItsBreadth();
   TestCachedBigramsComeBackSorted();
