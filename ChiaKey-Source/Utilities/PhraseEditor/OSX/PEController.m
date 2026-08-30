@@ -539,12 +539,18 @@ static void PEPresentContactsDeniedAlert(NSWindow *window) {
 - (void)importUserPhraseDatabaseFromURL:(NSURL *)url {
   if (!url || !_store) return;
 
-  BOOL rtn = [_store importUserPhraseDBFromFile:[url path]];
+  BOOL learningDataRestored = NO;
+  BOOL rtn = [_store importUserPhraseDBFromFile:[url path]
+                           learningDataRestored:&learningDataRestored];
   [self reloadData];
   if (rtn) {
-    PEPresentSheetAlert([self window], LFLSTR(@"Done"),
-                        LFLSTR(@"Your phrases are successfully imported."),
-                        NSAlertStyleInformational);
+    PEPresentSheetAlert(
+        [self window], LFLSTR(@"Done"),
+        learningDataRestored
+            ? LFLSTR(@"Your phrases are successfully imported.")
+            : LFLSTR(@"Your phrases are successfully imported, but the "
+                     @"learning data in this file could not be restored."),
+        NSAlertStyleInformational);
   } else {
     PEPresentSheetAlert([self window], LFLSTR(@"Error"),
                         LFLSTR(@"Unable to import database."),

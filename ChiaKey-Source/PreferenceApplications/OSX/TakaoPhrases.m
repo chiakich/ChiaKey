@@ -200,12 +200,18 @@ static NSUInteger CKCopyLegacyPlainFiles(void) {
     // Take the editing lock for the duration of the write so the running
     // IME suspends its own writes; ending the session makes it reload.
     [store beginEditingSession];
-    BOOL rtn = [store importUserPhraseDBFromFile:path];
+    BOOL learningDataRestored = NO;
+    BOOL rtn = [store importUserPhraseDBFromFile:path
+                           learningDataRestored:&learningDataRestored];
     [store endEditingSession];
     if (rtn) {
-      CKBeginAlertSheet(window, LFLSTR(@"Done!"),
-                        LFLSTR(@"Your phrases are successfully imported."),
-                        NSAlertStyleInformational);
+      CKBeginAlertSheet(
+          window, LFLSTR(@"Done!"),
+          learningDataRestored
+              ? LFLSTR(@"Your phrases are successfully imported.")
+              : LFLSTR(@"Your phrases are successfully imported, but the "
+                       @"learning data in this file could not be restored."),
+          NSAlertStyleInformational);
     } else {
       CKBeginAlertSheet(window, LFLSTR(@"Error"),
                         LFLSTR(@"Unable to import database."),
@@ -290,7 +296,10 @@ static NSUInteger CKCopyLegacyPlainFiles(void) {
 
   NSUInteger before = [store numberOfPhrasesMatchingFilter:nil];
   [store beginEditingSession];
-  BOOL imported = [store importLegacyUserPhraseDBFromFile:exportPath];
+  BOOL learningDataRestored = NO;
+  BOOL imported =
+      [store importLegacyUserPhraseDBFromFile:exportPath
+                        learningDataRestored:&learningDataRestored];
   [store endEditingSession];
   [[NSFileManager defaultManager] removeItemAtPath:exportPath error:NULL];
 
@@ -303,12 +312,17 @@ static NSUInteger CKCopyLegacyPlainFiles(void) {
   [store invalidateCachedCounts];
   NSUInteger added = [store numberOfPhrasesMatchingFilter:nil] - before;
   NSUInteger copied = CKCopyLegacyPlainFiles();
-  CKBeginAlertSheet(
-      window, LFLSTR(@"Done!"),
-      [NSString stringWithFormat:LFLSTR(@"Imported %lu phrase(s) and %lu "
-                                        @"other file(s) from Yahoo! KeyKey."),
-                                 (unsigned long)added, (unsigned long)copied],
-      NSAlertStyleInformational);
+  NSString *summary = [NSString
+      stringWithFormat:LFLSTR(@"Imported %lu phrase(s) and %lu "
+                              @"other file(s) from Yahoo! KeyKey."),
+                       (unsigned long)added, (unsigned long)copied];
+  if (!learningDataRestored) {
+    summary = [summary
+        stringByAppendingString:
+            LFLSTR(@" The learning data in this file could not be restored.")];
+  }
+  CKBeginAlertSheet(window, LFLSTR(@"Done!"), summary,
+                    NSAlertStyleInformational);
 }
 
 - (IBAction)launchEditor:(id)sender {

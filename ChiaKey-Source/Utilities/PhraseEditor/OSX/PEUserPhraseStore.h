@@ -77,11 +77,20 @@ typedef NS_ENUM(NSInteger, PEPhraseSortKey) {
 #pragma mark Import / export (full MJSR, including the learning-data blob)
 
 - (BOOL)exportUserPhraseDBToFile:(NSString *)path;
+
+// YES once the phrases are committed. The learning-data blob is a separate
+// outcome: it can be refused for size or fail to restore long after the
+// phrases have landed, and reporting that as a failed import sends the user
+// back to re-import a file that is already in.
 - (BOOL)importUserPhraseDBFromFile:(NSString *)path;
+- (BOOL)importUserPhraseDBFromFile:(NSString *)path
+              learningDataRestored:(BOOL *)learningDataRestored;
 // Same format, but written by Yahoo! KeyKey: its numbers were estimated
 // against a different lexicon, so imported phrases are renormalized to what a
 // hand-added phrase gets, and learning-cache entries naming something this
 // lexicon cannot produce are dropped.
 - (BOOL)importLegacyUserPhraseDBFromFile:(NSString *)path;
+- (BOOL)importLegacyUserPhraseDBFromFile:(NSString *)path
+                    learningDataRestored:(BOOL *)learningDataRestored;
 
 @end

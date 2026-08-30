@@ -185,7 +185,11 @@ static void TestFailedRestoreKeepsCurrentCaches(void) {
   NSString *path = WriteExportWithBlobSQL(
       @"bad-schema.txt", "CREATE TABLE user_bigram_cache (qstring);"
                          "INSERT INTO user_bigram_cache VALUES ('x');");
-  CHECK(![store importUserPhraseDBFromFile:path]);
+  // The phrases land, so the import succeeded; only the blob is reported lost.
+  BOOL learningDataRestored = YES;
+  CHECK([store importUserPhraseDBFromFile:path
+                     learningDataRestored:&learningDataRestored]);
+  CHECK(!learningDataRestored);
   // The phrases still land; the learning tables are untouched.
   CHECK(CountRows("user_unigrams") == 2);
   CHECK(CountRows("user_bigram_cache") == 1);
@@ -337,8 +341,11 @@ static void TestOversizedLearningBlobIsIgnored(void) {
   PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
   ExecOnUserDB("INSERT INTO user_bigram_cache VALUES ('x', 'y', 'z', '-1.0')");
 
-  // Skipping the block for size is reported, as in the C++ importer.
-  CHECK(![store importUserPhraseDBFromFile:path]);
+  // Skipping the block for size is reported, but the phrases still import.
+  BOOL learningDataRestored = YES;
+  CHECK([store importUserPhraseDBFromFile:path
+                     learningDataRestored:&learningDataRestored]);
+  CHECK(!learningDataRestored);
   // The marker survives, so the block was skipped rather than restored.
   CHECK(CountRows("user_bigram_cache") == 1);
   CHECK([FirstTextValue("SELECT current FROM user_bigram_cache")

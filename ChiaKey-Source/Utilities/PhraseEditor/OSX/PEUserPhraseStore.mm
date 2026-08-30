@@ -119,7 +119,9 @@ static std::string PEEscapeForLike(const std::string &s) {
 @interface PEUserPhraseStore ()
 - (void)_markDirtyAndScheduleChangeNotification;
 - (sqlite3 *)_lexiconDB;
-- (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy;
+- (BOOL)_importFromFile:(NSString *)path
+                 legacy:(BOOL)legacy
+   learningDataRestored:(BOOL *)learningDataRestored;
 - (NSSet *)_keysOfTable:(NSString *)table;
 - (NSSet *)_keysOf:(NSString *)exportTable missingFrom:(NSString *)table;
 - (BOOL)_table:(const char *)table existsInSchema:(const char *)schema;
@@ -1021,14 +1023,31 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 }
 
 - (BOOL)importUserPhraseDBFromFile:(NSString *)path {
-  return [self _importFromFile:path legacy:NO];
+  return [self _importFromFile:path legacy:NO learningDataRestored:NULL];
+}
+
+- (BOOL)importUserPhraseDBFromFile:(NSString *)path
+              learningDataRestored:(BOOL *)learningDataRestored {
+  return [self _importFromFile:path
+                        legacy:NO
+          learningDataRestored:learningDataRestored];
 }
 
 - (BOOL)importLegacyUserPhraseDBFromFile:(NSString *)path {
-  return [self _importFromFile:path legacy:YES];
+  return [self _importFromFile:path legacy:YES learningDataRestored:NULL];
 }
 
-- (BOOL)_importFromFile:(NSString *)path legacy:(BOOL)legacy {
+- (BOOL)importLegacyUserPhraseDBFromFile:(NSString *)path
+                    learningDataRestored:(BOOL *)learningDataRestored {
+  return [self _importFromFile:path
+                        legacy:YES
+          learningDataRestored:learningDataRestored];
+}
+
+- (BOOL)_importFromFile:(NSString *)path
+                 legacy:(BOOL)legacy
+   learningDataRestored:(BOOL *)learningDataRestored {
+  if (learningDataRestored) *learningDataRestored = NO;
   if (!_userDB) return NO;
 
   // fstat() the descriptor that is actually read, so the file cannot be
@@ -1184,8 +1203,8 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
   }
 
   [self _markDirtyAndScheduleChangeNotification];
-  // The phrases are committed either way; this reports the learning data.
-  return cacheRestored;
+  if (learningDataRestored) *learningDataRestored = cacheRestored;
+  return YES;
 }
 
 - (BOOL)_table:(const char *)table existsInSchema:(const char *)schema {
