@@ -356,6 +356,52 @@ static void TestOversizedLearningBlobIsIgnored(void) {
 
 #endif
 
+// What the IME's external-change check relies on: the editor's ordinary
+// mutations touch the phrase table and the dirty flag, never the learning
+// tables. If that ever stops holding, the IME goes back to discarding every
+// correction learned while the editor happened to be open.
+static NSString *LearningTableDigest(void) {
+  static const char *const kTables[] = {
+      "user_bigram_cache", "user_candidate_override_cache",
+      "user_context_override_cache", "user_learning_stats"};
+  NSMutableString *digest = [NSMutableString string];
+  for (size_t i = 0; i < sizeof(kTables) / sizeof(kTables[0]); i++) {
+    char *sql = sqlite3_mprintf(
+        "SELECT COUNT(*), COALESCE(GROUP_CONCAT(qstring), '') FROM "
+        "(SELECT qstring FROM %s ORDER BY qstring)",
+        kTables[i]);
+    [digest appendFormat:@"%d:%@|", CountRows(kTables[i]),
+                         FirstTextValue(sql)];
+    sqlite3_free(sql);
+  }
+  return digest;
+}
+
+static void TestPhraseEditsLeaveLearningTablesAlone(void) {
+  ResetStoreDirectory();
+  PEUserPhraseStore *store = [[PEUserPhraseStore alloc] init];
+  ExecOnUserDB(
+      "INSERT INTO user_bigram_cache VALUES ('aJ wl', 'a', 'b', '-1.0');"
+      "INSERT INTO user_candidate_override_cache VALUES ('aJ wl', 'c');"
+      "INSERT INTO user_context_override_cache VALUES ('aJ wl', 'd');"
+      "INSERT INTO user_learning_stats VALUES ('bigram', 'aJ wl', 2, 42);");
+
+  NSString *before = LearningTableDigest();
+
+  PEPhraseRecord *added = [store addPhrase:@"測試"];
+  CHECK(added != nil);
+  [store addPhrases:[NSArray arrayWithObject:@"權重"]];
+  [store setPhrase:@"測驗" forRowid:added.rowid];
+  [store setReading:@"ㄘㄜˋ,ㄧㄢˋ" forRowid:added.rowid];
+  [store deletePhrasesWithRowids:[NSArray
+                                     arrayWithObject:@(added.rowid)]];
+
+  // The phrase table moved; the learning tables did not.
+  CHECK(CountRows("user_unigrams") == 1);
+  CHECK([LearningTableDigest() isEqualToString:before]);
+  [store release];
+}
+
 int main(int argc, char **argv) {
   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 
@@ -390,6 +436,7 @@ int main(int argc, char **argv) {
   TestOlderExportKeepsNewerStores();
   TestRejectsFileWithoutHeader();
   TestRejectsMissingFile();
+  TestPhraseEditsLeaveLearningTablesAlone();
   TestSkipsCommentsAndBlankLines();
   TestHandlesCRLF();
   TestLegacyImportRenormalizesProbability();
