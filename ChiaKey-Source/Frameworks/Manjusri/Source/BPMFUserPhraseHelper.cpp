@@ -9,6 +9,7 @@ file for terms.
 #include <cstring>
 
 #include "MJSRExportCipher.h"
+#include "MJSRLearningCacheTables.h"
 #include "Mandarin.h"
 #include "Minotaur.h"
 #include "StringVectorHelper.h"
@@ -25,33 +26,6 @@ using namespace Formosa::Mandarin;
 
 namespace {
 
-// Every table the export block carries. The two original ones come first so
-// older builds still find the layout they expect.
-struct LearningCacheTable {
-  const char* name;
-  const char* columns;
-  // Without it INSERT OR REPLACE has nothing to conflict on and quietly
-  // appends. Mirrors LanguageModel::MigrateUserLearningTables().
-  const char* uniqueIndex;
-};
-
-const LearningCacheTable kLearningCacheTables[] = {
-    {"user_bigram_cache", "qstring, previous, current, probability",
-     "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
-     "ON user_bigram_cache (qstring)"},
-    {"user_candidate_override_cache", "qstring, current",
-     "CREATE UNIQUE INDEX IF NOT EXISTS "
-     "user_candidate_override_cache_qstring_unique "
-     "ON user_candidate_override_cache (qstring)"},
-    {"user_context_override_cache", "qstring, current",
-     "CREATE UNIQUE INDEX IF NOT EXISTS "
-     "user_context_override_cache_qstring_unique "
-     "ON user_context_override_cache (qstring)"},
-    {"user_learning_stats", "store, qstring, selection_count, last_used",
-     "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
-     "ON user_learning_stats (store, qstring)"},
-};
-
 // As in the phrase editor's importer: the file is read whole and copied
 // several times over. Overridable for the tests.
 #ifndef MJSR_MAX_IMPORT_FILE_SIZE
@@ -63,9 +37,6 @@ const LearningCacheTable kLearningCacheTables[] = {
 
 const unsigned long long kMaxImportFileSize = MJSR_MAX_IMPORT_FILE_SIZE;
 const size_t kMaxLearningBlobSize = MJSR_MAX_LEARNING_BLOB_SIZE;
-
-const size_t kLearningCacheTableCount =
-    sizeof(kLearningCacheTables) / sizeof(kLearningCacheTables[0]);
 
 bool TableExists(OVSQLiteConnection* db, const char* schema,
                  const char* table) {

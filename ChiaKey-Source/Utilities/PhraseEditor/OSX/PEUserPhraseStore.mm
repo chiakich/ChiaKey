@@ -23,6 +23,7 @@
 #import "ChiaKeyServiceCoordination.h"
 #import "ChiaKeyUserPhraseCoordination.h"
 #include "MJSRExportCipher.h"
+#include "MJSRLearningCacheTables.h"
 #include "Mandarin.h"
 
 using Formosa::Mandarin::BPMF;
@@ -1208,28 +1209,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 // still reports success.
 - (BOOL)_restoreLearningCachesFromDatabase:(NSString *)path
                                     legacy:(BOOL)legacy {
-  static const struct {
-    const char *name;
-    const char *columns;
-    // Without it INSERT OR REPLACE has nothing to conflict on and quietly
-    // appends. Mirrors LanguageModel::MigrateUserLearningTables().
-    const char *uniqueIndex;
-  } tables[] = {
-      {"user_bigram_cache", "qstring, previous, current, probability",
-       "CREATE UNIQUE INDEX IF NOT EXISTS user_bigram_cache_qstring_unique "
-       "ON user_bigram_cache (qstring)"},
-      {"user_candidate_override_cache", "qstring, current",
-       "CREATE UNIQUE INDEX IF NOT EXISTS "
-       "user_candidate_override_cache_qstring_unique "
-       "ON user_candidate_override_cache (qstring)"},
-      {"user_context_override_cache", "qstring, current",
-       "CREATE UNIQUE INDEX IF NOT EXISTS "
-       "user_context_override_cache_qstring_unique "
-       "ON user_context_override_cache (qstring)"},
-      {"user_learning_stats", "store, qstring, selection_count, last_used",
-       "CREATE UNIQUE INDEX IF NOT EXISTS user_learning_stats_key "
-       "ON user_learning_stats (store, qstring)"},
-  };
+  const Manjusri::LearningCacheTable *tables = Manjusri::kLearningCacheTables;
 
   char *attach =
       sqlite3_mprintf("ATTACH DATABASE %Q AS export", [path UTF8String]);
@@ -1253,7 +1233,7 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
 
   BOOL ok = sqlite3_exec(_userDB, "BEGIN", NULL, NULL, NULL) == SQLITE_OK;
 
-  for (size_t i = 0; ok && i < sizeof(tables) / sizeof(tables[0]); i++) {
+  for (size_t i = 0; ok && i < Manjusri::kLearningCacheTableCount; i++) {
     // An older or foreign file has nothing for the newer stores; keep what
     // is here.
     if (![self _table:tables[i].name existsInSchema:"export"]) continue;
