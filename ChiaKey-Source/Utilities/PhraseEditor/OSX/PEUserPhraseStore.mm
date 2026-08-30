@@ -1073,6 +1073,13 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
       [[[NSFileHandle alloc] initWithFileDescriptor:fd
                                      closeOnDealloc:YES] autorelease];
   NSData *raw = [handle readDataOfLength:(NSUInteger)fileSize];
+  // A short read means the file shrank under us; the header would still parse
+  // and the truncated remainder would import as if it were the whole backup.
+  if ([raw length] != (NSUInteger)fileSize) {
+    NSLog(@"Refusing to import %@: read %lu of %llu bytes", path,
+          (unsigned long)[raw length], fileSize);
+    return NO;
+  }
   NSString *content =
       [[[NSString alloc] initWithData:raw
                              encoding:NSUTF8StringEncoding] autorelease];

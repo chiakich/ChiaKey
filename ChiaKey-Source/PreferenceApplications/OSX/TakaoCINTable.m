@@ -182,7 +182,9 @@ static NSString *const kReservedIdentifiers[] = {@"Generic-cj-cin",
       [[[NSFileHandle alloc] initWithFileDescriptor:fd
                                      closeOnDealloc:YES] autorelease];
   NSData *data = [handle readDataOfLength:(NSUInteger)info.st_size];
-  if (![data length] && info.st_size > 0) {
+  // Anything short of the whole file means it shrank under us, and a table cut
+  // mid-line must not be inspected as if it were complete.
+  if ([data length] != (NSUInteger)info.st_size) {
     if (error)
       *error = [self errorWithCode:TakaoCINTableErrorUnreadable
                        description:LFLSTR(@"The file could not be read.")];
