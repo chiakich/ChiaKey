@@ -75,6 +75,38 @@ int main(int argc, char **argv) {
       isEqualToString:[NSString stringWithFormat:@"1\n%@", me]]));
   [[NSFileManager defaultManager] removeItemAtPath:lockPath error:NULL];
 
+  // The owner list is rewritten under an advisory lock, so no second claimant
+  // can interleave its own read-modify-write. flock() is held per open file
+  // description, so a second descriptor here stands in for another process.
+  NSString *guardPath = [lockPath stringByAppendingPathExtension:@"lock"];
+  {
+    int guard = ChiaKeyLockEditingOwnerList(dir);
+    CHECK(guard >= 0);
+
+    int contender = open([guardPath fileSystemRepresentation], O_RDONLY);
+    CHECK(contender >= 0);
+    CHECK(flock(contender, LOCK_EX | LOCK_NB) != 0);
+    CHECK(errno == EWOULDBLOCK);
+    close(contender);
+
+    ChiaKeyUnlockEditingOwnerList(guard);
+  }
+
+  // And every operation gives it back: a leaked guard would suspend the IME's
+  // writes for as long as the process lived.
+  ChiaKeyClaimUserPhraseEditingLock(dir);
+  ChiaKeyRefreshUserPhraseEditingLock(dir);
+  CHECK(ChiaKeyReleaseUserPhraseEditingLockIfOwner(dir));
+  {
+    int contender = open([guardPath fileSystemRepresentation], O_RDONLY);
+    CHECK(contender >= 0);
+    CHECK(flock(contender, LOCK_EX | LOCK_NB) == 0);
+    flock(contender, LOCK_UN);
+    close(contender);
+  }
+  [[NSFileManager defaultManager] removeItemAtPath:lockPath error:NULL];
+  [[NSFileManager defaultManager] removeItemAtPath:guardPath error:NULL];
+
   if (failures) {
     fprintf(stderr, "TestEditingLockCoordination: %d check(s) failed\n",
             failures);

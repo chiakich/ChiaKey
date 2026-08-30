@@ -21,6 +21,10 @@
 //    fire-and-forget hints that make the above take effect immediately
 //    instead of at the next poll.
 //
+//  A fourth file (SmartMandarinUserData.editing.lock) carries nothing: it
+//  exists only to be flock()ed while the editing lock's owner list is
+//  rewritten. See ChiaKeyLockEditingOwnerList().
+//
 //  Note for C++ call sites that cannot import Foundation (e.g. Manjusri's
 //  LanguageModel): the lock file name and the staleness rule above are the
 //  contract; check the file with stat(2) directly.
@@ -32,7 +36,9 @@
 #import <Foundation/Foundation.h>
 
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
+#include <sys/file.h>
 #include <unistd.h>
 
 #define ChiaKeyPhraseEditorDidBeginEditingNotification \
@@ -128,8 +134,37 @@ static inline void ChiaKeyWriteEditingLockOwners(NSString *path,
                                                atomically:YES];
 }
 
+// Rewriting the list is a read-modify-write across processes, and an atomic
+// write only makes each step atomic, not the pair. Two sessions claiming at
+// once could each write a list without the other -- the survivor's release
+// then removed a lock somebody was still editing under -- and two releasing at
+// once could each write the other's now-dead PID back, stranding the lock (and
+// with it the IME's suspended writes) for the whole session timeout. An
+// advisory lock on a sidecar serializes the three operations; it is released
+// by the kernel if a claimant dies holding it, and a build that does not take
+// it is no worse off than before.
+static inline int ChiaKeyLockEditingOwnerList(NSString *userDataDirectory) {
+  NSString *path = [ChiaKeyUserPhraseEditingLockPath(userDataDirectory)
+      stringByAppendingPathExtension:@"lock"];
+  int fd = open([path fileSystemRepresentation],
+                O_RDONLY | O_CREAT | O_NOFOLLOW, 0600);
+  if (fd < 0) return -1;
+  if (flock(fd, LOCK_EX) != 0) {
+    close(fd);
+    return -1;
+  }
+  return fd;
+}
+
+static inline void ChiaKeyUnlockEditingOwnerList(int fd) {
+  if (fd < 0) return;
+  flock(fd, LOCK_UN);
+  close(fd);
+}
+
 static inline void ChiaKeyClaimUserPhraseEditingLock(
     NSString *userDataDirectory) {
+  int guard = ChiaKeyLockEditingOwnerList(userDataDirectory);
   NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
   NSMutableArray *owners = [NSMutableArray array];
   if (ChiaKeyUserPhraseEditingLockIsActive(userDataDirectory)) {
@@ -138,10 +173,12 @@ static inline void ChiaKeyClaimUserPhraseEditingLock(
   NSString *me = ChiaKeyEditingLockOwnerTag();
   if (![owners containsObject:me]) [owners addObject:me];
   ChiaKeyWriteEditingLockOwners(path, owners);
+  ChiaKeyUnlockEditingOwnerList(guard);
 }
 
 static inline void ChiaKeyRefreshUserPhraseEditingLock(
     NSString *userDataDirectory) {
+  int guard = ChiaKeyLockEditingOwnerList(userDataDirectory);
   NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
   if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
     // Re-list this session if a write raced it out; also advances the mtime.
@@ -158,12 +195,14 @@ static inline void ChiaKeyRefreshUserPhraseEditingLock(
     ChiaKeyWriteEditingLockOwners(
         path, [NSArray arrayWithObject:ChiaKeyEditingLockOwnerTag()]);
   }
+  ChiaKeyUnlockEditingOwnerList(guard);
 }
 
 // Removes this session from the lock. Returns YES when no other live session
 // remains and the file was removed; NO while another claimant still holds it.
 static inline BOOL ChiaKeyReleaseUserPhraseEditingLockIfOwner(
     NSString *userDataDirectory) {
+  int guard = ChiaKeyLockEditingOwnerList(userDataDirectory);
   NSString *path = ChiaKeyUserPhraseEditingLockPath(userDataDirectory);
   NSMutableArray *owners =
       [[ChiaKeyLiveEditingLockOwners(path) mutableCopy] autorelease];
@@ -171,9 +210,11 @@ static inline BOOL ChiaKeyReleaseUserPhraseEditingLockIfOwner(
   if ([owners count]) {
     // Another live session is still editing: hand the lock over to it.
     ChiaKeyWriteEditingLockOwners(path, owners);
+    ChiaKeyUnlockEditingOwnerList(guard);
     return NO;
   }
   [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+  ChiaKeyUnlockEditingOwnerList(guard);
   return YES;
 }
 
