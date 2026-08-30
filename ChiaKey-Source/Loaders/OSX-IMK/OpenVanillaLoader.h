@@ -50,6 +50,10 @@ using namespace CareService;
 + (PVLoaderService *)sharedLoaderService;
 + (NSLock *)sharedLock;
 + (void)releaseSharedObjects;
+// start: runs on a background thread, so a client can ask for a controller
+// before there is a loader to build one from. Blocks until boot has finished
+// one way or the other, and answers whether a loader came out of it.
++ (BOOL)waitForLoaderReadyWithTimeout:(NSTimeInterval)timeout;
 
 #pragma mark Instance methods
 - (id)init;

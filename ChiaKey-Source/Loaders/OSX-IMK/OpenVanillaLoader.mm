@@ -179,9 +179,21 @@ string FetchSQLiteCERODKey(const string &filename);
 OpenVanillaLoader *OVLSharedInstance = nil;
 NSLock *OVLSharedLock = nil;
 
+// Signalled when start: has finished, whether or not it produced a loader.
+// Separate from OVLSharedLock, which boot holds for the whole load: waiting on
+// that lock is waiting for the load, with no way to give up on it.
+static NSCondition *OVLBootCondition = nil;
+static BOOL OVLBootFinished = NO;
+
 using namespace OpenVanilla;
 
 @implementation OpenVanillaLoader
+
++ (void)initialize {
+  if (self == [OpenVanillaLoader class]) {
+    OVLBootCondition = [[NSCondition alloc] init];
+  }
+}
 
 #pragma mark Class methods
 
@@ -208,6 +220,27 @@ using namespace OpenVanilla;
 + (void)releaseSharedObjects {
   [OVLSharedInstance release];
   [OVLSharedLock release];
+}
++ (void)noteBootFinished:(BOOL)finished {
+  [OVLBootCondition lock];
+  OVLBootFinished = finished;
+  if (finished) [OVLBootCondition broadcast];
+  [OVLBootCondition unlock];
+}
++ (BOOL)waitForLoaderReadyWithTimeout:(NSTimeInterval)timeout {
+  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
+
+  [OVLBootCondition lock];
+  // A real deadline, not a fixed number of naps: the old spin counted
+  // iterations, so time spent blocked did not count against its patience and
+  // the wait could outlast the timeout it advertised several times over.
+  while (!OVLBootFinished) {
+    if (![OVLBootCondition waitUntilDate:deadline]) break;
+  }
+  BOOL finished = OVLBootFinished;
+  [OVLBootCondition unlock];
+
+  return finished && [OpenVanillaLoader sharedLoader] != 0;
 }
 + (NSString *)locale {
   // See here http://developer.apple.com/qa/qa2006/qa1391.html
@@ -565,6 +598,7 @@ using namespace OpenVanilla;
     // Returning with the shared lock held would deadlock every controller's
     // initWithServer: from here on.
     [[OpenVanillaLoader sharedLock] unlock];
+    [OpenVanillaLoader noteBootFinished:YES];
     [pool drain];
     return true;
   }
@@ -684,6 +718,9 @@ using namespace OpenVanilla;
 
   // NSLog(@"unlocking");
   [[OpenVanillaLoader sharedLock] unlock];
+  // Before the rest of the tail below: clients waiting to build a context need
+  // nothing from it, and each one of them is an app with no input until then.
+  [OpenVanillaLoader noteBootFinished:YES];
   [CVCapsLockDelayOverride applyIfEnabled:applyCapsLockDelayOverride];
 
   // NSLog(@"scheduling");
@@ -707,6 +744,7 @@ using namespace OpenVanilla;
   return true;
 }
 - (void)shutDown {
+  [OpenVanillaLoader noteBootFinished:NO];
   [[OpenVanillaLoader sharedLock] lock];
 
   if (_loader) {

@@ -218,17 +218,20 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     _bridgingToASCIISource = NO;
     _composingBuffer = [NSMutableString new];
 
-    [[OpenVanillaLoader sharedLock] lock];
-    // The loader boots on a background thread; a very early client can take
-    // this lock before that thread does, and sharedLoader is then still NULL.
-    // Wait it out instead of dereferencing it -- once boot holds the lock,
-    // this blocks there anyway.
-    int patience = 500;
-    while (![OpenVanillaLoader sharedLoader] && patience-- > 0) {
-      [[OpenVanillaLoader sharedLock] unlock];
-      usleep(10000);
-      [[OpenVanillaLoader sharedLock] lock];
+    // The loader boots on a background thread; a very early client can get
+    // here before there is one, and dereferencing it then used to crash. Wait
+    // outside the shared lock, which boot holds for the whole load -- taking it
+    // first turned "wait for the loader" into "wait for the load, then keep
+    // waiting". Generous, because IMK builds one controller per client and
+    // never retries: giving up leaves that app with no input at all until the
+    // user switches input sources, which is worse than a slow cold start.
+    static const NSTimeInterval kLoaderBootWait = 30.0;
+    if (![OpenVanillaLoader waitForLoaderReadyWithTimeout:kLoaderBootWait]) {
+      NSLog(@"ChiaKey: no loader after %.0fs; this client gets no context",
+            kLoaderBootWait);
     }
+
+    [[OpenVanillaLoader sharedLock] lock];
     PVLoader *loader = [OpenVanillaLoader sharedLoader];
     _context = loader ? loader->createContext() : 0;
     [[OpenVanillaLoader sharedLock] unlock];
