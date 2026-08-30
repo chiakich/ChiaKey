@@ -54,7 +54,23 @@ static OVSQLiteConnection* BuildFixture(const string& path) {
   // COMMON + X (-4.0) by a hair -- but beats RARE + X (-6.5) comfortably.
   db->execute("INSERT INTO unigrams VALUES('R1R2', 'PHRASE', -5.2, 0.0)");
 
+  // R3 exists so a third reading has two competing predecessors: the node
+  // covering R2 alone, and the R1R2 phrase node. Both end where R3 begins.
+  db->execute("INSERT INTO unigrams VALUES('R3', 'COMMON3', -2.0, 0.0)");
+  db->execute("INSERT INTO unigrams VALUES('R3', 'RARE3', -4.5, 0.0)");
+
   return db;
+}
+
+static const string WalkTextThree(LanguageModel* lm) {
+  Graph graph(lm);
+  graph.clear();
+  graph.insertQueryBlockAndBuild("R1", 1);
+  graph.insertQueryBlockAndBuild("R2", 2);
+  graph.insertQueryBlockAndBuild("R3", 3);
+
+  FastPath path = graph.fastWalk("", Location(0, 0));
+  return FastPathAsString(path);
 }
 
 // Mirrors ManjusriComposer: the graph seeds BOS/EOS itself, so readings start
@@ -132,6 +148,35 @@ int main(int argc, char** argv) {
     cout << "generalized:      " << text << endl;
     CHECK(text.find("RARE") != string::npos);
     CHECK(text.find("COMMON") == string::npos);
+  }
+
+  // A correction is keyed to the reading it was made after. R3's predecessors
+  // are the R2 node and the R1R2 phrase node, and the walk goes through R2:
+  // a correction learned after R1R2 must stay out of this path. It used to
+  // apply to the whole node as soon as any predecessor carried one.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+    lm.cacheContextOverrideSelection("R1R2", "R3", "RARE3");
+
+    string text = WalkTextThree(&lm);
+    cout << "other context:    " << text << endl;
+    CHECK(text.find("COMMON3") != string::npos);
+    CHECK(text.find("RARE3") == string::npos);
+  }
+
+  // Learned after the reading the walk actually arrives from, it applies --
+  // and it moves the text only, so the split still beats the phrase.
+  {
+    LanguageModel lm(db, 0, false, false, false, true, true);
+    Node::SetUNK(lm.UNKUnigram().probability, lm.UNKUnigram().backoff);
+    lm.cacheContextOverrideSelection("R2", "R3", "RARE3");
+
+    string text = WalkTextThree(&lm);
+    cout << "walked context:   " << text << endl;
+    CHECK(text.find("RARE3") != string::npos);
+    CHECK(text.find("COMMON3") == string::npos);
+    CHECK(text.find("PHRASE") == string::npos);
   }
 
   delete db;

@@ -474,6 +474,15 @@ inline void Graph::build(StringFilter* filter) {
     Node node(location, subblock);
     string cachedCurrentText;
 
+    // candidate cache: a correction made after this exact preceding reading
+    // wins, but only on the paths that go through that reading -- taking the
+    // first predecessor that had one and applying it to the whole node let a
+    // correction fire in contexts the user never made it in, and left which
+    // correction won up to the node set's iteration order. The context-free
+    // entry below is a fallback and only applies once the user has made the
+    // same correction after several different readings.
+    vector<pair<string, vector<string> > > contextPicks;
+
     for (vector<NodeSet::const_iterator>::iterator pniter =
              precedingNodes.begin();
          pniter != precedingNodes.end(); ++pniter) {
@@ -485,23 +494,29 @@ inline void Graph::build(StringFilter* filter) {
       node.addUnigramBackoffs(
           m_LM->findUnigrams(pnode.queryString(), true, filter));
 
-      // candidate cache: a correction made after this exact preceding reading
-      // wins; the context-free entry is a fallback and only applies once the
-      // user has made the same correction after several different readings.
-      if (!cachedCurrentText.size())
-        cachedCurrentText = m_LM->fetchCachedContextOverrideSelection(
-            pnode.queryString(), subblock);
+      const string contextPick = m_LM->fetchCachedContextOverrideSelection(
+          pnode.queryString(), subblock);
+      if (contextPick.size())
+        contextPicks.push_back(
+            pair<string, vector<string> >(contextPick, pnode.candidates()));
     }
 
     node.addSortedUnigrams(currentUnigrams);
 
-    if (!cachedCurrentText.size() &&
+    // After the unigrams: the pick has to be one of them to apply at all.
+    for (vector<pair<string, vector<string> > >::const_iterator citer =
+             contextPicks.begin();
+         citer != contextPicks.end(); ++citer)
+      node.addContextPick((*citer).first, (*citer).second);
+
+    if (!contextPicks.size() &&
         m_LM->overrideGeneralizesAcrossContexts(subblock))
       cachedCurrentText = m_LM->fetchCachedOverrideSelection(subblock);
 
-    if (cachedCurrentText.size()) {
+    if (cachedCurrentText.size())
       node.adjustScoreWithSelection(cachedCurrentText);
 
+    if (cachedCurrentText.size() || contextPicks.size()) {
       // because alias subblock comes next (with same location with aliased
       // qstring), we want to ignore it
       aliasToIgnore.insert(location);

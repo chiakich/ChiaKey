@@ -70,6 +70,12 @@ class Node {
   bool isTextLexiconFirstCandidate(const string& text) const;
 
   void adjustScoreWithSelection(const string& currentText);
+  // adjustScoreWithSelection() confined to the paths that arrive from one of
+  // previousTexts. A correction learned after one preceding reading has no
+  // business winning after another the user never corrected it after, and the
+  // preceding node's texts are what the walk hands to findHighestScorePair().
+  void addContextPick(const string& currentText,
+                      const vector<string>& previousTexts);
   void cancelOverride();
   const vector<string> candidates() const;
   // candidates() in place, flagging entries the context outscores per
@@ -107,6 +113,10 @@ class Node {
   map<string, StringScorePairVector> m_bigramMap;
   StringScorePairVector m_unigramCurrents;
   StringScoreMap m_unigramPreviousBackoffs;
+
+  // Preceding text -> the text the user corrected this reading to after it.
+  // See addContextPick() for why these are not bigrams.
+  map<string, string> m_contextPicks;
 
   // The lexicon's own top candidate for this reading, captured before
   // adjustScoreWithSelection() gets a chance to reorder m_unigramCurrents.
@@ -307,6 +317,30 @@ inline void Node::adjustScoreWithSelection(const string& currentText) {
   }
 }
 
+inline void Node::addContextPick(const string& currentText,
+                                 const vector<string>& previousTexts) {
+  // A stale override naming text this reading no longer offers stays out, as
+  // in adjustScoreWithSelection().
+  bool known = false;
+  for (StringScorePairVector::const_iterator iter = m_unigramCurrents.begin();
+       iter != m_unigramCurrents.end(); ++iter)
+    if ((*iter).first == currentText) {
+      known = true;
+      break;
+    }
+
+  if (!known) return;
+
+  // Kept out of m_bigramMap on purpose. Injecting the pick there with a score
+  // high enough to win would also raise what this node is worth in that
+  // context, and the walk would start preferring the segmentation that carries
+  // the correction over one it used to lose to -- the same trap
+  // adjustScoreWithSelection() documents for the unigram case, in reverse.
+  for (vector<string>::const_iterator piter = previousTexts.begin();
+       piter != previousTexts.end(); ++piter)
+    m_contextPicks[*piter] = currentText;
+}
+
 inline void Node::cancelOverride() {
   m_overridden = false;
   m_overriddenSelection = 0;
@@ -356,6 +390,15 @@ inline const vector<pair<string, bool> > Node::candidatesForContext(
     }
   }
 
+  // A learned pick for this context is what findHighestScorePair() shows here,
+  // so it is flagged on the same footing as a bigram the context promotes.
+  if (previous.size() && !m_overridden) {
+    map<string, string>::const_iterator piter = m_contextPicks.find(previous);
+    if (piter != m_contextPicks.end() &&
+        !(unigrams.size() && (*piter).second == unigrams[0]))
+      promoted.insert((*piter).second);
+  }
+
   // flags land on unigram entries only, so every flagged pick stays
   // selectable and learnable
   for (vector<string>::const_iterator uiter = unigrams.begin();
@@ -402,7 +445,13 @@ inline const StringScorePair Node::findHighestScorePair(
   }
 
   if (hasBigramResult)
-    if (bigramResult.second > result.second) return bigramResult;
+    if (bigramResult.second > result.second) result = bigramResult;
+
+  // The user's correction for this context wins the text, and only the text:
+  // the score stays whatever would have won, so promoting the pick cannot move
+  // this node's standing against a competing segmentation.
+  map<string, string>::const_iterator piter = m_contextPicks.find(previous);
+  if (piter != m_contextPicks.end()) result.first = (*piter).second;
 
   return result;
 }
