@@ -20,6 +20,8 @@
 	<string>CHIA</string>
 	<key>CFBundleVersion</key>
 	<string>1.2.4</string>
+	<key>ChiaKeyReleaseTag</key>
+	<string>v1.2.4</string>
 	<key>LSHasLocalizedDisplayName</key>
 	<true/>
 	<key>LSUIElement</key>
