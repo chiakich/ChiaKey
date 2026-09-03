@@ -573,7 +573,27 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
     return;
   }
 
+  // A sibling IME (release next to a dev install) shares this directory and
+  // may still have the superseded database open; unlinking it under that
+  // process invalidates its SQLite descriptor. The marker stays, so the next
+  // reload with no sibling running prunes instead.
+  if ([self _siblingIMEIsRunning]) {
+    NSLog(@"ChiaKey lexicon prune skipped: another ChiaKey IME is running.");
+    return;
+  }
+
   [self _runLexiconInstallerArgument:@"--prune-superseded" completion:nil];
+}
+
+- (BOOL)_siblingIMEIsRunning {
+  pid_t self_pid = [[NSProcessInfo processInfo] processIdentifier];
+  for (NSRunningApplication *app in
+       [[NSWorkspace sharedWorkspace] runningApplications]) {
+    if ([app processIdentifier] == self_pid) continue;
+    if ([[app bundleIdentifier] hasPrefix:@"com.chiakey.inputmethod."])
+      return YES;
+  }
+  return NO;
 }
 
 // Both halves of settling an install: a lexicon that opened retires the old
