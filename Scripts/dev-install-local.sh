@@ -359,6 +359,11 @@ if [[ "${DRY_RUN}" != "1" && ! -d "${BUILT_APP}" ]]; then
   exit 1
 fi
 
+# A dangling tsInputMethodIconFileKey crashes the client app on input switch.
+if [[ "${DRY_RUN}" != "1" ]]; then
+  run "${ROOT_DIR}/Scripts/verify-input-source-icon.sh" "${BUILT_APP}"
+fi
+
 run /bin/mkdir -p "${BUILT_RESOURCES}"
 run /bin/rm -rf "${BUILT_RESOURCES}/DataTables"
 run /usr/bin/ditto "${DATA_TABLES_DIR}" "${BUILT_RESOURCES}/DataTables"
