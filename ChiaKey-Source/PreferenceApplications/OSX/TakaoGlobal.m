@@ -193,8 +193,6 @@ file for terms.
 }
 
 - (void)setUI {
-  [_allowSecureInputCompositionCheckBox
-      setTitle:LFLSTR(@"Compose in secure fields (no learning)")];
   [_applyCapsLockDelayOverrideCheckBox
       setTitle:LFLSTR(@"Remove Caps Lock delay")];
 
@@ -209,12 +207,6 @@ file for terms.
     [_useUpdateCheckBox setIntValue:1];
   else
     [_useUpdateCheckBox setIntValue:0];
-
-  if ([[_takaoDictionary valueForKey:@"AllowSecureInputComposition"]
-          isEqualToString:@"true"])
-    [_allowSecureInputCompositionCheckBox setIntValue:1];
-  else
-    [_allowSecureInputCompositionCheckBox setIntValue:0];
 
   if ([[_takaoDictionary valueForKey:@"ApplyCapsLockDelayOverride"]
           isEqualToString:@"true"])
@@ -323,7 +315,6 @@ file for terms.
                       forKey:@"OneDimensionalCandidatePanelStyle"];
   [_takaoDictionary setValue:@"true"
                       forKey:@"ToggleInputMethodWithControlBackslash"];
-  [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
   [_takaoDictionary setValue:@"true" forKey:@"ApplyCapsLockDelayOverride"];
   [_takaoDictionary setValue:@"true" forKey:@"ShiftTogglesTemporaryEnglish"];
 
@@ -363,11 +354,6 @@ file for terms.
     [_takaoDictionary setValue:@"true" forKey:@"ShouldCheckUpdateOnLaunch"];
   else
     [_takaoDictionary setValue:@"false" forKey:@"ShouldCheckUpdateOnLaunch"];
-
-  if ([_allowSecureInputCompositionCheckBox intValue])
-    [_takaoDictionary setValue:@"true" forKey:@"AllowSecureInputComposition"];
-  else
-    [_takaoDictionary setValue:@"false" forKey:@"AllowSecureInputComposition"];
 
   if ([_applyCapsLockDelayOverrideCheckBox intValue])
     [_takaoDictionary setValue:@"true" forKey:@"ApplyCapsLockDelayOverride"];

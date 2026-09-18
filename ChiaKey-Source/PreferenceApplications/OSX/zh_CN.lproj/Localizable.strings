@@ -84,7 +84,6 @@
 "Remove" = "删除";
 "Please select a plugin." = "请选择您想要删除的插件模块";
 "Do you really want to remove the plugin '%@'?" = "您确定要删除“%@”这个插件模块吗？";
-"Compose in secure fields (no learning)" = "允许在安全输入框中组字（不学习）";
 "Remove Caps Lock delay" = "移除 Caps Lock 延迟";
 "Input method behaviour:" = "输入法行为：";
 "Tapping Shift switches to English" = "轻点 Shift 切换英文";
