@@ -122,6 +122,32 @@ Scripts/test-core-smoke.sh
 Scripts/test-ios-core-syntax.sh
 ```
 
+`ChiaKeyCore` 另外有一份 CMake，給 Xcode 以外的 host（Windows TSF、Fcitx）使用。
+它用 `ExternalLibraries/` 裡 bundled 的 sqlite 與 expat，不依賴系統 library，跑的是
+同一個 smoke test：
+
+```sh
+cmake -S ChiaKey-Source/Frameworks/ChiaKeyCore -B build/core-cmake
+cmake --build build/core-cmake
+ctest --test-dir build/core-cmake --output-on-failure
+```
+
+`ChiaKeySource.db` 不在 git 裡。若不在預設位置
+（`ChiaKey-Source/Distributions/Takao/CookedDatabase/`），用
+`-DCHIAKEY_LEXICON_DATABASE=<path>` 指定，否則 smoke test 會編出來但不註冊。
+
+在 Windows 上用 MSVC（x64 Native Tools 命令列，需 CMake 3.21 以上）：
+
+```powershell
+cmake -S ChiaKey-Source\Frameworks\ChiaKeyCore -B build\core-cmake -DCHIAKEY_LEXICON_DATABASE=C:\path\to\ChiaKeySource.db
+cmake --build build\core-cmake --config Release
+ctest --test-dir build\core-cmake -C Release --output-on-failure
+```
+
+這一步只驗證引擎核心，不含 TSF 前端。核心是靠 `WIN32` 這個 macro 分辨平台的，
+而 MSVC 只會預先定義 `_WIN32`，所以 CMake 有明確補上 `WIN32`；任何自己寫的
+build 檔也必須照做，否則會靜默走進 POSIX 分支。
+
 驗證個人學習（LearningStore 淘汰策略、使用者詞庫 schema 遷移與舊版相容性、學過的候選能不能在 walker 存活）。自帶 SQLite fixture，不需要詞庫：
 
 ```sh
