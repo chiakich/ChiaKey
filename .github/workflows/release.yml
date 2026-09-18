@@ -309,9 +309,9 @@ jobs:
           printf '%s\n' "${changelog}" > changelog.md
 
           # Assembled as a file rather than an action input: commit subjects are
-          # author-controlled and never pass through a shell or a ${{ }} expansion
-          # this way. The instructions live in their own file so tuning the
-          # wording does not mean editing YAML.
+          # author-controlled, and this way they never pass through a shell or a
+          # workflow expression. The instructions live in their own file so
+          # tuning the wording does not mean editing YAML.
           {
             cat .github/release-notes-prompt.txt
             cat changelog.md
