@@ -221,6 +221,38 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("expected reset to drop the context picks");
   }
 
+  // Shift+, resolves through _punctuation_<layout>_<key>, a different lookup
+  // from composition, and one a wrong keyboard-layout name breaks silently.
+  // keyCode carries the shifted character: the engine reads bopomofo off the
+  // key code, so ',' here would compose ㄝ no matter what the modifiers say.
+  engine->reset();
+  ChiaKey::KeyEvent shiftedComma;
+  shiftedComma.keyCode = '<';
+  shiftedComma.receivedString = "<";
+  shiftedComma.modifiers.shift = true;
+  if (!engine->handleKey(shiftedComma)) {
+    return Fail("C++ engine did not handle shift+comma");
+  }
+
+  state = engine->snapshot();
+  if (state.beeped) {
+    return Fail("shift+comma beeped, so no punctuation entry matched");
+  }
+  if (state.composingText != "，") {
+    return Fail("expected shift+comma to compose ，, got: " +
+                state.composingText);
+  }
+
+  if (!engine->handleKey(returnKey)) {
+    return Fail("C++ engine did not handle return after shift+comma");
+  }
+  state = engine->snapshot();
+  if (state.committedText != "，") {
+    return Fail("expected shift+comma to commit ，, got: " +
+                state.committedText);
+  }
+  engine->acknowledgeCommit();
+
   return 0;
 }
 
