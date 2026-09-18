@@ -91,6 +91,10 @@ class Engine;
 
 class Runtime : public std::enable_shared_from_this<Runtime> {
  public:
+  // The host owns the config: every Create() reapplies the EngineConfig given
+  // here, so a host that lets users change settings has to persist them and
+  // pass them back. The primary input method is the exception -- it is stored
+  // under writablePath and survives a Runtime rebuild.
   static std::shared_ptr<Runtime> Create(const RuntimePaths& paths,
                                          const EngineConfig& config,
                                          std::string* errorMessage = nullptr);
@@ -102,7 +106,8 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
 
   std::unique_ptr<Engine> createEngine(std::string* errorMessage = nullptr);
 
-  // Persists to the preference plist; locale is fixed at Create and ignored.
+  // Applies to this Runtime only; the next Create() reapplies its own config.
+  // Locale is fixed at Create and ignored here.
   void setConfig(const EngineConfig& config);
   EngineConfig config() const;
 
