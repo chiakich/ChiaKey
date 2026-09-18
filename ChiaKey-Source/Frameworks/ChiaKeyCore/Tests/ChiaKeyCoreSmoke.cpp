@@ -6,6 +6,7 @@
 #include <ChiaKeyCore/ChiaKeyCoreC.h>
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -486,6 +487,22 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
   paths.lexiconDatabasePath = lexiconDatabasePath;
 
   std::string errorMessage;
+  {
+    // a path under a regular file can never become a directory
+    const std::string blocker = writableDir + "/blocker";
+    std::ofstream(blocker.c_str()).put('x');
+    ChiaKey::RuntimePaths badPaths = paths;
+    badPaths.writablePath = blocker + "/writable";
+    std::string badError;
+    if (ChiaKey::Runtime::Create(badPaths, ChiaKey::EngineConfig(), &badError)) {
+      return Fail("runtime was created with an unusable writablePath");
+    }
+    if (badError.find("writablePath") == std::string::npos) {
+      return Fail("expected the unusable writablePath to be named, got: " +
+                  badError);
+    }
+  }
+
   std::shared_ptr<ChiaKey::Runtime> runtime =
       ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &errorMessage);
   if (!runtime) return Fail("failed to create runtime: " + errorMessage);
