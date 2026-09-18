@@ -30,7 +30,6 @@ on:
 
 permissions:
   contents: write
-  copilot-requests: write
 
 jobs:
   release:
@@ -318,22 +317,44 @@ jobs:
             printf '</commits>\n'
           } > notes-prompt.txt
 
-      # Not pre-installed on GitHub-hosted runners.
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
-
-      # Commit subjects describe mechanisms; users need symptoms. Claude rewrites
-      # them, and the raw list stays below so nothing is lost if it guesses wrong.
-      # continue-on-error: a release must not fail because inference was down.
+      # Commit subjects describe mechanisms; users need symptoms. The model
+      # rewrites them, and the raw list stays below so nothing is lost if it
+      # guesses wrong. Every failure path here leaves summary-zh.md empty and the
+      # notes fall back to the commit list: a release must not fail over this.
       - name: Write user-facing notes in Chinese
-        id: notes_zh
         continue-on-error: true
-        uses: actions/ai-inference@v1
-        with:
-          model: claude-sonnet-4.5
-          prompt-file: notes-prompt.txt
         env:
-          COPILOT_GITHUB_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
+        run: |
+          set -uo pipefail
+          : > summary-zh.md
+
+          if [[ -z "${GEMINI_API_KEY:-}" ]]; then
+            echo "::warning::GEMINI_API_KEY is not set; skipping the Chinese summary."
+            exit 0
+          fi
+
+          # --rawfile: the prompt carries commit subjects, so it never goes
+          # through the shell or through string interpolation into JSON.
+          body="$(jq -n --rawfile p notes-prompt.txt '{contents:[{parts:[{text:$p}]}]}')"
+
+          if ! resp="$(curl -sS --fail-with-body --max-time 120 \
+              "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" \
+              -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+              -H 'content-type: application/json' \
+              -d "${body}")"; then
+            echo "::warning::Gemini request failed; falling back to the commit list."
+            echo "${resp}" | head -c 2000
+            exit 0
+          fi
+
+          jq -r '.candidates[0].content.parts[]?.text // empty' <<<"${resp}" > summary-zh.md
+
+          if [[ ! -s summary-zh.md ]]; then
+            echo "::warning::Gemini returned no text; falling back to the commit list."
+            echo "${resp}" | head -c 2000
+          fi
 
       - name: Assemble release notes
         env:
@@ -343,11 +364,11 @@ jobs:
           REPO: ${{ github.repository }}
           SERVER: ${{ github.server_url }}
           LEXICON_VERSION: ${{ steps.build.outputs.lexicon_version }}
-          SUMMARY_ZH: ${{ steps.notes_zh.outputs.response }}
         run: |
           set -euo pipefail
 
           changelog="$(cat changelog.md)"
+          SUMMARY_ZH="$(cat summary-zh.md)"
 
           {
             if [[ "${PRERELEASE}" == "true" ]]; then
