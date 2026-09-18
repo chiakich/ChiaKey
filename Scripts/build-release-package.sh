@@ -47,7 +47,7 @@ INSTALLER_SIGN_IDENTITY="${INSTALLER_SIGN_IDENTITY:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 PACKAGE_IDENTIFIER="${PACKAGE_IDENTIFIER:-com.chiakey.inputmethod.ChiaKey.pkg}"
 COMPONENT_IDENTIFIER="${COMPONENT_IDENTIFIER:-com.chiakey.inputmethod.ChiaKey.component}"
-MIN_OS_VERSION="${MIN_OS_VERSION:-10.13}"
+MIN_OS_VERSION="${MIN_OS_VERSION:-12.0}"
 
 # Keep macOS resource forks out of the installer payload as AppleDouble files.
 export COPYFILE_DISABLE=1
