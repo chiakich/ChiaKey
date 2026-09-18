@@ -132,8 +132,18 @@ cmake --build build/core-cmake
 ctest --test-dir build/core-cmake --output-on-failure
 ```
 
-`ChiaKeySource.db` 不在 git 裡。若不在預設位置
-（`ChiaKey-Source/Distributions/Takao/CookedDatabase/`），用
+`ChiaKeySource.db` 不在 git 裡。找不到任何一份時，`test-core-smoke.sh` 會呼叫
+`install-lexicon-release.sh` 從 CDN 下載一版到快取：
+
+```text
+~/Library/Application Support/ChiaKey/Lexicons-smoke-cache/
+```
+
+這是 `Lexicons/` 的同層目錄而不是它的子目錄，所以不會動到已安裝的輸入法正在用的詞庫。
+驗證規則（含跨 origin 的 `SHA256SUMS` 比對）全部由 installer 負責，測試腳本沒有自己的
+下載路徑。設 `CHIAKEY_SMOKE_NO_DOWNLOAD=1` 可改成直接失敗。
+
+CMake 會依序找 bundled、已安裝的 active、以及上面這個快取；都沒有就用
 `-DCHIAKEY_LEXICON_DATABASE=<path>` 指定，否則 smoke test 會編出來但不註冊。
 
 在 Windows 上用 MSVC（x64 Native Tools 命令列，需 CMake 3.21 以上）：
