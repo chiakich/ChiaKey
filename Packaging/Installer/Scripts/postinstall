@@ -87,15 +87,19 @@ if [ -n "${keep_app}" ]; then
   # console user's Mach bootstrap, not their uid, so sudo -u drops privilege as
   # well -- otherwise TIS registers the input source for root, not the user. A
   # per-user install already runs as that user, so invoke the binary directly.
+  # "install" blocks until the user answers macOS's consent dialog for the new
+  # input source (or gives up after its own timeout), and reports what it did
+  # on stdout: registered|registration-skipped, then
+  # already-enabled|newly-enabled|enable-timeout.
   if [ "$(/usr/bin/id -u)" = "0" ] && [ -n "${console_uid:-}" ]; then
-    /bin/launchctl asuser "${console_uid}" \
-      /usr/bin/sudo -u "${console_user}" "${app_bin}" install
+    install_output="$(/bin/launchctl asuser "${console_uid}" \
+      /usr/bin/sudo -u "${console_user}" "${app_bin}" install)"
     install_status=$?
   else
-    "${app_bin}" install
+    install_output="$("${app_bin}" install)"
     install_status=$?
   fi
-  echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}" >&2
+  echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}: $(echo "${install_output}" | /usr/bin/tr '\n' ' ')" >&2
   if [ "${install_status}" != "0" ]; then
     exit "${install_status}"
   fi
