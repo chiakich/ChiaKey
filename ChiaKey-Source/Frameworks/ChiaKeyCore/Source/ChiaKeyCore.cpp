@@ -15,6 +15,7 @@
 #include "OVIMMandarinPackage.h"
 #include "OVIMSmartMandarin.h"
 
+#include <cstdio>
 #include <memory>
 #include <mutex>
 #include <sstream>
@@ -49,6 +50,25 @@ using OpenVanilla::PVTextBuffer;
 
 const char kMandarinPackageName[] = "OVIMMandarin";
 const char kPreferencesDirectoryName[] = "Preferences";
+
+// CheckDirectory() only proves the path exists and is a directory, so a
+// read-only path would get through and every later write -- preferences, the
+// learning database -- would fail silently.
+bool DirectoryIsWritable(const std::string& path) {
+  const std::string probe =
+      OVPathHelper::PathCat(OVPathHelper::NormalizeByExpandingTilde(path),
+                            ".chiakey-write-probe");
+  std::FILE* file = std::fopen(probe.c_str(), "w");
+  if (!file) return false;
+
+  std::fclose(file);
+  std::remove(probe.c_str());
+  return true;
+}
+
+bool CheckWritableDirectory(const std::string& path) {
+  return OVDirectoryHelper::CheckDirectory(path) && DirectoryIsWritable(path);
+}
 
 unsigned int MakeModifierMask(const KeyModifiers& modifiers) {
   unsigned int mask = 0;
@@ -240,16 +260,16 @@ class Runtime::Impl {
     policy.reset(new CorePolicy(paths.writablePath));
     // An unwritable path would otherwise surface much later as the loader
     // silently falling back to another input method.
-    if (!OVDirectoryHelper::CheckDirectory(paths.writablePath)) {
+    if (!CheckWritableDirectory(paths.writablePath)) {
       if (errorMessage) {
-        *errorMessage = "writablePath is not a usable directory: " +
+        *errorMessage = "writablePath is not a writable directory: " +
                         paths.writablePath;
       }
       return false;
     }
-    if (!OVDirectoryHelper::CheckDirectory(policy->preferencesPath())) {
+    if (!CheckWritableDirectory(policy->preferencesPath())) {
       if (errorMessage) {
-        *errorMessage = "cannot create the preferences directory: " +
+        *errorMessage = "preferences directory is not writable: " +
                         policy->preferencesPath();
       }
       return false;

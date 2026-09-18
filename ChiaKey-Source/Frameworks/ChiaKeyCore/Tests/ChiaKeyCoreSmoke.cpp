@@ -5,6 +5,8 @@
 #include <ChiaKeyCore/ChiaKeyCore.h>
 #include <ChiaKeyCore/ChiaKeyCoreC.h>
 
+#include <sys/stat.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -536,6 +538,42 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     }
     if (badError.find("writablePath") == std::string::npos) {
       return Fail("expected the unusable writablePath to be named, got: " +
+                  badError);
+    }
+  }
+
+  {
+    // a directory the user cannot write to must be refused up front, not
+    // discovered later when a preference write silently does nothing.
+    // Preferences/ is created first: a merely missing subdirectory already
+    // fails the existing check, so only a fully populated read-only tree
+    // exercises the write probe.
+    const std::string readOnlyDir = writableDir + "/read-only";
+    const std::string readOnlyPreferences = readOnlyDir + "/Preferences";
+    if (mkdir(readOnlyDir.c_str(), 0700) != 0 &&
+        chmod(readOnlyDir.c_str(), 0700) != 0) {
+      return Fail("could not create " + readOnlyDir);
+    }
+    if (mkdir(readOnlyPreferences.c_str(), 0700) != 0 &&
+        chmod(readOnlyPreferences.c_str(), 0700) != 0) {
+      return Fail("could not create " + readOnlyPreferences);
+    }
+    if (chmod(readOnlyPreferences.c_str(), 0500) != 0 ||
+        chmod(readOnlyDir.c_str(), 0500) != 0) {
+      return Fail("could not drop write permission on " + readOnlyDir);
+    }
+
+    ChiaKey::RuntimePaths badPaths = paths;
+    badPaths.writablePath = readOnlyDir;
+    std::string badError;
+    const bool created =
+        ChiaKey::Runtime::Create(badPaths, ChiaKey::EngineConfig(), &badError) !=
+        nullptr;
+    chmod(readOnlyDir.c_str(), 0700);
+    chmod(readOnlyPreferences.c_str(), 0700);
+    if (created) return Fail("runtime was created with a read-only writablePath");
+    if (badError.find("writable") == std::string::npos) {
+      return Fail("expected the read-only path to be reported as unwritable, got: " +
                   badError);
     }
   }
