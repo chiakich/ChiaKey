@@ -172,6 +172,32 @@ class OVSQLiteDatabaseService : public OVDatabaseService {
   bool m_ownsConnection;
 };
 
+// The tables a cooked ChiaKeySource.db must carry. Kept here because both the
+// macOS loader and ChiaKeyCore have to reject the same databases: without the
+// check, Smart Mandarin's degraded mode fills an incomplete lexicon with empty
+// placeholder tables and the engine comes up with no candidates at all.
+inline bool ValidateChiaKeySourceDatabase(OVSQLiteConnection* connection,
+                                          string* missingTable = 0) {
+  if (!connection) return false;
+
+  const char* requiredTables[] = {
+      "cooked_information",
+      "prepopulated_service_data",
+      "unigrams",
+      "bigrams",
+  };
+
+  for (size_t index = 0;
+       index < sizeof(requiredTables) / sizeof(requiredTables[0]); index++) {
+    if (!connection->hasTable(requiredTables[index])) {
+      if (missingTable) *missingTable = requiredTables[index];
+      return false;
+    }
+  }
+
+  return true;
+}
+
 inline const vector<string> OVSQLiteKeyValueDataTable::valuesForKey(
     const string& key) {
   vector<string> result;

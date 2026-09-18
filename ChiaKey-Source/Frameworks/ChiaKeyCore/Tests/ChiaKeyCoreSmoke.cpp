@@ -5,6 +5,7 @@
 #include <ChiaKeyCore/ChiaKeyCore.h>
 #include <ChiaKeyCore/ChiaKeyCoreC.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -536,6 +537,48 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     if (badError.find("writablePath") == std::string::npos) {
       return Fail("expected the unusable writablePath to be named, got: " +
                   badError);
+    }
+  }
+
+  {
+    // sqlite3_open() would create this one, and Smart Mandarin would then fill
+    // it with empty placeholder tables
+    const std::string missingDatabase = writableDir + "/missing-lexicon.db";
+    std::remove(missingDatabase.c_str());
+    ChiaKey::RuntimePaths badPaths = paths;
+    badPaths.lexiconDatabasePath = missingDatabase;
+    std::string badError;
+    if (ChiaKey::Runtime::Create(badPaths, ChiaKey::EngineConfig(), &badError)) {
+      return Fail("runtime was created with a lexicon database that does not exist");
+    }
+    if (badError.find("does not exist") == std::string::npos) {
+      return Fail("expected the missing lexicon to be named, got: " + badError);
+    }
+    if (std::ifstream(missingDatabase.c_str()).good()) {
+      return Fail("a missing lexicon database was created on disk");
+    }
+  }
+
+  {
+    // an empty file is a valid, table-less SQLite database
+    const std::string emptyDatabase = writableDir + "/empty-lexicon.db";
+    std::ofstream(emptyDatabase.c_str(), std::ios::trunc).close();
+    if (!std::ifstream(emptyDatabase.c_str()).good()) {
+      return Fail("could not create " + emptyDatabase);
+    }
+    ChiaKey::RuntimePaths badPaths = paths;
+    badPaths.lexiconDatabasePath = emptyDatabase;
+    std::string badError;
+    if (ChiaKey::Runtime::Create(badPaths, ChiaKey::EngineConfig(), &badError)) {
+      return Fail("runtime was created with an empty lexicon database");
+    }
+    if (badError.find("missing the table") == std::string::npos) {
+      return Fail("expected the missing lexicon table to be named, got: " + badError);
+    }
+    // a rejected lexicon has to be left exactly as it was found
+    std::ifstream probe(emptyDatabase.c_str(), std::ios::binary | std::ios::ate);
+    if (!probe.good() || probe.tellg() != std::streampos(0)) {
+      return Fail("a rejected lexicon database was written to");
     }
   }
 
