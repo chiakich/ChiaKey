@@ -2,7 +2,8 @@
 // ChiaKeyCore.h
 //
 // A small, host-neutral facade for embedding ChiaKey's Mandarin engine in
-// future shells such as an iOS keyboard extension.
+// platform shells (Windows TSF, Fcitx, keyboard extensions, tests).
+// One Runtime per process, one Engine per text field.
 //
 
 #ifndef ChiaKeyCore_h
@@ -11,6 +12,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ChiaKey {
@@ -32,13 +34,17 @@ struct KeyEvent {
   KeyModifiers modifiers;
 };
 
-struct EnginePaths {
+struct RuntimePaths {
   std::string loadedPath;
   std::string resourcePath;
+  // user data: learning DB, user phrases, and the core's own preference plists
   std::string writablePath;
   std::string lexiconDatabasePath;
 };
 
+using EnginePaths = RuntimePaths;
+
+// Applied runtime-wide, not per Engine.
 struct EngineConfig {
   std::string locale = "zh_TW";
   std::string keyboardLayout = "Standard";
@@ -81,9 +87,51 @@ struct EngineState {
   std::vector<std::string> notifications;
 };
 
+class Engine;
+
+class Runtime : public std::enable_shared_from_this<Runtime> {
+ public:
+  static std::shared_ptr<Runtime> Create(const RuntimePaths& paths,
+                                         const EngineConfig& config,
+                                         std::string* errorMessage = nullptr);
+
+  ~Runtime();
+
+  Runtime(const Runtime&) = delete;
+  Runtime& operator=(const Runtime&) = delete;
+
+  std::unique_ptr<Engine> createEngine(std::string* errorMessage = nullptr);
+
+  // Persists to the preference plist; locale is fixed at Create and ignored.
+  void setConfig(const EngineConfig& config);
+  EngineConfig config() const;
+
+  // identifier / localized name pairs, in the loader's suggested order
+  std::vector<std::pair<std::string, std::string>> inputMethods() const;
+  std::string primaryInputMethod() const;
+  // Rebuilds every Engine's context: any composition in progress is dropped.
+  bool setPrimaryInputMethod(const std::string& identifier);
+
+  bool associatedPhrasesEnabled() const;
+  // Rebuilds every Engine's context: any composition in progress is dropped.
+  void setAssociatedPhrasesEnabled(bool enabled);
+
+  static const char* SmartMandarinIdentifier();
+  static const char* TraditionalMandarinIdentifier();
+
+ private:
+  friend class Engine;
+  class Impl;
+
+  explicit Runtime(std::unique_ptr<Impl> impl);
+
+  std::unique_ptr<Impl> impl_;
+};
+
 class Engine {
  public:
-  static std::unique_ptr<Engine> Create(const EnginePaths& paths,
+  // Convenience for single-context hosts: creates a private Runtime.
+  static std::unique_ptr<Engine> Create(const RuntimePaths& paths,
                                         const EngineConfig& config,
                                         std::string* errorMessage = nullptr);
 
@@ -94,13 +142,17 @@ class Engine {
 
   bool handleKey(const KeyEvent& event);
   bool handleAsciiKey(char key, const KeyModifiers& modifiers = KeyModifiers());
+  // absolute index into CandidateState::candidates
   bool selectCandidate(std::size_t candidateIndex);
   void reset();
 
   EngineState snapshot() const;
   void acknowledgeCommit();
 
+  std::shared_ptr<Runtime> runtime() const;
+
  private:
+  friend class Runtime;
   class Impl;
 
   explicit Engine(std::unique_ptr<Impl> impl);

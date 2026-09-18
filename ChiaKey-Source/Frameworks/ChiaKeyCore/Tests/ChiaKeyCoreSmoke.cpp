@@ -469,6 +469,216 @@ int RunCSmoke(const std::string& repoRoot, const std::string& writableDir,
   return 0;
 }
 
+
+bool TypeKeys(ChiaKey::Engine* engine, const char* keys) {
+  for (const char* key = keys; *key; ++key) {
+    if (!engine->handleAsciiKey(*key)) return false;
+  }
+  return true;
+}
+
+int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
+                    const std::string& lexiconDatabasePath) {
+  ChiaKey::RuntimePaths paths;
+  paths.loadedPath = repoRoot + "/ChiaKey-Source";
+  paths.resourcePath = repoRoot + "/ChiaKey-Source";
+  paths.writablePath = writableDir;
+  paths.lexiconDatabasePath = lexiconDatabasePath;
+
+  std::string errorMessage;
+  std::shared_ptr<ChiaKey::Runtime> runtime =
+      ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &errorMessage);
+  if (!runtime) return Fail("failed to create runtime: " + errorMessage);
+
+  if (runtime->primaryInputMethod() != ChiaKey::Runtime::SmartMandarinIdentifier()) {
+    return Fail("expected Smart Mandarin as the primary input method, got: " +
+                runtime->primaryInputMethod());
+  }
+
+  bool sawSmart = false;
+  bool sawTraditional = false;
+  for (const auto& entry : runtime->inputMethods()) {
+    if (entry.first == ChiaKey::Runtime::SmartMandarinIdentifier()) sawSmart = true;
+    if (entry.first == ChiaKey::Runtime::TraditionalMandarinIdentifier()) {
+      sawTraditional = true;
+    }
+    if (entry.second.empty()) return Fail("input method without a name: " + entry.first);
+  }
+  if (!sawSmart || !sawTraditional) {
+    return Fail("runtime did not list both Mandarin input methods");
+  }
+
+  // two contexts on one runtime stay independent
+  std::unique_ptr<ChiaKey::Engine> first = runtime->createEngine(&errorMessage);
+  std::unique_ptr<ChiaKey::Engine> second = runtime->createEngine(&errorMessage);
+  if (!first || !second) return Fail("failed to create engines: " + errorMessage);
+
+  if (!TypeKeys(first.get(), "su3cl3")) return Fail("first engine rejected 你好");
+  if (!TypeKeys(second.get(), "1")) return Fail("second engine rejected ㄅ");
+
+  if (first->snapshot().composingText != "你好") {
+    return Fail("first engine lost its composition to the second engine");
+  }
+  if (second->snapshot().readingText.empty() ||
+      !second->snapshot().composingText.empty()) {
+    return Fail("second engine did not keep its own reading state");
+  }
+
+  first->reset();
+  if (!TypeKeys(first.get(), "al4c04 ")) return Fail("first engine rejected 冒汗 + space");
+  ChiaKey::EngineState state = first->snapshot();
+  if (!state.candidateState.visible || state.candidateState.candidates.size() < 2) {
+    return Fail("expected at least two candidates for 汗");
+  }
+  // the list leads with whole-phrase candidates such as 冒汗, so pick a
+  // single character that actually changes the composition
+  std::size_t pick = state.candidateState.candidates.size();
+  for (std::size_t index = 0; index < state.candidateState.candidates.size(); ++index) {
+    const std::string& candidate = state.candidateState.candidates[index];
+    if (candidate.size() == 3 && candidate != "汗") {
+      pick = index;
+      break;
+    }
+  }
+  if (pick == state.candidateState.candidates.size()) {
+    return Fail("no single-character alternative to 汗 in the candidate list");
+  }
+  // the walker may re-pick the preceding character around the fixed node
+  // (冒汗 -> 茂和), so only the selected position is asserted
+  const std::string chosen = state.candidateState.candidates[pick];
+  if (!first->selectCandidate(pick)) return Fail("selectCandidate refused a valid index");
+  state = first->snapshot();
+  if (state.candidateState.visible) return Fail("candidate list stayed open after selection");
+  if (state.composingText.size() != 6 ||
+      state.composingText.compare(3, 3, chosen) != 0) {
+    return Fail("expected selectCandidate to end the composition with " + chosen +
+                ", got: " + state.composingText);
+  }
+  if (first->selectCandidate(0)) return Fail("selectCandidate accepted an index with no list open");
+  if (!first->snapshot().beeped) return Fail("invalid selectCandidate did not beep");
+
+  // config round-trips through the preference plist and reloads live
+  ChiaKey::EngineConfig config = runtime->config();
+  config.keyboardLayout = "ETen";
+  runtime->setConfig(config);
+  if (runtime->config().keyboardLayout != "ETen") return Fail("setConfig did not store the layout");
+  first->reset();
+  if (!TypeKeys(first.get(), "su3cl3")) return Fail("engine rejected keys under ETen layout");
+  if (first->snapshot().composingText == "你好") {
+    return Fail("ETen layout was not applied to the live module");
+  }
+  config.keyboardLayout = "Standard";
+  runtime->setConfig(config);
+  first->reset();
+  if (!TypeKeys(first.get(), "su3cl3") || first->snapshot().composingText != "你好") {
+    return Fail("Standard layout was not restored on the live module");
+  }
+
+  // the toggle bumps the loader generation, which drops every composition
+  runtime->setAssociatedPhrasesEnabled(true);
+  if (!runtime->associatedPhrasesEnabled()) return Fail("associated phrases did not enable");
+  if (!TypeKeys(first.get(), "su3cl3")) return Fail("engine rejected keys with associated phrases on");
+  if (first->snapshot().composingText != "你好") {
+    return Fail("expected a fresh 你好 composition after the filter toggle");
+  }
+  ChiaKey::KeyEvent returnKey;
+  returnKey.keyCode = 13;
+  if (!first->handleKey(returnKey)) return Fail("return was not handled with associated phrases on");
+  if (first->snapshot().committedText != "你好") {
+    return Fail("expected 你好 committed with associated phrases on, got: " +
+                first->snapshot().committedText);
+  }
+  first->acknowledgeCommit();
+  runtime->setAssociatedPhrasesEnabled(false);
+  if (runtime->associatedPhrasesEnabled()) return Fail("associated phrases did not disable");
+
+  // engines keep the runtime alive after the host drops its own reference
+  runtime.reset();
+  second->reset();
+  if (!TypeKeys(second.get(), "su3cl3") || second->snapshot().composingText != "你好") {
+    return Fail("engine stopped working after the host released the runtime");
+  }
+  if (second->runtime()->primaryInputMethod() !=
+      ChiaKey::Runtime::SmartMandarinIdentifier()) {
+    return Fail("engine->runtime() lost the primary input method");
+  }
+
+  return 0;
+}
+
+int RunCRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
+                     const std::string& lexiconDatabasePath) {
+  const std::string sourceDir = repoRoot + "/ChiaKey-Source";
+
+  CKC_EnginePaths paths = {};
+  paths.loaded_path = sourceDir.c_str();
+  paths.resource_path = sourceDir.c_str();
+  paths.writable_path = writableDir.c_str();
+  paths.lexicon_database_path = lexiconDatabasePath.c_str();
+
+  char* errorMessage = nullptr;
+  CKC_EngineConfig config = CKC_EngineConfigDefault();
+  CKC_Runtime* runtime = CKC_RuntimeCreate(&paths, &config, &errorMessage);
+  if (!runtime) {
+    std::string message = errorMessage ? errorMessage : "unknown C runtime error";
+    CKC_StringDestroy(errorMessage);
+    return Fail("failed to create C bridge runtime: " + message);
+  }
+
+  char** identifiers = nullptr;
+  char** names = nullptr;
+  const size_t count = CKC_RuntimeCopyInputMethods(runtime, &identifiers, &names);
+  bool sawSmart = false;
+  for (size_t index = 0; index < count; ++index) {
+    if (std::string(identifiers[index]) == CKC_SmartMandarinIdentifier()) sawSmart = true;
+  }
+  CKC_StringArrayDestroy(identifiers, count);
+  CKC_StringArrayDestroy(names, count);
+  if (count < 2 || !sawSmart) {
+    CKC_RuntimeDestroy(runtime);
+    return Fail("C bridge runtime did not list the Mandarin input methods");
+  }
+
+  char* primary = CKC_RuntimeCopyPrimaryInputMethod(runtime);
+  const bool primaryIsSmart =
+      primary && std::string(primary) == CKC_SmartMandarinIdentifier();
+  CKC_StringDestroy(primary);
+  if (!primaryIsSmart) {
+    CKC_RuntimeDestroy(runtime);
+    return Fail("C bridge runtime primary input method is not Smart Mandarin");
+  }
+
+  CKC_Engine* engine = CKC_RuntimeCreateEngine(runtime, &errorMessage);
+  if (!engine) {
+    std::string message = errorMessage ? errorMessage : "unknown C engine error";
+    CKC_StringDestroy(errorMessage);
+    CKC_RuntimeDestroy(runtime);
+    return Fail("failed to create C bridge engine from runtime: " + message);
+  }
+
+  // the runtime handle may go first; the engine keeps the runtime alive
+  CKC_RuntimeDestroy(runtime);
+
+  const char keys[] = {'s', 'u', '3', 'c', 'l', '3'};
+  CKC_KeyModifiers modifiers = CKC_KeyModifiersNone();
+  for (char key : keys) {
+    if (!CKC_EngineHandleAsciiKey(engine, key, modifiers)) {
+      CKC_EngineDestroy(engine);
+      return Fail(std::string("C bridge runtime engine did not handle key: ") + key);
+    }
+  }
+
+  CKC_EngineSnapshot snapshot = CKC_EngineCopySnapshot(engine);
+  const std::string composingText = snapshot.composing_text ? snapshot.composing_text : "";
+  CKC_EngineSnapshotDestroy(&snapshot);
+  CKC_EngineDestroy(engine);
+  if (composingText != "你好") {
+    return Fail("expected C bridge runtime engine to compose 你好, got: " + composingText);
+  }
+
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -485,6 +695,10 @@ int main(int argc, char* argv[]) {
   if (int result = RunCppSmoke(repoRoot, writableDir, lexiconDatabasePath))
     return result;
   if (int result = RunCSmoke(repoRoot, writableDir, lexiconDatabasePath))
+    return result;
+  if (int result = RunRuntimeSmoke(repoRoot, writableDir, lexiconDatabasePath))
+    return result;
+  if (int result = RunCRuntimeSmoke(repoRoot, writableDir, lexiconDatabasePath))
     return result;
 
   std::cout << "ChiaKeyCoreSmoke: OK" << std::endl;

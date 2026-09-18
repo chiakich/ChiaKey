@@ -13,6 +13,10 @@
 #include <string>
 #include <vector>
 
+struct CKC_Runtime {
+  std::shared_ptr<ChiaKey::Runtime> runtime;
+};
+
 struct CKC_Engine {
   std::unique_ptr<ChiaKey::Engine> engine;
 };
@@ -185,6 +189,143 @@ CKC_EngineConfig CKC_EngineConfigDefault(void) {
   return config;
 }
 
+namespace {
+
+CKC_Engine* WrapEngine(std::unique_ptr<ChiaKey::Engine> engine,
+                       char** error_message) {
+  CKC_Engine* handle = new (std::nothrow) CKC_Engine;
+  if (!handle) {
+    if (error_message) *error_message = CopyCString("failed to allocate engine");
+    return nullptr;
+  }
+
+  handle->engine = std::move(engine);
+  return handle;
+}
+
+}  // namespace
+
+CKC_Runtime* CKC_RuntimeCreate(const CKC_EnginePaths* paths,
+                               const CKC_EngineConfig* config,
+                               char** error_message) {
+  if (error_message) *error_message = nullptr;
+
+  if (!paths) {
+    if (error_message) *error_message = CopyCString("paths is required");
+    return nullptr;
+  }
+
+  std::string error;
+  std::shared_ptr<ChiaKey::Runtime> runtime =
+      ChiaKey::Runtime::Create(CopyPaths(*paths), CopyConfig(config), &error);
+  if (!runtime) {
+    if (error_message) *error_message = CopyCString(error);
+    return nullptr;
+  }
+
+  CKC_Runtime* handle = new (std::nothrow) CKC_Runtime;
+  if (!handle) {
+    if (error_message) {
+      *error_message = CopyCString("failed to allocate runtime");
+    }
+    return nullptr;
+  }
+
+  handle->runtime = std::move(runtime);
+  return handle;
+}
+
+void CKC_RuntimeDestroy(CKC_Runtime* runtime) {
+  delete runtime;
+}
+
+CKC_Engine* CKC_RuntimeCreateEngine(CKC_Runtime* runtime, char** error_message) {
+  if (error_message) *error_message = nullptr;
+  if (!runtime || !runtime->runtime) {
+    if (error_message) *error_message = CopyCString("runtime is required");
+    return nullptr;
+  }
+
+  std::string error;
+  std::unique_ptr<ChiaKey::Engine> engine =
+      runtime->runtime->createEngine(&error);
+  if (!engine) {
+    if (error_message) *error_message = CopyCString(error);
+    return nullptr;
+  }
+  return WrapEngine(std::move(engine), error_message);
+}
+
+int CKC_RuntimeSetConfig(CKC_Runtime* runtime, const CKC_EngineConfig* config) {
+  if (!runtime || !runtime->runtime || !config) return 0;
+  runtime->runtime->setConfig(CopyConfig(config));
+  return 1;
+}
+
+size_t CKC_RuntimeCopyInputMethods(CKC_Runtime* runtime, char*** identifiers,
+                                   char*** names) {
+  if (identifiers) *identifiers = nullptr;
+  if (names) *names = nullptr;
+  if (!runtime || !runtime->runtime) return 0;
+
+  std::vector<std::string> identifierList;
+  std::vector<std::string> nameList;
+  for (const auto& entry : runtime->runtime->inputMethods()) {
+    identifierList.push_back(entry.first);
+    nameList.push_back(entry.second);
+  }
+  if (identifierList.empty()) return 0;
+
+  char** identifierArray = CopyStringVector(identifierList);
+  char** nameArray = CopyStringVector(nameList);
+  if (!identifierArray || !nameArray) {
+    DestroyStringVector(identifierArray, identifierList.size());
+    DestroyStringVector(nameArray, nameList.size());
+    return 0;
+  }
+
+  if (identifiers) {
+    *identifiers = identifierArray;
+  } else {
+    DestroyStringVector(identifierArray, identifierList.size());
+  }
+  if (names) {
+    *names = nameArray;
+  } else {
+    DestroyStringVector(nameArray, nameList.size());
+  }
+  return identifierList.size();
+}
+
+char* CKC_RuntimeCopyPrimaryInputMethod(CKC_Runtime* runtime) {
+  if (!runtime || !runtime->runtime) return nullptr;
+  return CopyCString(runtime->runtime->primaryInputMethod());
+}
+
+int CKC_RuntimeSetPrimaryInputMethod(CKC_Runtime* runtime,
+                                     const char* identifier) {
+  if (!runtime || !runtime->runtime || !identifier) return 0;
+  return runtime->runtime->setPrimaryInputMethod(identifier) ? 1 : 0;
+}
+
+int CKC_RuntimeAssociatedPhrasesEnabled(CKC_Runtime* runtime) {
+  if (!runtime || !runtime->runtime) return 0;
+  return runtime->runtime->associatedPhrasesEnabled() ? 1 : 0;
+}
+
+void CKC_RuntimeSetAssociatedPhrasesEnabled(CKC_Runtime* runtime, int enabled) {
+  if (!runtime || !runtime->runtime) return;
+  runtime->runtime->setAssociatedPhrasesEnabled(enabled != 0);
+}
+
+const char* CKC_SmartMandarinIdentifier(void) {
+  return ChiaKey::Runtime::SmartMandarinIdentifier();
+}
+
+const char* CKC_TraditionalMandarinIdentifier(void) {
+  return ChiaKey::Runtime::TraditionalMandarinIdentifier();
+}
+
 CKC_Engine* CKC_EngineCreate(const CKC_EnginePaths* paths,
                              const CKC_EngineConfig* config,
                              char** error_message) {
@@ -202,15 +343,7 @@ CKC_Engine* CKC_EngineCreate(const CKC_EnginePaths* paths,
     if (error_message) *error_message = CopyCString(error);
     return nullptr;
   }
-
-  CKC_Engine* handle = new (std::nothrow) CKC_Engine;
-  if (!handle) {
-    if (error_message) *error_message = CopyCString("failed to allocate engine");
-    return nullptr;
-  }
-
-  handle->engine = std::move(engine);
-  return handle;
+  return WrapEngine(std::move(engine), error_message);
 }
 
 void CKC_EngineDestroy(CKC_Engine* engine) {
@@ -286,4 +419,8 @@ void CKC_EngineSnapshotDestroy(CKC_EngineSnapshot* snapshot) {
 
 void CKC_StringDestroy(char* string) {
   std::free(string);
+}
+
+void CKC_StringArrayDestroy(char** strings, size_t count) {
+  DestroyStringVector(strings, count);
 }

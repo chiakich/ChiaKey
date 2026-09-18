@@ -14,7 +14,7 @@
 2. bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
 3. 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
 4. 詞庫由獨立 repo `ChiaKey-Lexicon` 透過 GitHub Releases 發佈。
-5. 實驗性的 `ChiaKeyCore` host-neutral engine facade 作為 macOS / iOS 可共用的輸入核心地基。
+5. `ChiaKeyCore` host-neutral engine facade（Runtime + Engine 兩層），作為 Windows / Linux 等其他 host 可共用的輸入核心地基。
 
 ## 編譯
 
@@ -115,7 +115,7 @@ Scripts/test-lexicon-smoke.sh
 Scripts/test-lexicon-smoke.sh path/to/ChiaKeySource.db
 ```
 
-驗證 host-neutral core facade 與 iOS SDK 語法相容性：
+驗證 host-neutral core facade（含多 context、選字、設定重載）與第二個 toolchain 的語法相容性：
 
 ```sh
 Scripts/test-core-smoke.sh
@@ -198,7 +198,7 @@ artifacts/release/
 
 ## 目錄概覽
 
-- `ChiaKey-Source/Frameworks/ChiaKeyCore/`：host-neutral engine facade，未來 macOS / iOS 共用輸入核心邊界。
+- `ChiaKey-Source/Frameworks/ChiaKeyCore/`：host-neutral engine facade，`Runtime` 每 process 一份、`Engine` 每文字欄位一份，是其他平台 host 接入的邊界。
 - `ChiaKey-Source/Frameworks/OpenVanilla/`：OpenVanilla framework source。
 - `ChiaKey-Source/Frameworks/PlainVanilla/`：PlainVanilla bridge / loader policy。
 - `ChiaKey-Source/Frameworks/Formosa/`：注音 syllable、鍵盤 layout 與 reading buffer。

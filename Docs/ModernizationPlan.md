@@ -18,7 +18,7 @@
 - 偏好設定可透過與 CLI 相同的 validation path 觸發詞庫更新。
 - OneKey 與 legacy Windows code 已從現代 app path 移除；locale tags 已針對現代 macOS 正規化。
 - GitHub fork 已 credit 官方 Yahoo archive upstream。
-- `ChiaKeyCore` host-neutral facade 已建立，有 macOS smoke test 與 iPhoneOS syntax probe。
+- `ChiaKeyCore` host-neutral facade 已建立並拆成 Runtime + Engine 兩層（2026-09），有 macOS smoke test 與 iPhoneOS syntax probe。
 - 舊 Yahoo runtime integrations、legacy dictionary panel、tracker、legacy installer pipeline、dead update/feed endpoints、standalone legacy helper projects 已移除。
 - 2026-07：詞彙編輯器（PhraseEditor）改寫為直連 SQLite，砍掉整條失效的 XPC 通道；偏好設定與 CLI 子命令也一併改用狀態檔 + distributed notification 跟 IME 溝通，`ChiaKeyServiceClient` 已刪除。細節見 [PhraseEditorRewrite.md](PhraseEditorRewrite.md)。
 - Release packaging 已有本機/CI 共用入口 `Scripts/build-release-package.sh`，以及可手動觸發的 `.github/workflows/release.yml`。Developer ID Application/Installer 憑證與 notarization API key 已放進 repo secrets，release workflow 現在會自動簽章並 notarize `.pkg`。細節見 [ReleasePackaging.md](ReleasePackaging.md)。
