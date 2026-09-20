@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 # Builds ChiaKeyCore and the engine chain it wraps for non-Xcode hosts.
 # The macOS IMK host does not use this file; it builds from Takao.xcodeproj.
-project(ChiaKeyCore VERSION 1.2.4 LANGUAGES C CXX)
+project(ChiaKeyCore LANGUAGES C CXX)
 
 include(CTest)
 
@@ -80,12 +80,12 @@ target_include_directories(chiakey_core PUBLIC
 # mismatch compiles cleanly and then finds no data at runtime.
 target_compile_definitions(chiakey_core PUBLIC
     OV_USE_SQLITE
-    OVIMMANDARIN_IDENTIFIER="Mandarin"
-    OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX="Punctuations"
-    OVIMSMARTMANDARIN_IDENTIFIER="SmartMandarin"
-    OVIMTRADITIONALMANDARIN_IDENTIFIER="TraditionalMandarin"
+    OVIMMANDARIN_IDENTIFIER=\"Mandarin\"
+    OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX=\"Punctuations\"
+    OVIMSMARTMANDARIN_IDENTIFIER=\"SmartMandarin\"
+    OVIMTRADITIONALMANDARIN_IDENTIFIER=\"TraditionalMandarin\"
     OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING=1
-    OVAFASSOCIATEDPHRASE_IDENTIFIER="AssociatedPhrase"
+    OVAFASSOCIATEDPHRASE_IDENTIFIER=\"AssociatedPhrase\"
 )
 target_link_libraries(chiakey_core PUBLIC chiakey_third_party)
 set_target_properties(chiakey_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -116,6 +116,8 @@ endif()
 if(MSVC)
     # The sources carry UTF-8 literals; without /utf-8 MSVC reads them as ANSI.
     target_compile_options(chiakey_core PUBLIC /utf-8 /bigobj)
+    # Left at the CMake default. A TSF DLL wants the static runtime, so whoever
+    # links this must set CMAKE_MSVC_RUNTIME_LIBRARY for both or neither.
 endif()
 
 # --- smoke test --------------------------------------------------------------
@@ -126,11 +128,21 @@ if(BUILD_TESTING)
     target_link_libraries(chiakey_core_smoke PRIVATE chiakey_core)
 
     if(EXISTS "${CHIAKEY_LEXICON_DATABASE}")
+        # The engine learns into the writable path, so a leftover one would
+        # make the run depend on the previous one.
+        add_test(NAME chiakey_core_smoke_reset
+            COMMAND "${CMAKE_COMMAND}" -E rm -rf
+                    "${CMAKE_CURRENT_BINARY_DIR}/smoke-writable")
+        set_tests_properties(chiakey_core_smoke_reset PROPERTIES
+            FIXTURES_SETUP chiakey_core_smoke_writable)
+
         add_test(NAME chiakey_core_smoke
             COMMAND chiakey_core_smoke
                     "${CHIAKEY_ROOT}"
                     "${CMAKE_CURRENT_BINARY_DIR}/smoke-writable"
                     "${CHIAKEY_LEXICON_DATABASE}")
+        set_tests_properties(chiakey_core_smoke PROPERTIES
+            FIXTURES_REQUIRED chiakey_core_smoke_writable)
     else()
         message(WARNING
             "ChiaKeySource.db not found, so the smoke test is built but not "
