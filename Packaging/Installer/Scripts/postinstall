@@ -18,18 +18,24 @@ if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
 fi
 
 # Physical path of a directory, or empty if it does not exist. Used to compare
-# candidate paths that may differ textually (e.g. "//Library" vs "/Library"
-# when the target location "$2" is "/") but resolve to the same bundle.
+# candidate paths that may differ textually but resolve to the same bundle.
+# POSIX lets "pwd -P" keep a leading "//" (and /bin/sh does), so collapse it:
+# otherwise "//Library/..." (target "$2" = "/") compares unequal to
+# "/Library/..." and the bundle we just installed gets removed as a duplicate.
 canon() {
   [ -d "$1" ] || return 1
-  ( CDPATH= cd -- "$1" 2>/dev/null && pwd -P ) || return 1
+  ( CDPATH= cd -- "$1" 2>/dev/null && pwd -P | /usr/bin/sed 's:^//*:/:' ) || return 1
 }
+
+# Install location "$2" is "/" for a system-wide install; strip trailing
+# slashes so joining with APP_REL never produces a "//" prefix.
+target_root="$(printf '%s' "${2:-}" | /usr/bin/sed 's:/*$::')"
 
 # The bundle this run installed: prefer the chosen target location ("$2"),
 # then the console user's home, then the system domain.
 keep_app=""
 for candidate in \
-  "${2:-}/${APP_REL}" \
+  "${target_root}/${APP_REL}" \
   "${console_home}/${APP_REL}" \
   "/${APP_REL}"; do
   if [ -x "${candidate}/Contents/MacOS/ChiaKey" ]; then
@@ -61,7 +67,7 @@ remove_duplicate() {
 if [ -n "${keep_canon}" ]; then
   remove_duplicate "/${APP_REL}"
   remove_duplicate "/${LEGACY_REL}"
-  for home in "${2:-}" "${console_home}"; do
+  for home in "${target_root}" "${console_home}"; do
     [ -n "${home}" ] || continue
     [ -d "${home}" ] || continue
     remove_duplicate "${home}/${APP_REL}"
