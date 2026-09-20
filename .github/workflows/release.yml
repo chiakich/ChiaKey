@@ -325,7 +325,9 @@ jobs:
         continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: gemini-3.8-flash
+          # Tried in order: the newest Flash is also the most contended on the
+          # free tier, and a release must not lose its notes to a busy minute.
+          GEMINI_MODELS: gemini-3.8-flash gemini-3.6-flash
         run: |
           set -uo pipefail
           : > summary-zh.md
@@ -339,21 +341,42 @@ jobs:
           # through the shell or through string interpolation into JSON.
           body="$(jq -n --rawfile p notes-prompt.txt '{contents:[{parts:[{text:$p}]}]}')"
 
-          if ! resp="$(curl -sS --fail-with-body --max-time 120 \
-              "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" \
-              -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-              -H 'content-type: application/json' \
-              -d "${body}")"; then
-            echo "::warning::Gemini request failed; falling back to the commit list."
-            echo "${resp}" | head -c 2000
+          code=""
+          for model in ${GEMINI_MODELS}; do
+            for attempt in 1 2 3; do
+              code="$(curl -sS --max-time 120 -o resp.json -w '%{http_code}' \
+                "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent" \
+                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+                -H 'content-type: application/json' \
+                -d "${body}")" || code="000"
+
+              [[ "${code}" == "200" ]] && break
+
+              # 429 and 5xx are the "come back later" answers; anything else
+              # (a bad key, a rejected request) will not improve on a retry.
+              case "${code}" in
+                429|5??|000) ;;
+                *) break 2 ;;
+              esac
+
+              echo "${model} returned ${code} (attempt ${attempt}/3)"
+              [[ "${attempt}" != "3" ]] && sleep $((attempt * 15))
+            done
+            [[ "${code}" == "200" ]] && break
+            echo "::notice::${model} unavailable; trying the next model."
+          done
+
+          if [[ "${code}" != "200" ]]; then
+            echo "::warning::Gemini request failed (${code}); falling back to the commit list."
+            head -c 2000 resp.json 2>/dev/null
             exit 0
           fi
 
-          jq -r '.candidates[0].content.parts[]?.text // empty' <<<"${resp}" > summary-zh.md
+          jq -r '.candidates[0].content.parts[]?.text // empty' resp.json > summary-zh.md
 
           if [[ ! -s summary-zh.md ]]; then
             echo "::warning::Gemini returned no text; falling back to the commit list."
-            echo "${resp}" | head -c 2000
+            head -c 2000 resp.json
           fi
 
       - name: Assemble release notes
