@@ -122,24 +122,50 @@ static NSString *ChiaKeyInputSourceID() {
   return inputSourceID;
 }
 
+// The enable turns into a system consent dialog; the flag only flips once the
+// user approves, and the notification that refreshes our cached view needs a
+// running run loop, so spin the loop instead of sleeping.
+static const NSTimeInterval kChiaKeyEnableApprovalTimeout = 600;
+
+static BOOL ChiaKeyWaitForInputSourceEnabled(NSString *inputSourceID,
+                                             NSTimeInterval timeout) {
+  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
+  while (!ChiaKeyInputSourceIsEnabled(inputSourceID)) {
+    if ([deadline timeIntervalSinceNow] <= 0) return NO;
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.5, false);
+  }
+  return YES;
+}
+
+// Prints one status token per line for the install scripts:
+//   registered | registration-skipped
+//   already-enabled | newly-enabled | enable-timeout
 static int ChiaKeyRegisterInputMethod() {
   NSURL *bundleURL = [[NSBundle mainBundle] bundleURL];
   NSString *inputSourceID = ChiaKeyInputSourceID();
 
-  // Re-register on every install, not only a first install. An update can move
-  // the bundle (for example from /Library to ~/Library); TIS must rebuild its
-  // cache for the new location even though the input source ID already exists.
-  OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
-  if (registerStatus != noErr) {
-    NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
-          bundleURL, registerStatus);
-    return 1;
+  // TIS watches the Input Methods folders itself, so a bundle that already
+  // answers to our ID needs no re-registration; doing it anyway only makes
+  // every running app rebuild its input source cache. Register when nothing
+  // answers yet: a first install, or a bundle in a folder TIS does not scan.
+  TISInputSourceRef existing = ChiaKeyCreateInputSourceForID(inputSourceID);
+  if (existing) {
+    CFRelease(existing);
+    printf("registration-skipped\n");
+  } else {
+    OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);
+    if (registerStatus != noErr) {
+      NSLog(@"failed to register input source %@ at %@: %d", inputSourceID,
+            bundleURL, registerStatus);
+      return 1;
+    }
+    printf("registered\n");
   }
 
-  // The enabled state lives in the user's HIToolbox preferences, keyed by input
-  // source ID, so it survives an update untouched. Enabling an already-enabled
-  // source is pointless work on the silent auto-update path.
+  // The enabled state lives in the user's preferences, keyed by input source
+  // ID, so it survives an update untouched.
   if (ChiaKeyInputSourceIsEnabled(inputSourceID)) {
+    printf("already-enabled\n");
     return 0;
   }
 
@@ -147,6 +173,17 @@ static int ChiaKeyRegisterInputMethod() {
     return 1;
   }
 
+  // Anything that asks the user to log out has to come after this returns: a
+  // logout before the consent dialog is answered drops the enable.
+  if (!ChiaKeyWaitForInputSourceEnabled(inputSourceID,
+                                        kChiaKeyEnableApprovalTimeout)) {
+    NSLog(@"input source %@ was not enabled within %.0f seconds", inputSourceID,
+          kChiaKeyEnableApprovalTimeout);
+    printf("enable-timeout\n");
+    return 0;
+  }
+
+  printf("newly-enabled\n");
   return 0;
 }
 
