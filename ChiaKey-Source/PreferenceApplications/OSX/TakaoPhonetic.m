@@ -8,6 +8,7 @@ file for terms.
 #import "TakaoPhonetic.h"
 
 #import "TakaoHelper.h"
+#import "TakaoKeyboardLayoutPopUpButton.h"
 
 @implementation TakaoPhonetic
 
@@ -19,24 +20,9 @@ file for terms.
 - (void)setUI {
   if (!_phoneticDictionary) return;
 
-  NSString *keyboardLayout =
-      [_phoneticDictionary valueForKey:@"KeyboardLayout"];
-
-  if ([keyboardLayout isEqualToString:@"ETen"]) {
-    [_keyboardLayoutPopUpButton selectItemAtIndex:1];
-  } else if ([keyboardLayout isEqualToString:@"Hanyu Pinyin"]) {
-    [_keyboardLayoutPopUpButton selectItemAtIndex:2];
-  } else if (
-      [keyboardLayout isEqualToString:@"ETen26"] ||
-      [keyboardLayout
-          isEqualToString:@"bpmfdtnlvkhgvcgycjqwsexuaorwiqzpmntlhfjkd"] ||
-      [keyboardLayout isEqualToString:@"Hsu"] ||
-      [keyboardLayout
-          isEqualToString:@"bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnklldfjs"]) {
-    [_keyboardLayoutPopUpButton selectItemAtIndex:3];
-  } else {
-    [_keyboardLayoutPopUpButton selectItemAtIndex:0];
-  }
+  [_keyboardLayoutPopUpButton
+      selectLayoutIdentifier:[_phoneticDictionary
+                                 valueForKey:@"KeyboardLayout"]];
 
   NSString *useCharactersSupportedByEncoding =
       [_phoneticDictionary valueForKey:@"UseCharactersSupportedByEncoding"];
@@ -77,25 +63,9 @@ file for terms.
     _phoneticDictionary = [[NSMutableDictionary alloc] init];
   }
 
-  switch ([_keyboardLayoutPopUpButton indexOfSelectedItem]) {
-    case 1:
-      [_phoneticDictionary setValue:@"ETen" forKey:@"KeyboardLayout"];
-      break;
-    case 2:
-      [_phoneticDictionary setValue:@"Hanyu Pinyin" forKey:@"KeyboardLayout"];
-      break;
-    case 3:
-      if ([[_keyboardLayoutPopUpButton itemArray] count] > 4)
-        [_phoneticDictionary setValue:@"ETen26" forKey:@"KeyboardLayout"];
-      break;
-    case 4:
-      if ([[_keyboardLayoutPopUpButton itemArray] count] > 4)
-        [_phoneticDictionary setValue:@"Hsu" forKey:@"KeyboardLayout"];
-      break;
-    default:
-      [_phoneticDictionary setValue:@"Standard" forKey:@"KeyboardLayout"];
-      break;
-  }
+  [_phoneticDictionary
+      setValue:[_keyboardLayoutPopUpButton selectedLayoutIdentifier]
+        forKey:@"KeyboardLayout"];
 
   if ([_useCharactersSupportedByEncodingCheckBox intValue])
     [_phoneticDictionary setValue:@""

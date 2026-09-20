@@ -9,68 +9,29 @@ file for terms.
 
 #import "TakaoSettings.h"
 
+// Identifiers as written to the plist, paired with their localized titles.
+static NSString *const kLayoutIdentifiers[] = {@"Standard", @"ETen",
+                                               @"Hanyu Pinyin", @"ETen26",
+                                               @"Hsu"};
+static NSString *const kLayoutTitleKeys[] = {@"Standard", @"ETen",
+                                             @"Hanyu Pinyin", @"ETen 26",
+                                             @"Hsu"};
+static const NSUInteger kLayoutCount =
+    sizeof(kLayoutIdentifiers) / sizeof(kLayoutIdentifiers[0]);
+
 @implementation TakaoKeyboardLayoutPopUpButton
 
-- (void)dealloc {
-  [_standardMenu release];
-  [_realMenu release];
-  [super dealloc];
-}
 - (void)_init {
-  _standardMenu = [[NSMenu alloc] initWithTitle:@"Menu"];
-  _realMenu = [[NSMenu alloc] initWithTitle:@"Menu"];
-
-  NSMenuItem *sStandardMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"Standard")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-  NSMenuItem *sEtenMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"ETen")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-  NSMenuItem *sHanyuPinyinMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"Hanyu Pinyin")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-
-  [_standardMenu addItem:sStandardMenuItem];
-  [_standardMenu addItem:sEtenMenuItem];
-  [_standardMenu addItem:sHanyuPinyinMenuItem];
-
-  NSMenuItem *rStandardMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"Standard")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-  NSMenuItem *rEtenMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"ETen")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-  NSMenuItem *rHanyuPinyinMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"Hanyu Pinyin")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-  NSMenuItem *rEten26MenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"ETen 26")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-  NSMenuItem *rHsuMenuItem =
-      [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"Hsu")
-                                  action:NULL
-                           keyEquivalent:@""] autorelease];
-
-  [_realMenu addItem:rStandardMenuItem];
-  [_realMenu addItem:rEtenMenuItem];
-  [_realMenu addItem:rHanyuPinyinMenuItem];
-  [_realMenu addItem:rEten26MenuItem];
-  [_realMenu addItem:rHsuMenuItem];
-
-  [[NSNotificationCenter defaultCenter]
-      addObserver:self
-         selector:@selector(changeMenu:)
-             name:@"NSPopUpButtonWillPopUpNotification"
-           object:nil];
-
-  [self setMenu:_standardMenu];
+  NSMenu *menu = [[[NSMenu alloc] initWithTitle:@"Menu"] autorelease];
+  for (NSUInteger i = 0; i < kLayoutCount; i++) {
+    NSMenuItem *item =
+        [[[NSMenuItem alloc] initWithTitle:LFLSTR(kLayoutTitleKeys[i])
+                                    action:NULL
+                             keyEquivalent:@""] autorelease];
+    [item setRepresentedObject:kLayoutIdentifiers[i]];
+    [menu addItem:item];
+  }
+  [self setMenu:menu];
 }
 - (id)initWithCoder:(NSCoder *)decoder {
   self = [super initWithCoder:decoder];
@@ -86,33 +47,26 @@ file for terms.
   }
   return self;
 }
-- (void)changeMenu:(NSNotification *)notification {
-  NSEvent *e = [NSApp currentEvent];
+- (void)selectLayoutIdentifier:(NSString *)identifier {
+  // Legacy key-string spellings some older plists carry for these two layouts.
+  if ([identifier isEqualToString:@"bpmfdtnlvkhgvcgycjqwsexuaorwiqzpmntlhfjkd"])
+    identifier = @"ETen26";
+  else if ([identifier
+               isEqualToString:@"bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnklldfjs"])
+    identifier = @"Hsu";
 
-  //	if ([e modifierFlags] & NSShiftKeyMask) {
-  if (([e modifierFlags] &
-       (NSEventModifierFlagCommand | NSEventModifierFlagShift)) ==
-      (NSEventModifierFlagCommand | NSEventModifierFlagShift)) {
-    [self setMenu:_realMenu];
-  } else {
-    [self setMenu:_standardMenu];
+  NSInteger index = 0;
+  for (NSUInteger i = 0; i < kLayoutCount; i++) {
+    if ([kLayoutIdentifiers[i] isEqualToString:identifier]) {
+      index = (NSInteger)i;
+      break;
+    }
   }
+  [self selectItemAtIndex:index];
 }
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
-- (void)selectItemAtIndex:(NSInteger)index
-#else
-- (void)selectItemAtIndex:(int)index
-#endif
-
-{
-  if (index > 2 && [[[self menu] itemArray] count] < 4) {
-    NSMenu *menu = [_standardMenu copy];
-    [menu addItemWithTitle:LFLSTR(@"Others") action:NULL keyEquivalent:@""];
-    [self setMenu:menu];
-    [menu autorelease];
-  }
-  [super selectItemAtIndex:index];
+- (NSString *)selectedLayoutIdentifier {
+  NSString *identifier = [[self selectedItem] representedObject];
+  return identifier ? identifier : kLayoutIdentifiers[0];
 }
 
 @end

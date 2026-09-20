@@ -7,11 +7,11 @@ file for terms.
 
 #import <Cocoa/Cocoa.h>
 
-@interface TakaoKeyboardLayoutPopUpButton : NSPopUpButton {
-  NSMenu *_standardMenu;
-  NSMenu *_realMenu;
-}
+// Lists every Bopomofo layout the engines accept. Items are in a fixed order
+// and identified by the KeyboardLayout string the module plists store.
+@interface TakaoKeyboardLayoutPopUpButton : NSPopUpButton
 
-- (void)changeMenu:(NSNotification *)notification;
+- (void)selectLayoutIdentifier:(NSString *)identifier;
+- (NSString *)selectedLayoutIdentifier;
 
 @end
