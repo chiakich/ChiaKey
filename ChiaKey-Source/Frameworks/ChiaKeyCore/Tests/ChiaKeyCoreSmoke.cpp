@@ -656,6 +656,50 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("engine->runtime() lost the primary input method");
   }
 
+  // the engines are the last owners; drop them before reusing writablePath
+  first.reset();
+  second.reset();
+
+  // the primary input method is stored under writablePath and outlives the
+  // Runtime; the config is the host's to keep and does not
+  {
+    std::shared_ptr<ChiaKey::Runtime> rebuilt =
+        ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &errorMessage);
+    if (!rebuilt) return Fail("failed to rebuild the runtime: " + errorMessage);
+
+    ChiaKey::EngineConfig changed = rebuilt->config();
+    changed.keyboardLayout = "ETen";
+    rebuilt->setConfig(changed);
+
+    if (!rebuilt->setPrimaryInputMethod(
+            ChiaKey::Runtime::TraditionalMandarinIdentifier())) {
+      return Fail("could not select Traditional Mandarin as the primary input method");
+    }
+  }
+
+  {
+    std::shared_ptr<ChiaKey::Runtime> reopened =
+        ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &errorMessage);
+    if (!reopened) {
+      return Fail("Create failed with Traditional Mandarin as the stored "
+                  "primary input method: " + errorMessage);
+    }
+    if (reopened->primaryInputMethod() !=
+        ChiaKey::Runtime::TraditionalMandarinIdentifier()) {
+      return Fail("the primary input method did not survive a Runtime rebuild, got: " +
+                  reopened->primaryInputMethod());
+    }
+    if (reopened->config().keyboardLayout != ChiaKey::EngineConfig().keyboardLayout) {
+      return Fail("Create did not reapply the config the host passed in, got: " +
+                  reopened->config().keyboardLayout);
+    }
+    // later smoke runs share this writable path and expect the default
+    if (!reopened->setPrimaryInputMethod(
+            ChiaKey::Runtime::SmartMandarinIdentifier())) {
+      return Fail("could not restore Smart Mandarin as the primary input method");
+    }
+  }
+
   return 0;
 }
 

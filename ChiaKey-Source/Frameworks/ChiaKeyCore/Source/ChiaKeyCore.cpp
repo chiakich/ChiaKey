@@ -42,6 +42,7 @@ using OpenVanilla::PVLoaderPolicy;
 using OpenVanilla::PVLoaderService;
 using OpenVanilla::PVModulePackageLoadingSystem;
 using OpenVanilla::PVOneDimensionalCandidatePanel;
+using OpenVanilla::PVPlistValue;
 using OpenVanilla::PVPropertyList;
 using OpenVanilla::PVStaticModulePackageLoadingSystem;
 using OpenVanilla::PVTextBuffer;
@@ -232,12 +233,16 @@ class Runtime::Impl {
       return false;
     }
 
-    // Without this the loader falls back to whichever module sorts first.
+    // Seed the default only when the plist has no choice yet; without it the
+    // loader falls back to whichever module sorts first. An existing value is
+    // the user's own pick and has to survive a Runtime rebuild.
     {
       PVPropertyList loaderPlist(policy->propertyListPathForLoader());
-      loaderPlist.rootDictionary()->setKeyValue("PrimaryInputMethod",
-                                                OVIMSMARTMANDARIN_IDENTIFIER);
-      loaderPlist.write();
+      PVPlistValue* root = loaderPlist.rootDictionary();
+      if (!root->valueForKey("PrimaryInputMethod")) {
+        root->setKeyValue("PrimaryInputMethod", OVIMSMARTMANDARIN_IDENTIFIER);
+        loaderPlist.write();
+      }
     }
     writeModuleConfig();
 
@@ -261,7 +266,9 @@ class Runtime::Impl {
     std::vector<PVModulePackageLoadingSystem*> systems{packages.get()};
     loader.reset(new PVLoader(policy.get(), service.get(), systems));
 
-    if (loader->primaryInputMethod() != OVIMSMARTMANDARIN_IDENTIFIER) {
+    // Ask the module directly: the primary input method is the user's choice
+    // and says nothing about whether Smart Mandarin's lexicon loaded.
+    if (!loader->moduleWithName(OVIMSMARTMANDARIN_IDENTIFIER)) {
       if (errorMessage) {
         *errorMessage =
             "OVIMSmartMandarin failed to initialize (lexicon database "
