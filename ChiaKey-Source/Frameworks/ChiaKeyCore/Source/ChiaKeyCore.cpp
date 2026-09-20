@@ -215,8 +215,22 @@ class Runtime::Impl {
     }
 
     policy.reset(new CorePolicy(paths.writablePath));
-    OVDirectoryHelper::MakeDirectoryWithImmediates(paths.writablePath);
-    OVDirectoryHelper::MakeDirectoryWithImmediates(policy->preferencesPath());
+    // An unwritable path would otherwise surface much later as the loader
+    // silently falling back to another input method.
+    if (!OVDirectoryHelper::CheckDirectory(paths.writablePath)) {
+      if (errorMessage) {
+        *errorMessage = "writablePath is not a usable directory: " +
+                        paths.writablePath;
+      }
+      return false;
+    }
+    if (!OVDirectoryHelper::CheckDirectory(policy->preferencesPath())) {
+      if (errorMessage) {
+        *errorMessage = "cannot create the preferences directory: " +
+                        policy->preferencesPath();
+      }
+      return false;
+    }
 
     // Without this the loader falls back to whichever module sorts first.
     {
