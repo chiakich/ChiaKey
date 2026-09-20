@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: write
+  copilot-requests: write
 
 jobs:
   release:
@@ -305,11 +306,60 @@ jobs:
               }
             }')"
 
+          printf '%s\n' "${changelog}" > changelog.md
+
+          # Assembled as a file rather than an action input: commit subjects are
+          # author-controlled and never pass through a shell or a ${{ }} expansion
+          # this way. The instructions live in their own file so tuning the
+          # wording does not mean editing YAML.
+          {
+            cat .github/release-notes-prompt.txt
+            cat changelog.md
+            printf '</commits>\n'
+          } > notes-prompt.txt
+
+      # Not pre-installed on GitHub-hosted runners.
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      # Commit subjects describe mechanisms; users need symptoms. Claude rewrites
+      # them, and the raw list stays below so nothing is lost if it guesses wrong.
+      # continue-on-error: a release must not fail because inference was down.
+      - name: Write user-facing notes in Chinese
+        id: notes_zh
+        continue-on-error: true
+        uses: actions/ai-inference@v1
+        with:
+          model: claude-sonnet-4.5
+          prompt-file: notes-prompt.txt
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Assemble release notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          PREV: ${{ steps.version.outputs.previous }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          LEXICON_VERSION: ${{ steps.build.outputs.lexicon_version }}
+          SUMMARY_ZH: ${{ steps.notes_zh.outputs.response }}
+        run: |
+          set -euo pipefail
+
+          changelog="$(cat changelog.md)"
+
           {
             if [[ "${PRERELEASE}" == "true" ]]; then
               printf '> This is a **pre-release (beta)** and may be less stable than a normal release.\n\n'
             fi
-            [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
+            if [[ -n "${SUMMARY_ZH//[[:space:]]/}" ]]; then
+              printf '## 這次更新\n\n%s\n\n' "${SUMMARY_ZH}"
+              [[ -n "${changelog}" ]] && printf '<details>\n<summary>完整變更</summary>\n\n%s\n\n</details>\n\n' "${changelog}"
+            else
+              echo "::warning::No Chinese summary was produced; publishing the commit list only."
+              [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
+            fi
             if [[ -n "${LEXICON_VERSION}" ]]; then
               printf 'Bundled lexicon: `%s`\n\n' "${LEXICON_VERSION}"
             fi
