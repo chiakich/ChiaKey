@@ -122,6 +122,30 @@ static NSString *ChiaKeyInputSourceID() {
   return inputSourceID;
 }
 
+// The bundle a registered input source actually lives in. TIS exposes no
+// bundle URL, but it reports the icon as a URL relative to that bundle, so the
+// base URL is the bundle. Nil when it cannot be determined -- the caller then
+// re-registers, which is the safe answer.
+static NSString *ChiaKeyRegisteredBundlePath(TISInputSourceRef source) {
+  NSURL *iconURL =
+      (NSURL *)TISGetInputSourceProperty(source, kTISPropertyIconImageURL);
+  if (![iconURL isKindOfClass:[NSURL class]]) return nil;
+
+  NSURL *bundleURL = [iconURL baseURL];
+  if (!bundleURL) {
+    // Absolute icon URL: walk up to the enclosing .app instead.
+    bundleURL = [iconURL URLByDeletingLastPathComponent];
+    while ([[bundleURL path] length] > 1 &&
+           ![[bundleURL pathExtension] isEqualToString:@"app"]) {
+      bundleURL = [bundleURL URLByDeletingLastPathComponent];
+    }
+    if (![[bundleURL pathExtension] isEqualToString:@"app"]) return nil;
+  }
+
+  NSString *path = [[bundleURL path] stringByStandardizingPath];
+  return [path length] ? path : nil;
+}
+
 // The enable turns into a system consent dialog; the flag only flips once the
 // user approves, and the notification that refreshes our cached view needs a
 // running run loop, so spin the loop instead of sleeping.
@@ -152,10 +176,23 @@ static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
   // TIS watches the Input Methods folders itself, so a bundle that already
   // answers to our ID needs no re-registration; doing it anyway only makes
   // every running app rebuild its input source cache. Register when nothing
-  // answers yet: a first install, or a bundle in a folder TIS does not scan.
+  // answers yet -- a first install, or a bundle in a folder TIS does not scan
+  // -- and when the ID resolves to a *different* bundle, which is what an
+  // install that moves the app (say /Library to ~/Library) leaves behind.
   TISInputSourceRef existing = ChiaKeyCreateInputSourceForID(inputSourceID);
+  NSString *registeredPath = existing ? ChiaKeyRegisteredBundlePath(existing) : nil;
+  NSString *ourPath = [[bundleURL path] stringByStandardizingPath];
+  BOOL registeredHere =
+      registeredPath && [registeredPath isEqualToString:ourPath];
   if (existing) {
+    if (!registeredHere) {
+      NSLog(@"input source %@ resolves to %@, re-registering %@", inputSourceID,
+            registeredPath ? registeredPath : @"an unknown bundle", ourPath);
+    }
     CFRelease(existing);
+  }
+
+  if (registeredHere) {
     printf("registration-skipped\n");
   } else {
     OSStatus registerStatus = TISRegisterInputSource((CFURLRef)bundleURL);

@@ -58,7 +58,12 @@ remove_duplicate() {
     return 0
   fi
   echo "ChiaKey postinstall: removing duplicate copy at ${target}" >&2
-  /bin/rm -rf "${target}" || true
+  # A per-user install cannot delete the system-domain copy. Say so instead of
+  # failing: the registration below re-points TIS at the copy we kept, so the
+  # leftover bundle is stale but harmless.
+  if ! /bin/rm -rf "${target}" 2>/dev/null; then
+    echo "ChiaKey postinstall: could not remove ${target} (no permission?)" >&2
+  fi
 }
 
 # Only prune once we are sure which copy to keep; never leave zero copies.
