@@ -204,6 +204,17 @@ class Runtime::Impl {
       return false;
     }
 
+    // sqlite3_open() happily creates an empty database, which Smart Mandarin
+    // would then fill with placeholder tables instead of failing -- the host
+    // never gets to fall back to its bundled lexicon.
+    if (!OVPathHelper::PathExists(paths.lexiconDatabasePath)) {
+      if (errorMessage) {
+        *errorMessage =
+            "lexicon database does not exist: " + paths.lexiconDatabasePath;
+      }
+      return false;
+    }
+
     database.reset(OVSQLiteDatabaseService::Create(paths.lexiconDatabasePath));
     if (!database) {
       if (errorMessage) {
@@ -211,6 +222,17 @@ class Runtime::Impl {
         stream << "failed to open lexicon database: "
                << paths.lexiconDatabasePath;
         *errorMessage = stream.str();
+      }
+      return false;
+    }
+
+    std::string missingTable;
+    if (!OpenVanilla::ValidateChiaKeySourceDatabase(database->connection(),
+                                                    &missingTable)) {
+      database.reset();
+      if (errorMessage) {
+        *errorMessage = "lexicon database is missing the table '" +
+                        missingTable + "': " + paths.lexiconDatabasePath;
       }
       return false;
     }

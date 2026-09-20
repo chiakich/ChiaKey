@@ -53,27 +53,15 @@ string FetchDatabaseVersionInfo(OVSQLiteConnection *connection,
   return result;
 }
 
-static bool ValidateChiaKeySourceDatabase(OVSQLiteConnection *connection,
-                                         const string &databaseFile) {
-  if (!connection) return false;
+static bool ValidateChiaKeySourceDatabaseAndLog(OVSQLiteConnection *connection,
+                                               const string &databaseFile) {
+  string missingTable;
+  if (ValidateChiaKeySourceDatabase(connection, &missingTable)) return true;
 
-  const char *requiredTables[] = {
-      "cooked_information",
-      "prepopulated_service_data",
-      "unigrams",
-      "bigrams",
-  };
-
-  for (size_t index = 0;
-       index < sizeof(requiredTables) / sizeof(requiredTables[0]); index++) {
-    if (!connection->hasTable(requiredTables[index])) {
-      NSLog(@"Rejected ChiaKeySource database %s: missing table %s",
-            databaseFile.c_str(), requiredTables[index]);
-      return false;
-    }
-  }
-
-  return true;
+  NSLog(@"Rejected ChiaKeySource database %s: %s", databaseFile.c_str(),
+        missingTable.empty() ? "could not be opened"
+                             : ("missing table " + missingTable).c_str());
+  return false;
 }
 
 static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
@@ -81,7 +69,8 @@ static OVSQLiteDatabaseService *CreateValidatedChiaKeySourceDatabaseService(
   if (!OVPathHelper::PathExists(databaseFile)) return 0;
 
   OVSQLiteDatabaseService *service = OVSQLiteDatabaseService::Create(databaseFile);
-  if (!service || !ValidateChiaKeySourceDatabase(service->connection(), databaseFile)) {
+  if (!service ||
+      !ValidateChiaKeySourceDatabaseAndLog(service->connection(), databaseFile)) {
     if (service) delete service;
     return 0;
   }
@@ -439,7 +428,7 @@ using namespace OpenVanilla;
     if (dbc) InitSQLiteCrypto(dbc->connection());
 #endif
 
-    if (dbc && ValidateChiaKeySourceDatabase(dbc, dbFile)) {
+    if (dbc && ValidateChiaKeySourceDatabaseAndLog(dbc, dbFile)) {
       _SQLiteDatabaseService =
           OVSQLiteDatabaseService::ServiceWithExistingConnection(dbc, true);
       selectedDBFile = dbFile;
