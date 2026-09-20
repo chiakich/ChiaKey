@@ -290,7 +290,9 @@ create_product_resources() {
   run /bin/rm -rf "${PRODUCT_RESOURCES_DIR}"
   run /bin/mkdir -p "${PRODUCT_RESOURCES_DIR}"
   run /usr/bin/ditto --norsrc "${INSTALLER_RESOURCES_DIR}" "${PRODUCT_RESOURCES_DIR}"
-  run /bin/cp "${LICENSE_FILE}" "${PRODUCT_RESOURCES_DIR}/License.txt"
+  # Installer.app serves a file found at the top of Resources/ before it looks
+  # in any .lproj, so a root-level Conclusion/Welcome/License silently disables
+  # every localization (MEASURED 2026-09-21). Only .lproj copies may exist.
   for lproj_dir in "${PRODUCT_RESOURCES_DIR}"/*.lproj; do
     if [[ -d "${lproj_dir}" ]]; then
       if [[ ! -f "${lproj_dir}/License.txt" ]]; then
