@@ -536,6 +536,9 @@ if [[ ! -d "${BUILT_APP}" ]]; then
   exit 1
 fi
 
+# A dangling tsInputMethodIconFileKey crashes the client app on input switch.
+run "${ROOT_DIR}/Scripts/verify-input-source-icon.sh" "${BUILT_APP}"
+
 run /bin/mkdir -p "${BUILT_RESOURCES}"
 run /bin/rm -rf "${BUILT_RESOURCES}/DataTables"
 run /usr/bin/ditto --norsrc "${DATA_TABLES_DIR}" "${BUILT_RESOURCES}/DataTables"
