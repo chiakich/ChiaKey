@@ -28,7 +28,6 @@ file for terms.
   IBOutlet NSMatrix *_candidateWindowStyleMatrix;
   IBOutlet id _useUpdateCheckBox;
   IBOutlet id _useCtrlBackSlashToggleInputMethod;
-  IBOutlet id _allowSecureInputCompositionCheckBox;
   IBOutlet id _applyCapsLockDelayOverrideCheckBox;
   IBOutlet id _shiftTogglesTemporaryEnglishCheckBox;
 

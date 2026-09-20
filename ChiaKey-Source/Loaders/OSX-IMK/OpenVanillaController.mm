@@ -44,71 +44,13 @@ static const unsigned short OVCVirtualKeyCodeCapsLock = 0x39;
 // Shift is tens of milliseconds, so anything shorter is the system talking.
 static const NSTimeInterval OVCShiftTapMinimumDuration = 0.02;
 
-static BOOL OVCInvokeBooleanSelector(id object, SEL selector) {
-  if (![object respondsToSelector:selector]) {
-    return NO;
-  }
-
-  NSMethodSignature *signature = [object methodSignatureForSelector:selector];
-  if (!signature || [signature numberOfArguments] != 2) {
-    return NO;
-  }
-
-  const char *returnType = [signature methodReturnType];
-  if (strcmp(returnType, @encode(BOOL)) != 0 &&
-      strcmp(returnType, @encode(bool)) != 0 &&
-      strcmp(returnType, @encode(char)) != 0 &&
-      strcmp(returnType, @encode(unsigned char)) != 0) {
-    return NO;
-  }
-
-  BOOL result = NO;
-  @try {
-    NSInvocation *invocation =
-        [NSInvocation invocationWithMethodSignature:signature];
-    [invocation setTarget:object];
-    [invocation setSelector:selector];
-    [invocation invoke];
-    [invocation getReturnValue:&result];
-  } @catch (NSException *exception) {
-    return NO;
-  }
-
-  return result;
-}
-
-static BOOL OVCClientReportsSecureInput(id client) {
-  SEL selectors[] = {
-      @selector(isSecureTextEntry),
-      @selector(secureTextEntry),
-      @selector(isSecure),
-      @selector(secure),
-  };
-
-  for (size_t index = 0; index < sizeof(selectors) / sizeof(selectors[0]);
-       ++index) {
-    if (OVCInvokeBooleanSelector(client, selectors[index])) {
-      return YES;
-    }
-  }
-
-  return NO;
-}
-
-static BOOL OVCIsSecureInputActive(id client) {
-  return IsSecureEventInputEnabled() || OVCClientReportsSecureInput(client);
-}
+static BOOL OVCIsSecureInputActive() { return IsSecureEventInputEnabled(); }
 
 // Defaults to on: the toggle predates this preference, so only an explicit
 // "false" turns it off.
 static BOOL OVCShiftTogglesTemporaryEnglish() {
   OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
   return kvm.stringValueForKey("ShiftTogglesTemporaryEnglish") != "false";
-}
-
-static BOOL OVCAllowsSecureInputComposition() {
-  OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
-  return kvm.stringValueForKey("AllowSecureInputComposition") == "true";
 }
 
 static UniChar OVCAsciiDigitForVirtualKeyCode(unsigned short virtualKeyCode) {
@@ -765,8 +707,6 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 #endif
   } else if (eventType == NSEventTypeKeyDown) {
 #if CHIAKEY_DEV_LOGGING
-    // Sampled before the secure-input return below, so a key that never made it
-    // to the cancel check further down still shows up in the Shift tap report.
     if (_shiftKeyPressedForTemporaryEnglish) {
       _shiftKeyDownsDuringHold++;
       _lastKeyDownVirtualKeyCode = [event keyCode];
@@ -774,26 +714,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     }
 #endif
 
-    // IsSecureEventInputEnabled() is system-wide: another app's password field
-    // turns it on while our own client is an ordinary text field. Refusing the
-    // key then drops raw ASCII into that innocent client, so only the client's
-    // own report may block input -- the global flag merely suppresses learning.
-    BOOL clientSecureInput = OVCClientReportsSecureInput(sender);
-    BOOL allowSecureInputComposition = OVCAllowsSecureInputComposition();
-
-    if (clientSecureInput && !allowSecureInputComposition) {
-      // Unconditional: this return also skips the Shift tap cancel below, so
-      // it has to be visible even when there was nothing to discard.
-      CHIAKEY_DEV_LOG("client reports secure input; refusing key 0x%02x and discarding "
-             "%lu composing characters",
-             [event keyCode], (unsigned long)[_composingBuffer length]);
-      [_composingBuffer setString:@""];
-      _context->clear();
-      [self _resetUI];
-      return NO;
-    }
-
-    BOOL secureInputComposition = OVCIsSecureInputActive(sender);
+    // Nothing here refuses the key any more: macOS switches the input source
+    // away from a third-party IME when secure input really engages (MEASURED
+    // 2026-09-18, within 300ms), so a refusal of our own only ever fired when
+    // the field was not in fact protected -- and dropped raw ASCII into it.
+    BOOL secureInputComposition = OVCIsSecureInputActive();
 
     OVCSecureInputModeScope secureInputModeScope(loaderService,
                                                 secureInputComposition);
