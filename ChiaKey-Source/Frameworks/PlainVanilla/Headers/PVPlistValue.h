@@ -124,6 +124,48 @@ class PVPlistValue {
 
   int type() const { return m_type; }
 
+  // Deep structural comparison; a missing element counts as an empty string,
+  // mirroring what copy() produces for one.
+  bool isEqualTo(const PVPlistValue* other) const {
+    if (!other) return false;
+    if (this == other) return true;
+    if (m_type != other->m_type) return false;
+
+    switch (m_type) {
+      case String:
+        return *m_stringValue == *other->m_stringValue;
+
+      case Array: {
+        if (m_arrayValue->size() != other->m_arrayValue->size()) return false;
+        for (size_t i = 0; i < m_arrayValue->size(); ++i) {
+          const PVPlistValue empty(PVPlistValue::String);
+          const PVPlistValue* a = (*m_arrayValue)[i];
+          const PVPlistValue* b = (*other->m_arrayValue)[i];
+          if (!(a ? a : &empty)->isEqualTo(b ? b : &empty)) return false;
+        }
+        return true;
+      }
+
+      case Dictionary: {
+        if (m_dictionaryValue->size() != other->m_dictionaryValue->size())
+          return false;
+        map<string, PVPlistValue*>::const_iterator miter;
+        for (miter = m_dictionaryValue->begin();
+             miter != m_dictionaryValue->end(); ++miter) {
+          map<string, PVPlistValue*>::const_iterator oiter =
+              other->m_dictionaryValue->find((*miter).first);
+          if (oiter == other->m_dictionaryValue->end()) return false;
+          const PVPlistValue empty(PVPlistValue::String);
+          const PVPlistValue* a = (*miter).second;
+          const PVPlistValue* b = (*oiter).second;
+          if (!(a ? a : &empty)->isEqualTo(b ? b : &empty)) return false;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
   const string stringValue() {
     if (m_stringValue) return string(*m_stringValue);
     return string();

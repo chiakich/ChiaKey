@@ -82,8 +82,13 @@ class PVPropertyList {
   }
 
   void write() {
-    if (m_rootDictionary && m_mirroredRootDictionary)
-      if (m_rootDictionary == m_mirroredRootDictionary) return;
+    // The mirror is always a copy, so compare contents; a pointer comparison
+    // here made every write() hit the disk, clobbering edits made by other
+    // processes. A missing file is still created.
+    if (m_rootDictionary && m_mirroredRootDictionary &&
+        m_rootDictionary->isEqualTo(m_mirroredRootDictionary) &&
+        OVPathHelper::PathExists(m_filename))
+      return;
 
     string directory = OVPathHelper::DirectoryFromPath(m_filename);
     OVDirectoryHelper::MakeDirectoryWithImmediates(directory);

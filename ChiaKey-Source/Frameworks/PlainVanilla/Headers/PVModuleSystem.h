@@ -240,6 +240,16 @@ class PVModuleManager : public OVBase {
     ModuleMetadata& meta = (*mdataIter).second;
     if (!meta.propertyList) return false;
 
+    // The preference app may have rewritten the plist since the last read
+    // (e.g. between activate and deactivate with no key in between); adopt
+    // its values first, or saveConfig() would write the stale ones back.
+    if (meta.propertyList->shouldReadSync()) {
+      meta.propertyList->readSync();
+      OVKeyValueMap readOnly =
+          meta.propertyList->rootDictionary()->readOnlyKeyValueMap();
+      meta.module->loadConfig(&readOnly, loaderService);
+    }
+
     OVKeyValueMap kvm = meta.propertyList->rootDictionary()->keyValueMap();
 
     meta.module->saveConfig(&kvm, loaderService);

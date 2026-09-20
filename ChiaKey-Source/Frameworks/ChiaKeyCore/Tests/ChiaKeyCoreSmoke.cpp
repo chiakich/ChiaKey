@@ -726,6 +726,50 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
   runtime->setAssociatedPhrasesEnabled(false);
   if (runtime->associatedPhrasesEnabled()) return Fail("associated phrases did not disable");
 
+  {
+    // A preference app rewriting the module plist between activate and
+    // deactivate must win: deactivate saves the module config, and it used to
+    // write the values the module still had in memory over the fresh file.
+    const std::string modulePlist = writableDir + "/Preferences/" +
+                                    ChiaKey::Runtime::SmartMandarinIdentifier() +
+                                    ".plist";
+    std::unique_ptr<ChiaKey::Engine> third = runtime->createEngine(&errorMessage);
+    if (!third) return Fail("failed to create the third engine: " + errorMessage);
+
+    std::ifstream in(modulePlist.c_str());
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    in.close();
+    std::string plist = buffer.str();
+    const std::string key = "<key>CandidateCursorAtEndOfTargetBlock</key>";
+    const std::size_t keyAt = plist.find(key);
+    const std::size_t valueAt =
+        keyAt == std::string::npos ? keyAt : plist.find("<string>false</string>", keyAt);
+    if (valueAt == std::string::npos) {
+      return Fail("expected CandidateCursorAtEndOfTargetBlock=false in " + modulePlist);
+    }
+    plist.replace(valueAt, std::string("<string>false</string>").size(),
+                  "<string>true</string>");
+    std::ofstream(modulePlist.c_str(), std::ios::trunc) << plist;
+
+    third.reset();  // deactivate -> saveSandwichConfig
+
+    std::ifstream after(modulePlist.c_str());
+    std::stringstream afterBuffer;
+    afterBuffer << after.rdbuf();
+    const std::string saved = afterBuffer.str();
+    const std::size_t savedKeyAt = saved.find(key);
+    if (savedKeyAt == std::string::npos ||
+        saved.find("<string>true</string>", savedKeyAt) == std::string::npos ||
+        saved.find("<string>true</string>", savedKeyAt) >
+            saved.find("<key>", savedKeyAt + key.size())) {
+      return Fail("deactivate overwrote a preference edited on disk");
+    }
+    // the runtime now believes the cursor setting changed; put it back for the
+    // rest of the run
+    runtime->setConfig(runtime->config());
+  }
+
   // engines keep the runtime alive after the host drops its own reference
   runtime.reset();
   second->reset();
