@@ -314,70 +314,18 @@ jobs:
           {
             cat .github/release-notes-prompt.txt
             cat changelog.md
-            printf '</commits>\n'
+            printf '</changes>\n'
           } > notes-prompt.txt
 
       # Commit subjects describe mechanisms; users need symptoms. The model
       # rewrites them, and the raw list stays below so nothing is lost if it
-      # guesses wrong. Every failure path here leaves summary-zh.md empty and the
-      # notes fall back to the commit list: a release must not fail over this.
+      # guesses wrong. The script never fails: on any error summary-zh.md is
+      # empty and the notes fall back to the commit list.
       - name: Write user-facing notes in Chinese
         continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # Tried in order: the newest Flash is also the most contended on the
-          # free tier, and a release must not lose its notes to a busy minute.
-          GEMINI_MODELS: gemini-3.8-flash gemini-3.6-flash
-        run: |
-          set -uo pipefail
-          : > summary-zh.md
-
-          if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-            echo "::warning::GEMINI_API_KEY is not set; skipping the Chinese summary."
-            exit 0
-          fi
-
-          # --rawfile: the prompt carries commit subjects, so it never goes
-          # through the shell or through string interpolation into JSON.
-          body="$(jq -n --rawfile p notes-prompt.txt '{contents:[{parts:[{text:$p}]}]}')"
-
-          code=""
-          for model in ${GEMINI_MODELS}; do
-            for attempt in 1 2 3; do
-              code="$(curl -sS --max-time 120 -o resp.json -w '%{http_code}' \
-                "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent" \
-                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-                -H 'content-type: application/json' \
-                -d "${body}")" || code="000"
-
-              [[ "${code}" == "200" ]] && break
-
-              # 429 and 5xx are the "come back later" answers; anything else
-              # (a bad key, a rejected request) will not improve on a retry.
-              case "${code}" in
-                429|5??|000) ;;
-                *) break 2 ;;
-              esac
-
-              echo "${model} returned ${code} (attempt ${attempt}/3)"
-              [[ "${attempt}" != "3" ]] && sleep $((attempt * 15))
-            done
-            [[ "${code}" == "200" ]] && break
-            echo "::notice::${model} unavailable; trying the next model."
-          done
-
-          if [[ "${code}" != "200" ]]; then
-            echo "::warning::Gemini request failed (${code}); falling back to the commit list."
-            head -c 2000 resp.json 2>/dev/null
-            exit 0
-          fi
-
-          jq -r '.candidates[0].content.parts[]?.text // empty' resp.json > summary-zh.md
-
-          if [[ ! -s summary-zh.md ]]; then
-            echo "::warning::Gemini returned no text; falling back to the commit list."
-            head -c 2000 resp.json
-          fi
+        run: Scripts/gemini-summarize.sh notes-prompt.txt summary-zh.md
 
       - name: Assemble release notes
         env:
