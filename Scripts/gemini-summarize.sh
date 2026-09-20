@@ -26,6 +26,7 @@ fi
 # goes through the shell or through string interpolation into JSON.
 body="$(jq -n --rawfile p "${prompt_file}" '{contents:[{parts:[{text:$p}]}]}')"
 resp="$(mktemp)"
+trap 'rm -f "${resp}"' EXIT
 code=""
 
 for model in ${models}; do
@@ -38,18 +39,22 @@ for model in ${models}; do
 
     [[ "${code}" == "200" ]] && break
 
-    # 429 and 5xx are the "come back later" answers; anything else (a bad key,
-    # a rejected request) will not improve on a retry.
     case "${code}" in
+      # "Come back later": retry the same model.
       429|5??|000) ;;
-      *) break 2 ;;
+      # 401/403 are the key itself; no model will do better.
+      401|403) break 2 ;;
+      # Anything else (typically 404 for a model that was renamed or retired,
+      # or 400 for one that rejects this request shape) is about *this* model,
+      # so stop retrying it but still try the next one.
+      *) break ;;
     esac
 
     echo "${model} returned ${code} (attempt ${attempt}/3)"
     [[ "${attempt}" != "3" ]] && sleep $((attempt * 15))
   done
   [[ "${code}" == "200" ]] && break
-  echo "::notice::${model} unavailable; trying the next model."
+  echo "::notice::${model} unavailable (${code}); trying the next model."
 done
 
 if [[ "${code}" != "200" ]]; then

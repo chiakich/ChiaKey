@@ -339,7 +339,10 @@ jobs:
           set -euo pipefail
 
           changelog="$(cat changelog.md)"
-          SUMMARY_ZH="$(cat summary-zh.md)"
+          # The summary step is continue-on-error, so the file may not exist at
+          # all if that step never ran; an empty summary means "publish the
+          # commit list", not "fail the release".
+          SUMMARY_ZH="$(cat summary-zh.md 2>/dev/null || true)"
 
           {
             if [[ "${PRERELEASE}" == "true" ]]; then
