@@ -20,9 +20,11 @@
        per-user home install needs no root.
        RequireLogout turns the conclusion pane's button into "Log Out": every
        running app caches the input source list per process, so a first install
-       is only complete everywhere after a logout. postinstall blocks until the
-       user has answered macOS's consent dialog, so the button never appears
-       before the input source is actually enabled. The CLI installer (updater
-       path) only prints a note and never forces the logout. -->
+       is only complete everywhere after a logout. Here postinstall passes
+       "install --wait-for-approval", which blocks until the user has answered
+       macOS's consent dialog, so the button never appears before the input
+       source is actually enabled. /usr/sbin/installer sets
+       COMMAND_LINE_INSTALL, so the CLI and updater paths skip both the wait
+       and the forced logout. -->
   <pkg-ref id="__COMPONENT_IDENTIFIER__" version="__VERSION__" onConclusion="RequireLogout">__CLEAN_COMPONENT_PKG_NAME__</pkg-ref>
 </installer-gui-script>

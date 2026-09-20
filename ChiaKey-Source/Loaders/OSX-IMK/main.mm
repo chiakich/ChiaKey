@@ -139,8 +139,13 @@ static BOOL ChiaKeyWaitForInputSourceEnabled(NSString *inputSourceID,
 
 // Prints one status token per line for the install scripts:
 //   registered | registration-skipped
-//   already-enabled | newly-enabled | enable-timeout
-static int ChiaKeyRegisterInputMethod() {
+//   already-enabled | newly-enabled | enable-requested | enable-timeout
+//
+// waitForApproval blocks on the system consent dialog, which only the GUI
+// installer wants: it holds its "Log Out" button back until the input source
+// is really enabled. The CLI and updater paths must not wait -- nobody is
+// looking at that dialog, and the updater would sit there for the timeout.
+static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
   NSURL *bundleURL = [[NSBundle mainBundle] bundleURL];
   NSString *inputSourceID = ChiaKeyInputSourceID();
 
@@ -173,6 +178,11 @@ static int ChiaKeyRegisterInputMethod() {
     return 1;
   }
 
+  if (!waitForApproval) {
+    printf("enable-requested\n");
+    return 0;
+  }
+
   // Anything that asks the user to log out has to come after this returns: a
   // logout before the consent dialog is answered drops the enable.
   if (!ChiaKeyWaitForInputSourceEnabled(inputSourceID,
@@ -193,7 +203,9 @@ int main(int argc, char *argv[]) {
   if (argc > 1) {
     string cmd = argv[1];
     if (cmd == "install") {
-      int status = ChiaKeyRegisterInputMethod();
+      BOOL waitForApproval =
+          (argc > 2) && (string(argv[2]) == "--wait-for-approval");
+      int status = ChiaKeyRegisterInputMethod(waitForApproval);
       [pool drain];
       return status;
     }

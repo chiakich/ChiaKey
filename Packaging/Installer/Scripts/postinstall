@@ -93,16 +93,25 @@ if [ -n "${keep_app}" ]; then
   # console user's Mach bootstrap, not their uid, so sudo -u drops privilege as
   # well -- otherwise TIS registers the input source for root, not the user. A
   # per-user install already runs as that user, so invoke the binary directly.
-  # "install" blocks until the user answers macOS's consent dialog for the new
-  # input source (or gives up after its own timeout), and reports what it did
-  # on stdout: registered|registration-skipped, then
-  # already-enabled|newly-enabled|enable-timeout.
+  # "install" reports what it did on stdout: registered|registration-skipped,
+  # then already-enabled|newly-enabled|enable-requested|enable-timeout.
+  #
+  # Only Installer.app gets --wait-for-approval, which blocks until the user
+  # answers macOS's consent dialog -- its conclusion pane asks for a logout and
+  # must not offer that before the input source is enabled. /usr/sbin/installer
+  # sets COMMAND_LINE_INSTALL, and that covers the updater too: nobody is
+  # watching a dialog there, so waiting would just hang the update.
+  wait_flag=""
+  if [ -z "${COMMAND_LINE_INSTALL:-}" ]; then
+    wait_flag="--wait-for-approval"
+  fi
+
   if [ "$(/usr/bin/id -u)" = "0" ] && [ -n "${console_uid:-}" ]; then
     install_output="$(/bin/launchctl asuser "${console_uid}" \
-      /usr/bin/sudo -u "${console_user}" "${app_bin}" install)"
+      /usr/bin/sudo -u "${console_user}" "${app_bin}" install ${wait_flag})"
     install_status=$?
   else
-    install_output="$("${app_bin}" install)"
+    install_output="$("${app_bin}" install ${wait_flag})"
     install_status=$?
   fi
   echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}: $(echo "${install_output}" | /usr/bin/tr '\n' ' ')" >&2
