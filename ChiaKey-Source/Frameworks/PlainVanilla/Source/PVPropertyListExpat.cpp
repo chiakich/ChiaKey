@@ -215,7 +215,7 @@ void PVPropertyList::WritePlist(const string& filename,
 
 #ifndef WIN32
   // we suppress DTD because this really slows .NET's XML parser down...
-  ofs << "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
+  sst << "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
          "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">"
       << endl;
 #endif
