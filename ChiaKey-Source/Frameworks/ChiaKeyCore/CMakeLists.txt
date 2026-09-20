@@ -9,8 +9,19 @@ include(CTest)
 get_filename_component(CHIAKEY_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 get_filename_component(CHIAKEY_ROOT "${CHIAKEY_SOURCE}/.." ABSOLUTE)
 
-set(CHIAKEY_LEXICON_DATABASE
+# Scripts/test-core-smoke.sh fills the cache entry by downloading a release.
+set(CHIAKEY_LEXICON_SEARCH
     "${CHIAKEY_SOURCE}/Distributions/Takao/CookedDatabase/ChiaKeySource.db"
+    "$ENV{HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
+    "$ENV{HOME}/Library/Application Support/ChiaKey/Lexicons-smoke-cache/active/ChiaKeySource.db")
+set(CHIAKEY_LEXICON_DEFAULT "")
+foreach(candidate IN LISTS CHIAKEY_LEXICON_SEARCH)
+    if(EXISTS "${candidate}")
+        set(CHIAKEY_LEXICON_DEFAULT "${candidate}")
+        break()
+    endif()
+endforeach()
+set(CHIAKEY_LEXICON_DATABASE "${CHIAKEY_LEXICON_DEFAULT}"
     CACHE FILEPATH "ChiaKeySource.db used by the smoke test")
 
 # --- third-party -------------------------------------------------------------
@@ -146,8 +157,8 @@ if(BUILD_TESTING)
     else()
         message(WARNING
             "ChiaKeySource.db not found, so the smoke test is built but not "
-            "registered. It is not in git; copy it in or pass "
-            "-DCHIAKEY_LEXICON_DATABASE=<path>. Looked at: "
-            "${CHIAKEY_LEXICON_DATABASE}")
+            "registered. It is not in git. On macOS, running "
+            "Scripts/test-core-smoke.sh once downloads one into the cache this "
+            "searches; otherwise pass -DCHIAKEY_LEXICON_DATABASE=<path>.")
     endif()
 endif()
