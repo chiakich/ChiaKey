@@ -491,6 +491,10 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     // a path under a regular file can never become a directory
     const std::string blocker = writableDir + "/blocker";
     std::ofstream(blocker.c_str()).put('x');
+    if (!std::ifstream(blocker.c_str()).good()) {
+      // otherwise the path below is merely missing, and would be created
+      return Fail("could not create the blocker file under " + writableDir);
+    }
     ChiaKey::RuntimePaths badPaths = paths;
     badPaths.writablePath = blocker + "/writable";
     std::string badError;
