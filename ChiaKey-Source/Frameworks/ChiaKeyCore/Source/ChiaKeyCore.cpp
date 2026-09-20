@@ -4,16 +4,19 @@
 
 #include "ChiaKeyCore/ChiaKeyCore.h"
 
+#if defined(__APPLE__)
 #include <OpenVanilla/OpenVanilla.h>
-#include <PlainVanilla/PVBasicKeyValueMapImpl.h>
-#include <PlainVanilla/PVCandidate.h>
-#include <PlainVanilla/PVKeyImpl.h>
-#include <PlainVanilla/PVLoaderService.h>
-#include <PlainVanilla/PVTextBuffer.h>
+#include <PlainVanilla/PlainVanilla.h>
+#else
+#include "OpenVanilla.h"
+#include "PlainVanilla.h"
+#endif
 
+#include "OVIMMandarinPackage.h"
 #include "OVIMSmartMandarin.h"
 
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <utility>
 
@@ -21,19 +24,30 @@ namespace ChiaKey {
 namespace {
 
 using OpenVanilla::OVCandidateList;
+using OpenVanilla::OVCandidatePanel;
+using OpenVanilla::OVDirectoryHelper;
 using OpenVanilla::OVEventHandlingContext;
-using OpenVanilla::OVIMSmartMandarin;
+using OpenVanilla::OVIMMandarinPackage;
+using OpenVanilla::OVIMSmartMandarinContext;
 using OpenVanilla::OVKey;
 using OpenVanilla::OVKeyMask;
 using OpenVanilla::OVKeyValueMap;
+using OpenVanilla::OVModule;
+using OpenVanilla::OVPathHelper;
 using OpenVanilla::OVPathInfo;
 using OpenVanilla::OVSQLiteDatabaseService;
-using OpenVanilla::PVBasicKeyValueMapImpl;
-using OpenVanilla::PVCandidateService;
-using OpenVanilla::PVCandidateState;
+using OpenVanilla::PVLoader;
+using OpenVanilla::PVLoaderContext;
+using OpenVanilla::PVLoaderPolicy;
 using OpenVanilla::PVLoaderService;
+using OpenVanilla::PVModulePackageLoadingSystem;
 using OpenVanilla::PVOneDimensionalCandidatePanel;
+using OpenVanilla::PVPropertyList;
+using OpenVanilla::PVStaticModulePackageLoadingSystem;
 using OpenVanilla::PVTextBuffer;
+
+const char kMandarinPackageName[] = "OVIMMandarin";
+const char kPreferencesDirectoryName[] = "Preferences";
 
 unsigned int MakeModifierMask(const KeyModifiers& modifiers) {
   unsigned int mask = 0;
@@ -51,10 +65,8 @@ unsigned int MakeModifierMask(const KeyModifiers& modifiers) {
 OVKey MakeKey(const KeyEvent& event) {
   const unsigned int mask = MakeModifierMask(event.modifiers);
   if (!event.receivedString.empty()) {
-    return OVKey(new OpenVanilla::PVKeyImpl(event.receivedString,
-                                           static_cast<unsigned int>(
-                                               event.keyCode),
-                                           mask));
+    return OVKey(new OpenVanilla::PVKeyImpl(
+        event.receivedString, static_cast<unsigned int>(event.keyCode), mask));
   }
 
   return OVKey(new OpenVanilla::PVKeyImpl(
@@ -81,12 +93,10 @@ std::vector<TextRange> ConvertRanges(
     const std::vector<OpenVanilla::OVTextBuffer::RangePair>& ranges) {
   std::vector<TextRange> result;
   result.reserve(ranges.size());
-  for (std::vector<OpenVanilla::OVTextBuffer::RangePair>::const_iterator it =
-           ranges.begin();
-       it != ranges.end(); ++it) {
+  for (const auto& pair : ranges) {
     TextRange range;
-    range.location = it->first;
-    range.length = it->second;
+    range.location = pair.first;
+    range.length = pair.second;
     result.push_back(range);
   }
   return result;
@@ -104,161 +114,240 @@ std::vector<std::string> CandidateListToVector(OVCandidateList* list) {
   return result;
 }
 
+// Keeps the plists under the host's writable path, so the core never shares
+// preferences with the IMK host.
+class CorePolicy : public PVLoaderPolicy {
+ public:
+  explicit CorePolicy(const std::string& writablePath)
+      : PVLoaderPolicy(std::vector<std::string>()),
+        preferencesPath_(
+            OVPathHelper::PathCat(writablePath, kPreferencesDirectoryName)) {}
+
+  const std::string defaultDatabaseFileName() override {
+    return "ChiaKeySource.db";
+  }
+  const std::string loaderIdentifier() override { return "com.chiakey.core"; }
+  const std::string loaderName() override { return "ChiaKey"; }
+  // static packages only; also sidesteps the Linux #error in the base class
+  const std::vector<std::string> modulePackageFilePatterns() override {
+    return std::vector<std::string>();
+  }
+  const std::string propertyListPathForLoader() override {
+    return OVPathHelper::PathCat(preferencesPath_, "Loader.plist");
+  }
+  const std::string propertyListPathFromIdentifier(
+      const std::string& identifier) override {
+    return OVPathHelper::PathCat(preferencesPath_, identifier + ".plist");
+  }
+
+  const std::string& preferencesPath() const { return preferencesPath_; }
+
+ private:
+  std::string preferencesPath_;
+};
+
+class CoreContext : public PVLoaderContext {
+ public:
+  explicit CoreContext(PVLoader* loader) : PVLoaderContext(loader) {}
+
+  OVIMSmartMandarinContext* smartMandarinContext() {
+    if (!m_sandwich) return nullptr;
+    for (OVEventHandlingContext* context : m_sandwich->inputMethods) {
+      if (auto* smart = dynamic_cast<OVIMSmartMandarinContext*>(context)) {
+        return smart;
+      }
+    }
+    return nullptr;
+  }
+
+  PVOneDimensionalCandidatePanel* activePanel() {
+    auto* panel = dynamic_cast<PVOneDimensionalCandidatePanel*>(
+        m_candidateService->lastUsedPanel());
+    return panel ? panel : m_candidateService->accessVerticalCandidatePanel();
+  }
+
+  // Goes through the panel's own key so the filters run as they would for a
+  // typed selection.
+  bool selectCandidate(std::size_t candidateIndex) {
+    PVOneDimensionalCandidatePanel* panel = activePanel();
+    OVCandidateList* list = panel->candidateList();
+    if (!panel->isVisible() || !panel->isInControl() || !list ||
+        candidateIndex >= list->size() || !panel->candidatesPerPage()) {
+      return false;
+    }
+
+    const std::size_t page = candidateIndex / panel->candidatesPerPage();
+    if (page != panel->currentPage()) panel->goToPage(page);
+
+    OVKey key = panel->candidateKeyAtIndex(
+        candidateIndex - page * panel->candidatesPerPage());
+    return handleKeyEvent(&key);
+  }
+};
+
 }  // namespace
 
-class Engine::Impl {
+class Runtime::Impl {
  public:
-  Impl(OVSQLiteDatabaseService* sqliteService, const EnginePaths& paths,
-       const EngineConfig& config)
-      : sqliteService_(sqliteService),
-        loaderService_(config.locale, nullptr, sqliteService_.get()),
-        candidateService_(&loaderService_) {
-    pathInfo_.loadedPath = paths.loadedPath;
-    pathInfo_.resourcePath = paths.resourcePath;
-    pathInfo_.writablePath = paths.writablePath;
-  }
+  bool initialize(const RuntimePaths& runtimePaths,
+                  const EngineConfig& engineConfig, std::string* errorMessage) {
+    paths = runtimePaths;
+    config = engineConfig;
 
-  ~Impl() {
-    if (context_) {
-      context_->stopSession(&loaderService_);
-      delete context_;
-      context_ = nullptr;
+    if (paths.lexiconDatabasePath.empty()) {
+      if (errorMessage) *errorMessage = "lexiconDatabasePath is required";
+      return false;
     }
-
-    module_.finalize();
-
-    // Declared before module_, so destroyed after it: its statements go first.
-  }
-
-  bool initialize(const EngineConfig& config, std::string* errorMessage) {
-    if (!module_.initialize(&pathInfo_, &loaderService_)) {
-      if (errorMessage) *errorMessage = "OVIMSmartMandarin initialization failed";
+    if (paths.writablePath.empty()) {
+      if (errorMessage) *errorMessage = "writablePath is required";
       return false;
     }
 
-    PVBasicKeyValueMapImpl configImpl;
-    OVKeyValueMap configMap(&configImpl);
-    ApplyConfig(config, &configMap);
-    module_.loadConfig(&configMap, &loaderService_);
-
-    context_ = module_.createContext();
-    if (!context_) {
-      if (errorMessage) *errorMessage = "OVIMSmartMandarin context creation failed";
+    database.reset(OVSQLiteDatabaseService::Create(paths.lexiconDatabasePath));
+    if (!database) {
+      if (errorMessage) {
+        std::ostringstream stream;
+        stream << "failed to open lexicon database: "
+               << paths.lexiconDatabasePath;
+        *errorMessage = stream.str();
+      }
       return false;
     }
 
-    context_->startSession(&loaderService_);
+    policy.reset(new CorePolicy(paths.writablePath));
+    OVDirectoryHelper::MakeDirectoryWithImmediates(paths.writablePath);
+    OVDirectoryHelper::MakeDirectoryWithImmediates(policy->preferencesPath());
+
+    // Without this the loader falls back to whichever module sorts first.
+    {
+      PVPropertyList loaderPlist(policy->propertyListPathForLoader());
+      loaderPlist.rootDictionary()->setKeyValue("PrimaryInputMethod",
+                                                OVIMSMARTMANDARIN_IDENTIFIER);
+      loaderPlist.write();
+    }
+    writeModuleConfig();
+
+    service.reset(new PVLoaderService(config.locale, nullptr, database.get()));
+
+    OVPathInfo pathInfo;
+    pathInfo.loadedPath = paths.loadedPath;
+    pathInfo.resourcePath = paths.resourcePath;
+    pathInfo.writablePath = paths.writablePath;
+    packages.reset(new PVStaticModulePackageLoadingSystem(pathInfo, true));
+
+    auto* mandarin = new OVIMMandarinPackage;
+    if (!mandarin->initialize(&pathInfo, service.get()) ||
+        !packages->addInitializedPackage(kMandarinPackageName, mandarin)) {
+      mandarin->finalize();
+      delete mandarin;
+      if (errorMessage) *errorMessage = "OVIMMandarin package failed to load";
+      return false;
+    }
+
+    std::vector<PVModulePackageLoadingSystem*> systems{packages.get()};
+    loader.reset(new PVLoader(policy.get(), service.get(), systems));
+
+    if (loader->primaryInputMethod() != OVIMSMARTMANDARIN_IDENTIFIER) {
+      if (errorMessage) {
+        *errorMessage =
+            "OVIMSmartMandarin failed to initialize (lexicon database "
+            "incompatible or unreadable)";
+      }
+      return false;
+    }
     return true;
   }
 
+  void writeModuleConfig() {
+    PVPropertyList plist(
+        policy->propertyListPathFromIdentifier(OVIMSMARTMANDARIN_IDENTIFIER));
+    OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
+    ApplyConfig(config, &map);
+    plist.write();
+  }
+
+  mutable std::recursive_mutex mutex;
+  RuntimePaths paths;
+  EngineConfig config;
+
+  // order matters: the loader tears down its modules before the package
+  // system, the service and the database go
+  std::unique_ptr<OVSQLiteDatabaseService> database;
+  std::unique_ptr<CorePolicy> policy;
+  std::unique_ptr<PVLoaderService> service;
+  std::unique_ptr<PVStaticModulePackageLoadingSystem> packages;
+  std::unique_ptr<PVLoader> loader;
+};
+
+class Engine::Impl {
+ public:
+  Impl(std::shared_ptr<Runtime> owner, std::unique_ptr<CoreContext> loaderContext)
+      : runtime(std::move(owner)), context(std::move(loaderContext)) {
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    context->activate();
+  }
+
+  ~Impl() {
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    context->deactivate();
+    context.reset();
+  }
+
+  PVLoaderService* service() const { return runtime->impl_->service.get(); }
+
   bool handleKey(const KeyEvent& event) {
-    loaderService_.resetState();
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    service()->resetState();
     OVKey key = MakeKey(event);
-
-    PVOneDimensionalCandidatePanel* panel =
-        candidateService_.accessVerticalCandidatePanel();
-    if (panel->isInControl()) {
-      const PVCandidateState::State state =
-          panel->handleKeyEvent(key, &loaderService_);
-
-      switch (state) {
-        case PVCandidateState::CandidateChosen:
-          context_->candidateSelected(&candidateService_,
-                                      panel->chosenCandidateString(),
-                                      panel->chosenCandidateIndex(),
-                                      &readingText_, &composingText_,
-                                      &loaderService_);
-          candidateService_.resetAll();
-          return true;
-
-        case PVCandidateState::Canceled:
-          context_->candidateCanceled(&candidateService_, &readingText_,
-                                      &composingText_, &loaderService_);
-          candidateService_.resetAll();
-          return true;
-
-        case PVCandidateState::UpdatePage:
-        case PVCandidateState::UpdateCandidateHighlight:
-          panel->updateDisplay();
-          return true;
-
-        case PVCandidateState::InvalidCandidateKey:
-        case PVCandidateState::ReachedPageBoundary:
-          loaderService_.beep();
-          return true;
-
-        case PVCandidateState::Ignored:
-          if (context_->candidateNonPanelKeyReceived(
-                  &candidateService_, &key, &readingText_, &composingText_,
-                  &loaderService_)) {
-            return true;
-          }
-          break;
-      }
-    }
-
-    candidateService_.resetAll();
-    return context_->handleKey(&key, &readingText_, &composingText_,
-                               &candidateService_, &loaderService_);
+    return context->handleKeyEvent(&key);
   }
 
   bool selectCandidate(std::size_t candidateIndex) {
-    loaderService_.resetState();
-    PVOneDimensionalCandidatePanel* panel =
-        candidateService_.accessVerticalCandidatePanel();
-    OVCandidateList* list = panel->candidateList();
-    if (!panel->isVisible() || !list || candidateIndex >= list->size()) {
-      loaderService_.beep();
-      return false;
-    }
-
-    const std::string candidate = list->candidateAtIndex(candidateIndex);
-    const bool handled = context_->candidateSelected(
-        &candidateService_, candidate, candidateIndex, &readingText_,
-        &composingText_, &loaderService_);
-    candidateService_.resetAll();
-    return handled;
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    service()->resetState();
+    if (context->selectCandidate(candidateIndex)) return true;
+    service()->beep();
+    return false;
   }
 
   void reset() {
-    loaderService_.resetState();
-    candidateService_.resetAll();
-    if (context_) context_->clear(&loaderService_);
-    readingText_.clear();
-    readingText_.finishCommit();
-    composingText_.clear();
-    composingText_.finishCommit();
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    service()->resetState();
+    context->clear();
+    context->readingText()->finishCommit();
   }
 
-  EngineState snapshot() {
+  EngineState snapshot() const {
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    PVTextBuffer* readingText = context->readingText();
+    PVTextBuffer* composingText = context->composingText();
+
     EngineState state;
-    state.readingText = readingText_.composedText();
-    state.composingText = composingText_.composedText();
-    state.committedText = readingText_.composedCommittedText() +
-                          composingText_.composedCommittedText();
+    state.readingText = readingText->composedText();
+    state.composingText = composingText->composedText();
+    state.committedText = readingText->composedCommittedText() +
+                          composingText->composedCommittedText();
 
     const std::vector<std::string> readingSegments =
-        readingText_.composedCommittedTextSegments();
+        readingText->composedCommittedTextSegments();
     state.committedTextSegments.insert(state.committedTextSegments.end(),
                                        readingSegments.begin(),
                                        readingSegments.end());
-
     const std::vector<std::string> composingSegments =
-        composingText_.composedCommittedTextSegments();
+        composingText->composedCommittedTextSegments();
     state.committedTextSegments.insert(state.committedTextSegments.end(),
                                        composingSegments.begin(),
                                        composingSegments.end());
 
-    state.cursorPosition = composingText_.cursorPosition();
-    state.highlight.location = composingText_.highlightMark().first;
-    state.highlight.length = composingText_.highlightMark().second;
-    state.wordSegments = ConvertRanges(composingText_.wordSegments());
-    state.tooltip = composingText_.toolTipText();
-    state.beeped = loaderService_.shouldBeep();
-    state.notifications = loaderService_.notifyMessage();
+    state.cursorPosition = composingText->cursorPosition();
+    state.highlight.location = composingText->highlightMark().first;
+    state.highlight.length = composingText->highlightMark().second;
+    state.wordSegments = ConvertRanges(composingText->wordSegments());
+    state.tooltip = composingText->toolTipText();
+    state.beeped = service()->shouldBeep();
+    state.notifications = service()->notifyMessage();
 
-    PVOneDimensionalCandidatePanel* panel =
-        candidateService_.accessVerticalCandidatePanel();
+    PVOneDimensionalCandidatePanel* panel = context->activePanel();
     state.candidateState.visible = panel->isVisible();
     state.candidateState.currentPage = panel->currentPage();
     state.candidateState.pageCount = panel->pageCount();
@@ -271,8 +360,7 @@ class Engine::Impl {
 
     // other fillers (associated phrases) share this panel, so take the flags
     // only when they still describe a list of exactly this length
-    OpenVanilla::OVIMSmartMandarinContext* smartContext =
-        dynamic_cast<OpenVanilla::OVIMSmartMandarinContext*>(context_);
+    OVIMSmartMandarinContext* smartContext = context->smartMandarinContext();
     if (smartContext && state.candidateState.visible &&
         !state.candidateState.candidates.empty()) {
       const std::vector<bool>& contextPicks =
@@ -285,46 +373,115 @@ class Engine::Impl {
   }
 
   void acknowledgeCommit() {
-    readingText_.finishCommit();
-    composingText_.finishCommit();
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    context->readingText()->finishCommit();
+    context->composingText()->finishCommit();
   }
 
- private:
-  OVPathInfo pathInfo_;
-  std::unique_ptr<OVSQLiteDatabaseService> sqliteService_;
-  PVLoaderService loaderService_;
-  OVIMSmartMandarin module_;
-  OVEventHandlingContext* context_ = nullptr;
-  PVTextBuffer readingText_;
-  PVTextBuffer composingText_;
-  PVCandidateService candidateService_;
+  std::shared_ptr<Runtime> runtime;
+  std::unique_ptr<CoreContext> context;
 };
 
-std::unique_ptr<Engine> Engine::Create(const EnginePaths& paths,
+// Runtime
+
+std::shared_ptr<Runtime> Runtime::Create(const RuntimePaths& paths,
+                                         const EngineConfig& config,
+                                         std::string* errorMessage) {
+  std::unique_ptr<Impl> impl(new Impl);
+  if (!impl->initialize(paths, config, errorMessage)) {
+    return std::shared_ptr<Runtime>();
+  }
+  return std::shared_ptr<Runtime>(new Runtime(std::move(impl)));
+}
+
+Runtime::Runtime(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
+
+Runtime::~Runtime() {}
+
+std::unique_ptr<Engine> Runtime::createEngine(std::string* errorMessage) {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  if (impl_->loader->locked()) {
+    if (errorMessage) *errorMessage = "loader is reloading";
+    return std::unique_ptr<Engine>();
+  }
+
+  std::unique_ptr<CoreContext> context(new CoreContext(impl_->loader.get()));
+  std::unique_ptr<Engine::Impl> engineImpl(
+      new Engine::Impl(shared_from_this(), std::move(context)));
+  return std::unique_ptr<Engine>(new Engine(std::move(engineImpl)));
+}
+
+void Runtime::setConfig(const EngineConfig& config) {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  // locale is fixed at Create: the loader service was built with it
+  impl_->config = config;
+  impl_->config.locale = impl_->service->locale();
+  impl_->writeModuleConfig();
+  impl_->loader->forceSyncModuleConfigForNextRound(
+      OVIMSMARTMANDARIN_IDENTIFIER);
+  impl_->loader->syncSandwichConfig();
+}
+
+EngineConfig Runtime::config() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  return impl_->config;
+}
+
+std::vector<std::pair<std::string, std::string>> Runtime::inputMethods() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  std::vector<std::pair<std::string, std::string>> result;
+  const std::string locale = impl_->service->locale();
+  for (const std::string& identifier : impl_->loader->allInputMethodIdentifiers()) {
+    OVModule* module = impl_->loader->moduleWithName(identifier);
+    if (!module) continue;
+    result.emplace_back(identifier, module->localizedName(locale));
+  }
+  return result;
+}
+
+std::string Runtime::primaryInputMethod() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  return impl_->loader->primaryInputMethod();
+}
+
+bool Runtime::setPrimaryInputMethod(const std::string& identifier) {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  OVModule* module = impl_->loader->moduleWithName(identifier);
+  if (!module || !module->isInputMethod()) return false;
+
+  impl_->loader->setPrimaryInputMethod(identifier);
+  impl_->loader->syncSandwichConfig();
+  return impl_->loader->primaryInputMethod() == identifier;
+}
+
+bool Runtime::associatedPhrasesEnabled() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  return impl_->loader->isAroundFilterActivated(OVAFASSOCIATEDPHRASE_IDENTIFIER);
+}
+
+void Runtime::setAssociatedPhrasesEnabled(bool enabled) {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  if (associatedPhrasesEnabled() == enabled) return;
+  impl_->loader->toggleAroundFilter(OVAFASSOCIATEDPHRASE_IDENTIFIER);
+  impl_->loader->syncSandwichConfig();
+}
+
+const char* Runtime::SmartMandarinIdentifier() {
+  return OVIMSMARTMANDARIN_IDENTIFIER;
+}
+
+const char* Runtime::TraditionalMandarinIdentifier() {
+  return OVIMTRADITIONALMANDARIN_IDENTIFIER;
+}
+
+// Engine
+
+std::unique_ptr<Engine> Engine::Create(const RuntimePaths& paths,
                                        const EngineConfig& config,
                                        std::string* errorMessage) {
-  if (paths.lexiconDatabasePath.empty()) {
-    if (errorMessage) *errorMessage = "lexiconDatabasePath is required";
-    return std::unique_ptr<Engine>();
-  }
-
-  OVSQLiteDatabaseService* sqliteService =
-      OVSQLiteDatabaseService::Create(paths.lexiconDatabasePath);
-  if (!sqliteService) {
-    if (errorMessage) {
-      std::ostringstream stream;
-      stream << "failed to open lexicon database: " << paths.lexiconDatabasePath;
-      *errorMessage = stream.str();
-    }
-    return std::unique_ptr<Engine>();
-  }
-
-  std::unique_ptr<Impl> impl(new Impl(sqliteService, paths, config));
-  if (!impl->initialize(config, errorMessage)) {
-    return std::unique_ptr<Engine>();
-  }
-
-  return std::unique_ptr<Engine>(new Engine(std::move(impl)));
+  std::shared_ptr<Runtime> runtime = Runtime::Create(paths, config, errorMessage);
+  if (!runtime) return std::unique_ptr<Engine>();
+  return runtime->createEngine(errorMessage);
 }
 
 Engine::Engine(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
@@ -350,5 +507,7 @@ void Engine::reset() { impl_->reset(); }
 EngineState Engine::snapshot() const { return impl_->snapshot(); }
 
 void Engine::acknowledgeCommit() { impl_->acknowledgeCommit(); }
+
+std::shared_ptr<Runtime> Engine::runtime() const { return impl_->runtime; }
 
 }  // namespace ChiaKey

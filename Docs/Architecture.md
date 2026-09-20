@@ -2,7 +2,7 @@
 
 狀態：已採納
 
-最後更新：2026-07-17
+最後更新：2026-09-18
 
 這份文件記錄目前的架構方向與理由。主線很簡單：保留已經能動的 macOS 輸入法路徑，逐步把 Yahoo 時代留下的資料流程與包裝假設換掉，不做整體重寫。
 
@@ -35,13 +35,18 @@ Objective-C++ InputMethodKit runtime 先留著，實測現在的狀態已經能�
 
 ### 分離可攜核心邊界
 
-加了一個小而明確的 host-neutral core boundary（`ChiaKeyCore`），讓未來其他移植可以共用智慧注音引擎。目前暫時未有其他平台的移植計畫，只是先把引擎分開，保留未來要移植的方便性。
+加了一個小而明確的 host-neutral core boundary（`ChiaKeyCore`），讓其他平台的 host 可以共用智慧注音引擎。2026-09 評估過 chichi77 KeyKey 的 Windows TSF 與 Linux Fcitx 5 前端後，把它從「單一 context 的 facade」改成桌面 host 需要的形狀。
 
-`ChiaKeyCore` 是 host-neutral facade，包住 `OVIMSmartMandarin`，對外只暴露 key event、engine config、state snapshot、commit acknowledgement。它不依賴 AppKit、InputMethodKit、UIKit、SwiftUI，也不處理 macOS 的 inline marked text 政策、iOS 的 `UIInputViewController`，或安裝簽章打包這類事。
+`ChiaKeyCore` 分兩層：
 
-責任：接 host key event、開 SQLite-backed `ChiaKeySource.db`、回傳 reading/composing/candidate/committed text、保持能過 iPhoneOS SDK syntax-check、用 smoke test 固定基本注音行為。
+- `Runtime`：一個 process 一份。開一次 `ChiaKeySource.db`、建 `PVLoader` 與 OVIMMandarin 靜態 package（SmartMandarin、TraditionalMandarin、AssociatedPhrase）、持有 Smart Mandarin 的設定。設定與 loader 狀態以 plist 存在 host 給的 `writablePath/Preferences/` 底下，不碰平台的使用者偏好目錄。
+- `Engine`：一個文字欄位一份。包住 `PVLoaderContext`，對外只暴露 key event、state snapshot、以 absolute index 選字、commit acknowledgement。候選面板、around filter 與 output filter 都由 `PVLoaderContext` 處理，行為與 IMK host 一致。
 
-iOS host 有在考慮實作，移至獨立實驗 repo；主 repo 只保留 `ChiaKeyCore` 公開 facade 跟一個最小 platform placeholder。細節在 [iOSImplementation.md](iOSImplementation.md)。
+`Engine::Create` 仍保留給單一 context 的 host，它會自己建一個私有 `Runtime`。`Runtime` 有一把 recursive mutex，所有 `Engine` 呼叫都經過它，TSF 這種 in-process 多 thread 的 host 可以直接用。
+
+它不依賴 AppKit、InputMethodKit、UIKit、SwiftUI，也不處理 macOS 的 inline marked text 政策或安裝簽章打包這類事。責任：接 host key event、回傳 reading/composing/candidate/committed text、用 smoke test 固定基本注音行為與多 context 隔離。
+
+iOS 移植已無限期擱置（見 [iOSImplementation.md](iOSImplementation.md)）；`test-ios-core-syntax.sh` 仍保留作為第二個 toolchain 的語法檢查。
 
 ### 保留老派組字策略
 

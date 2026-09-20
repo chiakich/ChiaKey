@@ -14,6 +14,7 @@
 extern "C" {
 #endif
 
+typedef struct CKC_Runtime CKC_Runtime;
 typedef struct CKC_Engine CKC_Engine;
 
 typedef struct CKC_KeyModifiers {
@@ -89,6 +90,27 @@ typedef struct CKC_EngineSnapshot {
 CKC_KeyModifiers CKC_KeyModifiersNone(void);
 CKC_EngineConfig CKC_EngineConfigDefault(void);
 
+/* One runtime per process. Engines created from it keep it alive, so the
+ * runtime handle may be destroyed before its engines. */
+CKC_Runtime* CKC_RuntimeCreate(const CKC_EnginePaths* paths,
+                               const CKC_EngineConfig* config,
+                               char** error_message);
+void CKC_RuntimeDestroy(CKC_Runtime* runtime);
+CKC_Engine* CKC_RuntimeCreateEngine(CKC_Runtime* runtime, char** error_message);
+int CKC_RuntimeSetConfig(CKC_Runtime* runtime, const CKC_EngineConfig* config);
+/* identifier and localized name arrays of equal length; free each with
+ * CKC_StringArrayDestroy */
+size_t CKC_RuntimeCopyInputMethods(CKC_Runtime* runtime, char*** identifiers,
+                                   char*** names);
+char* CKC_RuntimeCopyPrimaryInputMethod(CKC_Runtime* runtime);
+int CKC_RuntimeSetPrimaryInputMethod(CKC_Runtime* runtime,
+                                     const char* identifier);
+int CKC_RuntimeAssociatedPhrasesEnabled(CKC_Runtime* runtime);
+void CKC_RuntimeSetAssociatedPhrasesEnabled(CKC_Runtime* runtime, int enabled);
+const char* CKC_SmartMandarinIdentifier(void);
+const char* CKC_TraditionalMandarinIdentifier(void);
+
+/* Single-context convenience: creates a private runtime for this engine. */
 CKC_Engine* CKC_EngineCreate(const CKC_EnginePaths* paths,
                              const CKC_EngineConfig* config,
                              char** error_message);
@@ -105,6 +127,7 @@ void CKC_EngineAcknowledgeCommit(CKC_Engine* engine);
 
 void CKC_EngineSnapshotDestroy(CKC_EngineSnapshot* snapshot);
 void CKC_StringDestroy(char* string);
+void CKC_StringArrayDestroy(char** strings, size_t count);
 
 #ifdef __cplusplus
 }

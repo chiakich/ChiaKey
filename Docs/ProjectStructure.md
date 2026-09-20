@@ -1,6 +1,6 @@
 # 專案目錄結構
 
-最後更新：2026-07-17
+最後更新：2026-09-18
 
 這份文件固定 ChiaKey repo 的資料夾分工。整理原則是：現有 macOS
 InputMethodKit target 先不做破壞性搬移；新的跨平台核心與 iOS repo
@@ -45,15 +45,20 @@ Platform host
 
 ### `Frameworks/ChiaKeyCore`
 
-`ChiaKeyCore` 是新的 host-neutral engine facade。它不應依賴 AppKit、
-InputMethodKit、UIKit 或 SwiftUI。
+`ChiaKeyCore` 是 host-neutral engine facade，分 `Runtime`（每個 process 一份，
+開 DB、建 `PVLoader`、持有設定）與 `Engine`（每個文字欄位一份，包
+`PVLoaderContext`）兩層。它不應依賴 AppKit、InputMethodKit、UIKit 或 SwiftUI。
 
 ```text
 ChiaKey-Source/Frameworks/ChiaKeyCore/
-├── Headers/ChiaKeyCore/ # 公開 C++ facade 與 C ABI bridge
+├── Headers/ChiaKeyCore/ # 公開 C++ facade（Runtime / Engine）與 C ABI bridge
 ├── Source/              # facade implementation
 └── Tests/               # core-level smoke tests
 ```
+
+編譯時需要的 source 清單與 module identifier 定義集中在
+`Scripts/test-core-smoke.sh` 的 `CORE_SOURCES` / `CORE_DEFINES`；新 host 的
+build 檔請以它為準。plist 走 `PVPropertyListExpat.cpp`，需要 expat。
 
 `Frameworks/HeaderShims/` 提供 framework-style include symlink，讓
 `ChiaKeyCore` 與 iOS syntax checks 可以解析 `<OpenVanilla/...>`、
