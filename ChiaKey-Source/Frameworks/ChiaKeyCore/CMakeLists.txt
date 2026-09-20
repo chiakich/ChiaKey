@@ -9,10 +9,11 @@ include(CTest)
 get_filename_component(CHIAKEY_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 get_filename_component(CHIAKEY_ROOT "${CHIAKEY_SOURCE}/.." ABSOLUTE)
 
-# Scripts/test-core-smoke.sh fills the cache entry by downloading a release.
+# Same order as Scripts/test-core-smoke.sh, so both pick the same database.
+# That script fills the cache entry by downloading a release.
 set(CHIAKEY_LEXICON_SEARCH
-    "${CHIAKEY_SOURCE}/Distributions/Takao/CookedDatabase/ChiaKeySource.db"
     "$ENV{HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
+    "${CHIAKEY_SOURCE}/Distributions/Takao/CookedDatabase/ChiaKeySource.db"
     "$ENV{HOME}/Library/Application Support/ChiaKey/Lexicons-smoke-cache/active/ChiaKeySource.db")
 set(CHIAKEY_LEXICON_DEFAULT "")
 foreach(candidate IN LISTS CHIAKEY_LEXICON_SEARCH)

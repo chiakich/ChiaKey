@@ -15,6 +15,8 @@
 #include "OVIMMandarinPackage.h"
 #include "OVIMSmartMandarin.h"
 
+#include <unistd.h>
+
 #include <cstdio>
 #include <memory>
 #include <mutex>
@@ -55,9 +57,11 @@ const char kPreferencesDirectoryName[] = "Preferences";
 // read-only path would get through and every later write -- preferences, the
 // learning database -- would fail silently.
 bool DirectoryIsWritable(const std::string& path) {
-  const std::string probe =
-      OVPathHelper::PathCat(OVPathHelper::NormalizeByExpandingTilde(path),
-                            ".chiakey-write-probe");
+  // Per-pid name: release and Dev builds share this directory, and a fixed
+  // name would let one delete the other's probe mid-check.
+  std::ostringstream name;
+  name << ".chiakey-write-probe." << static_cast<long>(getpid());
+  const std::string probe = OVPathHelper::PathCat(path, name.str());
   std::FILE* file = std::fopen(probe.c_str(), "w");
   if (!file) return false;
 
@@ -214,6 +218,14 @@ class Runtime::Impl {
                   const EngineConfig& engineConfig, std::string* errorMessage) {
     paths = runtimePaths;
     config = engineConfig;
+
+    // Expand once, here: CorePolicy joins writablePath into plist paths that
+    // PVPropertyList opens verbatim, so a literal "~/..." would create a
+    // directory named "~" instead of writing into the home directory.
+    if (!paths.writablePath.empty()) {
+      paths.writablePath =
+          OVPathHelper::NormalizeByExpandingTilde(paths.writablePath);
+    }
 
     if (paths.lexiconDatabasePath.empty()) {
       if (errorMessage) *errorMessage = "lexiconDatabasePath is required";
