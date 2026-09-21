@@ -119,11 +119,23 @@ jobs:
             exit 1
           fi
 
+          # Release notes diff against the last tag of the same kind. A stable
+          # release must reach back past its own betas, or everything the beta
+          # series shipped is missing for users upgrading from the last stable.
+          if [[ "${prerelease}" == "true" ]]; then
+            notes_base="${latest}"
+          else
+            notes_base="$(git tag --list 'v*' | grep -v -- '-beta\.' \
+              | sort -V | tail -n1 || true)"
+          fi
+
           echo "Next tag: ${next} (core=${core}, prerelease=${prerelease})"
+          echo "Notes base: ${notes_base:-<none>}"
           echo "tag=${next}" >>"$GITHUB_OUTPUT"
           echo "core=${core}" >>"$GITHUB_OUTPUT"
           echo "prerelease=${prerelease}" >>"$GITHUB_OUTPUT"
           echo "previous=${latest}" >>"$GITHUB_OUTPUT"
+          echo "notes_base=${notes_base}" >>"$GITHUB_OUTPUT"
 
       - name: Bump CFBundleVersion
         id: bump
@@ -256,7 +268,7 @@ jobs:
         id: notes
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          PREV: ${{ steps.version.outputs.previous }}
+          PREV: ${{ steps.version.outputs.notes_base }}
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
           REPO: ${{ github.repository }}
           SERVER: ${{ github.server_url }}
@@ -330,7 +342,7 @@ jobs:
       - name: Assemble release notes
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          PREV: ${{ steps.version.outputs.previous }}
+          PREV: ${{ steps.version.outputs.notes_base }}
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
           REPO: ${{ github.repository }}
           SERVER: ${{ github.server_url }}
