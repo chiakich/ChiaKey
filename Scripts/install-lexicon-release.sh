@@ -363,8 +363,9 @@ RUBY
   validate_db_scalar "cooked_information version" "SELECT COUNT(*) FROM cooked_information WHERE key = 'version' AND value != '';" "1"
   validate_db_scalar "Shift+, punctuation unigram" "SELECT current FROM unigrams WHERE qstring = '_punctuation_<' ORDER BY probability DESC, current LIMIT 1;" "，"
   validate_db_scalar "Standard Shift+, punctuation unigram" "SELECT current FROM unigrams WHERE qstring = '_punctuation_Standard_<' ORDER BY probability DESC, current LIMIT 1;" "，"
-  validate_db_scalar "Shift+, punctuation candidate" "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_<' ORDER BY value LIMIT 1;" "，"
-  validate_db_scalar "Standard Shift+, punctuation candidate" "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_Standard_<' ORDER BY value LIMIT 1;" "，"
+  # rowid order, not value order: the runtime cin lookup has no ORDER BY
+  validate_db_scalar "Shift+, punctuation candidate" "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_<' ORDER BY rowid LIMIT 1;" "，"
+  validate_db_scalar "Standard Shift+, punctuation candidate" "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = '_punctuation_Standard_<' ORDER BY rowid LIMIT 1;" "，"
   echo "Database health validation passed."
 }
 
