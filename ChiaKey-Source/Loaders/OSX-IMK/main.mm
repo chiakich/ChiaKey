@@ -122,6 +122,16 @@ static NSString *ChiaKeyInputSourceID() {
   return inputSourceID;
 }
 
+// The parent identifies the bundle; the visible mode is the selectable source.
+// Read the mode from the plist so the dev bundle can use its own identity.
+static NSString *ChiaKeyInputModeID() {
+  NSDictionary *modes = [[NSBundle mainBundle]
+      objectForInfoDictionaryKey:@"ComponentInputModeDict"];
+  NSString *modeID =
+      [[modes objectForKey:@"tsVisibleInputModeOrderedArrayKey"] firstObject];
+  return modeID ?: ChiaKeyInputSourceID();
+}
+
 // The bundle a registered input source actually lives in. TIS exposes no
 // bundle URL, but it reports the icon as a URL relative to that bundle, so the
 // base URL is the bundle. Nil when it cannot be determined -- the caller then
@@ -172,6 +182,7 @@ static BOOL ChiaKeyWaitForInputSourceEnabled(NSString *inputSourceID,
 static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
   NSURL *bundleURL = [[NSBundle mainBundle] bundleURL];
   NSString *inputSourceID = ChiaKeyInputSourceID();
+  NSString *modeID = ChiaKeyInputModeID();
 
   // TIS watches the Input Methods folders itself, so a bundle that already
   // answers to our ID needs no re-registration; doing it anyway only makes
@@ -179,7 +190,9 @@ static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
   // answers yet -- a first install, or a bundle in a folder TIS does not scan
   // -- and when the ID resolves to a *different* bundle, which is what an
   // install that moves the app (say /Library to ~/Library) leaves behind.
-  TISInputSourceRef existing = ChiaKeyCreateInputSourceForID(inputSourceID);
+  // Looking up the mode also forces registration when upgrading a legacy
+  // installation that only registered the parent ID.
+  TISInputSourceRef existing = ChiaKeyCreateInputSourceForID(modeID);
   NSString *registeredPath = existing ? ChiaKeyRegisteredBundlePath(existing) : nil;
   NSString *ourPath = [[bundleURL path] stringByStandardizingPath];
   BOOL registeredHere =
@@ -204,33 +217,33 @@ static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
     printf("registered\n");
   }
 
-  // The enabled state lives in the user's preferences, keyed by input source
-  // ID, so it survives an update untouched.
-  if (ChiaKeyInputSourceIsEnabled(inputSourceID)) {
-    printf("already-enabled\n");
-    return 0;
+  // TIS requires the parent to be enabled before enabling an input mode.
+  // Preserve an existing enable, but do not mistake an enabled legacy parent
+  // for an enabled mode after an upgrade.
+  BOOL requestedEnable = NO;
+  for (NSString *sourceID in @[inputSourceID, modeID]) {
+    if (ChiaKeyInputSourceIsEnabled(sourceID)) continue;
+    if (!ChiaKeyEnableInputSourceWithID(sourceID)) return 1;
+    requestedEnable = YES;
+
+    if (waitForApproval) {
+      if (!ChiaKeyWaitForInputSourceEnabled(sourceID,
+                                            kChiaKeyEnableApprovalTimeout)) {
+        NSLog(@"input source %@ was not enabled within %.0f seconds", sourceID,
+              kChiaKeyEnableApprovalTimeout);
+        printf("enable-timeout\n");
+        return 0;
+      }
+    } else if (!ChiaKeyInputSourceIsEnabled(sourceID)) {
+      // CLI/updater must not wait for consent. The mode's default-state flag
+      // lets TIS enable it when the parent is approved; a later install call
+      // also checks the mode explicitly.
+      printf("enable-requested\n");
+      return 0;
+    }
   }
 
-  if (!ChiaKeyEnableInputSourceWithID(inputSourceID)) {
-    return 1;
-  }
-
-  if (!waitForApproval) {
-    printf("enable-requested\n");
-    return 0;
-  }
-
-  // Anything that asks the user to log out has to come after this returns: a
-  // logout before the consent dialog is answered drops the enable.
-  if (!ChiaKeyWaitForInputSourceEnabled(inputSourceID,
-                                        kChiaKeyEnableApprovalTimeout)) {
-    NSLog(@"input source %@ was not enabled within %.0f seconds", inputSourceID,
-          kChiaKeyEnableApprovalTimeout);
-    printf("enable-timeout\n");
-    return 0;
-  }
-
-  printf("newly-enabled\n");
+  printf(requestedEnable ? "newly-enabled\n" : "already-enabled\n");
   return 0;
 }
 
@@ -250,7 +263,9 @@ int main(int argc, char *argv[]) {
     if (cmd == "uninstall") {
       // Used by Scripts/uninstall.sh to take the input source out of the
       // system list before the bundle is deleted.
-      int status = ChiaKeyDisableInputSourceWithID(ChiaKeyInputSourceID()) ? 0 : 1;
+      BOOL modeDisabled = ChiaKeyDisableInputSourceWithID(ChiaKeyInputModeID());
+      BOOL parentDisabled = ChiaKeyDisableInputSourceWithID(ChiaKeyInputSourceID());
+      int status = (modeDisabled && parentDisabled) ? 0 : 1;
       [pool drain];
       return status;
     }

@@ -2,6 +2,20 @@
 
 千秋輸入法正式發佈的主要 artifact 為 macOS Installer `.pkg`。
 
+## 輸入模式相容性
+
+`Takao-Info.plist` 以 `ComponentInputModeDict` 宣告單一可見模式
+`com.chiakey.inputmethod.ChiaKey.Hant`，顯示名稱仍是「千秋輸入法」。注音、
+倉頡等內部模組仍由原本選單切換。安裝時先啟用父輸入法，再啟用模式；
+移除時停用兩者。Dev 安裝會把模式與本地化名稱一併改為 Dev 身分。
+
+從沒有模式宣告的舊版升級後，請登出再登入，讓使用中的應用程式重新載入
+輸入來源資料。`Scripts/verify-input-source-icon.sh` 會檢查建置產物的父項／
+模式圖示、模式 ID 與本地化名稱，正式打包與 Dev 安裝都會執行。
+
+這項相容性調整與圖示路徑修正用於處理 #6 的輸入來源切換問題；Safari 的
+原始崩潰尚未在本機重現，仍需回報者在原環境驗證。
+
 
 ## 建立本機測試 package
 

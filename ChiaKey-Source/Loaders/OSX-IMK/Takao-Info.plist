@@ -73,5 +73,41 @@
 	</array>
 	<key>tsInputMethodIconFileKey</key>
 	<string>ChiaKeyMenuIcon.tiff</string>
+	<key>ComponentInputModeDict</key>
+	<dict>
+		<key>tsInputModeListKey</key>
+		<dict>
+			<key>com.chiakey.inputmethod.ChiaKey.Hant</key>
+			<dict>
+				<key>TISInputSourceID</key>
+				<string>com.chiakey.inputmethod.ChiaKey.Hant</string>
+				<key>TISIntendedLanguage</key>
+				<string>zh-Hant</string>
+				<key>tsInputModeCharacterRepertoireKey</key>
+				<array>
+					<string>Hant</string>
+					<string>Hans</string>
+				</array>
+				<key>tsInputModeDefaultStateKey</key>
+				<true/>
+				<key>tsInputModeIsVisibleKey</key>
+				<true/>
+				<key>tsInputModeMenuIconFileKey</key>
+				<string>ChiaKeyMenuIcon.tiff</string>
+				<key>tsInputModeAlternateMenuIconFileKey</key>
+				<string>ChiaKeyMenuIcon.tiff</string>
+				<key>tsInputModePaletteIconFileKey</key>
+				<string>ChiaKeyMenuIcon.tiff</string>
+				<key>tsInputModePrimaryInScriptKey</key>
+				<true/>
+				<key>tsInputModeScriptKey</key>
+				<string>smUnicodeScript</string>
+			</dict>
+		</dict>
+		<key>tsVisibleInputModeOrderedArrayKey</key>
+		<array>
+			<string>com.chiakey.inputmethod.ChiaKey.Hant</string>
+		</array>
+	</dict>
 </dict>
 </plist>

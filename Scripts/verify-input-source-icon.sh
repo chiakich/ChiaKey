@@ -37,3 +37,29 @@ if [[ ! -f "${APP}/Contents/Resources/${icon_file}" ]]; then
 fi
 
 echo "verify-input-source-icon.sh: ${icon_file} is present"
+
+# Check the selectable mode too: the parent icon alone is not sufficient for
+# the input-source HUD. Keep this gate in both release and dev packaging.
+mode_root=":ComponentInputModeDict"
+mode_id="$(/usr/libexec/PlistBuddy -c "Print ${mode_root}:tsVisibleInputModeOrderedArrayKey:0" "${INFO_PLIST}")"
+parent_id="$(/usr/libexec/PlistBuddy -c 'Print :TISInputSourceID' "${INFO_PLIST}")"
+if [[ "${mode_id}" != "${parent_id}.Hant" ]]; then
+  echo "verify-input-source-icon.sh: unexpected mode ID ${mode_id} for ${parent_id}" >&2
+  exit 1
+fi
+mode_path="${mode_root}:tsInputModeListKey:${mode_id}"
+declared_id="$(/usr/libexec/PlistBuddy -c "Print ${mode_path}:TISInputSourceID" "${INFO_PLIST}")"
+[[ "${declared_id}" == "${mode_id}" ]] || exit 1
+for key in tsInputModeMenuIconFileKey tsInputModeAlternateMenuIconFileKey tsInputModePaletteIconFileKey; do
+  mode_icon="$(/usr/libexec/PlistBuddy -c "Print ${mode_path}:${key}" "${INFO_PLIST}")"
+  if [[ -z "${mode_icon}" || ! -f "${APP}/Contents/Resources/${mode_icon}" ]]; then
+    echo "verify-input-source-icon.sh: ${key} names missing icon '${mode_icon}'" >&2
+    exit 1
+  fi
+done
+for localized_plist in "${APP}"/Contents/Resources/*.lproj/InfoPlist.strings; do
+  [[ -f "${localized_plist}" ]] || continue
+  mode_name="$(/usr/libexec/PlistBuddy -c "Print :${mode_id}" "${localized_plist}")"
+  [[ -n "${mode_name}" ]] || exit 1
+done
+echo "verify-input-source-icon.sh: ${mode_id} icons and localized names are present"

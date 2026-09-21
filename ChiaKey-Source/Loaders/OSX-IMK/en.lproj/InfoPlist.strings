@@ -3,3 +3,4 @@ CFBundleDisplayName = "ChiaKey";
 NSHumanReadableCopyright = "Copyright © 2026 涼風千秋 Chiaki.C";
 NSContactsUsageDescription = "ChiaKey reads names in your contacts so its Phrase Editor can add them to your phrase database.";
 com.chiakey.inputmethod.ChiaKey = "ChiaKey";
+"com.chiakey.inputmethod.ChiaKey.Hant" = "ChiaKey";

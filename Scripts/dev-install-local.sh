@@ -175,6 +175,11 @@ apply_dev_identity() {
 
   run /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${DEV_BUNDLE_ID}" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Set :TISInputSourceID ${DEV_BUNDLE_ID}" "${INSTALLED_PLIST}"
+  local mode_list=":ComponentInputModeDict:tsInputModeListKey"
+  run /usr/libexec/PlistBuddy -c "Copy ${mode_list}:com.chiakey.inputmethod.ChiaKey.Hant ${mode_list}:${DEV_BUNDLE_ID}.Hant" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Delete ${mode_list}:com.chiakey.inputmethod.ChiaKey.Hant" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Set ${mode_list}:${DEV_BUNDLE_ID}.Hant:TISInputSourceID ${DEV_BUNDLE_ID}.Hant" "${INSTALLED_PLIST}"
+  run /usr/libexec/PlistBuddy -c "Set :ComponentInputModeDict:tsVisibleInputModeOrderedArrayKey:0 ${DEV_BUNDLE_ID}.Hant" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Set :InputMethodConnectionName ${DEV_CONNECTION_NAME}" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Set :CFBundleName ${DEV_DISPLAY_NAME}" "${INSTALLED_PLIST}"
   run /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string ${DEV_DISPLAY_NAME}" "${INSTALLED_PLIST}"
@@ -187,6 +192,8 @@ apply_dev_identity() {
     run /usr/libexec/PlistBuddy -c "Set :CFBundleName ${DEV_DISPLAY_NAME}" "${localized_plist}"
     run /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName ${DEV_DISPLAY_NAME}" "${localized_plist}"
     run /usr/libexec/PlistBuddy -c "Set :com.chiakey.inputmethod.ChiaKey ${DEV_DISPLAY_NAME}" "${localized_plist}"
+    run /usr/libexec/PlistBuddy -c "Delete :com.chiakey.inputmethod.ChiaKey.Hant" "${localized_plist}"
+    run /usr/libexec/PlistBuddy -c "Add :${DEV_BUNDLE_ID}.Hant string ${DEV_DISPLAY_NAME}" "${localized_plist}"
   done
 
   apply_dev_shared_support_identity
@@ -428,6 +435,9 @@ fi
 
 run /usr/bin/ditto "${BUILT_APP}" "${INSTALL_APP}"
 apply_dev_identity
+if [[ "${DRY_RUN}" != "1" ]]; then
+  run "${ROOT_DIR}/Scripts/verify-input-source-icon.sh" "${INSTALL_APP}"
+fi
 # The `--deep` sign below does not descend into Contents/SharedSupport, so the
 # nested helper apps would otherwise keep the linker's ad-hoc signature whose
 # identifier is the bare executable name ("PhraseEditor"). Sign them first,
