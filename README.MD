@@ -4,11 +4,24 @@
 
 <img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />
 
-千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。
+千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。  
+
+官方網站：[千秋輸入法 ChiaKey](https://chiaki.ch/works/chiakey)  
+相關文章：[都 2026 年了，怎麼還有人在寫輸入法？](https://chiaki.ch/blog/writing-an-input-method-in-2026)  
 
 本專案專注於修復與更新輸入法本體，詞庫資料則使用 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon)，遇到缺詞、選字錯誤問題，請至該專案反應。
 
 這不是 Yahoo 官方產品。原始碼依 BSD-style 授權釋出；詳見 [LICENSE](LICENSE)。Yahoo! 名稱與貢獻者姓名不得在未取得書面同意的情況下用於背書衍生產品。
+
+> 感謝您的喜愛，若有餘力歡迎贊助與支持！贊助將用於支付蘋果開發者認證年費
+
+#### 適用台灣信用卡 / Apple Pay / ATM / 超商代碼，亦可小額贊助：
+
+[綠界贊助連結](https://p.ecpay.com.tw/2A3B186)
+
+#### 適用台灣以外的贊助連結：
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A21UAIV9)
 
 ## 下載
 
@@ -69,7 +82,7 @@ Yahoo! 奇摩輸入法當年為人稱道的選字品質，很大一部分來自�
 
 千秋輸入法的 bigram 是重新建構的：以既有開源詞庫為基底，疊加 Mozilla Common Voice 句料，以及參照中央研究院平衡語料庫主題分佈、由大型語言模型生成再經審核提煉的台灣口語語料，透過一條可重現、來源可追蹤的 pipeline 產生。
 
-這是本專案投入最深的部分。完整的資料層、來源審查與整合流程記錄在 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon)。
+這是本專案投入最深的部分。完整的資料層、來源審查與整合流程記錄請見 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon)。
 
 ## 匯入自訂輸入法（cin 表格）
 
