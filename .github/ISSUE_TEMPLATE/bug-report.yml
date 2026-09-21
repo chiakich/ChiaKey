@@ -1,0 +1,77 @@
+name: 輸入法運作問題
+description: 回報千秋輸入法本身的運作問題，例如打不出字、當掉、候選視窗異常、與特定 App 不相容。
+title: "運作問題："
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        這個表單用來回報 **輸入法程式本身** 的問題，例如無法輸入、當掉、候選視窗顯示異常、切換輸入法失效、在特定 App 中行為不正常。
+
+        如果是「打得出來但選錯字」或「詞庫缺詞」，請改到
+        [ChiaKey-Lexicon](https://github.com/chiakich/ChiaKey-Lexicon/issues/new/choose) 回報。
+
+        若可能的話，詳細填寫對釐清問題幫助很大。
+  - type: textarea
+    id: description
+    attributes:
+      label: 問題描述
+      description: 發生了什麼事？預期應該要是什麼結果？
+      placeholder: 例如：在 Safari 網址列輸入注音時，候選視窗停在畫面左上角不會跟著游標移動。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 重現步驟
+      description: 請盡量寫出從頭到尾的操作順序。
+      placeholder: |
+        1. 開啟 Safari，點一下網址列
+        2. 切換到千秋輸入法
+        3. 輸入 su3cl3
+        4. 候選視窗出現在畫面左上角
+    validations:
+      required: false
+  - type: input
+    id: app_version
+    attributes:
+      label: 千秋輸入法版本
+      description: 可從輸入法選單的「關於千秋輸入法」查看。
+      placeholder: 1.0.0
+    validations:
+      required: false
+  - type: input
+    id: macos_version
+    attributes:
+      label: macOS 版本
+      description: 可從「關於這台 Mac」查看。
+      placeholder: macOS 26.6 (Apple Silicon)
+    validations:
+      required: false
+  - type: input
+    id: affected_app
+    attributes:
+      label: 發生問題的 App
+      description: 問題出現在哪個程式？若在多個程式都會發生也請說明。
+      placeholder: Safari 26.0
+    validations:
+      required: false
+  - type: dropdown
+    id: reproducibility
+    attributes:
+      label: 是否可穩定重現
+      options:
+        - 每次都會發生
+        - 偶爾發生
+        - 只發生過一次
+        - 不確定
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: 補充說明
+      description: 可附上截圖、螢幕錄影、當機報告，或其他有助於釐清的資訊。
+    validations:
+      required: false

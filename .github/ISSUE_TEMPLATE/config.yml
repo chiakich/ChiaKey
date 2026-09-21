@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 詞庫問題（缺詞、長句選字錯誤）
+    url: https://github.com/chiakich/ChiaKey-Lexicon/issues/new/choose
+    about: 打得出來但選錯字，或詞庫缺少某個詞，請到 ChiaKey-Lexicon 回報。

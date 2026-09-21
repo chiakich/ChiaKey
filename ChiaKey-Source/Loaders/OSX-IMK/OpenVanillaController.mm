@@ -1302,6 +1302,13 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   [self _resetUI];
 }
 
+- (void)reportInputMethodIssueAction:(id)sender {
+  NSString *urlString = @"https://github.com/chiakich/ChiaKey/issues/new/choose";
+  NSURL *url = [NSURL URLWithString:urlString];
+  [[NSWorkspace sharedWorkspace] openURL:url];
+  [self _resetUI];
+}
+
 - (void)reportCandidateIssueAction:(id)sender {
   NSString *urlString =
       @"https://github.com/chiakich/ChiaKey-Lexicon/issues/new/choose";
@@ -1462,6 +1469,14 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   [prefMenuItem setAction:@selector(preferenceAction:)];
   [prefMenuItem setTitle:LFLSTR(@"Preferences...")];
   [menu addItem:prefMenuItem];
+
+  NSMenuItem *reportInputMethodIssueMenuItem =
+      [[[NSMenuItem alloc] init] autorelease];
+  [reportInputMethodIssueMenuItem setTarget:self];
+  [reportInputMethodIssueMenuItem
+      setAction:@selector(reportInputMethodIssueAction:)];
+  [reportInputMethodIssueMenuItem setTitle:LFLSTR(@"Report Input Method Issue")];
+  [menu addItem:reportInputMethodIssueMenuItem];
 
   NSMenuItem *reportCandidateIssueMenuItem =
       [[[NSMenuItem alloc] init] autorelease];
