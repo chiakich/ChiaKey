@@ -48,6 +48,11 @@ if [[ "${mode_id}" != "${parent_id}.Hant" ]]; then
   exit 1
 fi
 mode_path="${mode_root}:tsInputModeListKey:${mode_id}"
+mode_template="$(/usr/libexec/PlistBuddy -c "Print ${mode_path}:TISIconIsTemplate" "${INFO_PLIST}" 2>/dev/null || true)"
+if [[ "${mode_template}" != "true" ]]; then
+  echo "verify-input-source-icon.sh: ${mode_id} must declare TISIconIsTemplate=true for system tinting" >&2
+  exit 1
+fi
 declared_id="$(/usr/libexec/PlistBuddy -c "Print ${mode_path}:TISInputSourceID" "${INFO_PLIST}")"
 [[ "${declared_id}" == "${mode_id}" ]] || exit 1
 for key in tsInputModeMenuIconFileKey tsInputModeAlternateMenuIconFileKey tsInputModePaletteIconFileKey; do

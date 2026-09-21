@@ -83,6 +83,8 @@
 				<string>com.chiakey.inputmethod.ChiaKey.Hant</string>
 				<key>TISIntendedLanguage</key>
 				<string>zh-Hant</string>
+				<key>TISIconIsTemplate</key>
+				<true/>
 				<key>tsInputModeCharacterRepertoireKey</key>
 				<array>
 					<string>Hant</string>
