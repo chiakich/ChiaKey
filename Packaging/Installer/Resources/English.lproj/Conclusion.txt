@@ -1,9 +1,9 @@
 Installation complete.
 
-The installer has registered and enabled ChiaKey.
+The installer has registered ChiaKey. macOS may have asked you to allow a new input source during the install; if that prompt never appeared, or you did not allow it, ChiaKey is still installed and only needs to be added by hand (see below).
 
 macOS keeps a cached input source list in every running app, so a first install needs a logout before you can switch to ChiaKey everywhere. Click "Log Out" below to finish. Later updates are handled by the built-in updater and do not need a logout.
 
-If ChiaKey is still missing from the input menu after logging back in, open System Settings > Keyboard > Text Input > Edit > "+", then choose Traditional Chinese > ChiaKey.
+If ChiaKey is missing from the input menu after logging back in, open System Settings > Keyboard > Text Input > Edit > "+", then choose Traditional Chinese > ChiaKey.
 
 Thank you for installing!

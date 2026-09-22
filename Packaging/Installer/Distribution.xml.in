@@ -23,7 +23,9 @@
        is only complete everywhere after a logout. Here postinstall passes
        the install subcommand with its wait-for-approval flag, which blocks
        until the user has answered macOS's consent dialog, so the button never
-       appears before the input source is actually enabled. /usr/sbin/installer sets
+       appears before the input source is actually enabled. That wait is capped
+       at half a minute: an approval lands in seconds, so past that nobody is
+       answering, and the conclusion pane covers adding the input source by hand. /usr/sbin/installer sets
        COMMAND_LINE_INSTALL, so the CLI and updater paths skip both the wait
        and the forced logout. -->
   <pkg-ref id="__COMPONENT_IDENTIFIER__" version="__VERSION__" onConclusion="RequireLogout">__CLEAN_COMPONENT_PKG_NAME__</pkg-ref>

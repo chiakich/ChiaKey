@@ -99,16 +99,32 @@ static BOOL ChiaKeyDisableInputSourceWithID(NSString *inputSourceID) {
   return YES;
 }
 
+// Ask the list the input menu is built from, not the source's own flag.
+// A filtered TISCreateInputSourceList hands back a source whether or not it is
+// enabled, and kTISPropertyInputSourceIsEnabled then lies about input *modes*:
+// it reads YES for our mode while the mode is absent from the enabled list and
+// the input menu does not offer it. Believing that flag made "install" report
+// already-enabled and skip the enable entirely, which is exactly the state a
+// user with no ChiaKey in their menu needs us to repair. Enumerating the
+// enabled-only list (no filter dictionary, includeAllInstalled NO) agrees with
+// the menu and with AppleEnabledInputSources, so enumerate and match the ID.
 static BOOL ChiaKeyInputSourceIsEnabled(NSString *inputSourceID) {
-  TISInputSourceRef source = ChiaKeyCreateInputSourceForID(inputSourceID);
-  if (!source) {
-    return NO;
-  }
+  CFArrayRef sources = TISCreateInputSourceList(NULL, false);
+  if (!sources) return NO;
 
-  CFBooleanRef enabled = (CFBooleanRef)TISGetInputSourceProperty(
-      source, kTISPropertyInputSourceIsEnabled);
-  BOOL isEnabled = enabled && CFBooleanGetValue(enabled);
-  CFRelease(source);
+  BOOL isEnabled = NO;
+  for (CFIndex i = 0; i < CFArrayGetCount(sources); i++) {
+    TISInputSourceRef source =
+        (TISInputSourceRef)CFArrayGetValueAtIndex(sources, i);
+    NSString *sourceID =
+        (NSString *)TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
+    if ([sourceID isKindOfClass:[NSString class]] &&
+        [sourceID isEqualToString:inputSourceID]) {
+      isEnabled = YES;
+      break;
+    }
+  }
+  CFRelease(sources);
   return isEnabled;
 }
 
@@ -157,15 +173,26 @@ static NSString *ChiaKeyRegisteredBundlePath(TISInputSourceRef source) {
 }
 
 // The enable turns into a system consent dialog; the flag only flips once the
-// user approves, and the notification that refreshes our cached view needs a
-// running run loop, so spin the loop instead of sleeping.
-static const NSTimeInterval kChiaKeyEnableApprovalTimeout = 600;
+// user approves. Measured on a real first install, an approval lands in about
+// three seconds and the enabled list reflects it at once, so this budget buys
+// nothing for the case that works -- it is spent entirely on someone who is
+// not answering the dialog, staring at an installer that shows only "Running
+// package scripts...". Half a minute is long enough to notice the dialog even
+// when it opens behind the installer window, and short enough that ignoring it
+// is not the ordeal that a 600 second wait made of it. The conclusion pane
+// covers whatever is left unenabled.
+//
+// It is a budget for the whole registration rather than per input source: the
+// parent and the mode are enabled in turn, and two separate timeouts would
+// leave the installer sitting there for twice as long.
+static const NSTimeInterval kChiaKeyEnableApprovalTimeout = 30;
 
 static BOOL ChiaKeyWaitForInputSourceEnabled(NSString *inputSourceID,
-                                             NSTimeInterval timeout) {
-  NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
+                                             NSDate *deadline) {
   while (!ChiaKeyInputSourceIsEnabled(inputSourceID)) {
     if ([deadline timeIntervalSinceNow] <= 0) return NO;
+    // The enabled list is rebuilt off a notification, so spin the run loop
+    // instead of sleeping through it.
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.5, false);
   }
   return YES;
@@ -221,15 +248,17 @@ static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
   // Preserve an existing enable, but do not mistake an enabled legacy parent
   // for an enabled mode after an upgrade.
   BOOL requestedEnable = NO;
+  NSDate *approvalDeadline =
+      [NSDate dateWithTimeIntervalSinceNow:kChiaKeyEnableApprovalTimeout];
   for (NSString *sourceID in @[inputSourceID, modeID]) {
     if (ChiaKeyInputSourceIsEnabled(sourceID)) continue;
     if (!ChiaKeyEnableInputSourceWithID(sourceID)) return 1;
     requestedEnable = YES;
 
     if (waitForApproval) {
-      if (!ChiaKeyWaitForInputSourceEnabled(sourceID,
-                                            kChiaKeyEnableApprovalTimeout)) {
-        NSLog(@"input source %@ was not enabled within %.0f seconds", sourceID,
+      if (!ChiaKeyWaitForInputSourceEnabled(sourceID, approvalDeadline)) {
+        NSLog(@"input source %@ was not enabled within %.0f seconds of the "
+              @"registration starting", sourceID,
               kChiaKeyEnableApprovalTimeout);
         printf("enable-timeout\n");
         return 0;
@@ -256,6 +285,18 @@ int main(int argc, char *argv[]) {
       BOOL waitForApproval =
           (argc > 2) && (string(argv[2]) == "--wait-for-approval");
       int status = ChiaKeyRegisterInputMethod(waitForApproval);
+      [pool drain];
+      return status;
+    }
+
+    // Diagnostic probe for the install scripts and for tracking down "the
+    // input source is not in my menu" reports: answers for one ID with the
+    // same enabled-list check the install path uses. Status only, no output.
+    if (cmd == "check-enabled") {
+      NSString *sourceID = (argc > 2)
+                               ? [NSString stringWithUTF8String:argv[2]]
+                               : ChiaKeyInputModeID();
+      int status = ChiaKeyInputSourceIsEnabled(sourceID) ? 0 : 1;
       [pool drain];
       return status;
     }
