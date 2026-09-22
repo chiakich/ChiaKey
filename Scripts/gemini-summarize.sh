@@ -12,8 +12,10 @@ set -uo pipefail
 prompt_file="${1:?usage: gemini-summarize.sh <prompt-file> <output-file>}"
 out_file="${2:?usage: gemini-summarize.sh <prompt-file> <output-file>}"
 
-# Tried in order: the newest Flash is also the most contended on the free tier.
-models="${GEMINI_MODELS:-gemini-3.8-flash gemini-3.6-flash}"
+# Tried in order: the newest Flash is also the most contended on the free tier,
+# so the list ends on an older GA model that is rarely at capacity. Rewriting a
+# commit list into a few bullets does not need the newest generation.
+models="${GEMINI_MODELS:-gemini-3.8-flash gemini-3.6-flash gemini-2.5-flash}"
 
 : > "${out_file}"
 
@@ -51,7 +53,9 @@ for model in ${models}; do
     esac
 
     echo "${model} returned ${code} (attempt ${attempt}/3)"
-    [[ "${attempt}" != "3" ]] && sleep $((attempt * 15))
+    # 30s then 60s: a 503 here is a capacity spike, and the old 15/30 gave up
+    # on the whole model list inside two minutes.
+    [[ "${attempt}" != "3" ]] && sleep $((attempt * 30))
   done
   [[ "${code}" == "200" ]] && break
   echo "::notice::${model} unavailable (${code}); trying the next model."

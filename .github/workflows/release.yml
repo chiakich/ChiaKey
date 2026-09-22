@@ -364,7 +364,9 @@ jobs:
               printf '## 這次更新\n\n%s\n\n' "${SUMMARY_ZH}"
               [[ -n "${changelog}" ]] && printf '<details>\n<summary>完整變更</summary>\n\n%s\n\n</details>\n\n' "${changelog}"
             else
-              echo "::warning::No Chinese summary was produced; publishing the commit list only."
+              # Redirected: this block writes RELEASE_NOTES.md, so a bare echo
+              # would put the workflow command into the release body itself.
+              echo "::warning::No Chinese summary was produced; publishing the commit list only." >&2
               [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
             fi
             if [[ -n "${LEXICON_VERSION}" ]]; then
