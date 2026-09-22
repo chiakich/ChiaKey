@@ -19,9 +19,9 @@
 	<key>CFBundleSignature</key>
 	<string>CHIA</string>
 	<key>CFBundleVersion</key>
-	<string>1.2.5</string>
+	<string>1.2.6</string>
 	<key>ChiaKeyReleaseTag</key>
-	<string>v1.2.5</string>
+	<string>v1.2.6</string>
 	<key>LSHasLocalizedDisplayName</key>
 	<true/>
 	<key>LSUIElement</key>

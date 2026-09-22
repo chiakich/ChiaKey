@@ -30,9 +30,9 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1.2.5</string>
+	<string>1.2.6</string>
 	<key>ChiaKeyReleaseTag</key>
-	<string>v1.2.5</string>
+	<string>v1.2.6</string>
 	<key>ComponentInputModeDict</key>
 	<dict>
 		<key>tsInputModeListKey</key>
