@@ -187,6 +187,19 @@ static NSString *ChiaKeyRegisteredBundlePath(TISInputSourceRef source) {
 // leave the installer sitting there for twice as long.
 static const NSTimeInterval kChiaKeyEnableApprovalTimeout = 30;
 
+// Once the consent dialog has been answered the remaining enables need nobody,
+// but the enabled list still takes a moment to catch up. A source whose wait
+// starts with the shared budget almost spent would be declared timed out for
+// being merely slow, so never hand one less than this.
+static const NSTimeInterval kChiaKeyEnableSettleGrace = 5;
+
+static NSDate *ChiaKeyEnableDeadlineForSource(NSDate *approvalDeadline) {
+  NSDate *grace = [NSDate dateWithTimeIntervalSinceNow:kChiaKeyEnableSettleGrace];
+  return ([approvalDeadline compare:grace] == NSOrderedDescending)
+             ? approvalDeadline
+             : grace;
+}
+
 static BOOL ChiaKeyWaitForInputSourceEnabled(NSString *inputSourceID,
                                              NSDate *deadline) {
   while (!ChiaKeyInputSourceIsEnabled(inputSourceID)) {
@@ -248,28 +261,42 @@ static int ChiaKeyRegisterInputMethod(BOOL waitForApproval) {
   // Preserve an existing enable, but do not mistake an enabled legacy parent
   // for an enabled mode after an upgrade.
   BOOL requestedEnable = NO;
+  BOOL enablePending = NO;
   NSDate *approvalDeadline =
       [NSDate dateWithTimeIntervalSinceNow:kChiaKeyEnableApprovalTimeout];
   for (NSString *sourceID in @[inputSourceID, modeID]) {
     if (ChiaKeyInputSourceIsEnabled(sourceID)) continue;
-    if (!ChiaKeyEnableInputSourceWithID(sourceID)) return 1;
+    if (!ChiaKeyEnableInputSourceWithID(sourceID)) {
+      // TIS refuses a mode whose parent is still waiting on consent. On the
+      // non-waiting path that is the expected outcome rather than a failure:
+      // the mode's default-state flag and the next install call pick it up.
+      if (enablePending) break;
+      return 1;
+    }
     requestedEnable = YES;
 
     if (waitForApproval) {
-      if (!ChiaKeyWaitForInputSourceEnabled(sourceID, approvalDeadline)) {
-        NSLog(@"input source %@ was not enabled within %.0f seconds of the "
-              @"registration starting", sourceID,
-              kChiaKeyEnableApprovalTimeout);
+      if (!ChiaKeyWaitForInputSourceEnabled(sourceID,
+                                            ChiaKeyEnableDeadlineForSource(
+                                                approvalDeadline))) {
+        NSLog(@"input source %@ was not enabled within the approval budget "
+              @"(%.0f seconds from the registration, never less than %.0f "
+              @"seconds for this source)", sourceID,
+              kChiaKeyEnableApprovalTimeout, kChiaKeyEnableSettleGrace);
         printf("enable-timeout\n");
         return 0;
       }
     } else if (!ChiaKeyInputSourceIsEnabled(sourceID)) {
-      // CLI/updater must not wait for consent. The mode's default-state flag
-      // lets TIS enable it when the parent is approved; a later install call
-      // also checks the mode explicitly.
-      printf("enable-requested\n");
-      return 0;
+      // CLI/updater must not wait for consent, but it must still ask for the
+      // mode: returning here left TISEnableInputSource uncalled for it, so a
+      // command-line install enabled the parent and nothing else.
+      enablePending = YES;
     }
+  }
+
+  if (enablePending) {
+    printf("enable-requested\n");
+    return 0;
   }
 
   printf(requestedEnable ? "newly-enabled\n" : "already-enabled\n");

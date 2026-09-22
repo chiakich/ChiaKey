@@ -335,6 +335,10 @@ jobs:
       # empty and the notes fall back to the commit list.
       - name: Write user-facing notes in Chinese
         continue-on-error: true
+        # Three models, each retried three times behind a 120s curl timeout with
+        # 30s and 60s backoffs, is ~22 minutes of a release job spent waiting out
+        # a capacity incident. The notes fall back to the commit list anyway.
+        timeout-minutes: 10
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: Scripts/gemini-summarize.sh notes-prompt.txt summary-zh.md

@@ -121,11 +121,15 @@ if [ -n "${keep_app}" ]; then
     install_status=$?
   fi
   echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}: $(echo "${install_output}" | /usr/bin/tr '\n' ' ')" >&2
-  # Log the status, never propagate it. The bundle is already in place by now,
-  # and the conclusion pane tells the user how to add the input source by hand,
-  # so a registration hiccup -- or the user losing patience and killing the
-  # approval wait, which arrives here as SIGTERM's 143 -- must not turn a
-  # working install into PackageKit's "Install Failed".
+  # A killed approval wait -- the user losing patience, arriving here as 143 for
+  # SIGTERM, 128+n for any signal -- leaves a perfectly good install behind, and
+  # the conclusion pane already explains how to add the input source by hand, so
+  # that must not become PackageKit's "Install Failed". Any other non-zero
+  # status means registration itself failed: report it, because hiding it sends
+  # the user off to log out for an input method that was never registered.
+  if [ "${install_status}" != "0" ] && [ "${install_status}" -lt 128 ]; then
+    exit "${install_status}"
+  fi
 else
   echo "ChiaKey postinstall: cannot find installed ChiaKey executable" >&2
 fi
