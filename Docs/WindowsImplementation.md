@@ -1,0 +1,115 @@
+# Windows 實作指南
+
+最後更新：2026-09-30
+
+這份文件說明 Windows TSF 輸入法要如何接 `ChiaKeyCore`，也是第二階段（接 TSF
+前端）的交接文件。第一階段已完成：核心能用 MSVC 編譯並執行。
+
+## 目前狀態
+
+`.github/workflows/core-msvc.yml` 在 `windows-latest` 上編譯核心並跑 smoke test。
+詞庫不在 git 裡，所以由一個 `macos-26` job 用 `install-lexicon-release.sh
+--dry-run --keep-downloads` 下載並驗證，再以 artifact 交給 Windows job。
+
+已在 Windows 上實際執行過的：注音組字、選字、標點、多 context 隔離、設定即時
+重載、學習寫入落到磁碟，以及引擎一結束就存檔。
+
+還沒有 TSF 前端。這一步需要實機，見文末。
+
+## 架構決定：引擎放在 TSF DLL 裡
+
+評估過三個前例後決定 in-process：
+
+| 專案 | 引擎位置 |
+|---|---|
+| Yahoo KeyKey（2008，Windows） | server process，`BaseIMEServer` 經 MS RPC |
+| RIME / Weasel | server process，`WeaselServerApp` |
+| 新酷音 windows-chewing-tsf | in-process |
+
+決定的理由是要做新注音那種 inline 虛線組字。`ITfContext`、edit session、
+`ITfComposition` 與 `GUID_PROP_ATTRIBUTE` 都是應用程式 process 內的 COM 物件，
+不能交給另一個 process 驅動。所以組字、display attribute 與候選窗無論如何都得在
+DLL 裡。server 剩下的工作只有引擎與資料庫，卻得在每個按鍵上同步等一次 IPC。
+
+新酷音是需求最接近的前例：注音、繁體、TSF、inline 組字，引擎在 process 內。
+他們曾把 UI 拆到 `chewing_tip_host.exe`，四個月後以權限層級問題退回。
+
+`Runtime` 就是 process 邊界的接縫。Yahoo 的 `BIServerRPCInterface.idl` 與它幾乎
+一對一，所以日後若要拆成 server，不必重畫邊界。
+
+## 第二階段：接 TSF 前端
+
+從 [polobread/KeyKey](https://github.com/polobread/KeyKey) 的
+`Source/Loaders/Windows-TSF` 開始。那是 MIT 授權，請保留 Chui-Ping Cheng 的版權
+聲明。
+
+TSF 程式碼只透過 `KeyKeyEngine.cpp` 這一層接觸引擎。把它換成包 `ChiaKeyCore` 的
+實作即可，`TextService.cpp` 的 COM 與組字處理可以沿用。
+
+**要編在我們的 framework tree 上，不要合併他們的。** 他們的 OpenVanilla、
+PlainVanilla、Formosa 已經與我們分歧很多，`Mandarin.cpp` 差了一千多行。
+
+## 移植時必須遵守的事項
+
+每一條都是實測踩到的，不是推測。
+
+1. **`keyCode` 要填移位後的字元。** 引擎從 keyCode 判斷注音鍵，修飾鍵不影響這一
+   步。送 `keyCode=','` 加 shift 會組出 ㄝ；要送 `keyCode='<'` 才會得到 `，`。
+   polobread 的 `PrintableAsciiFromVirtualKey` 就是在做這件事，照用。
+2. **必須定義 `WIN32`。** 引擎全部以 `WIN32` 判斷平台，MSVC 只預先定義 `_WIN32`。
+   沒定義會靜默走進 POSIX 分支，然後炸在 `dirent.h`。`ChiaKeyCore/CMakeLists.txt`
+   已處理，自己寫的 build 檔也要照做。
+3. **在 TSF `Deactivate` 時銷毀 `Engine`。** 學習是在 context 結束時存檔的，app 關閉
+   時 TSF 送的 `Deactivate` 就是唯一的存檔時機。polobread 在 `Deactivate` 裡做
+   `engine_.reset()`，保留它。若為了避開 loader lock 而在 process 結束時刻意不銷毀
+   `Runtime`（polobread 就是這樣），沒關係，存檔靠的是 `Engine` 而不是 `Runtime`。
+4. **學習資料庫的 connection 絕不能用 `BEGIN IMMEDIATE`。** 詞庫通常裝在
+   `Program Files` 底下，一般使用者對那裡是唯讀的。bundled SQLite 3.6.11 在主
+   database 唯讀時會拒絕 `BEGIN IMMEDIATE`，即使要寫的是 ATTACH 上去的學習資料庫。
+   現代 SQLite 不會這樣，所以 macOS 上測不出來。
+5. **詞庫要以讀寫開啟。** 學習資料庫是 `ATTACH` 在詞庫 connection 上的，而被 ATTACH
+   的資料庫會沿用唯讀旗標。`Runtime` 先用唯讀 connection 驗證詞庫，驗證通過才以
+   讀寫開啟，這樣被拒絕的詞庫不會被寫入，學習也寫得進去。
+6. **存檔跑在 app 的 UI thread 上。** `busy_timeout` 因此只設 200 毫秒。不要改成
+   PhraseEditor 用的三秒，那會讓 app 在切換焦點時凍住。
+7. **一個 process 一個 `Runtime`，一個文字欄位一個 `Engine`。** `Runtime` 有一把
+   recursive mutex，所有 `Engine` 呼叫都經過它，TSF 多 thread 呼叫是安全的。
+
+## Inline 組字：新注音的外觀
+
+polobread 已經註冊了 `ITfDisplayAttributeProvider`，也會把 `GUID_PROP_ATTRIBUTE`
+套到組字 range 上，但只有一個 `TF_LS_SOLID` 屬性。改成新酷音的雙屬性：
+
+| 範圍 | 線型 | `bAttr` |
+|---|---|---|
+| 整段組字 | `TF_LS_DOT` | `TF_ATTR_INPUT` |
+| 游標所在的詞段 | `TF_LS_SOLID` | `TF_ATTR_INPUT` |
+
+切 range 需要的資料 `EngineState` 已經有了：`wordSegments` 與 `highlight`。
+
+## 建置與測試
+
+在 x64 Native Tools 命令列裡執行，需要 CMake 3.21 以上。`ChiaKeySource.db` 不在
+git 裡，要另外複製過去。
+
+```powershell
+cmake -S ChiaKey-Source\Frameworks\ChiaKeyCore -B build\core-cmake -DCHIAKEY_LEXICON_DATABASE=C:\path\to\ChiaKeySource.db
+cmake --build build\core-cmake --config Release
+ctest --test-dir build\core-cmake -C Release --output-on-failure
+```
+
+## 需要實機的項目
+
+以下都是 GUI 行為，CI 做不到：
+
+1. 註冊 TIP，需要系統管理員權限。
+2. 在記事本、Word、Edge 裡實際打字。
+3. 目視確認虛線與實線底線。
+4. 在 Store app（AppContainer）與以系統管理員身分執行的記事本裡打字。這一項連
+   RIME 都沒有看得到的處理，值得先確認。
+
+## 尚未解決
+
+- `Scripts/test-learning-store.sh` 裡的學習並發測試只在 macOS 跑，沒有進 Windows CI。
+- 加詞寫入失敗時會顯示「該詞已經存在於資料庫中」。不再謊稱成功，但把寫入失敗
+  說成已存在仍不對，需要讓 `addUserUnigram` 的回傳值多一種狀態。

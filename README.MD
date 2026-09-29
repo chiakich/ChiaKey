@@ -128,6 +128,7 @@ Note:
 - [架構](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
 - [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與獨立 iOS host repo 關係。
 - [iOS 實作指南](Docs/iOSImplementation.md)：iOS keyboard extension 的 core 接法、repo 邊界與驗證入口。
+- [Windows 實作指南](Docs/WindowsImplementation.md)：TSF 前端的架構決定、移植時必須遵守的事項與建置方式。
 - [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
 - [Release packaging](Docs/ReleasePackaging.md)：正式 `.pkg` installer、簽章與 notarization 流程。
 - [現代化 roadmap](Docs/ModernizationPlan.md)：已完成基線、下一步與延後事項。
