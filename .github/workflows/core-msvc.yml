@@ -63,3 +63,28 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build/core-msvc -C Release --output-on-failure
+
+  # the TSF front end, its icons and the settings app, plus the engine test
+  tsf:
+    runs-on: windows-latest
+    needs: lexicon
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lexicon
+          path: lexicon
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          $db = (Resolve-Path lexicon/ChiaKeySource.db).Path -replace '\\', '/'
+          cmake -S ChiaKey-Source/Loaders/Windows-TSF -B build/tsf-msvc `
+            "-DCHIAKEY_LEXICON_DATABASE=$db"
+
+      - name: Build
+        run: cmake --build build/tsf-msvc --config Release
+
+      - name: Test
+        run: ctest --test-dir build/tsf-msvc -C Release --output-on-failure
