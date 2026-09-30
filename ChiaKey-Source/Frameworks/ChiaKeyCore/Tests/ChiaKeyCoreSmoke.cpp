@@ -754,6 +754,44 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
   }
 
   {
+    // Cangjie and Simplex are the lexicon's own Generic-*-cin tables; the
+    // prefix is a compile-time define, so a wrong one silently finds neither
+    bool sawCangjie = false;
+    bool sawSimplex = false;
+    for (const auto& entry : runtime->inputMethods()) {
+      if (entry.first == "Generic-cj-cin") sawCangjie = true;
+      if (entry.first == "Generic-simplex-cin") sawSimplex = true;
+    }
+    if (!sawCangjie || !sawSimplex) {
+      return Fail("runtime did not list Cangjie and Simplex");
+    }
+    if (!runtime->setPrimaryInputMethod("Generic-cj-cin")) {
+      return Fail("could not select Cangjie as the primary input method");
+    }
+    std::unique_ptr<ChiaKey::Engine> cangjie = runtime->createEngine(&errorMessage);
+    if (!cangjie) return Fail("failed to create a Cangjie engine: " + errorMessage);
+    if (!TypeKeys(cangjie.get(), "hapi ")) return Fail("Cangjie rejected hapi");
+    ChiaKey::EngineState state = cangjie->snapshot();
+    // committed at once or offered first, depending on how many characters share the code
+    if (state.committedText != "的") {
+      if (!state.candidateState.visible || state.candidateState.candidates.empty() ||
+          state.candidateState.candidates[0] != "的") {
+        return Fail("expected Cangjie hapi to give 的, got: " + state.committedText +
+                    state.composingText);
+      }
+      cangjie->selectCandidate(0);
+      state = cangjie->snapshot();
+      if (state.committedText != "的" && state.composingText != "的") {
+        return Fail("selecting Cangjie's first candidate did not give 的");
+      }
+    }
+    cangjie.reset();
+    if (!runtime->setPrimaryInputMethod(ChiaKey::Runtime::SmartMandarinIdentifier())) {
+      return Fail("could not switch back to Smart Mandarin after Cangjie");
+    }
+  }
+
+  {
     // A learned phrase has to reach disk. The lexicon connection once opened
     // read-only, and the learning database attached to it inherited that, so
     // every write failed while the IME still reported the phrase as added.

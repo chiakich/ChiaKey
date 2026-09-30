@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -189,6 +190,46 @@ void TestSettings(const std::string& writableDir) {
           "a missing key falls back to the config passed in");
 }
 
+void TestGenericInputMethods() {
+    Check(SelectInputMethod("Generic-cj-cin"), "Cangjie can be selected");
+    std::unique_ptr<EngineSession> session = EngineSession::Create();
+    Type(*session, "hapi");
+    EngineResult result = session->handleKey(Key(VK_SPACE));
+    if (result.committedText != L"的") {
+        Check(result.candidatesVisible && result.candidates[0].text == L"的",
+              "Cangjie hapi offers 的");
+        result = session->handleKey(Key('1'));
+    }
+    Check(result.committedText == L"的" || result.compositionText == L"的",
+          "Cangjie hapi gives 的");
+    session.reset();
+
+    const auto methods = InputMethods();
+    const bool userTable = std::any_of(methods.begin(), methods.end(), [](const auto& method) {
+        return method.first == "Generic-test-cin" && method.second == L"測試";
+    });
+    Check(userTable, "a .cin under Tables/Generic is listed with its %cname");
+    Check(SelectInputMethod("Generic-test-cin"), "the user table can be selected");
+    session = EngineSession::Create();
+    Type(*session, "ab");
+    result = session->handleKey(Key(VK_SPACE));
+    Check(result.committedText == L"測" || result.compositionText == L"測" ||
+              (result.candidatesVisible && result.candidates[0].text == L"測"),
+          "the user table composes from its own chardef");
+    session.reset();
+
+    Check(SelectInputMethod("SmartMandarin"), "Smart Mandarin can be selected back");
+}
+
+void WriteUserTable(const std::string& writableDir) {
+    CreateDirectoryA((writableDir + "\\Tables").c_str(), nullptr);
+    CreateDirectoryA((writableDir + "\\Tables\\Generic").c_str(), nullptr);
+    std::ofstream out(writableDir + "\\Tables\\Generic\\test.cin", std::ios::binary);
+    out << "%gen_inp\n%ename TestTable\n%cname 測試\n%selkey 123456789\n"
+           "%keyname begin\na 甲\nb 乙\n%keyname end\n"
+           "%chardef begin\nab 測\n%chardef end\n";
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -203,16 +244,24 @@ int main(int argc, char* argv[]) {
     paths.writablePath = argv[2];
     paths.lexiconDatabasePath = argv[3];
     CreateDirectoryA(argv[2], nullptr);
+    // user tables are only scanned when the runtime starts
+    WriteUserTable(argv[2]);
     std::string error;
     if (!InitializeRuntime(paths, &error)) {
         std::cerr << "runtime: " << error << std::endl;
         return 1;
     }
 
+    const auto methods = InputMethods();
+    Check(methods.size() >= 4 && methods[0].first == "SmartMandarin" &&
+              methods[1].second == L"傳統注音" && methods[2].first == "Generic-cj-cin" &&
+              methods[3].second == L"簡易",
+          "the input methods are listed in the mac menu's order and names");
     TestLayout();
     TestKeys();
     TestSession();
     TestSettings(argv[2]);
+    TestGenericInputMethods();
     if (failures) return 1;
     std::cout << "chiakey_tsf_engine_test: OK" << std::endl;
     return 0;
