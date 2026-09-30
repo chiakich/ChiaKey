@@ -93,8 +93,9 @@ private:
 
 class CommitModeSwitchEditSession final : public ITfEditSession {
 public:
-    CommitModeSwitchEditSession(TextService* service, ITfContext* context, unsigned generation)
-        : service_(service), context_(context), generation_(generation) {
+    CommitModeSwitchEditSession(TextService* service, ITfContext* context, bool moveCaret,
+                                unsigned generation)
+        : service_(service), context_(context), moveCaret_(moveCaret), generation_(generation) {
         service_->AddRef();
     }
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
@@ -115,7 +116,7 @@ public:
     }
     STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
         ran_ = true;
-        return service_->commitCompositionForModeSwitch(editCookie, context_.Get());
+        return service_->commitCompositionForModeSwitch(editCookie, context_.Get(), moveCaret_);
     }
 
 private:
@@ -127,6 +128,7 @@ private:
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
+    bool moveCaret_;
     unsigned generation_;
     bool ran_ = false;
 };
@@ -1044,7 +1046,7 @@ void TextService::resetCandidateState() {
     candidateAnchor_.Reset();
 }
 
-bool TextService::requestCommitComposition() {
+bool TextService::requestCommitComposition(bool moveCaret) {
     if (pendingModeCommit_) return true;
     if (!composition_) {
         resetCandidateState();
@@ -1054,7 +1056,7 @@ bool TextService::requestCommitComposition() {
     if (!compositionContext_ || clientId_ == TF_CLIENTID_NULL) return false;
 
     auto* session = new (std::nothrow) CommitModeSwitchEditSession(
-        this, compositionContext_.Get(), ++commitGeneration_);
+        this, compositionContext_.Get(), moveCaret, ++commitGeneration_);
     if (!session) return false;
     pendingModeCommit_ = true;
     HRESULT editResult = E_FAIL;
@@ -1078,16 +1080,18 @@ bool TextService::requestCommitComposition() {
 }
 
 HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
-                                                    ITfContext* context) {
+                                                    ITfContext* context, bool moveCaret) {
     HRESULT result = S_OK;
     if (composition_ && compositionContext_.Get() == context) {
         // EndComposition keeps the text; abandoning would clear the user's sentence
-        ComPtr<ITfRange> range;
-        result = composition_->GetRange(&range);
-        ComPtr<ITfRange> caret;
-        if (SUCCEEDED(result)) result = range->Clone(&caret);
-        if (SUCCEEDED(result)) result = caret->Collapse(editCookie, TF_ANCHOR_END);
-        if (SUCCEEDED(result)) result = MoveCaret(editCookie, context, caret.Get());
+        if (moveCaret) {
+            ComPtr<ITfRange> range;
+            result = composition_->GetRange(&range);
+            ComPtr<ITfRange> caret;
+            if (SUCCEEDED(result)) result = range->Clone(&caret);
+            if (SUCCEEDED(result)) result = caret->Collapse(editCookie, TF_ANCHOR_END);
+            if (SUCCEEDED(result)) result = MoveCaret(editCookie, context, caret.Get());
+        }
         if (SUCCEEDED(result)) result = endComposition(editCookie, false);
     }
     if (SUCCEEDED(result)) {
@@ -1237,7 +1241,8 @@ STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie
         return S_OK;
     }
     if (!selectionMatchesTrackedState(editCookie, context) && !pendingModeCommit_) {
-        abandonComposition();
+        // keep the sentence, and leave the caret where the user put it
+        if (!requestCommitComposition(false)) abandonComposition();
     }
     return S_OK;
 }

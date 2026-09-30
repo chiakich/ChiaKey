@@ -82,7 +82,8 @@ public:
 
     HRESULT processKey(TfEditCookie editCookie, ITfContext* context,
                        const KeyEvent& event, bool* handled);
-    HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie, ITfContext* context);
+    HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie, ITfContext* context,
+                                           bool moveCaret);
     void commitSessionDropped(ITfContext* context, unsigned generation);
     bool isChineseMode() const noexcept { return chineseMode_; }
     bool isFullWidthMode() const noexcept { return fullWidthMode_; }
@@ -122,7 +123,7 @@ private:
     HRESULT commitText(TfEditCookie editCookie, ITfContext* context,
                        const std::wstring& text);
     HRESULT endComposition(TfEditCookie editCookie, bool clearText);
-    bool requestCommitComposition();
+    bool requestCommitComposition(bool moveCaret = true);
     void abandonComposition();
     void resetCandidateState();
     void updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
