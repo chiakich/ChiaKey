@@ -1,0 +1,144 @@
+#pragma once
+
+#include <Windows.h>
+#include <msctf.h>
+#include <wrl/client.h>
+
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <string>
+
+#include "CandidateWindow.h"
+#include "ChiaKeyEngine.h"
+
+namespace ChiaKey::WindowsTsf {
+
+class LangBarButton;
+
+class TextService final : public ITfTextInputProcessorEx,
+                          public ITfKeyEventSink,
+                          public ITfCompositionSink,
+                          public ITfTextEditSink,
+                          public ITfThreadMgrEventSink,
+                          public ITfCompartmentEventSink,
+                          public ITfDisplayAttributeProvider {
+public:
+    static HRESULT CreateInstance(IUnknown* outer, REFIID iid, void** object);
+
+    TextService();
+
+    // IUnknown
+    STDMETHODIMP QueryInterface(REFIID iid, void** object) override;
+    STDMETHODIMP_(ULONG) AddRef() override;
+    STDMETHODIMP_(ULONG) Release() override;
+
+    // ITfTextInputProcessor / ITfTextInputProcessorEx
+    STDMETHODIMP Activate(ITfThreadMgr* threadManager, TfClientId clientId) override;
+    STDMETHODIMP ActivateEx(ITfThreadMgr* threadManager, TfClientId clientId, DWORD flags) override;
+    STDMETHODIMP Deactivate() override;
+
+    // ITfKeyEventSink
+    STDMETHODIMP OnSetFocus(BOOL foreground) override;
+    STDMETHODIMP OnTestKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) override;
+    STDMETHODIMP OnTestKeyUp(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) override;
+    STDMETHODIMP OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) override;
+    STDMETHODIMP OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) override;
+    STDMETHODIMP OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) override;
+
+    // ITfCompositionSink
+    STDMETHODIMP OnCompositionTerminated(TfEditCookie editCookie, ITfComposition* composition) override;
+
+    // ITfTextEditSink
+    STDMETHODIMP OnEndEdit(ITfContext* context, TfEditCookie editCookie,
+                           ITfEditRecord* editRecord) override;
+
+    // ITfThreadMgrEventSink
+    STDMETHODIMP OnInitDocumentMgr(ITfDocumentMgr* documentManager) override;
+    STDMETHODIMP OnUninitDocumentMgr(ITfDocumentMgr* documentManager) override;
+    STDMETHODIMP OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr* previous) override;
+    STDMETHODIMP OnPushContext(ITfContext* context) override;
+    STDMETHODIMP OnPopContext(ITfContext* context) override;
+
+    // ITfCompartmentEventSink
+    STDMETHODIMP OnChange(REFGUID guid) override;
+
+    // ITfDisplayAttributeProvider
+    STDMETHODIMP EnumDisplayAttributeInfo(IEnumTfDisplayAttributeInfo** items) override;
+    STDMETHODIMP GetDisplayAttributeInfo(REFGUID guid,
+                                         ITfDisplayAttributeInfo** info) override;
+
+    HRESULT processKey(TfEditCookie editCookie, ITfContext* context,
+                       const KeyEvent& event, bool* handled);
+    HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie, ITfContext* context);
+    bool isChineseMode() const noexcept { return chineseMode_; }
+    bool isFullWidthMode() const noexcept { return fullWidthMode_; }
+    void toggleChineseMode();
+    void toggleFullWidthMode();
+    bool selectInputMethod(const std::string& identifier);
+
+private:
+    ~TextService();
+
+    bool isPotentialKey(const KeyEvent& event) const;
+    bool isModeToggleKey(const KeyEvent& event) const;
+    bool isWidthToggleKey(const KeyEvent& event) const;
+    bool isFullWidthCharacterKey(const KeyEvent& event) const;
+    HRESULT adviseInputModeSink();
+    void unadviseInputModeSink();
+    HRESULT adviseTextEditSink(ITfContext* context);
+    void unadviseTextEditSink();
+    HRESULT initializeLangBar();
+    void uninitializeLangBar();
+    void refreshLangBar();
+    void setChineseMode(bool enabled);
+    void setFullWidthMode(bool enabled);
+    KeyEvent translateKey(WPARAM wparam, LPARAM lparam) const;
+    HRESULT adviseSinks();
+    void unadviseSinks();
+    HRESULT updateComposition(TfEditCookie editCookie, ITfContext* context,
+                              const EngineResult& result);
+    HRESULT ensureComposition(TfEditCookie editCookie, ITfContext* context);
+    HRESULT replaceCompositionText(TfEditCookie editCookie, ITfContext* context,
+                                   const EngineResult& result);
+    void applyDisplayAttributes(TfEditCookie editCookie, ITfContext* context,
+                                ITfRange* range, const EngineResult& result);
+    HRESULT commitText(TfEditCookie editCookie, ITfContext* context,
+                       const std::wstring& text);
+    HRESULT endComposition(TfEditCookie editCookie, bool clearText);
+    bool requestCommitComposition();
+    void abandonComposition();
+    void resetCandidateState();
+    void updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
+                               const EngineResult& result);
+    bool selectionMatchesTrackedState(TfEditCookie editCookie, ITfContext* context) const;
+
+    std::atomic<ULONG> referenceCount_{1};
+    Microsoft::WRL::ComPtr<ITfThreadMgr> threadManager_;
+    TfClientId clientId_ = TF_CLIENTID_NULL;
+    DWORD threadManagerCookie_ = TF_INVALID_COOKIE;
+    DWORD inputModeCookie_ = TF_INVALID_COOKIE;
+    DWORD conversionModeCookie_ = TF_INVALID_COOKIE;
+    DWORD textEditCookie_ = TF_INVALID_COOKIE;
+    TfGuidAtom inputAttributeAtom_ = TF_INVALID_GUIDATOM;
+    TfGuidAtom focusedAttributeAtom_ = TF_INVALID_GUIDATOM;
+    bool chineseMode_ = true;
+    bool fullWidthMode_ = false;
+    bool shiftTogglePending_ = false;
+    DWORD shiftPressedAt_ = 0;
+    bool candidateActive_ = false;
+    bool endingComposition_ = false;
+    bool pendingModeCommit_ = false;
+    Microsoft::WRL::ComPtr<ITfComposition> composition_;
+    Microsoft::WRL::ComPtr<ITfContext> compositionContext_;
+    Microsoft::WRL::ComPtr<ITfContext> textEditContext_;
+    Microsoft::WRL::ComPtr<ITfRange> candidateAnchor_;
+    std::unique_ptr<EngineSession> engine_;
+    CandidateWindow candidateWindow_;
+    std::mutex langBarMutex_;
+    LangBarButton* modeIconButton_ = nullptr;
+    LangBarButton* switchLanguageButton_ = nullptr;
+    LangBarButton* fullHalfButton_ = nullptr;
+};
+
+}  // namespace ChiaKey::WindowsTsf
