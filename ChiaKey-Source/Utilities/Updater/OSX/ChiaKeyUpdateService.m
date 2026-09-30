@@ -542,6 +542,8 @@ static NSComparisonResult CKCompareIdentifier(NSString *lhs, NSString *rhs) {
                 ChiaKeyUpdateRelease *candidate =
                     [self _releaseFromJSON:json];
                 if (!candidate) continue;
+                // a Windows release (windows-v*) carries no package to install
+                if (![[candidate packageURL] length]) continue;
                 if (best &&
                     [[self class] compareVersion:[best tag]
                                        toVersion:[candidate tag]] !=
