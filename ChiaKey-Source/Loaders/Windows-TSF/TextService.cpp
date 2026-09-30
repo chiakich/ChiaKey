@@ -1044,6 +1044,7 @@ void TextService::resetCandidateState() {
     candidateWindow_.hide();
     candidateActive_ = false;
     candidateAnchor_.Reset();
+    candidateContext_.Reset();
 }
 
 bool TextService::requestCommitComposition(bool moveCaret) {
@@ -1187,6 +1188,7 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
         candidateWindow_.showMessage(owner, textRect, result.message);
     }
     candidateActive_ = showCandidates;
+    candidateContext_ = context;
     candidateAnchor_.Reset();
     if (showCandidates && !composition_ && SUCCEEDED(range->Clone(&candidateAnchor_))) {
         candidateAnchor_->Collapse(editCookie, TF_ANCHOR_END);
@@ -1312,7 +1314,8 @@ STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
 STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
     if (compositionContext_.Get() == context) {
         if (!pendingModeCommit_) requestCommitComposition();
-    } else {
+    } else if (!composition_ && candidateContext_.Get() == context) {
+        // a composition in another context is not this pop's to clear
         resetCandidateState();
         if (engine_) engine_->reset();
     }
