@@ -66,6 +66,8 @@ struct CandidateState {
   std::vector<std::string> candidates;
   // aligned with candidates; true = the preceding text promotes this pick
   std::vector<bool> contextPicks;
+  // one per candidate on the current page, as the user types them
+  std::vector<std::string> selectionKeys;
   std::size_t currentPage = 0;
   std::size_t pageCount = 0;
   std::size_t candidatesPerPage = 0;

@@ -12,6 +12,7 @@
 #include <io.h>
 #endif
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -205,6 +206,16 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
   if (state.candidateState.contextPicks.size() !=
       state.candidateState.candidates.size()) {
     return Fail("expected contextPicks to align with the candidate list");
+  }
+  {
+    const ChiaKey::CandidateState& panel = state.candidateState;
+    const std::size_t onPage =
+        std::min(panel.candidatesPerPage,
+                 panel.candidates.size() - panel.currentPage * panel.candidatesPerPage);
+    if (panel.selectionKeys.size() != onPage || panel.selectionKeys.empty() ||
+        panel.selectionKeys[0] != "1") {
+      return Fail("expected one selection key per candidate on the page, from 1");
+    }
   }
 
   std::size_t flagged = 0;
