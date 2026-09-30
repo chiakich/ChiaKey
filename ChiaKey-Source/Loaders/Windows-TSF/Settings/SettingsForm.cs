@@ -219,6 +219,7 @@ namespace ChiaKey.Settings
             AddPane("倉頡(&J)", "cangjie.tiff", BuildCangjiePane());
             AddPane("簡易(&S)", "simplex.tiff", BuildSimplexPane());
             AddPane("泛用(&E)", "generic.tiff", BuildGenericPane());
+            AddPane("詞彙(&W)", "phrase.tiff", BuildPhrasePane());
             AddPane("其他(&M)", "plugin.tiff", BuildMiscPane());
 
             LoadSettings();
@@ -276,7 +277,7 @@ namespace ChiaKey.Settings
         {
             int index = toolbarItems.Count;
             ToolbarItem item = new ToolbarItem(title, LoadIcon(icon));
-            item.Bounds = new Rectangle(8 + index * 72, 2, 68, ToolbarHeight - 4);
+            item.Bounds = new Rectangle(6 + index * 70, 2, 66, ToolbarHeight - 4);
             item.Click += delegate { ShowPane(index); };
             toolbar.Controls.Add(item);
             toolbarItems.Add(item);
@@ -769,6 +770,67 @@ namespace ChiaKey.Settings
             LoadTables();
         }
 
+        // TakaoPhrases and Yahoo's PanelPhrases: the editor is a window of its own
+        private Control BuildPhrasePane()
+        {
+            Panel pane = new Panel();
+            Title(pane, "詞彙設定");
+            GroupBox phrases = Group(pane, "自訂詞彙", 44, 120);
+            Label about = new Label();
+            about.Text = "加入、修改或移除自己的詞彙，也可以匯入或匯出詞彙檔。";
+            about.AutoSize = true;
+            about.Location = new Point(12, 26);
+            phrases.Controls.Add(about);
+            Label format = new Label();
+            format.Text = "詞彙檔與 Mac 版千秋輸入法、Yahoo! 奇摩輸入法通用。";
+            format.ForeColor = Color.DimGray;
+            format.AutoSize = true;
+            format.Location = new Point(12, 48);
+            phrases.Controls.Add(format);
+            Button editor = new Button();
+            editor.Text = "開啟詞彙編輯器…";
+            editor.Bounds = new Rectangle(14, 78, 160, 28);
+            editor.Click += delegate
+            {
+                System.Diagnostics.Process.Start(Application.ExecutablePath, PhraseEditorArgument);
+            };
+            phrases.Controls.Add(editor);
+
+            GroupBox messages = Group(pane, "符號表常用語", 174, 98);
+            Label messagesAbout = new Label();
+            messagesAbout.Text = "符號表最後一頁的自訂訊息，一行一則。";
+            messagesAbout.AutoSize = true;
+            messagesAbout.Location = new Point(12, 26);
+            messages.Controls.Add(messagesAbout);
+            Button edit = new Button();
+            edit.Text = "編輯常用語…";
+            edit.Bounds = new Rectangle(14, 56, 160, 28);
+            edit.Click += delegate { EditCannedMessages(); };
+            messages.Controls.Add(edit);
+            return pane;
+        }
+
+        // the same header ChiaKey::Runtime::userCannedMessagesPath() writes; its first line is skipped
+        private void EditCannedMessages()
+        {
+            string path = Path.Combine(Path.GetDirectoryName(preferencesPath), "UserCannedMessages.txt");
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    File.WriteAllText(path,
+                        "=== 請從本行以下加入自定訊息，一行一則，每行不超過 80 中文或英數字，並請保留這一行 ===\n" +
+                        "你好！\n", new System.Text.UTF8Encoding(true));
+                }
+                System.Diagnostics.Process.Start("notepad.exe", "\"" + path + "\"");
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(this, "無法開啟常用語檔案：" + error.Message, Text, MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+            }
+        }
+
         private Control BuildMiscPane()
         {
             Panel pane = new Panel();
@@ -956,22 +1018,34 @@ namespace ChiaKey.Settings
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr window);
 
+        public const string PhraseEditorArgument = "/phrases";
+
         [STAThread]
-        private static void Main()
+        private static void Main(string[] args)
         {
+            // the input menu opens the phrase editor on its own, as Yahoo's separate PhraseEditor.exe
+            bool phrases = args.Length > 0 &&
+                           string.Equals(args[0], PhraseEditorArgument, StringComparison.OrdinalIgnoreCase);
+            string title = phrases ? PhraseEditorForm.WindowTitle : WindowTitle;
             bool created;
-            using (Mutex single = new Mutex(true, "ChiaKey.Settings", out created))
+            using (Mutex single = new Mutex(true, phrases ? "ChiaKey.PhraseEditor" : "ChiaKey.Settings",
+                                            out created))
             {
                 // a second launch from the language bar brings the open window up instead
                 if (!created)
                 {
-                    IntPtr existing = FindWindow(null, WindowTitle);
+                    IntPtr existing = FindWindow(null, title);
                     if (existing != IntPtr.Zero)
                         SetForegroundWindow(existing);
                     return;
                 }
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                if (phrases)
+                {
+                    Application.Run(new PhraseEditorForm());
+                    return;
+                }
                 string data = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChiaKey");
                 Application.Run(new SettingsForm(data));

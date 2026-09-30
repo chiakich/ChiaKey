@@ -105,6 +105,9 @@ struct SymbolWindowState {
 SymbolWindowState ReadSymbolWindowState();
 void WriteSymbolWindowState(const SymbolWindowState& state);
 
+// a desktop app's: the shared %APPDATA%\ChiaKey and the lexicon next to the DLL
+ChiaKey::RuntimePaths DesktopRuntimePaths();
+
 // for tests; must run before the first session
 bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMessage);
 

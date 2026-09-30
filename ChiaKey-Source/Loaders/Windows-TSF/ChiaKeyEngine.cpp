@@ -22,6 +22,8 @@ using OpenVanilla::PVPropertyList;
 
 constexpr char kSmartMandarinPlist[] = "SmartMandarin.plist";
 constexpr char kFrontendPlist[] = "Windows.plist";
+// the phrase editor advances it on every commit (ChiaKeyUserPhraseCoordination.h)
+constexpr char kUserPhrasesDirtyFlag[] = "SmartMandarinUserData.dirty";
 // in Preferences but not a module's: the rest are, user tables included
 constexpr const wchar_t* kNonModulePlists[] = {
     L"SmartMandarin.plist", L"Windows.plist", L"Loader.plist", L"SymbolWindow.plist",
@@ -48,13 +50,27 @@ bool SameConfig(const ChiaKey::EngineConfig& a, const ChiaKey::EngineConfig& b) 
 
 std::wstring Utf8ToWide(const std::string& text);
 
-FILETIME Stamp(const std::string& path) {
+// A write time moves once per clock tick, about 15 ms, so a rewrite right after
+// the engine's own can keep it; the size usually tells the two apart.
+struct FileStamp {
+    FILETIME time{};
+    ULONGLONG size = 0;
+};
+
+FileStamp Stamp(const std::string& path) {
     WIN32_FILE_ATTRIBUTE_DATA data{};
-    if (!GetFileAttributesExW(Utf8ToWide(path).c_str(), GetFileExInfoStandard, &data)) return {};
-    return data.ftLastWriteTime;
+    FileStamp stamp;
+    if (!GetFileAttributesExW(Utf8ToWide(path).c_str(), GetFileExInfoStandard, &data)) {
+        return stamp;
+    }
+    stamp.time = data.ftLastWriteTime;
+    stamp.size = (static_cast<ULONGLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow;
+    return stamp;
 }
 
-bool SameStamp(const FILETIME& a, const FILETIME& b) { return CompareFileTime(&a, &b) == 0; }
+bool SameStamp(const FileStamp& a, const FileStamp& b) {
+    return CompareFileTime(&a.time, &b.time) == 0 && a.size == b.size;
+}
 
 // one value for every module plist, so an edit, a new table's plist or a removal all show
 ULONGLONG ModulePlistsStamp(const std::string& preferencesPath) {
@@ -73,6 +89,7 @@ ULONGLONG ModulePlistsStamp(const std::string& preferencesPath) {
         for (const wchar_t* character = found.cFileName; *character; ++character) mix(*character);
         mix((static_cast<ULONGLONG>(found.ftLastWriteTime.dwHighDateTime) << 32) |
             found.ftLastWriteTime.dwLowDateTime);
+        mix((static_cast<ULONGLONG>(found.nFileSizeHigh) << 32) | found.nFileSizeLow);
     } while (FindNextFileW(search, &found));
     FindClose(search);
     return stamp;
@@ -253,9 +270,11 @@ struct RuntimeHolder {
     std::mutex mutex;
     std::shared_ptr<ChiaKey::Runtime> runtime;
     std::string preferencesPath;
-    FILETIME smartStamp{};
+    FileStamp smartStamp;
     ULONGLONG moduleStamp = 0;
-    FILETIME frontendStamp{};
+    std::string userPhrasesDirtyFlag;
+    FileStamp userPhrasesStamp;
+    FileStamp frontendStamp;
     FrontendSettings frontend;
     ULONGLONG nextRefresh = 0;
     // an AppContainer running on its temp folder until the shared one is usable
@@ -314,7 +333,13 @@ void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
         holder.smartStamp = Stamp(smartPath);
     }
 
-    const FILETIME frontendStamp = Stamp(frontendPath);
+    const FileStamp phrasesStamp = Stamp(holder.userPhrasesDirtyFlag);
+    if (!force && !SameStamp(phrasesStamp, holder.userPhrasesStamp)) {
+        holder.runtime->reloadUserPhrases();
+    }
+    holder.userPhrasesStamp = phrasesStamp;
+
+    const FileStamp frontendStamp = Stamp(frontendPath);
     if (force || !SameStamp(frontendStamp, holder.frontendStamp)) {
         holder.frontend = ReadFrontendSettings(holder.preferencesPath);
         if (holder.runtime->associatedPhrasesEnabled() != holder.frontend.associatedPhrases) {
@@ -330,6 +355,7 @@ void AdoptLocked(RuntimeHolder& holder, std::shared_ptr<ChiaKey::Runtime> runtim
     if (!holder.runtime) return;
     PinModule();
     holder.preferencesPath = PreferencesPath(writablePath);
+    holder.userPhrasesDirtyFlag = OVPathHelper::PathCat(writablePath, kUserPhrasesDirtyFlag);
     holder.privateFallback = privateFallback;
     holder.nextSharedRetry = GetTickCount64() + kSharedRetryIntervalMilliseconds;
     RefreshSettingsLocked(holder, true);
@@ -685,6 +711,8 @@ FrontendSettings CurrentFrontendSettings() {
 }
 
 std::wstring SettingsAppPath() { return ModuleDirectory() + L"\\ChiaKeySettings.exe"; }
+
+ChiaKey::RuntimePaths DesktopRuntimePaths() { return DefaultPaths(RoamingFolder(), true); }
 
 bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMessage) {
     RuntimeHolder& holder = Holder();
