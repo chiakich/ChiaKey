@@ -236,6 +236,7 @@ struct RuntimeHolder {
     FILETIME otherStamps[std::size(kOtherModulePlists)]{};
     FILETIME frontendStamp{};
     FrontendSettings frontend;
+    ULONGLONG nextRefresh = 0;
 };
 
 // leaked on purpose: no teardown under the loader lock; each Engine saves its own learning
@@ -243,6 +244,8 @@ RuntimeHolder& Holder() {
     static RuntimeHolder* holder = new RuntimeHolder();
     return *holder;
 }
+
+constexpr ULONGLONG kRefreshIntervalMilliseconds = 1000;
 
 std::string PreferencesPath(const std::string& writablePath) {
     return OVPathHelper::PathCat(writablePath, "Preferences");
@@ -259,6 +262,7 @@ std::shared_ptr<ChiaKey::Runtime> CreateRuntime(const ChiaKey::RuntimePaths& pat
 // only real differences: setConfig rewrites the plist and would wake every other process
 void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
     if (!holder.runtime || holder.preferencesPath.empty()) return;
+    holder.nextRefresh = GetTickCount64() + kRefreshIntervalMilliseconds;
     const std::string smartPath = OVPathHelper::PathCat(holder.preferencesPath, kSmartMandarinPlist);
     const std::string frontendPath = OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist);
 
@@ -344,14 +348,15 @@ std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime(std::string* writablePath
     return nullptr;
 }
 
-std::shared_ptr<ChiaKey::Runtime> SharedRuntime() {
+// throttled callers are on the key path; the rest refresh on every call
+std::shared_ptr<ChiaKey::Runtime> SharedRuntime(bool throttled = false) {
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     // a failed attempt is retried on the next activation, e.g. after install
     if (!holder.runtime) {
         std::string writablePath;
         AdoptLocked(holder, CreateDefaultRuntime(&writablePath), writablePath);
-    } else {
+    } else if (!throttled || GetTickCount64() >= holder.nextRefresh) {
         RefreshSettingsLocked(holder, false);
     }
     return holder.runtime;
@@ -652,23 +657,16 @@ std::unique_ptr<EngineSession> EngineSession::Create() {
     return std::unique_ptr<EngineSession>(new EngineSession(std::move(engine)));
 }
 
-bool EngineSession::hasComposition() const {
-    if (!engine_) return false;
-    const ChiaKey::EngineState state = engine_->snapshot();
-    return !state.composingText.empty() || !state.readingText.empty() ||
-           state.candidateState.visible;
-}
+bool EngineSession::hasComposition() const { return engine_ && engine_->isComposing(); }
 
 bool EngineSession::wantsKey(const KeyEvent& event) const {
     if (!engine_) return false;
+    const bool composing = hasComposition();
     // Ctrl+1..9 marks the last N composed characters as a user phrase
-    if (IsQuickUserPhraseKey(event)) return hasComposition();
+    if (IsQuickUserPhraseKey(event)) return composing;
     // TextService checks the punctuation chords itself
     if (event.control || event.alt) return false;
-    if (hasComposition()) {
-        return IsNavigationOrEditingKey(event.virtualKey) ||
-               PrintableAsciiFromVirtualKey(event) != 0 || !event.text.empty();
-    }
+    if (composing && IsNavigationOrEditingKey(event.virtualKey)) return true;
     // declining here makes TSF skip OnKeyDown and hand the raw key to the app
     return PrintableAsciiFromVirtualKey(event) != 0 || !event.text.empty();
 }
@@ -676,7 +674,7 @@ bool EngineSession::wantsKey(const KeyEvent& event) const {
 EngineResult EngineSession::handleKey(const KeyEvent& event) {
     if (!engine_) return {};
     // applying settings can rebuild the context, so never mid-composition
-    if (!hasComposition()) SharedRuntime();
+    if (!hasComposition()) SharedRuntime(true);
     const bool handled = engine_->handleKey(MakeCoreKey(event));
     EngineResult result = MakeResult(engine_->snapshot());
     result.handled = handled;
