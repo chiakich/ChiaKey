@@ -83,6 +83,7 @@ public:
     HRESULT processKey(TfEditCookie editCookie, ITfContext* context,
                        const KeyEvent& event, bool* handled);
     HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie, ITfContext* context);
+    void commitSessionDropped(ITfContext* context, unsigned generation);
     bool isChineseMode() const noexcept { return chineseMode_; }
     bool isFullWidthMode() const noexcept { return fullWidthMode_; }
     void toggleChineseMode();
@@ -144,6 +145,7 @@ private:
     bool candidateActive_ = false;
     bool endingComposition_ = false;
     bool pendingModeCommit_ = false;
+    unsigned commitGeneration_ = 0;
     Microsoft::WRL::ComPtr<ITfComposition> composition_;
     Microsoft::WRL::ComPtr<ITfContext> compositionContext_;
     Microsoft::WRL::ComPtr<ITfContext> textEditContext_;

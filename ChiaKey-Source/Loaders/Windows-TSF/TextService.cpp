@@ -93,8 +93,8 @@ private:
 
 class CommitModeSwitchEditSession final : public ITfEditSession {
 public:
-    CommitModeSwitchEditSession(TextService* service, ITfContext* context)
-        : service_(service), context_(context) {
+    CommitModeSwitchEditSession(TextService* service, ITfContext* context, unsigned generation)
+        : service_(service), context_(context), generation_(generation) {
         service_->AddRef();
     }
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
@@ -114,14 +114,21 @@ public:
         return remaining;
     }
     STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
+        ran_ = true;
         return service_->commitCompositionForModeSwitch(editCookie, context_.Get());
     }
 
 private:
-    ~CommitModeSwitchEditSession() { service_->Release(); }
+    ~CommitModeSwitchEditSession() {
+        // TSF drops a queued session whose context is destroyed before it gets the lock
+        if (!ran_) service_->commitSessionDropped(context_.Get(), generation_);
+        service_->Release();
+    }
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
+    unsigned generation_;
+    bool ran_ = false;
 };
 
 struct DisplayAttributeSpec {
@@ -1046,8 +1053,8 @@ bool TextService::requestCommitComposition() {
     }
     if (!compositionContext_ || clientId_ == TF_CLIENTID_NULL) return false;
 
-    auto* session = new (std::nothrow)
-        CommitModeSwitchEditSession(this, compositionContext_.Get());
+    auto* session = new (std::nothrow) CommitModeSwitchEditSession(
+        this, compositionContext_.Get(), ++commitGeneration_);
     if (!session) return false;
     pendingModeCommit_ = true;
     HRESULT editResult = E_FAIL;
@@ -1090,6 +1097,18 @@ HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
     pendingModeCommit_ = false;
     if (FAILED(result) && !chineseMode_ && threadManager_) setChineseMode(true);
     return result;
+}
+
+void TextService::commitSessionDropped(ITfContext* context, unsigned generation) {
+    if (!pendingModeCommit_ || generation != commitGeneration_) return;
+    pendingModeCommit_ = false;
+    // the context took its composition with it
+    if (compositionContext_.Get() == context) {
+        composition_.Reset();
+        compositionContext_.Reset();
+    }
+    resetCandidateState();
+    if (engine_) engine_->reset();
 }
 
 void TextService::abandonComposition() {
