@@ -4,6 +4,7 @@
 
 #include <ChiaKeyCore/ChiaKeyCore.h>
 #include <ChiaKeyCore/ChiaKeyCoreC.h>
+#include <ChiaKeyCore/UserPhraseStore.h>
 
 #include <sqlite3.h>
 #include <sys/stat.h>
@@ -782,6 +783,69 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     if (symbols.back().buttons || own.size() != 2 || own.back().text != "chiakey symbol smoke") {
       return Fail("UserCannedMessages.txt did not become the last symbol category");
     }
+  }
+
+  {
+    std::unique_ptr<ChiaKey::UserPhraseStore> store =
+        ChiaKey::UserPhraseStore::Open(writableDir, lexiconDatabasePath, &errorMessage);
+    if (!store) return Fail("failed to open the user phrase store: " + errorMessage);
+    store->beginEditingSession();
+    const std::string lockPath = writableDir + "/SmartMandarinUserData.editing";
+    if (!std::ifstream(lockPath.c_str()).good()) {
+      return Fail("an editing session did not create the lock file");
+    }
+
+    if (store->defaultReading("你好") != "ㄋㄧˇ,ㄏㄠˇ") {
+      return Fail("expected 你好 to read ㄋㄧˇ,ㄏㄠˇ, got " + store->defaultReading("你好"));
+    }
+    ChiaKey::UserPhrase added;
+    if (!store->add("測詞", "ㄘㄜˋ,ㄘˊ", &added) || added.rowid <= 0 ||
+        added.reading != "ㄘㄜˋ,ㄘˊ") {
+      return Fail("could not add a phrase with its own reading");
+    }
+    if (store->add("三字詞", "ㄙㄢ", nullptr)) {
+      return Fail("a reading shorter than the phrase was accepted");
+    }
+    if (store->count("測") != 1 || store->count("ㄘㄜˋ") != 1 ||
+        store->phrases("", ChiaKey::UserPhraseOrder::Insertion, false, 0, 1).front().phrase !=
+            "測詞") {
+      return Fail("the added phrase is not found by text or by reading");
+    }
+
+    // while the session holds the lock the engine writes nothing, but it reads
+    store->endEditingSession();
+    if (std::ifstream(lockPath.c_str()).good()) {
+      return Fail("ending the only editing session left the lock file behind");
+    }
+    runtime->reloadUserPhrases();
+    {
+      std::unique_ptr<ChiaKey::Engine> engine = runtime->createEngine();
+      TypeKeys(engine.get(), "hk4h6");
+      const ChiaKey::EngineState state = engine->snapshot();
+      if (state.composingText != "測詞") {
+        return Fail("the engine did not offer a phrase added by the editor, got " +
+                    state.composingText);
+      }
+    }
+
+    const std::string exported = writableDir + "/phrases-export.txt";
+    if (!store->exportTo(exported)) return Fail("exporting the user phrases failed");
+    if (!store->remove({added.rowid}) || store->contains("測詞")) {
+      return Fail("removing the phrase by rowid failed");
+    }
+    bool learningRestored = false;
+    if (!store->importFrom(exported, &learningRestored) || !store->contains("測詞") ||
+        !learningRestored) {
+      return Fail("importing the export did not bring the phrase and learning back");
+    }
+    if (!store->importFrom(exported) || store->count("測詞") != 1) {
+      return Fail("importing the same file twice duplicated the phrase");
+    }
+    store->remove({store->phrases("測詞", ChiaKey::UserPhraseOrder::Insertion, true, 0, 1)
+                       .front()
+                       .rowid});
+    std::remove(exported.c_str());
+    runtime->reloadUserPhrases();
   }
 
 #if defined(_WIN32)

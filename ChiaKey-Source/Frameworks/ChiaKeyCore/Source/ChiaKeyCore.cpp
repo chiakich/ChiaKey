@@ -796,6 +796,13 @@ std::string Runtime::userCannedMessagesPath() const {
   return path;
 }
 
+void Runtime::reloadUserPhrases() {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  // loadConfig flushes the query cache and reloads the learning caches
+  impl_->loader->forceSyncModuleConfigForNextRound(OVIMSMARTMANDARIN_IDENTIFIER);
+  impl_->loader->syncSandwichConfig();
+}
+
 const char* Runtime::SmartMandarinIdentifier() {
   return OVIMSMARTMANDARIN_IDENTIFIER;
 }
