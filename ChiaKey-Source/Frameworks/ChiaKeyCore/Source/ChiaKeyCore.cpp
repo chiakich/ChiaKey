@@ -70,11 +70,12 @@ bool DirectoryIsWritable(const std::string& path) {
   name << ".chiakey-write-probe." << static_cast<long>(getpid());
 #endif
   const std::string probe = OVPathHelper::PathCat(path, name.str());
-  std::FILE* file = std::fopen(probe.c_str(), "w");
+  // narrow CRT calls read UTF-8 as ANSI on Windows, failing CJK user folders
+  std::FILE* file = OpenVanilla::OVFileHelper::OpenStream(probe, "w");
   if (!file) return false;
 
   std::fclose(file);
-  std::remove(probe.c_str());
+  OVPathHelper::RemoveEverythingAtPath(probe);
   return true;
 }
 
