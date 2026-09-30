@@ -71,6 +71,7 @@ set_target_properties(chiakey_third_party PROPERTIES POSITION_INDEPENDENT_CODE O
 add_library(chiakey_core STATIC
     "${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore/Source/ChiaKeyCore.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore/Source/ChiaKeyCoreC.cpp"
+    "${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore/Source/UserPhraseStore.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"

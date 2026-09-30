@@ -146,6 +146,10 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
   // UserCannedMessages.txt, created with its header line if missing
   std::string userCannedMessagesPath() const;
 
+  // For when a phrase editor has changed the user database (its dirty flag
+  // moved): drops what Smart Mandarin cached and reads the user tables again.
+  void reloadUserPhrases();
+
   static const char* SmartMandarinIdentifier();
   static const char* TraditionalMandarinIdentifier();
 

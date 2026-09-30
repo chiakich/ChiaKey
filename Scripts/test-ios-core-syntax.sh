@@ -34,6 +34,7 @@ CORE_DEFINES=(
 CORE_SOURCES=(
   "$SOURCE_DIR/Frameworks/ChiaKeyCore/Source/ChiaKeyCore.cpp"
   "$SOURCE_DIR/Frameworks/ChiaKeyCore/Source/ChiaKeyCoreC.cpp"
+  "$SOURCE_DIR/Frameworks/ChiaKeyCore/Source/UserPhraseStore.cpp"
   "$SOURCE_DIR/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
   "$SOURCE_DIR/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
   "$SOURCE_DIR/Frameworks/Formosa/Source/Mandarin.cpp"
