@@ -62,11 +62,14 @@ namespace ChiaKey.Settings
                     g.FillRectangle(brush, ClientRectangle);
                 }
             }
-            int iconSize = LogicalToDeviceUnits(32);
+            // sized from the scaled bounds: icon and label sit together, centered
+            Size textSize = TextRenderer.MeasureText(g, Text, Font);
+            int iconSize = Height / 2;
+            int gap = Height / 24;
+            int top = (Height - iconSize - gap - textSize.Height) / 2;
             if (icon != null)
-                g.DrawImage(icon, (Width - iconSize) / 2, LogicalToDeviceUnits(4), iconSize, iconSize);
-            Rectangle textRect = new Rectangle(0, LogicalToDeviceUnits(38), Width,
-                                               Height - LogicalToDeviceUnits(38));
+                g.DrawImage(icon, (Width - iconSize) / 2, top, iconSize, iconSize);
+            Rectangle textRect = new Rectangle(0, top + iconSize + gap, Width, textSize.Height);
             TextRenderer.DrawText(g, Text, Font, textRect, Color.Black,
                                   TextFormatFlags.HorizontalCenter | TextFormatFlags.Top);
         }
@@ -77,6 +80,7 @@ namespace ChiaKey.Settings
         private const string WindowTitle = "千秋輸入法 偏好設定";
         // past the widest caption, 視窗背景顏色：
         private const int ControlLeft = 140;
+        private const int ToolbarHeight = 50;
 
         private static readonly Choice[] Layouts = {
             new Choice("Standard", "標準"),
@@ -111,6 +115,9 @@ namespace ChiaKey.Settings
         private readonly Plist frontend;
         private readonly Plist smartMandarin;
         private readonly Plist traditionalMandarin;
+        private readonly Plist cangjie;
+        private readonly Plist simplex;
+        private readonly string tablesPath;
 
         private readonly Panel toolbar = new Panel();
         private readonly Panel content = new Panel();
@@ -134,12 +141,24 @@ namespace ChiaKey.Settings
         private ComboBox textColor;
         private CheckBox backgroundPattern;
         private CheckBox beep;
+        private CheckBox cangjieCommitAtMaximum;
+        private CheckBox cangjieComposeWhileTyping;
+        private CheckBox cangjieClearOnError;
+        private CheckBox cangjieDynamicFrequency;
+        private CheckBox simplexComposeWhileTyping;
+        private CheckBox simplexClearOnError;
+        private ListBox userTables;
 
-        public SettingsForm(string preferencesPath)
+        public SettingsForm(string dataPath)
         {
+            string preferencesPath = Path.Combine(dataPath, "Preferences");
+            // the engine names Tables\Generic\x.cin the Generic-x-cin input method
+            tablesPath = Path.Combine(dataPath, "Tables", "Generic");
             frontend = new Plist(Path.Combine(preferencesPath, "Windows.plist"));
             smartMandarin = new Plist(Path.Combine(preferencesPath, "SmartMandarin.plist"));
             traditionalMandarin = new Plist(Path.Combine(preferencesPath, "TraditionalMandarin.plist"));
+            cangjie = new Plist(Path.Combine(preferencesPath, "Generic-cj-cin.plist"));
+            simplex = new Plist(Path.Combine(preferencesPath, "Generic-simplex-cin.plist"));
 
             // laid out in 96-DPI pixels and scaled once layout resumes; the
             // manifest makes the process DPI aware
@@ -157,12 +176,15 @@ namespace ChiaKey.Settings
 
             BuildToolbar();
             BuildButtons();
-            content.Location = new Point(0, 70);
-            content.Size = new Size(500, 350);
+            content.Location = new Point(0, ToolbarHeight);
+            content.Size = new Size(500, 420 - ToolbarHeight);
             Controls.Add(content);
 
             AddPane("一般(&G)", "general.tiff", BuildGeneralPane());
             AddPane("注音(&P)", "phonetic.tiff", BuildPhoneticPane());
+            AddPane("倉頡(&J)", "cangjie.tiff", BuildCangjiePane());
+            AddPane("簡易(&S)", "simplex.tiff", BuildSimplexPane());
+            AddPane("泛用(&E)", "generic.tiff", BuildGenericPane());
             AddPane("其他(&M)", "plugin.tiff", BuildMiscPane());
 
             LoadSettings();
@@ -180,7 +202,7 @@ namespace ChiaKey.Settings
         private void BuildToolbar()
         {
             toolbar.Location = new Point(0, 0);
-            toolbar.Size = new Size(500, 70);
+            toolbar.Size = new Size(500, ToolbarHeight);
             toolbar.Paint += delegate(object sender, PaintEventArgs e)
             {
                 using (LinearGradientBrush brush = new LinearGradientBrush(
@@ -220,7 +242,7 @@ namespace ChiaKey.Settings
         {
             int index = toolbarItems.Count;
             ToolbarItem item = new ToolbarItem(title, LoadIcon(icon));
-            item.Bounds = new Rectangle(8 + index * 72, 2, 68, 64);
+            item.Bounds = new Rectangle(8 + index * 72, 2, 68, ToolbarHeight - 4);
             item.Click += delegate { ShowPane(index); };
             toolbar.Controls.Add(item);
             toolbarItems.Add(item);
@@ -351,6 +373,193 @@ namespace ChiaKey.Settings
             return pane;
         }
 
+        private const string ExclusiveNote =
+            "請注意：不能夠同時勾選「組字錯誤時清除字根」與「打字時同時組字」這兩個選項。";
+
+        private static Label Note(Control parent, string text, int top)
+        {
+            Label label = new Label();
+            label.Text = text;
+            label.ForeColor = Color.DimGray;
+            label.Bounds = new Rectangle(16, top, 468, 40);
+            parent.Controls.Add(label);
+            return label;
+        }
+
+        // the original panels enforce this: composing as you type has nothing to clear
+        private static void Exclusive(CheckBox first, CheckBox second)
+        {
+            first.CheckedChanged += delegate { if (first.Checked) second.Checked = false; };
+            second.CheckedChanged += delegate { if (second.Checked) first.Checked = false; };
+        }
+
+        private Control BuildCangjiePane()
+        {
+            Panel pane = new Panel();
+            Title(pane, "倉頡輸入法設定");
+            GroupBox typing = Group(pane, "打字功能", 44, 136);
+            cangjieCommitAtMaximum = Check(typing, "打到字根最大長度時立刻組字", 14, 24);
+            cangjieComposeWhileTyping = Check(typing, "打字時同時組字", 14, 50);
+            cangjieClearOnError = Check(typing, "組字錯誤時清除字根", 14, 76);
+            cangjieDynamicFrequency = Check(typing, "使用動態字頻調整（將常用字移動到選字列表前方）", 14, 102);
+            Exclusive(cangjieComposeWhileTyping, cangjieClearOnError);
+            Note(pane, ExclusiveNote, 190);
+            return pane;
+        }
+
+        private Control BuildSimplexPane()
+        {
+            Panel pane = new Panel();
+            Title(pane, "簡易輸入法設定");
+            GroupBox typing = Group(pane, "打字功能", 44, 84);
+            simplexComposeWhileTyping = Check(typing, "打字時同時組字", 14, 24);
+            simplexClearOnError = Check(typing, "組字錯誤時清除字根", 14, 50);
+            Exclusive(simplexComposeWhileTyping, simplexClearOnError);
+            Note(pane, ExclusiveNote, 138);
+            return pane;
+        }
+
+        private Control BuildGenericPane()
+        {
+            Panel pane = new Panel();
+            Title(pane, "泛用輸入法設定");
+            GroupBox tables = Group(pane, "自訂字表（.cin）", 44, 200);
+            userTables = new ListBox();
+            userTables.Bounds = new Rectangle(14, 24, 330, 160);
+            userTables.IntegralHeight = false;
+            tables.Controls.Add(userTables);
+            // a ListBox does not keep its height through DPI scaling, so it follows the group
+            tables.Layout += delegate
+            {
+                userTables.Height = tables.ClientSize.Height - userTables.Top - userTables.Left;
+            };
+
+            Button import = new Button();
+            import.Text = "匯入…";
+            import.Bounds = new Rectangle(356, 24, 98, 26);
+            import.Click += delegate { ImportTable(); };
+            tables.Controls.Add(import);
+            Button remove = new Button();
+            remove.Text = "移除";
+            remove.Bounds = new Rectangle(356, 56, 98, 26);
+            remove.Click += delegate { RemoveTable(); };
+            tables.Controls.Add(remove);
+            Button open = new Button();
+            open.Text = "開啟資料夾";
+            open.Bounds = new Rectangle(356, 88, 98, 26);
+            open.Click += delegate
+            {
+                Directory.CreateDirectory(tablesPath);
+                System.Diagnostics.Process.Start("explorer.exe", "\"" + tablesPath + "\"");
+            };
+            tables.Controls.Add(open);
+
+            Label note = Note(pane, "大易、行列、嘸蝦米等字表不隨附，請自行匯入 .cin 檔。\n" +
+                                    "新增或移除字表後，需要重新開啟正在使用的程式，才會出現在輸入法選單中。",
+                              254);
+            note.AutoSize = true;
+            return pane;
+        }
+
+        private sealed class TableEntry
+        {
+            public readonly string Path;
+            public readonly string Label;
+
+            public TableEntry(string path, string label)
+            {
+                Path = path;
+                Label = label;
+            }
+
+            public override string ToString()
+            {
+                return Label;
+            }
+        }
+
+        // the %cname line is what the input method menu shows
+        private static string TableName(string path)
+        {
+            try
+            {
+                using (StreamReader reader = new StreamReader(path, System.Text.Encoding.UTF8))
+                {
+                    for (int line = 0; line < 200; ++line)
+                    {
+                        string text = reader.ReadLine();
+                        if (text == null || text.StartsWith("%chardef"))
+                            break;
+                        if (text.StartsWith("%cname"))
+                            return text.Substring(6).Trim();
+                    }
+                }
+            }
+            catch (IOException)
+            {
+            }
+            return System.IO.Path.GetFileNameWithoutExtension(path);
+        }
+
+        private void LoadTables()
+        {
+            userTables.Items.Clear();
+            if (!Directory.Exists(tablesPath))
+                return;
+            foreach (string path in Directory.GetFiles(tablesPath, "*.cin"))
+            {
+                userTables.Items.Add(new TableEntry(path, TableName(path) + "（" +
+                                                          Path.GetFileName(path) + "）"));
+            }
+        }
+
+        private void ImportTable()
+        {
+            using (OpenFileDialog dialog = new OpenFileDialog())
+            {
+                dialog.Filter = "CIN 字表 (*.cin)|*.cin";
+                dialog.Title = "匯入字表";
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+                string target = Path.Combine(tablesPath, Path.GetFileName(dialog.FileName));
+                if (File.Exists(target) &&
+                    MessageBox.Show(this, "已經有同名的字表，要取代嗎？", Text, MessageBoxButtons.YesNo,
+                                    MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
+                try
+                {
+                    Directory.CreateDirectory(tablesPath);
+                    File.Copy(dialog.FileName, target, true);
+                }
+                catch (Exception error)
+                {
+                    MessageBox.Show(this, "無法匯入字表：" + error.Message, Text, MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error);
+                }
+                LoadTables();
+            }
+        }
+
+        private void RemoveTable()
+        {
+            TableEntry entry = userTables.SelectedItem as TableEntry;
+            if (entry == null)
+                return;
+            if (MessageBox.Show(this, "要移除「" + entry.Label + "」嗎？", Text, MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+            try
+            {
+                File.Delete(entry.Path);
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(this, "無法移除字表：" + error.Message, Text, MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+            }
+            LoadTables();
+        }
+
         private Control BuildMiscPane()
         {
             Panel pane = new Panel();
@@ -416,6 +625,15 @@ namespace ChiaKey.Settings
             Select(textColor, TextColors, frontend.GetString("TextColor", "White"));
             backgroundPattern.Checked = frontend.GetBool("BackgroundPattern", false);
             beep.Checked = frontend.GetBool("ShouldPlaySoundOnTypingError", true);
+
+            // OVIMGeneric's per-table defaults for cj and simplex
+            cangjieCommitAtMaximum.Checked = cangjie.GetBool("ShouldCommitAtMaximumRadicalLength", false);
+            cangjieComposeWhileTyping.Checked = cangjie.GetBool("ComposeWhileTyping", false);
+            cangjieClearOnError.Checked = cangjie.GetBool("ClearReadingBufferAtCompositionError", true);
+            cangjieDynamicFrequency.Checked = cangjie.GetBool("UseDynamicFrequency", true);
+            simplexComposeWhileTyping.Checked = simplex.GetBool("ComposeWhileTyping", false);
+            simplexClearOnError.Checked = simplex.GetBool("ClearReadingBufferAtCompositionError", true);
+            LoadTables();
             loading = false;
         }
 
@@ -439,11 +657,20 @@ namespace ChiaKey.Settings
 
             traditionalMandarin.SetString("KeyboardLayout", Selected(traditionalLayout));
 
+            cangjie.SetBool("ShouldCommitAtMaximumRadicalLength", cangjieCommitAtMaximum.Checked);
+            cangjie.SetBool("ComposeWhileTyping", cangjieComposeWhileTyping.Checked);
+            cangjie.SetBool("ClearReadingBufferAtCompositionError", cangjieClearOnError.Checked);
+            cangjie.SetBool("UseDynamicFrequency", cangjieDynamicFrequency.Checked);
+            simplex.SetBool("ComposeWhileTyping", simplexComposeWhileTyping.Checked);
+            simplex.SetBool("ClearReadingBufferAtCompositionError", simplexClearOnError.Checked);
+
             try
             {
                 frontend.Save();
                 smartMandarin.Save();
                 traditionalMandarin.Save();
+                cangjie.Save();
+                simplex.Save();
                 return true;
             }
             catch (Exception error)
@@ -476,10 +703,9 @@ namespace ChiaKey.Settings
                 }
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                string preferences = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "ChiaKey", "Preferences");
-                Application.Run(new SettingsForm(preferences));
+                string data = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChiaKey");
+                Application.Run(new SettingsForm(data));
             }
         }
     }

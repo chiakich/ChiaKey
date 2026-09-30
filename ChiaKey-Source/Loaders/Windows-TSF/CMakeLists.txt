@@ -66,7 +66,7 @@ if(CHIAKEY_CSC)
     set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
     # csc reads forward slashes as option prefixes, so every path goes native
     set(CHIAKEY_SETTINGS_ARGUMENTS)
-    foreach(icon general phonetic plugin)
+    foreach(icon general phonetic cangjie simplex generic plugin)
         file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_ICONS}/${icon}.tiff" icon_path)
         list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${icon_path},${icon}.tiff")
     endforeach()
