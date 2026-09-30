@@ -10,6 +10,10 @@
 
 #if defined(_WIN32)
 #include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #endif
 
 #include <algorithm>
@@ -779,6 +783,62 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
       return Fail("UserCannedMessages.txt did not become the last symbol category");
     }
   }
+
+#if defined(_WIN32)
+  {
+    // Windows is where the core brings its own Big5 check; elsewhere BIG-5 is ignored
+    const auto outsideBig5 = [](const std::vector<std::string>& candidates) {
+      std::size_t count = 0;
+      for (const std::string& candidate : candidates) {
+        wchar_t wide[16] = {};
+        const int length =
+            MultiByteToWideChar(CP_UTF8, 0, candidate.c_str(), -1, wide, 16) - 1;
+        char narrow[32];
+        BOOL usedDefault = FALSE;
+        if (length > 0 && (WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide, length,
+                                               narrow, sizeof(narrow), nullptr,
+                                               &usedDefault) <= 0 ||
+                           usedDefault)) {
+          ++count;
+        }
+      }
+      return count;
+    };
+    const auto candidatesOfYi = [&]() {
+      std::unique_ptr<ChiaKey::Engine> engine = runtime->createEngine();
+      TypeKeys(engine.get(), "u ");
+      engine->handleAsciiKey(' ');
+      return engine->snapshot().candidateState.candidates;
+    };
+
+    const std::vector<std::string> all = candidatesOfYi();
+    if (all.empty() || !outsideBig5(all)) {
+      return Fail("expected ㄧ to offer candidates outside Big5 before filtering");
+    }
+    const std::string plistPath = writableDir + "/Preferences/SmartMandarin.plist";
+    std::ifstream original(plistPath.c_str());
+    std::stringstream content;
+    content << original.rdbuf();
+    original.close();
+    // the module has already saved the key as "", and a second copy would lose to it
+    std::string filtered = content.str();
+    const std::size_t key = filtered.find("<key>UseCharactersSupportedByEncoding</key>");
+    const std::size_t value = filtered.find("<string>", key);
+    const std::size_t end = filtered.find("</string>", value);
+    if (key == std::string::npos || value == std::string::npos || end == std::string::npos) {
+      return Fail("Smart Mandarin did not save UseCharactersSupportedByEncoding");
+    }
+    filtered.replace(value + 8, end - value - 8, "BIG-5");
+    std::ofstream(plistPath.c_str(), std::ios::trunc) << filtered;
+    runtime->setConfig(runtime->config());
+    const std::vector<std::string> big5 = candidatesOfYi();
+    std::ofstream(plistPath.c_str(), std::ios::trunc) << content.str();
+    runtime->setConfig(runtime->config());
+    if (big5.empty() || outsideBig5(big5) || big5.size() >= all.size()) {
+      return Fail("UseCharactersSupportedByEncoding BIG-5 did not filter the candidates");
+    }
+  }
+#endif
 
   {
     // a wrong OVIMGENERIC_IDENTIFIER_PREFIX compiles cleanly and finds neither table

@@ -156,6 +156,34 @@ std::vector<std::string> CandidateListToVector(OVCandidateList* list) {
   return result;
 }
 
+#if defined(WIN32)
+// what UseCharactersSupportedByEncoding = BIG-5 filters on; the mac's CVEncodingService
+// uses Big5-HKSCS, code page 950 is plain Big5 with Microsoft's additions
+class CoreEncodingService : public OpenVanilla::PVDefaultEncodingService {
+ public:
+  bool codepointSupportedByEncoding(const std::string& codepoint,
+                                    const std::string& encoding) override {
+    if (encoding != "BIG-5") return true;
+    const std::wstring wide = OpenVanilla::OVUTF16::FromUTF8(codepoint);
+    if (wide.empty()) return true;
+    char converted[8];
+    BOOL usedDefault = FALSE;
+    const int length = WideCharToMultiByte(
+        950, WC_NO_BEST_FIT_CHARS, wide.data(), static_cast<int>(wide.size()), converted,
+        static_cast<int>(sizeof(converted)), nullptr, &usedDefault);
+    return length > 0 && !usedDefault;
+  }
+
+  const std::vector<std::string> supportedEncodings() override {
+    return std::vector<std::string>{"UTF-8", "BIG-5"};
+  }
+
+  bool isEncodingSupported(const std::string& encoding) override {
+    return encoding == "UTF-8" || encoding == "BIG-5";
+  }
+};
+#endif
+
 // a name is either a plain string or a {locale: string} dictionary
 std::string LocalizedString(PVPlistValue* value, const std::string& locale) {
   if (!value) return std::string();
@@ -428,8 +456,11 @@ class Runtime::Impl {
     if (OVPathHelper::IsDirectory(tablesPath)) {
       cinTables.reset(new OVCINDatabaseService(tablesPath, "*.cin", "", 0));
     }
-    service.reset(
-        new PVLoaderService(config.locale, cinTables.get(), database.get()));
+#if defined(WIN32)
+    encoding.reset(new CoreEncodingService);
+#endif
+    service.reset(new PVLoaderService(config.locale, cinTables.get(), database.get(),
+                                      nullptr, encoding.get()));
 
     OVPathInfo pathInfo;
     pathInfo.loadedPath = paths.loadedPath;
@@ -486,6 +517,8 @@ class Runtime::Impl {
   // system, the service and the database go
   std::unique_ptr<OVSQLiteDatabaseService> database;
   std::unique_ptr<OVCINDatabaseService> cinTables;
+  // null off Windows, where the loader service falls back to UTF-8 only
+  std::unique_ptr<OpenVanilla::OVEncodingService> encoding;
   std::unique_ptr<CorePolicy> policy;
   std::unique_ptr<PVLoaderService> service;
   std::unique_ptr<PVStaticModulePackageLoadingSystem> packages;
