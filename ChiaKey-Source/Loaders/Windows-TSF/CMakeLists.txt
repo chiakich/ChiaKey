@@ -65,6 +65,7 @@ add_library(ChiaKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
     LangBarButton.cpp
+    PhraseEditorExports.cpp
     SymbolWindow.cpp
     TextService.cpp
     ChiaKeyTsf.rc
@@ -104,13 +105,22 @@ if(CHIAKEY_CSC)
     set(CHIAKEY_SETTINGS_EXE "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeySettings.exe")
     set(CHIAKEY_SETTINGS_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs")
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs")
     set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
     # csc reads forward slashes as option prefixes, so every path goes native
     set(CHIAKEY_SETTINGS_ARGUMENTS)
-    foreach(icon general phonetic cangjie simplex generic plugin)
+    foreach(icon general phonetic cangjie simplex generic phrase plugin)
         file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_ICONS}/${icon}.tiff" icon_path)
         list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${icon_path},${icon}.tiff")
+    endforeach()
+    # Yahoo! KeyKey's phrase editor toolbar
+    set(CHIAKEY_SETTINGS_IMAGES)
+    foreach(image add remove editPhrase editReading)
+        set(image_source "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Images/${image}.ico")
+        list(APPEND CHIAKEY_SETTINGS_IMAGES "${image_source}")
+        file(TO_NATIVE_PATH "${image_source}" image_path)
+        list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${image_path},${image}.ico")
     endforeach()
     foreach(source IN LISTS CHIAKEY_SETTINGS_SOURCES)
         file(TO_NATIVE_PATH "${source}" source_path)
@@ -129,7 +139,7 @@ if(CHIAKEY_CSC)
                 "/win32icon:${settings_icon_path}"
                 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml.dll
                 ${CHIAKEY_SETTINGS_ARGUMENTS}
-        DEPENDS ${CHIAKEY_SETTINGS_SOURCES}
+        DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
                 "${CHIAKEY_ICON_DIR}/badge.ico"
         COMMENT "Compiling ChiaKeySettings.exe"

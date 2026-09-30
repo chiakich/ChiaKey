@@ -96,7 +96,8 @@ public:
     void toggleChineseMode();
     void toggleFullWidthMode();
     bool selectInputMethod(const std::string& identifier);
-    HRESULT openSettings(HWND parent = nullptr) const;
+    // "/phrases" opens the phrase editor instead
+    HRESULT openSettings(HWND parent = nullptr, const wchar_t* arguments = nullptr) const;
     bool isSymbolWindowVisible() const { return symbolWindow_.isVisible(); }
     void toggleSymbolWindow();
     HRESULT insertSymbol(TfEditCookie editCookie, ITfContext* context, const std::wstring& text);

@@ -638,8 +638,8 @@ void TextService::unadviseFunctionProvider() {
     }
 }
 
-HRESULT TextService::openSettings(HWND parent) const {
-    const HINSTANCE launched = ShellExecuteW(parent, L"open", SettingsAppPath().c_str(), nullptr,
+HRESULT TextService::openSettings(HWND parent, const wchar_t* arguments) const {
+    const HINSTANCE launched = ShellExecuteW(parent, L"open", SettingsAppPath().c_str(), arguments,
                                              nullptr, SW_SHOWNORMAL);
     const INT_PTR code = reinterpret_cast<INT_PTR>(launched);
     return code > 32 ? S_OK : HRESULT_FROM_WIN32(static_cast<DWORD>(code));

@@ -20,6 +20,8 @@ constexpr UINT kMenuFullWidth = 3;
 constexpr UINT kMenuSettings = 4;
 constexpr UINT kMenuSymbols = 5;
 constexpr wchar_t kSymbolsLabel[] = L"符號表（Ctrl+Alt+.）";
+constexpr UINT kMenuPhraseEditor = 6;
+constexpr wchar_t kPhraseEditorLabel[] = L"詞彙編輯器…";
 constexpr UINT kMenuFirstInputMethod = 100;
 
 bool TaskbarIsLight() {
@@ -166,6 +168,7 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING | (service_->isSymbolWindowVisible() ? MF_CHECKED : 0),
                     kMenuSymbols, kSymbolsLabel);
+        AppendMenuW(menu, MF_STRING, kMenuPhraseEditor, kPhraseEditorLabel);
         AppendMenuW(menu, MF_STRING, kMenuSettings, L"輸入法設定…");
         HWND owner = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 0, 0, HWND_DESKTOP,
                                      nullptr, nullptr, nullptr);
@@ -222,6 +225,9 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
                                nullptr, nullptr, kSymbolsLabel,
                                static_cast<ULONG>(std::size(kSymbolsLabel) - 1), nullptr);
     if (FAILED(result)) return result;
+    result = menu->AddMenuItem(kMenuPhraseEditor, 0, nullptr, nullptr, kPhraseEditorLabel,
+                               static_cast<ULONG>(std::size(kPhraseEditorLabel) - 1), nullptr);
+    if (FAILED(result)) return result;
     return menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"輸入法設定…", 6, nullptr);
 }
 
@@ -230,6 +236,7 @@ STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
     if (id == kMenuHalfWidth && service_->isFullWidthMode()) service_->toggleFullWidthMode();
     if (id == kMenuFullWidth && !service_->isFullWidthMode()) service_->toggleFullWidthMode();
     if (id == kMenuSettings) return service_->openSettings();
+    if (id == kMenuPhraseEditor) return service_->openSettings(nullptr, L"/phrases");
     if (id == kMenuSymbols) service_->toggleSymbolWindow();
     if (id >= kMenuFirstInputMethod &&
         id - kMenuFirstInputMethod < menuInputMethods_.size()) {
