@@ -69,13 +69,20 @@ std::wstring ModuleDirectory() {
     return separator == std::wstring::npos ? std::wstring() : path.substr(0, separator);
 }
 
-std::wstring KnownFolder(REFKNOWNFOLDERID folder) {
+std::wstring RoamingFolder() {
     PWSTR path = nullptr;
     std::wstring result;
-    if (SUCCEEDED(SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT, nullptr, &path))) {
+    // an AppContainer fails the default lookup, which verifies the folder it cannot see
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DONT_VERIFY, nullptr,
+                                       &path))) {
         result = path;
     }
     CoTaskMemFree(path);
+    if (result.empty()) {
+        wchar_t buffer[MAX_PATH + 1]{};
+        const DWORD length = GetEnvironmentVariableW(L"APPDATA", buffer, MAX_PATH + 1);
+        if (length && length <= MAX_PATH) result.assign(buffer, length);
+    }
     return result;
 }
 
@@ -119,6 +126,51 @@ void GrantAppContainerAccess(const std::wstring& directory) {
     LocalFree(packages);
 }
 
+bool HasLowIntegrityLabel(const std::wstring& directory) {
+    PACL sacl = nullptr;
+    PSECURITY_DESCRIPTOR descriptor = nullptr;
+    if (GetNamedSecurityInfoW(directory.c_str(), SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION,
+                              nullptr, nullptr, nullptr, &sacl,
+                              &descriptor) != ERROR_SUCCESS) {
+        return false;
+    }
+    bool low = false;
+    for (DWORD index = 0; sacl && index < sacl->AceCount; ++index) {
+        ACE_HEADER* header = nullptr;
+        if (GetAce(sacl, index, reinterpret_cast<void**>(&header)) &&
+            header->AceType == SYSTEM_MANDATORY_LABEL_ACE_TYPE) {
+            auto* label = reinterpret_cast<SYSTEM_MANDATORY_LABEL_ACE*>(header);
+            low = *GetSidSubAuthority(&label->SidStart, 0) <= SECURITY_MANDATORY_LOW_RID;
+        }
+    }
+    LocalFree(descriptor);
+    return low;
+}
+
+// AppContainers run at low integrity; to them an unlabeled (medium) file is read-only
+void SetLowIntegrityLabel(const std::wstring& directory) {
+    PSECURITY_DESCRIPTOR descriptor = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"S:(ML;OICI;NW;;;LW)", SDDL_REVISION_1, &descriptor, nullptr)) {
+        return;
+    }
+    BOOL present = FALSE;
+    BOOL defaulted = FALSE;
+    PACL sacl = nullptr;
+    if (GetSecurityDescriptorSacl(descriptor, &present, &sacl, &defaulted) && present) {
+        SetNamedSecurityInfoW(const_cast<LPWSTR>(directory.c_str()), SE_FILE_OBJECT,
+                              LABEL_SECURITY_INFORMATION, nullptr, nullptr, nullptr, sacl);
+    }
+    LocalFree(descriptor);
+}
+
+// the label doubles as the marker, so a configured directory is not rewritten per process
+void ShareWithAppContainers(const std::wstring& directory) {
+    if (HasLowIntegrityLabel(directory)) return;
+    GrantAppContainerAccess(directory);
+    SetLowIntegrityLabel(directory);
+}
+
 ChiaKey::RuntimePaths DefaultPaths(const std::wstring& writableRoot, bool shareWithAppContainers) {
     const std::wstring moduleDirectory = ModuleDirectory();
     ChiaKey::RuntimePaths paths;
@@ -127,9 +179,8 @@ ChiaKey::RuntimePaths DefaultPaths(const std::wstring& writableRoot, bool shareW
     paths.lexiconDatabasePath = WideToUtf8(moduleDirectory + L"\\ChiaKeySource.db");
     if (!writableRoot.empty()) {
         const std::wstring writable = writableRoot + L"\\ChiaKey";
-        if (CreateDirectoryW(writable.c_str(), nullptr) && shareWithAppContainers) {
-            GrantAppContainerAccess(writable);
-        }
+        CreateDirectoryW(writable.c_str(), nullptr);
+        if (shareWithAppContainers) ShareWithAppContainers(writable);
         paths.writablePath = WideToUtf8(writable);
     }
     return paths;
@@ -148,7 +199,7 @@ RuntimeHolder& Holder() {
 
 std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime() {
     std::string error;
-    const std::wstring roaming = KnownFolder(FOLDERID_RoamingAppData);
+    const std::wstring roaming = RoamingFolder();
     if (!IsAppContainer()) {
         ChiaKey::RuntimePaths paths = DefaultPaths(roaming, true);
         if (auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error)) {
@@ -159,12 +210,14 @@ std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime() {
     }
 
     // until a desktop app has created the shared directory, a private one keeps typing working
+    std::string sharedError = "no roaming folder";
     if (!roaming.empty()) {
         ChiaKey::RuntimePaths paths = DefaultPaths(roaming, false);
         if (auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error)) {
             return runtime;
         }
-        Trace("Runtime::Create (AppContainer, shared) failed: %s", error.c_str());
+        sharedError = WideToUtf8(roaming) + ": " + error;
+        Trace("Runtime::Create (AppContainer, shared) failed: %s", sharedError.c_str());
     }
     wchar_t temp[MAX_PATH + 1]{};
     const DWORD length = GetTempPathW(static_cast<DWORD>(std::size(temp)), temp);
@@ -173,6 +226,16 @@ std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime() {
     if (!privateRoot.empty() && privateRoot.back() == L'\\') privateRoot.pop_back();
     ChiaKey::RuntimePaths paths = DefaultPaths(privateRoot, false);
     if (auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error)) {
+        // debug output does not reach a listener from an AppContainer, so leave the reason here
+        const std::wstring note = privateRoot + L"\\ChiaKey\\fallback.txt";
+        HANDLE file = CreateFileW(note.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                                  FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file != INVALID_HANDLE_VALUE) {
+            DWORD written = 0;
+            WriteFile(file, sharedError.data(), static_cast<DWORD>(sharedError.size()), &written,
+                      nullptr);
+            CloseHandle(file);
+        }
         return runtime;
     }
     Trace("Runtime::Create (AppContainer, private) failed: %s", error.c_str());
