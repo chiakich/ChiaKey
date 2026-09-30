@@ -20,6 +20,11 @@ inline constexpr GUID kInputDisplayAttributeGuid = {
 inline constexpr GUID kFocusedDisplayAttributeGuid = {
     0xc5c5539b, 0x6bc4, 0x466b, {0x86, 0xe0, 0xb4, 0x55, 0x6d, 0x33, 0xe1, 0x75}};
 
+// the symbol window's Ctrl+Alt+.
+// {31271245-36F6-4472-83DB-D70934469652}
+inline constexpr GUID kSymbolWindowKeyGuid = {
+    0x31271245, 0x36f6, 0x4472, {0x83, 0xdb, 0xd7, 0x09, 0x34, 0x46, 0x96, 0x52}};
+
 inline constexpr LANGID kTraditionalChineseLangId = 0x0404;
 inline constexpr wchar_t kTextServiceDescription[] = L"千秋輸入法";
 inline constexpr wchar_t kThreadingModel[] = L"Apartment";

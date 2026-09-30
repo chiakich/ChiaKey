@@ -74,6 +74,34 @@ ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,
 FrontendSettings ReadFrontendSettings(const std::string& preferencesPath);
 std::wstring SettingsAppPath();
 
+struct SymbolEntry {
+    std::wstring text;
+    std::wstring label;
+    std::wstring tooltip;
+};
+
+struct SymbolPage {
+    std::wstring name;
+    bool buttons = false;
+    std::vector<SymbolEntry> entries;
+};
+
+std::vector<SymbolPage> SymbolPages();
+std::wstring UserCannedMessagesPath();
+
+// Preferences/SymbolWindow.plist, so the window follows the user from app to app
+struct SymbolWindowState {
+    bool visible = false;
+    std::wstring page;
+    bool hasPosition = false;
+    // the bottom stays put when a page of another height is picked
+    LONG left = 0;
+    LONG bottom = 0;
+};
+
+SymbolWindowState ReadSymbolWindowState();
+void WriteSymbolWindowState(const SymbolWindowState& state);
+
 // for tests; must run before the first session
 bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMessage);
 

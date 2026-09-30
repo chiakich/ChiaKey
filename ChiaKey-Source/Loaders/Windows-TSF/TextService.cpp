@@ -133,6 +133,40 @@ private:
     bool ran_ = false;
 };
 
+class SymbolEditSession final : public ITfEditSession {
+public:
+    SymbolEditSession(TextService* service, ITfContext* context, std::wstring text)
+        : service_(service), context_(context), text_(std::move(text)) {
+        service_->AddRef();
+    }
+    STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
+        if (!object) return E_INVALIDARG;
+        *object = nullptr;
+        if (iid == IID_IUnknown || iid == IID_ITfEditSession) {
+            *object = static_cast<ITfEditSession*>(this);
+            AddRef();
+            return S_OK;
+        }
+        return E_NOINTERFACE;
+    }
+    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
+    STDMETHODIMP_(ULONG) Release() override {
+        const ULONG remaining = --references_;
+        if (!remaining) delete this;
+        return remaining;
+    }
+    STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
+        return service_->insertSymbol(editCookie, context_.Get(), text_);
+    }
+
+private:
+    ~SymbolEditSession() { service_->Release(); }
+    std::atomic<ULONG> references_{1};
+    TextService* service_;
+    ComPtr<ITfContext> context_;
+    std::wstring text_;
+};
+
 struct DisplayAttributeSpec {
     const GUID* guid;
     TF_DA_LINESTYLE lineStyle;
@@ -335,6 +369,8 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfTextEditSink*>(this);
     } else if (iid == IID_ITfThreadMgrEventSink) {
         *object = static_cast<ITfThreadMgrEventSink*>(this);
+    } else if (iid == IID_ITfThreadFocusSink) {
+        *object = static_cast<ITfThreadFocusSink*>(this);
     } else if (iid == IID_ITfCompartmentEventSink) {
         *object = static_cast<ITfCompartmentEventSink*>(this);
     } else if (iid == IID_ITfDisplayAttributeProvider) {
@@ -392,6 +428,11 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         }
         setChineseMode(true);
         setFullWidthMode(false);
+        BOOL threadFocused = FALSE;
+        if (SUCCEEDED(threadManager_->IsThreadFocus(&threadFocused)) && threadFocused &&
+            ReadSymbolWindowState().visible) {
+            symbolWindow_.show();
+        }
     } else {
         Trace("AdviseSinks hr=0x%08lX", static_cast<unsigned long>(result));
         unadviseSinks();
@@ -410,6 +451,8 @@ STDMETHODIMP TextService::Deactivate() {
     unadviseFunctionProvider();
     unadviseSinks();
     uninitializeLangBar();
+    // another input method takes over; the saved state brings the window back with ChiaKey
+    symbolWindow_.destroy();
     // the context saves its learning when it ends; an app closing leaves no other chance
     engine_.reset();
     threadManager_.Reset();
@@ -425,6 +468,16 @@ HRESULT TextService::adviseSinks() {
     if (FAILED(result)) return result;
     result = keystrokes->AdviseKeyEventSink(clientId_, this, TRUE);
     if (FAILED(result)) return result;
+    // preserved, since some hosts (Notepad) never pass Ctrl+Alt chords to the key sink;
+    // it takes over the lexicon's Ctrl+Alt+. for ．
+    const TF_PRESERVEDKEY symbolKey{VK_OEM_PERIOD, TF_MOD_CONTROL | TF_MOD_ALT};
+    static constexpr wchar_t kSymbolKeyName[] = L"符號表";
+    const HRESULT preserveResult =
+        keystrokes->PreserveKey(clientId_, kSymbolWindowKeyGuid, &symbolKey, kSymbolKeyName,
+                                static_cast<ULONG>(std::size(kSymbolKeyName) - 1));
+    if (FAILED(preserveResult)) {
+        Trace("PreserveKey hr=0x%08lX", static_cast<unsigned long>(preserveResult));
+    }
 
     ComPtr<ITfSource> source;
     result = threadManager_.As(&source);
@@ -439,6 +492,11 @@ HRESULT TextService::adviseSinks() {
         keystrokes->UnadviseKeyEventSink(clientId_);
         return result;
     }
+    const HRESULT focusResult = source->AdviseSink(
+        IID_ITfThreadFocusSink, static_cast<ITfThreadFocusSink*>(this), &threadFocusCookie_);
+    if (FAILED(focusResult)) {
+        Trace("AdviseThreadFocus hr=0x%08lX", static_cast<unsigned long>(focusResult));
+    }
     const HRESULT modeResult = adviseInputModeSink();
     if (FAILED(modeResult)) {
         Trace("AdviseInputMode hr=0x%08lX", static_cast<unsigned long>(modeResult));
@@ -452,12 +510,15 @@ void TextService::unadviseSinks() {
     unadviseInputModeSink();
     ComPtr<ITfKeystrokeMgr> keystrokes;
     if (SUCCEEDED(threadManager_.As(&keystrokes)) && clientId_ != TF_CLIENTID_NULL) {
+        const TF_PRESERVEDKEY symbolKey{VK_OEM_PERIOD, TF_MOD_CONTROL | TF_MOD_ALT};
+        keystrokes->UnpreserveKey(kSymbolWindowKeyGuid, &symbolKey);
         keystrokes->UnadviseKeyEventSink(clientId_);
     }
-    if (threadManagerCookie_ != TF_INVALID_COOKIE) {
-        ComPtr<ITfSource> source;
-        if (SUCCEEDED(threadManager_.As(&source))) source->UnadviseSink(threadManagerCookie_);
-        threadManagerCookie_ = TF_INVALID_COOKIE;
+    ComPtr<ITfSource> source;
+    threadManager_.As(&source);
+    for (DWORD* cookie : {&threadManagerCookie_, &threadFocusCookie_}) {
+        if (*cookie != TF_INVALID_COOKIE && source) source->UnadviseSink(*cookie);
+        *cookie = TF_INVALID_COOKIE;
     }
 }
 
@@ -769,6 +830,57 @@ bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
     return fullWidthMode_ && !event.control && !event.alt && PrintableCharacter(event) != 0;
 }
 
+void TextService::toggleSymbolWindow() {
+    if (symbolWindow_.isVisible()) {
+        symbolWindow_.close();
+    } else {
+        symbolWindow_.open();
+    }
+    refreshLangBar();
+}
+
+void TextService::sendSymbol(const std::wstring& text) {
+    ComPtr<ITfDocumentMgr> focused;
+    ComPtr<ITfContext> context;
+    if (!threadManager_ || clientId_ == TF_CLIENTID_NULL ||
+        FAILED(threadManager_->GetFocus(&focused)) || !focused ||
+        FAILED(focused->GetTop(&context)) || !context) {
+        Trace("Symbol: no focused context");
+        MessageBeep(MB_OK);
+        return;
+    }
+    auto* session = new (std::nothrow) SymbolEditSession(this, context.Get(), text);
+    if (!session) return;
+    HRESULT editResult = E_FAIL;
+    HRESULT requestResult = context->RequestEditSession(clientId_, session,
+                                                        TF_ES_SYNC | TF_ES_READWRITE, &editResult);
+    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
+        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
+        requestResult = context->RequestEditSession(
+            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, &editResult);
+    }
+    if (FAILED(requestResult) || FAILED(editResult)) {
+        Trace("Symbol request=0x%08lX edit=0x%08lX", static_cast<unsigned long>(requestResult),
+              static_cast<unsigned long>(editResult));
+    }
+    session->Release();
+}
+
+HRESULT TextService::insertSymbol(TfEditCookie editCookie, ITfContext* context,
+                                  const std::wstring& text) {
+    // the sentence being composed goes first, as typing a punctuation key would do
+    if (composition_ && compositionContext_.Get() == context) {
+        const HRESULT result = commitCompositionForModeSwitch(editCookie, context, true);
+        if (FAILED(result)) return result;
+    } else if (composition_) {
+        abandonComposition();
+    } else {
+        resetCandidateState();
+        if (engine_) engine_->reset();
+    }
+    return commitText(editCookie, context, text);
+}
+
 STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     if (!foreground) {
         shiftTogglePending_ = false;
@@ -872,9 +984,10 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eate
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnPreservedKey(ITfContext*, REFGUID, BOOL* eaten) {
+STDMETHODIMP TextService::OnPreservedKey(ITfContext*, REFGUID guid, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
-    *eaten = FALSE;
+    *eaten = guid == kSymbolWindowKeyGuid;
+    if (*eaten) toggleSymbolWindow();
     return S_OK;
 }
 
@@ -1329,6 +1442,15 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
     }
     return S_OK;
 }
+
+// one window per app thread, brought up where the user goes as Yahoo's single window was;
+// the window itself hides when another app comes to the front
+STDMETHODIMP TextService::OnSetThreadFocus() {
+    if (!symbolWindow_.isVisible() && ReadSymbolWindowState().visible) symbolWindow_.show();
+    return S_OK;
+}
+
+STDMETHODIMP TextService::OnKillThreadFocus() { return S_OK; }
 
 STDMETHODIMP TextService::OnChange(REFGUID guid) {
     if (!threadManager_) return S_OK;

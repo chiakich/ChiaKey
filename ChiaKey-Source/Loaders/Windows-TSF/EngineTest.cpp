@@ -237,6 +237,28 @@ void WriteUserTable(const std::string& writableDir) {
 
 }  // namespace
 
+void TestSymbols() {
+    const std::vector<SymbolPage> pages = SymbolPages();
+    Check(!pages.empty() && pages.front().buttons && !pages.front().entries.empty(),
+          "the symbol table starts with a page of buttons");
+    Check(!pages.empty() && pages.front().entries.front().tooltip.find(L"U+") != std::wstring::npos,
+          "a symbol button's tooltip shows its code point");
+    Check(std::any_of(pages.begin(), pages.end(), [](const SymbolPage& page) { return !page.buttons; }),
+          "the symbol table has a page of canned messages");
+
+    SymbolWindowState state;
+    state.visible = true;
+    state.page = L"顏文字";
+    state.hasPosition = true;
+    state.left = -1200;
+    state.bottom = 900;
+    WriteSymbolWindowState(state);
+    const SymbolWindowState read = ReadSymbolWindowState();
+    Check(read.visible && read.page == state.page && read.hasPosition && read.left == -1200 &&
+              read.bottom == 900,
+          "the symbol window's state survives a round trip");
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 4) {
         std::cerr << "usage: chiakey_tsf_engine_test <source-dir> <writable-dir> <lexicon>"
@@ -267,6 +289,7 @@ int main(int argc, char* argv[]) {
     TestSession();
     TestSettings(argv[2]);
     TestGenericInputMethods();
+    TestSymbols();
     if (failures) return 1;
     std::cout << "chiakey_tsf_engine_test: OK" << std::endl;
     return 0;
