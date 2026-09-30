@@ -237,6 +237,9 @@ struct RuntimeHolder {
     FILETIME frontendStamp{};
     FrontendSettings frontend;
     ULONGLONG nextRefresh = 0;
+    // an AppContainer running on its temp folder until the shared one is usable
+    bool privateFallback = false;
+    ULONGLONG nextSharedRetry = 0;
 };
 
 // leaked on purpose: no teardown under the loader lock; each Engine saves its own learning
@@ -253,6 +256,7 @@ void PinModule() {
 }
 
 constexpr ULONGLONG kRefreshIntervalMilliseconds = 1000;
+constexpr ULONGLONG kSharedRetryIntervalMilliseconds = 60000;
 
 std::string PreferencesPath(const std::string& writablePath) {
     return OVPathHelper::PathCat(writablePath, "Preferences");
@@ -300,16 +304,46 @@ void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
 }
 
 void AdoptLocked(RuntimeHolder& holder, std::shared_ptr<ChiaKey::Runtime> runtime,
-                 const std::string& writablePath) {
+                 const std::string& writablePath, bool privateFallback) {
     holder.runtime = std::move(runtime);
     if (!holder.runtime) return;
     PinModule();
     holder.preferencesPath = PreferencesPath(writablePath);
+    holder.privateFallback = privateFallback;
+    holder.nextSharedRetry = GetTickCount64() + kSharedRetryIntervalMilliseconds;
     RefreshSettingsLocked(holder, true);
 }
 
-std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime(std::string* writablePath) {
+// a cheap check before the full Runtime::Create, which opens the lexicon
+bool SharedDirectoryIsWritable(const std::wstring& roaming) {
+    if (roaming.empty()) return false;
+    const std::wstring probe = roaming + L"\\ChiaKey\\.chiakey-appcontainer-probe";
+    HANDLE file = CreateFileW(probe.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                              FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return false;
+    CloseHandle(file);
+    return true;
+}
+
+// once a desktop app has shared the directory, later engines move onto it
+void RetrySharedRuntimeLocked(RuntimeHolder& holder) {
+    if (!holder.privateFallback || GetTickCount64() < holder.nextSharedRetry) return;
+    holder.nextSharedRetry = GetTickCount64() + kSharedRetryIntervalMilliseconds;
+    const std::wstring roaming = RoamingFolder();
+    if (!SharedDirectoryIsWritable(roaming)) return;
     std::string error;
+    ChiaKey::RuntimePaths paths = DefaultPaths(roaming, false);
+    if (auto runtime = CreateRuntime(paths, &error)) {
+        AdoptLocked(holder, std::move(runtime), paths.writablePath, false);
+    } else {
+        Trace("Runtime::Create (AppContainer, shared retry) failed: %s", error.c_str());
+    }
+}
+
+std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime(std::string* writablePath,
+                                                       bool* privateFallback) {
+    std::string error;
+    *privateFallback = false;
     const std::wstring roaming = RoamingFolder();
     if (!IsAppContainer()) {
         ChiaKey::RuntimePaths paths = DefaultPaths(roaming, true);
@@ -340,6 +374,7 @@ std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime(std::string* writablePath
     ChiaKey::RuntimePaths paths = DefaultPaths(privateRoot, false);
     if (auto runtime = CreateRuntime(paths, &error)) {
         *writablePath = paths.writablePath;
+        *privateFallback = true;
         // debug output does not reach a listener from an AppContainer, so leave the reason here
         const std::wstring note = privateRoot + L"\\ChiaKey\\fallback.txt";
         HANDLE file = CreateFileW(note.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
@@ -363,8 +398,11 @@ std::shared_ptr<ChiaKey::Runtime> SharedRuntime(bool throttled = false) {
     // a failed attempt is retried on the next activation, e.g. after install
     if (!holder.runtime) {
         std::string writablePath;
-        AdoptLocked(holder, CreateDefaultRuntime(&writablePath), writablePath);
+        bool privateFallback = false;
+        auto runtime = CreateDefaultRuntime(&writablePath, &privateFallback);
+        AdoptLocked(holder, std::move(runtime), writablePath, privateFallback);
     } else if (!throttled || GetTickCount64() >= holder.nextRefresh) {
+        RetrySharedRuntimeLocked(holder);
         RefreshSettingsLocked(holder, false);
     }
     return holder.runtime;
@@ -616,7 +654,7 @@ bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMes
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     if (holder.runtime) return true;
-    AdoptLocked(holder, CreateRuntime(paths, errorMessage), paths.writablePath);
+    AdoptLocked(holder, CreateRuntime(paths, errorMessage), paths.writablePath, false);
     return holder.runtime != nullptr;
 }
 
@@ -682,7 +720,17 @@ bool EngineSession::wantsKey(const KeyEvent& event) const {
 EngineResult EngineSession::handleKey(const KeyEvent& event) {
     if (!engine_) return {};
     // applying settings can rebuild the context, so never mid-composition
-    if (!hasComposition()) SharedRuntime(true);
+    if (!hasComposition()) {
+        const auto runtime = SharedRuntime(true);
+        if (runtime && runtime != engine_->runtime()) {
+            std::string error;
+            if (auto fresh = runtime->createEngine(&error)) {
+                engine_ = std::move(fresh);
+            } else {
+                Trace("createEngine on the new runtime failed: %s", error.c_str());
+            }
+        }
+    }
     const bool handled = engine_->handleKey(MakeCoreKey(event));
     EngineResult result = MakeResult(engine_->snapshot());
     result.handled = handled;
