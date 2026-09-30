@@ -160,8 +160,7 @@ namespace ChiaKey.Settings
             cangjie = new Plist(Path.Combine(preferencesPath, "Generic-cj-cin.plist"));
             simplex = new Plist(Path.Combine(preferencesPath, "Generic-simplex-cin.plist"));
 
-            // laid out in 96-DPI pixels and scaled once layout resumes; the
-            // manifest makes the process DPI aware
+            // laid out at 96 DPI and scaled on ResumeLayout; the manifest makes the process DPI aware
             SuspendLayout();
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -583,15 +582,41 @@ namespace ChiaKey.Settings
                 applyButton.Enabled = true;
         }
 
+        // a value the list lacks stays selectable, so saving another setting keeps it
         private static void Select(ComboBox box, Choice[] choices, string value)
         {
-            int found = 0;
             for (int i = 0; i < choices.Length; ++i)
             {
                 if (string.Equals(choices[i].Value, value, StringComparison.OrdinalIgnoreCase))
-                    found = i;
+                {
+                    box.SelectedIndex = i;
+                    return;
+                }
             }
-            box.SelectedIndex = found;
+            if (string.IsNullOrEmpty(value))
+            {
+                box.SelectedIndex = 0;
+                return;
+            }
+            box.SelectedIndex = box.Items.Add(new Choice(value, value + "（自訂）"));
+        }
+
+        // other spellings BopomofoKeyboardLayout::LayoutForName accepts; the mac preferences write some
+        private static string CanonicalLayout(string layout)
+        {
+            switch (layout.ToLowerInvariant())
+            {
+                case "hanyu pinyin":
+                case "hanyu-pinyin":
+                case "pinyin":
+                    return "HanyuPinyin";
+                case "bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnklldfjs":
+                    return "Hsu";
+                case "bpmfdtnlvkhgvcgycjqwsexuaorwiqzpmntlhfjkd":
+                    return "ETen26";
+                default:
+                    return layout;
+            }
         }
 
         private static string Selected(ComboBox box)
@@ -607,19 +632,24 @@ namespace ChiaKey.Settings
             controlBackslash.Checked = frontend.GetBool("ToggleInputMethodWithControlBackslash", true);
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
 
-            string layout = smartMandarin.GetString("KeyboardLayout", "Standard");
-            Select(smartLayout, Layouts, layout == "Hanyu Pinyin" ? "HanyuPinyin" : layout);
+            Select(smartLayout, Layouts,
+                   CanonicalLayout(smartMandarin.GetString("KeyboardLayout", "Standard")));
             Select(selectionKeys, SelectionKeys, smartMandarin.GetString("CandidateSelectionKeys", ""));
-            bufferSize.Value = Math.Max(bufferSize.Minimum, Math.Min(bufferSize.Maximum,
-                smartMandarin.GetInt("ComposingTextBufferSize", 20)));
+            int buffer = smartMandarin.GetInt("ComposingTextBufferSize", 20);
+            if (buffer <= 0)
+                buffer = 20;
+            // widened rather than clamped, or saving would rewrite a size set by hand
+            bufferSize.Minimum = Math.Min(bufferSize.Minimum, buffer);
+            bufferSize.Maximum = Math.Max(bufferSize.Maximum, buffer);
+            bufferSize.Value = buffer;
             spaceShowsCandidates.Checked = smartMandarin.GetBool("ShowCandidateListWithSpace", true);
             escClears.Checked = smartMandarin.GetBool("ClearComposingTextWithEsc", false);
             cursorAtEnd.Checked = smartMandarin.GetBool("CandidateCursorAtEndOfTargetBlock", false);
             shiftUppercase.Checked =
                 smartMandarin.GetBool("ShiftKeyAlwaysCommitUppercaseCharacters", false);
 
-            layout = traditionalMandarin.GetString("KeyboardLayout", "Standard");
-            Select(traditionalLayout, Layouts, layout == "Hanyu Pinyin" ? "HanyuPinyin" : layout);
+            Select(traditionalLayout, Layouts,
+                   CanonicalLayout(traditionalMandarin.GetString("KeyboardLayout", "Standard")));
 
             Select(highlightColor, HighlightColors, frontend.GetString("HighlightColor", "Purple"));
             Select(backgroundColor, BackgroundColors, frontend.GetString("BackgroundColor", "Black"));
