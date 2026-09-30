@@ -109,8 +109,10 @@ private:
     bool isPotentialKey(const KeyEvent& event) const;
     bool isModeToggleKey(const KeyEvent& event) const;
     bool isWidthToggleKey(const KeyEvent& event) const;
+    bool isShiftToggleKey(const KeyEvent& event) const;
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
     void sendSymbol(const std::wstring& text);
+    HRESULT runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten);
     HRESULT adviseInputModeSink();
     void unadviseInputModeSink();
     HRESULT adviseTextEditSink(ITfContext* context);

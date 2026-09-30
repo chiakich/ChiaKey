@@ -130,6 +130,14 @@ void TestSession() {
     result = session->handleKey(Key(VK_OEM_COMMA, true));
     Check(result.compositionText == L"，", "Shift+, composes a full-width comma");
     session->reset();
+
+    KeyEvent controlAltSemicolon = Key(VK_OEM_1, false, true);
+    controlAltSemicolon.alt = true;
+    Check(session->wantsKey(controlAltSemicolon), "Ctrl+Alt+; goes to the engine");
+    result = session->handleKey(controlAltSemicolon);
+    Check(result.handled && (result.compositionText + result.committedText) == L"；",
+          "Ctrl+Alt+; types a full-width semicolon");
+    session->reset();
     Check(!session->hasComposition(), "reset drops the composition");
 }
 
@@ -147,7 +155,10 @@ void TestSettings(const std::string& writableDir) {
     const std::string preferences = writableDir + "\\Preferences";
     WritePlist(preferences + "\\Windows.plist",
                Entry("HighlightColor", "Green") +
-                   Entry("ToggleInputMethodWithControlBackslash", "false"));
+                   Entry("ToggleInputMethodWithControlBackslash", "false") +
+                   Entry("ShiftTogglesTemporaryEnglish", "false") +
+                   "\t<key>ModulesSuppressedFromUI</key>\n\t<array>\n\t\t<string>Generic-simplex-cin"
+                   "</string>\n\t\t<string>TraditionalMandarin</string>\n\t</array>\n");
     // the settings app writes the whole module plist, as the core does
     WritePlist(preferences + "\\SmartMandarin.plist",
                Entry("KeyboardLayout", "ETen") + Entry("CandidateSelectionKeys", "") +
@@ -158,6 +169,10 @@ void TestSettings(const std::string& writableDir) {
     Check(frontend.highlightColor == "Green", "a changed Windows.plist is reread");
     Check(!frontend.toggleWithControlBackslash, "boolean settings are read");
     Check(frontend.textColor == "White", "missing keys keep their defaults");
+    Check(!frontend.shiftTogglesEnglish, "the Shift tap toggle can be turned off");
+    Check(frontend.suppressedInputMethods.size() == 2 &&
+              frontend.suppressedInputMethods[0] == "Generic-simplex-cin",
+          "the input methods hidden from the menu are read as an array");
 
     Type(*session, "su3cl3");
     Check(session->handleKey(Key(VK_RIGHT)).compositionText != L"你好",

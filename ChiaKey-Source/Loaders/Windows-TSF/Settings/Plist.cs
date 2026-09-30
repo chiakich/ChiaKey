@@ -1,6 +1,7 @@
 // C# 5 so the csc.exe in .NET Framework 4.x builds it
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -85,7 +86,21 @@ namespace ChiaKey.Settings
             return int.TryParse(GetString(key, null), out result) ? result : fallback;
         }
 
-        public void SetString(string key, string value)
+        public List<string> GetStringArray(string key)
+        {
+            List<string> result = new List<string>();
+            XmlElement value = ValueElement(key);
+            if (value == null || value.Name != "array")
+                return result;
+            foreach (XmlNode item in value.ChildNodes)
+            {
+                if (item.Name == "string")
+                    result.Add(item.InnerText);
+            }
+            return result;
+        }
+
+        private XmlElement ElementForKey(string key, string type)
         {
             XmlElement element = ValueElement(key);
             if (element == null)
@@ -93,16 +108,35 @@ namespace ChiaKey.Settings
                 XmlElement keyElement = document.CreateElement("key");
                 keyElement.InnerText = key;
                 dictionary.AppendChild(keyElement);
-                element = document.CreateElement("string");
+                element = document.CreateElement(type);
                 dictionary.AppendChild(element);
             }
-            else if (element.Name != "string")
+            else if (element.Name != type)
             {
-                XmlElement replacement = document.CreateElement("string");
+                XmlElement replacement = document.CreateElement(type);
                 dictionary.ReplaceChild(replacement, element);
                 element = replacement;
             }
-            element.InnerText = value;
+            return element;
+        }
+
+        public void SetString(string key, string value)
+        {
+            ElementForKey(key, "string").InnerText = value;
+        }
+
+        public void SetStringArray(string key, IEnumerable<string> values)
+        {
+            XmlElement array = ElementForKey(key, "array");
+            array.RemoveAll();
+            foreach (string value in values)
+            {
+                XmlElement item = document.CreateElement("string");
+                item.InnerText = value;
+                array.AppendChild(item);
+            }
+            // <array/> is not something every plist reader takes
+            array.IsEmpty = false;
         }
 
         public void SetBool(string key, bool value)
