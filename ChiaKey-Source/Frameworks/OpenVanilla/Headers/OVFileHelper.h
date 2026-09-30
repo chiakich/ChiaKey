@@ -334,10 +334,15 @@ class OVPathHelper {
           OVFileTimestamp(buf.st_mtimespec.tv_sec, buf.st_mtimespec.tv_nsec);
     }
 #elif defined(WIN32)
-    struct _stat buf;
+    // _wstat has whole seconds only, so a second save within that second went unseen
+    WIN32_FILE_ATTRIBUTE_DATA data;
     wstring wpath = OVUTF16::FromUTF8(path);
-    if (!_wstat(wpath.c_str(), &buf)) {
-      timestamp = OVFileTimestamp(buf.st_mtime);
+    if (GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &data)) {
+      ULARGE_INTEGER ticks;
+      ticks.LowPart = data.ftLastWriteTime.dwLowDateTime;
+      ticks.HighPart = data.ftLastWriteTime.dwHighDateTime;
+      timestamp = OVFileTimestamp(static_cast<time_t>(ticks.QuadPart / 10000000ULL),
+                                  static_cast<time_t>(ticks.QuadPart % 10000000ULL));
     }
 #else
 #error Sorry, no idea for Linux yet.
