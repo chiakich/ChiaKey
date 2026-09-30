@@ -182,6 +182,7 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
   // reading's own unigram order, so a flag here proves the whole path --
   // per-node previous resolution, the score gate, and list alignment.
   engine->reset();
+  if (engine->isComposing()) return Fail("expected isComposing() to be false after reset");
   const char contextKeys[] = {'a', 'l', '4', 'c', '0', '4'};
   for (char key : contextKeys) {
     if (!engine->handleAsciiKey(key)) {
@@ -189,6 +190,7 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     }
   }
 
+  if (!engine->isComposing()) return Fail("expected isComposing() while 冒汗 is composed");
   state = engine->snapshot();
   if (state.composingText != "冒汗") {
     return Fail("expected C++ context reading to compose 冒汗, got: " +
@@ -754,8 +756,7 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
   }
 
   {
-    // Cangjie and Simplex are the lexicon's own Generic-*-cin tables; the
-    // prefix is a compile-time define, so a wrong one silently finds neither
+    // a wrong OVIMGENERIC_IDENTIFIER_PREFIX compiles cleanly and finds neither table
     bool sawCangjie = false;
     bool sawSimplex = false;
     for (const auto& entry : runtime->inputMethods()) {

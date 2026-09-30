@@ -154,6 +154,8 @@ class Engine {
   void reset();
 
   EngineState snapshot() const;
+  // what snapshot() would report as reading, composing text or a visible panel
+  bool isComposing() const;
   void acknowledgeCommit();
 
   std::shared_ptr<Runtime> runtime() const;

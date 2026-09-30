@@ -439,6 +439,13 @@ class Engine::Impl {
     context->readingText()->finishCommit();
   }
 
+  bool isComposing() const {
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    return !context->readingText()->composedText().empty() ||
+           !context->composingText()->composedText().empty() ||
+           context->activePanel()->isVisible();
+  }
+
   EngineState snapshot() const {
     std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
     PVTextBuffer* readingText = context->readingText();
@@ -634,6 +641,8 @@ bool Engine::selectCandidate(std::size_t candidateIndex) {
 void Engine::reset() { impl_->reset(); }
 
 EngineState Engine::snapshot() const { return impl_->snapshot(); }
+
+bool Engine::isComposing() const { return impl_->isComposing(); }
 
 void Engine::acknowledgeCommit() { impl_->acknowledgeCommit(); }
 
