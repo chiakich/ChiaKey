@@ -4,6 +4,7 @@
 #include <array>
 #include <iterator>
 #include <new>
+#include <shellapi.h>
 #include <utility>
 
 #include "Diagnostics.h"
@@ -329,6 +330,10 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfCompartmentEventSink*>(this);
     } else if (iid == IID_ITfDisplayAttributeProvider) {
         *object = static_cast<ITfDisplayAttributeProvider*>(this);
+    } else if (iid == IID_ITfFunctionProvider) {
+        *object = static_cast<ITfFunctionProvider*>(this);
+    } else if (iid == IID_ITfFnConfigure || iid == IID_ITfFunction) {
+        *object = static_cast<ITfFnConfigure*>(this);
     } else {
         return E_NOINTERFACE;
     }
@@ -372,6 +377,10 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
             SUCCEEDED(focused->GetTop(&context)) && context) {
             adviseTextEditSink(context.Get());
         }
+        const HRESULT providerResult = adviseFunctionProvider();
+        if (FAILED(providerResult)) {
+            Trace("AdviseFunctionProvider hr=0x%08lX", static_cast<unsigned long>(providerResult));
+        }
         setChineseMode(true);
         setFullWidthMode(false);
     } else {
@@ -389,6 +398,7 @@ STDMETHODIMP TextService::Deactivate() {
     if (!requestCommitComposition()) {
         Trace("Deactivate: composition could not be committed");
     }
+    unadviseFunctionProvider();
     unadviseSinks();
     uninitializeLangBar();
     // the context saves its learning when it ends; an app closing leaves no other chance
@@ -517,6 +527,56 @@ void TextService::unadviseInputModeSink() {
     }
     conversionModeCookie_ = TF_INVALID_COOKIE;
 }
+
+HRESULT TextService::adviseFunctionProvider() {
+    ComPtr<ITfSourceSingle> source;
+    HRESULT result = threadManager_.As(&source);
+    if (FAILED(result)) return result;
+    return source->AdviseSingleSink(clientId_, IID_ITfFunctionProvider,
+                                    static_cast<ITfFunctionProvider*>(this));
+}
+
+void TextService::unadviseFunctionProvider() {
+    if (!threadManager_ || clientId_ == TF_CLIENTID_NULL) return;
+    ComPtr<ITfSourceSingle> source;
+    if (SUCCEEDED(threadManager_.As(&source))) {
+        source->UnadviseSingleSink(clientId_, IID_ITfFunctionProvider);
+    }
+}
+
+HRESULT TextService::openSettings(HWND parent) const {
+    const HINSTANCE launched = ShellExecuteW(parent, L"open", SettingsAppPath().c_str(), nullptr,
+                                             nullptr, SW_SHOWNORMAL);
+    const INT_PTR code = reinterpret_cast<INT_PTR>(launched);
+    return code > 32 ? S_OK : HRESULT_FROM_WIN32(static_cast<DWORD>(code));
+}
+
+STDMETHODIMP TextService::GetType(GUID* guid) {
+    if (!guid) return E_INVALIDARG;
+    *guid = kTextServiceClsid;
+    return S_OK;
+}
+
+STDMETHODIMP TextService::GetDescription(BSTR* description) {
+    if (!description) return E_INVALIDARG;
+    *description = SysAllocString(kTextServiceDescription);
+    return *description ? S_OK : E_OUTOFMEMORY;
+}
+
+STDMETHODIMP TextService::GetFunction(REFGUID guid, REFIID iid, IUnknown** object) {
+    if (!object) return E_INVALIDARG;
+    *object = nullptr;
+    if (guid != GUID_NULL || iid != IID_ITfFnConfigure) return E_NOINTERFACE;
+    return QueryInterface(iid, reinterpret_cast<void**>(object));
+}
+
+STDMETHODIMP TextService::GetDisplayName(BSTR* name) {
+    if (!name) return E_INVALIDARG;
+    *name = SysAllocString(L"千秋輸入法設定");
+    return *name ? S_OK : E_OUTOFMEMORY;
+}
+
+STDMETHODIMP TextService::Show(HWND parent, LANGID, REFGUID) { return openSettings(parent); }
 
 HRESULT TextService::initializeLangBar() {
     if (!threadManager_) return E_UNEXPECTED;
@@ -688,7 +748,9 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
 
 bool TextService::isModeToggleKey(const KeyEvent& event) const {
     if (!event.control || event.alt) return false;
-    return event.virtualKey == VK_SPACE || (event.virtualKey == VK_OEM_5 && !event.shift);
+    return event.virtualKey == VK_SPACE ||
+           (event.virtualKey == VK_OEM_5 && !event.shift &&
+            CurrentFrontendSettings().toggleWithControlBackslash);
 }
 
 bool TextService::isWidthToggleKey(const KeyEvent& event) const {
@@ -836,7 +898,7 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         updateCandidateWindow(editCookie, context, result);
         return S_OK;
     }
-    if (result.beep) MessageBeep(MB_OK);
+    if (result.beep && CurrentFrontendSettings().playSoundOnTypingError) MessageBeep(MB_OK);
     const HRESULT status = updateComposition(editCookie, context, result);
     if (FAILED(status)) {
         Trace("UpdateComposition hr=0x%08lX", static_cast<unsigned long>(status));
@@ -1097,10 +1159,9 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
         return;
     }
     if (showCandidates) {
-        candidateWindow_.show(owner, textRect, result.candidates, result.highlightedCandidate);
+        candidateWindow_.show(owner, textRect, result);
     } else {
-        candidateWindow_.show(owner, textRect, {{std::wstring(), result.message}},
-                              CandidateWindow::kNoHighlight);
+        candidateWindow_.showMessage(owner, textRect, result.message);
     }
     candidateActive_ = showCandidates;
     candidateAnchor_.Reset();
@@ -1205,6 +1266,8 @@ STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
         }
     }
     adviseTextEditSink(focusedContext.Get());
+    // coming back from the settings app is when a change is expected to show
+    if (focused && !composition_ && !candidateActive_) RefreshSettings();
     if (!focused) {
         resetCandidateState();
         if (engine_) engine_->reset();

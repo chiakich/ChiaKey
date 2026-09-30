@@ -9,11 +9,48 @@
 
 #include "Diagnostics.h"
 #include "OpenVanilla.h"
+#include "PlainVanilla.h"
 
 namespace ChiaKey::WindowsTsf {
 namespace {
 
 using OpenVanilla::OVKeyCode;
+using OpenVanilla::OVKeyValueMap;
+using OpenVanilla::OVPathHelper;
+using OpenVanilla::PVPropertyList;
+
+constexpr char kSmartMandarinPlist[] = "SmartMandarin.plist";
+constexpr char kTraditionalMandarinPlist[] = "TraditionalMandarin.plist";
+constexpr char kFrontendPlist[] = "Windows.plist";
+
+bool BoolValue(OVKeyValueMap& map, const char* key, bool fallback) {
+    return map.hasKey(key) ? map.isKeyTrue(key) : fallback;
+}
+
+std::string StringValue(OVKeyValueMap& map, const char* key, const std::string& fallback) {
+    return map.hasKey(key) ? map.stringValueForKey(key) : fallback;
+}
+
+bool SameConfig(const ChiaKey::EngineConfig& a, const ChiaKey::EngineConfig& b) {
+    return a.keyboardLayout == b.keyboardLayout &&
+           a.candidateSelectionKeys == b.candidateSelectionKeys &&
+           a.candidateCursorAtEndOfTargetBlock == b.candidateCursorAtEndOfTargetBlock &&
+           a.showCandidateListWithSpace == b.showCandidateListWithSpace &&
+           a.clearComposingTextWithEsc == b.clearComposingTextWithEsc &&
+           a.shiftKeyAlwaysCommitUppercaseCharacters ==
+               b.shiftKeyAlwaysCommitUppercaseCharacters &&
+           a.composingTextBufferSize == b.composingTextBufferSize;
+}
+
+std::wstring Utf8ToWide(const std::string& text);
+
+FILETIME Stamp(const std::string& path) {
+    WIN32_FILE_ATTRIBUTE_DATA data{};
+    if (!GetFileAttributesExW(Utf8ToWide(path).c_str(), GetFileExInfoStandard, &data)) return {};
+    return data.ftLastWriteTime;
+}
+
+bool SameStamp(const FILETIME& a, const FILETIME& b) { return CompareFileTime(&a, &b) == 0; }
 
 std::wstring Utf8ToWide(const std::string& text) {
     if (text.empty()) return {};
@@ -189,6 +226,11 @@ ChiaKey::RuntimePaths DefaultPaths(const std::wstring& writableRoot, bool shareW
 struct RuntimeHolder {
     std::mutex mutex;
     std::shared_ptr<ChiaKey::Runtime> runtime;
+    std::string preferencesPath;
+    FILETIME smartStamp{};
+    FILETIME traditionalStamp{};
+    FILETIME frontendStamp{};
+    FrontendSettings frontend;
 };
 
 // leaked on purpose: no teardown under the loader lock; each Engine saves its own learning
@@ -197,12 +239,61 @@ RuntimeHolder& Holder() {
     return *holder;
 }
 
-std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime() {
+std::string PreferencesPath(const std::string& writablePath) {
+    return OVPathHelper::PathCat(writablePath, "Preferences");
+}
+
+// Create() writes its config back over the module plist, so it gets the saved one
+std::shared_ptr<ChiaKey::Runtime> CreateRuntime(const ChiaKey::RuntimePaths& paths,
+                                                std::string* error) {
+    return ChiaKey::Runtime::Create(
+        paths, ReadEngineConfig(PreferencesPath(paths.writablePath), ChiaKey::EngineConfig()),
+        error);
+}
+
+// only real differences: setConfig rewrites the plist and would wake every other process
+void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
+    if (!holder.runtime || holder.preferencesPath.empty()) return;
+    const std::string smartPath = OVPathHelper::PathCat(holder.preferencesPath, kSmartMandarinPlist);
+    const std::string traditionalPath =
+        OVPathHelper::PathCat(holder.preferencesPath, kTraditionalMandarinPlist);
+    const std::string frontendPath = OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist);
+
+    const bool traditionalChanged = !SameStamp(Stamp(traditionalPath), holder.traditionalStamp);
+    if (force || traditionalChanged || !SameStamp(Stamp(smartPath), holder.smartStamp)) {
+        const ChiaKey::EngineConfig current = holder.runtime->config();
+        const ChiaKey::EngineConfig wanted = ReadEngineConfig(holder.preferencesPath, current);
+        // setConfig also resyncs the active module, which picks up Traditional Mandarin edits
+        if (traditionalChanged || !SameConfig(current, wanted)) holder.runtime->setConfig(wanted);
+        holder.smartStamp = Stamp(smartPath);
+        holder.traditionalStamp = Stamp(traditionalPath);
+    }
+
+    const FILETIME frontendStamp = Stamp(frontendPath);
+    if (force || !SameStamp(frontendStamp, holder.frontendStamp)) {
+        holder.frontend = ReadFrontendSettings(holder.preferencesPath);
+        if (holder.runtime->associatedPhrasesEnabled() != holder.frontend.associatedPhrases) {
+            holder.runtime->setAssociatedPhrasesEnabled(holder.frontend.associatedPhrases);
+        }
+        holder.frontendStamp = frontendStamp;
+    }
+}
+
+void AdoptLocked(RuntimeHolder& holder, std::shared_ptr<ChiaKey::Runtime> runtime,
+                 const std::string& writablePath) {
+    holder.runtime = std::move(runtime);
+    if (!holder.runtime) return;
+    holder.preferencesPath = PreferencesPath(writablePath);
+    RefreshSettingsLocked(holder, true);
+}
+
+std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime(std::string* writablePath) {
     std::string error;
     const std::wstring roaming = RoamingFolder();
     if (!IsAppContainer()) {
         ChiaKey::RuntimePaths paths = DefaultPaths(roaming, true);
-        if (auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error)) {
+        if (auto runtime = CreateRuntime(paths, &error)) {
+            *writablePath = paths.writablePath;
             return runtime;
         }
         Trace("Runtime::Create failed: %s", error.c_str());
@@ -213,7 +304,8 @@ std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime() {
     std::string sharedError = "no roaming folder";
     if (!roaming.empty()) {
         ChiaKey::RuntimePaths paths = DefaultPaths(roaming, false);
-        if (auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error)) {
+        if (auto runtime = CreateRuntime(paths, &error)) {
+            *writablePath = paths.writablePath;
             return runtime;
         }
         sharedError = WideToUtf8(roaming) + ": " + error;
@@ -225,7 +317,8 @@ std::shared_ptr<ChiaKey::Runtime> CreateDefaultRuntime() {
     std::wstring privateRoot(temp, length);
     if (!privateRoot.empty() && privateRoot.back() == L'\\') privateRoot.pop_back();
     ChiaKey::RuntimePaths paths = DefaultPaths(privateRoot, false);
-    if (auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error)) {
+    if (auto runtime = CreateRuntime(paths, &error)) {
+        *writablePath = paths.writablePath;
         // debug output does not reach a listener from an AppContainer, so leave the reason here
         const std::wstring note = privateRoot + L"\\ChiaKey\\fallback.txt";
         HANDLE file = CreateFileW(note.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
@@ -246,7 +339,12 @@ std::shared_ptr<ChiaKey::Runtime> SharedRuntime() {
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     // a failed attempt is retried on the next activation, e.g. after install
-    if (!holder.runtime) holder.runtime = CreateDefaultRuntime();
+    if (!holder.runtime) {
+        std::string writablePath;
+        AdoptLocked(holder, CreateDefaultRuntime(&writablePath), writablePath);
+    } else {
+        RefreshSettingsLocked(holder, false);
+    }
     return holder.runtime;
 }
 
@@ -425,6 +523,9 @@ EngineResult MakeResult(const ChiaKey::EngineState& state) {
         }
         result.candidatesVisible = !result.candidates.empty();
         result.highlightedCandidate = panel.highlightedIndex;
+        result.candidatesPerPage = std::max(panel.candidatesPerPage, result.candidates.size());
+        result.candidatePage = panel.currentPage + 1;
+        result.candidatePageCount = std::max<size_t>(panel.pageCount, 1);
     }
 
     result.message = Utf8ToWide(state.tooltip);
@@ -434,11 +535,66 @@ EngineResult MakeResult(const ChiaKey::EngineState& state) {
     return result;
 }
 
+ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,
+                                       ChiaKey::EngineConfig config) {
+    const std::string path = OVPathHelper::PathCat(preferencesPath, kSmartMandarinPlist);
+    if (!OVPathHelper::PathExists(path)) return config;
+    // the map points into the plist's own dictionary, so the plist has to outlive it
+    PVPropertyList plist(path);
+    OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
+    config.keyboardLayout = StringValue(map, "KeyboardLayout", config.keyboardLayout);
+    config.candidateSelectionKeys =
+        StringValue(map, "CandidateSelectionKeys", config.candidateSelectionKeys);
+    config.candidateCursorAtEndOfTargetBlock = BoolValue(
+        map, "CandidateCursorAtEndOfTargetBlock", config.candidateCursorAtEndOfTargetBlock);
+    config.showCandidateListWithSpace =
+        BoolValue(map, "ShowCandidateListWithSpace", config.showCandidateListWithSpace);
+    config.clearComposingTextWithEsc =
+        BoolValue(map, "ClearComposingTextWithEsc", config.clearComposingTextWithEsc);
+    config.shiftKeyAlwaysCommitUppercaseCharacters =
+        BoolValue(map, "ShiftKeyAlwaysCommitUppercaseCharacters",
+                  config.shiftKeyAlwaysCommitUppercaseCharacters);
+    if (map.hasKey("ComposingTextBufferSize")) {
+        const int size = map.intValueForKey("ComposingTextBufferSize");
+        if (size > 0) config.composingTextBufferSize = static_cast<size_t>(size);
+    }
+    return config;
+}
+
+FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
+    FrontendSettings settings;
+    const std::string path = OVPathHelper::PathCat(preferencesPath, kFrontendPlist);
+    if (!OVPathHelper::PathExists(path)) return settings;
+    PVPropertyList plist(path);
+    OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
+    settings.highlightColor = StringValue(map, "HighlightColor", settings.highlightColor);
+    settings.backgroundColor = StringValue(map, "BackgroundColor", settings.backgroundColor);
+    settings.textColor = StringValue(map, "TextColor", settings.textColor);
+    settings.backgroundPattern = BoolValue(map, "BackgroundPattern", settings.backgroundPattern);
+    settings.playSoundOnTypingError =
+        BoolValue(map, "ShouldPlaySoundOnTypingError", settings.playSoundOnTypingError);
+    settings.toggleWithControlBackslash = BoolValue(
+        map, "ToggleInputMethodWithControlBackslash", settings.toggleWithControlBackslash);
+    settings.associatedPhrases =
+        BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);
+    return settings;
+}
+
+void RefreshSettings() { SharedRuntime(); }
+
+FrontendSettings CurrentFrontendSettings() {
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    return holder.frontend;
+}
+
+std::wstring SettingsAppPath() { return ModuleDirectory() + L"\\ChiaKeySettings.exe"; }
+
 bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMessage) {
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     if (holder.runtime) return true;
-    holder.runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), errorMessage);
+    AdoptLocked(holder, CreateRuntime(paths, errorMessage), paths.writablePath);
     return holder.runtime != nullptr;
 }
 
@@ -495,6 +651,8 @@ bool EngineSession::wantsKey(const KeyEvent& event) const {
 
 EngineResult EngineSession::handleKey(const KeyEvent& event) {
     if (!engine_) return {};
+    // applying settings can rebuild the context, so never mid-composition
+    if (!hasComposition()) SharedRuntime();
     const bool handled = engine_->handleKey(MakeCoreKey(event));
     EngineResult result = MakeResult(engine_->snapshot());
     result.handled = handled;
