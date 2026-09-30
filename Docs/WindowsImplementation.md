@@ -1,20 +1,28 @@
 # Windows 實作指南
 
-最後更新：2026-09-30
+最後更新：2026-10-01
 
 這份文件說明 Windows TSF 輸入法要如何接 `ChiaKeyCore`，也是第二階段（接 TSF
 前端）的交接文件。第一階段已完成：核心能用 MSVC 編譯並執行。
 
 ## 目前狀態
 
-`.github/workflows/core-msvc.yml` 在 `windows-latest` 上編譯核心並跑 smoke test。
+`.github/workflows/core-msvc.yml` 在 `windows-latest` 上編譯核心並跑 smoke test，
+另一個 job 編譯 TSF 前端（DLL、圖示、設定程式）並跑 `chiakey_tsf_engine_test`。
 詞庫不在 git 裡，所以由一個 `macos-26` job 用 `install-lexicon-release.sh
 --dry-run --keep-downloads` 下載並驗證，再以 artifact 交給 Windows job。
 
 已在 Windows 上實際執行過的：注音組字、選字、標點、多 context 隔離、設定即時
 重載、學習寫入落到磁碟，以及引擎一結束就存檔。
 
-還沒有 TSF 前端。這一步需要實機，見文末。
+TSF 前端在 `ChiaKey-Source/Loaders/Windows-TSF`：inline 組字、仿 KeyKey 的候選窗、
+語言列與工作列圖示（依輸入法顯示 注／倉／簡）、`ChiaKeySettings.exe` 設定程式，
+以及倉頡、簡易與使用者 `.cin` 字表（`%APPDATA%\ChiaKey\Tables\Generic\*.cin`）。
+
+AppContainer（開始選單搜尋、Store app）與桌面程式共用 `%APPDATA%\ChiaKey`：桌面程式
+第一次建立它時會開放給 `ALL APPLICATION PACKAGES` 並標成 Low integrity。這代表任何
+Store app 都讀得到學習資料庫，是刻意接受的取捨。共用目錄出現之前，AppContainer
+先用自己的暫存目錄，之後每分鐘重試一次，成功就讓新的 `Engine` 搬過去。
 
 ## 架構決定：引擎放在 TSF DLL 裡
 
@@ -97,6 +105,9 @@ cmake -S ChiaKey-Source\Frameworks\ChiaKeyCore -B build\core-cmake -DCHIAKEY_LEX
 cmake --build build\core-cmake --config Release
 ctest --test-dir build\core-cmake -C Release --output-on-failure
 ```
+
+TSF 前端換成 `ChiaKey-Source\Loaders\Windows-TSF` 當 `-S`，產出的 `ChiaKeyTsf.dll` 用
+`Register-Tip.ps1 -DllPath ...` 註冊。
 
 ## 需要實機的項目
 
