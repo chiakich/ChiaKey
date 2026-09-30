@@ -245,6 +245,13 @@ RuntimeHolder& Holder() {
     return *holder;
 }
 
+// the leaked runtime keeps SQLite handles open, so COM must never unload the DLL under it
+void PinModule() {
+    HMODULE module = nullptr;
+    GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+                       reinterpret_cast<LPCWSTR>(&PinModule), &module);
+}
+
 constexpr ULONGLONG kRefreshIntervalMilliseconds = 1000;
 
 std::string PreferencesPath(const std::string& writablePath) {
@@ -296,6 +303,7 @@ void AdoptLocked(RuntimeHolder& holder, std::shared_ptr<ChiaKey::Runtime> runtim
                  const std::string& writablePath) {
     holder.runtime = std::move(runtime);
     if (!holder.runtime) return;
+    PinModule();
     holder.preferencesPath = PreferencesPath(writablePath);
     RefreshSettingsLocked(holder, true);
 }
