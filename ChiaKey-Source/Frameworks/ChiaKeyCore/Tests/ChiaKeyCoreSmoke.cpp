@@ -756,6 +756,31 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
   }
 
   {
+    std::vector<ChiaKey::SymbolCategory> symbols = runtime->symbolCategories();
+    if (symbols.empty() || !symbols.front().buttons || symbols.front().items.empty() ||
+        symbols.front().name.empty()) {
+      return Fail("the lexicon's symbol table is missing or does not start with a button grid");
+    }
+    const bool hasMessages =
+        std::any_of(symbols.begin(), symbols.end(),
+                    [](const ChiaKey::SymbolCategory& category) { return !category.buttons; });
+    if (!hasMessages) return Fail("the symbol table has no canned message list");
+
+    const std::string userText = runtime->userCannedMessagesPath();
+    if (!std::ifstream(userText.c_str()).good()) {
+      return Fail("userCannedMessagesPath did not create " + userText);
+    }
+    // the file starts with an example line, which counts as a message
+    std::ofstream(userText.c_str(), std::ios::app) << "chiakey symbol smoke\r\n";
+    symbols = runtime->symbolCategories();
+    std::remove(userText.c_str());
+    const std::vector<ChiaKey::SymbolItem>& own = symbols.back().items;
+    if (symbols.back().buttons || own.size() != 2 || own.back().text != "chiakey symbol smoke") {
+      return Fail("UserCannedMessages.txt did not become the last symbol category");
+    }
+  }
+
+  {
     // a wrong OVIMGENERIC_IDENTIFIER_PREFIX compiles cleanly and finds neither table
     bool sawCangjie = false;
     bool sawSimplex = false;

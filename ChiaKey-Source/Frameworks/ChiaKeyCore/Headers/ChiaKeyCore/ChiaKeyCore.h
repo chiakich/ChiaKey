@@ -89,6 +89,23 @@ struct EngineState {
   std::vector<std::string> notifications;
 };
 
+struct SymbolItem {
+  // what is typed
+  std::string text;
+  // what is shown, when it differs from text
+  std::string label;
+  // from the category's SymbolMetadata, if any
+  std::string name;
+  std::string description;
+};
+
+struct SymbolCategory {
+  std::string name;
+  // a grid of single symbols; otherwise a list of canned messages
+  bool buttons = false;
+  std::vector<SymbolItem> items;
+};
+
 class Engine;
 
 class Runtime : public std::enable_shared_from_this<Runtime> {
@@ -122,6 +139,12 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
   bool associatedPhrasesEnabled() const;
   // Rebuilds every Engine's context: any composition in progress is dropped.
   void setAssociatedPhrasesEnabled(bool enabled);
+
+  // The symbol table: the lexicon's canned_messages, then UserCannedMessages.plist
+  // and UserCannedMessages.txt under writablePath, read afresh on every call.
+  std::vector<SymbolCategory> symbolCategories() const;
+  // UserCannedMessages.txt, created with its header line if missing
+  std::string userCannedMessagesPath() const;
 
   static const char* SmartMandarinIdentifier();
   static const char* TraditionalMandarinIdentifier();
