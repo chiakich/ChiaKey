@@ -151,6 +151,7 @@ private:
     Microsoft::WRL::ComPtr<ITfContext> compositionContext_;
     Microsoft::WRL::ComPtr<ITfContext> textEditContext_;
     Microsoft::WRL::ComPtr<ITfRange> candidateAnchor_;
+    Microsoft::WRL::ComPtr<ITfContext> candidateContext_;
     std::unique_ptr<EngineSession> engine_;
     CandidateWindow candidateWindow_;
     std::mutex langBarMutex_;
