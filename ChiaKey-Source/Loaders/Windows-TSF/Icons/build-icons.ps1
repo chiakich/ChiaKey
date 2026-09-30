@@ -21,7 +21,13 @@ $targets = @(
     @{ Name = 'full-on-light'; Svg = 'full'; Color = $onLight; Sizes = $modeSizes },
     @{ Name = 'full-on-dark'; Svg = 'full'; Color = $onDark; Sizes = $modeSizes },
     @{ Name = 'half-on-light'; Svg = 'half'; Color = $onLight; Sizes = $modeSizes },
-    @{ Name = 'half-on-dark'; Svg = 'half'; Color = $onDark; Sizes = $modeSizes }
+    @{ Name = 'half-on-dark'; Svg = 'half'; Color = $onDark; Sizes = $modeSizes },
+    @{ Name = 'zhuyin-on-light'; Svg = 'zhuyin'; Color = $onLight; Sizes = $modeSizes },
+    @{ Name = 'zhuyin-on-dark'; Svg = 'zhuyin'; Color = $onDark; Sizes = $modeSizes },
+    @{ Name = 'cangjie-on-light'; Svg = 'cangjie'; Color = $onLight; Sizes = $modeSizes },
+    @{ Name = 'cangjie-on-dark'; Svg = 'cangjie'; Color = $onDark; Sizes = $modeSizes },
+    @{ Name = 'simplex-on-light'; Svg = 'simplex'; Color = $onLight; Sizes = $modeSizes },
+    @{ Name = 'simplex-on-dark'; Svg = 'simplex'; Color = $onDark; Sizes = $modeSizes }
 )
 
 function Brush([string] $fill, [string] $currentColor) {

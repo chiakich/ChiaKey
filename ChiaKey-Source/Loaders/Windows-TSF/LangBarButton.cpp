@@ -38,6 +38,21 @@ HICON LoadThemedIcon(int lightId) {
         LoadImageW(g_module, MAKEINTRESOURCEW(id), IMAGE_ICON, size, size, LR_DEFAULTCOLOR));
 }
 
+int ChineseIconFor(const std::string& inputMethod) {
+    if (inputMethod == "SmartMandarin" || inputMethod == "TraditionalMandarin") return IDI_ZHUYIN;
+    if (inputMethod == "Generic-cj-cin") return IDI_CANGJIE;
+    if (inputMethod == "Generic-simplex-cin") return IDI_SIMPLEX;
+    // user .cin tables
+    return IDI_CHINESE;
+}
+
+std::wstring InputMethodName(const std::string& inputMethod) {
+    for (const auto& method : InputMethods()) {
+        if (method.first == inputMethod) return method.second;
+    }
+    return L"中文";
+}
+
 }  // namespace
 
 LangBarButton::LangBarButton(TextService* service, REFGUID guid, Kind kind)
@@ -98,15 +113,16 @@ STDMETHODIMP LangBarButton::Show(BOOL) { return E_NOTIMPL; }
 
 STDMETHODIMP LangBarButton::GetTooltipString(BSTR* tooltip) {
     if (!tooltip) return E_INVALIDARG;
-    const wchar_t* value = kTextServiceDescription;
+    std::wstring value;
     if (kind_ == Kind::FullHalf) {
         value = service_->isFullWidthMode() ? L"全形（Shift+Space 切換）"
                                             : L"半形（Shift+Space 切換）";
     } else {
-        value = service_->isChineseMode() ? L"中文注音（按一下切換英文）"
-                                          : L"英文（按一下切換中文注音）";
+        const std::wstring name = InputMethodName(CurrentInputMethod());
+        value = service_->isChineseMode() ? name + L"（按一下切換英文）"
+                                          : L"英文（按一下切換" + name + L"）";
     }
-    *tooltip = SysAllocString(value);
+    *tooltip = SysAllocString(value.c_str());
     return *tooltip ? S_OK : E_OUTOFMEMORY;
 }
 
@@ -205,7 +221,7 @@ const wchar_t* LangBarButton::label() const {
 
 STDMETHODIMP LangBarButton::GetIcon(HICON* icon) {
     if (!icon) return E_INVALIDARG;
-    int id = service_->isChineseMode() ? IDI_CHINESE : IDI_ENGLISH;
+    int id = service_->isChineseMode() ? ChineseIconFor(CurrentInputMethod()) : IDI_ENGLISH;
     if (kind_ == Kind::FullHalf) id = service_->isFullWidthMode() ? IDI_FULL_WIDTH : IDI_HALF_WIDTH;
     *icon = LoadThemedIcon(id);
     return *icon ? S_OK : E_FAIL;
