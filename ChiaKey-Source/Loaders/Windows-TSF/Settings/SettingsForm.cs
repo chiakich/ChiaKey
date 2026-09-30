@@ -126,8 +126,42 @@ namespace ChiaKey.Settings
         private readonly Button applyButton = new Button();
         private bool loading;
 
+        private static readonly Choice[] CangjiePunctuations = {
+            new Choice("", "全部使用全形標點"),
+            new Choice("Punctuations-cj-mixedwidth-cin", "除了逗號與句號外，使用半形標點"),
+            new Choice("Punctuations-cj-halfwidth-cin", "全部使用半形標點"),
+        };
+        // the menu order, as InputMethods() in ChiaKeyEngine.cpp lists them
+        private static readonly Choice[] BuiltInInputMethods = {
+            new Choice("SmartMandarin", "好打注音"),
+            new Choice("TraditionalMandarin", "傳統注音"),
+            new Choice("Generic-cj-cin", "倉頡"),
+            new Choice("Generic-simplex-cin", "簡易"),
+        };
+        private const string AllCharacters = "使用全字庫罕用字（CNS11643）";
+
+        private readonly string preferencesPath;
         private CheckBox controlBackslash;
+        private CheckBox shiftTogglesEnglish;
         private CheckBox associatedPhrases;
+        private CheckedListBox menuInputMethods;
+        private CheckBox smartAllCharacters;
+        private CheckBox traditionalAllCharacters;
+        private CheckBox cangjieAllCharacters;
+        private CheckBox simplexAllCharacters;
+        private ComboBox cangjiePunctuation;
+        private GroupBox tableSettings;
+        private NumericUpDown tableMaximumLength;
+        private TextBox tableMatchOne;
+        private TextBox tableMatchMany;
+        private CheckBox tableCommitAtMaximum;
+        private CheckBox tableClearOnError;
+        private CheckBox tableComposeWhileTyping;
+        private CheckBox tableDynamicFrequency;
+        private CheckBox tableSpaceFirst;
+        // one per user table, read when it is first selected
+        private readonly Dictionary<string, Plist> tablePlists = new Dictionary<string, Plist>();
+        private Plist shownTable;
         private ComboBox smartLayout;
         private ComboBox selectionKeys;
         private NumericUpDown bufferSize;
@@ -151,7 +185,7 @@ namespace ChiaKey.Settings
 
         public SettingsForm(string dataPath)
         {
-            string preferencesPath = Path.Combine(dataPath, "Preferences");
+            preferencesPath = Path.Combine(dataPath, "Preferences");
             // the engine names Tables\Generic\x.cin the Generic-x-cin input method
             tablesPath = Path.Combine(dataPath, "Tables", "Generic");
             frontend = new Plist(Path.Combine(preferencesPath, "Windows.plist"));
@@ -171,13 +205,13 @@ namespace ChiaKey.Settings
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(500, 470);
+            ClientSize = new Size(500, 520);
             BackColor = Color.White;
 
             BuildToolbar();
             BuildButtons();
             content.Location = new Point(0, ToolbarHeight);
-            content.Size = new Size(500, 420 - ToolbarHeight);
+            content.Size = new Size(500, 470 - ToolbarHeight);
             Controls.Add(content);
 
             AddPane("一般(&G)", "general.tiff", BuildGeneralPane());
@@ -221,14 +255,14 @@ namespace ChiaKey.Settings
         {
             Button okButton = new Button();
             okButton.Text = "確定(&O)";
-            okButton.Bounds = new Rectangle(232, 432, 82, 26);
+            okButton.Bounds = new Rectangle(232, 482, 82, 26);
             okButton.Click += delegate { if (SaveSettings()) Close(); };
             Button cancelButton = new Button();
             cancelButton.Text = "取消(&C)";
-            cancelButton.Bounds = new Rectangle(322, 432, 82, 26);
+            cancelButton.Bounds = new Rectangle(322, 482, 82, 26);
             cancelButton.Click += delegate { Close(); };
             applyButton.Text = "套用(&A)";
-            applyButton.Bounds = new Rectangle(412, 432, 82, 26);
+            applyButton.Bounds = new Rectangle(412, 482, 82, 26);
             applyButton.Enabled = false;
             applyButton.Click += delegate { if (SaveSettings()) applyButton.Enabled = false; };
             Controls.Add(okButton);
@@ -327,17 +361,76 @@ namespace ChiaKey.Settings
         {
             Panel pane = new Panel();
             Title(pane, "一般設定");
-            GroupBox basic = Group(pane, "基本功能", 44, 84);
+            GroupBox basic = Group(pane, "基本功能", 44, 110);
             controlBackslash = Check(basic, "使用 Ctrl + \\ 切換中英模式", 14, 24);
-            associatedPhrases = Check(basic, "輸入後顯示聯想詞", 14, 50);
+            shiftTogglesEnglish = Check(basic, "輕點 Shift 切換英文", 14, 50);
+            associatedPhrases = Check(basic, "輸入後顯示聯想詞", 14, 76);
+
+            GroupBox menu = Group(pane, "輸入法選單", 164, 236);
+            Label hint = new Label();
+            hint.Text = "取消勾選的輸入法不會出現在輸入選單中（使用中的除外）。";
+            hint.AutoSize = true;
+            hint.Location = new Point(12, 24);
+            menu.Controls.Add(hint);
+            menuInputMethods = new CheckedListBox();
+            menuInputMethods.CheckOnClick = true;
+            menuInputMethods.IntegralHeight = false;
+            menuInputMethods.Bounds = new Rectangle(14, 50, 440, 170);
+            menuInputMethods.ItemCheck += delegate { Changed(); };
+            menu.Controls.Add(menuInputMethods);
+            menu.Layout += delegate
+            {
+                menuInputMethods.Height = menu.ClientSize.Height - menuInputMethods.Top -
+                                          menuInputMethods.Left;
+            };
             return pane;
+        }
+
+        // the identifiers the engine gives Tables\Generic\x.cin, as OVCINDatabaseService names it
+        private static string TableIdentifier(string path)
+        {
+            return "Generic-" + Path.GetFileName(path).Replace('.', '-');
+        }
+
+        private void LoadMenuInputMethods(List<string> hidden)
+        {
+            bool wasLoading = loading;
+            loading = true;
+            menuInputMethods.Items.Clear();
+            List<Choice> methods = new List<Choice>(BuiltInInputMethods);
+            if (Directory.Exists(tablesPath))
+            {
+                foreach (string path in Directory.GetFiles(tablesPath, "*.cin"))
+                    methods.Add(new Choice(TableIdentifier(path), TableName(path)));
+            }
+            foreach (Choice method in methods)
+                menuInputMethods.Items.Add(method, !hidden.Contains(method.Value));
+            // a table that is gone keeps its entry, so it stays hidden if it comes back
+            foreach (string identifier in hidden)
+            {
+                if (!methods.Exists(delegate(Choice method) { return method.Value == identifier; }))
+                    menuInputMethods.Items.Add(new Choice(identifier, identifier), false);
+            }
+            menuInputMethods.TopIndex = 0;
+            loading = wasLoading;
+        }
+
+        private List<string> HiddenInputMethods()
+        {
+            List<string> hidden = new List<string>();
+            for (int index = 0; index < menuInputMethods.Items.Count; ++index)
+            {
+                if (!menuInputMethods.GetItemChecked(index))
+                    hidden.Add(((Choice)menuInputMethods.Items[index]).Value);
+            }
+            return hidden;
         }
 
         private Control BuildPhoneticPane()
         {
             Panel pane = new Panel();
             Title(pane, "注音輸入法設定");
-            GroupBox smart = Group(pane, "好打注音", 44, 228);
+            GroupBox smart = Group(pane, "好打注音", 44, 254);
             smartLayout = Combo(smart, "鍵盤配置：", 22, Layouts);
             selectionKeys = Combo(smart, "選字鍵設定：", 54, SelectionKeys);
 
@@ -367,9 +460,11 @@ namespace ChiaKey.Settings
             escClears = Check(smart, "按下 ESC 按鍵後清除全部編輯區內容", ControlLeft, 146);
             cursorAtEnd = Check(smart, "選字時游標放在詞尾", ControlLeft, 172);
             shiftUppercase = Check(smart, "按住 Shift 時輸入大寫英文", ControlLeft, 198);
+            smartAllCharacters = Check(smart, AllCharacters, ControlLeft, 224);
 
-            GroupBox traditional = Group(pane, "傳統注音", 280, 60);
+            GroupBox traditional = Group(pane, "傳統注音", 306, 86);
             traditionalLayout = Combo(traditional, "鍵盤配置：", 22, Layouts);
+            traditionalAllCharacters = Check(traditional, AllCharacters, ControlLeft, 54);
             return pane;
         }
 
@@ -397,13 +492,17 @@ namespace ChiaKey.Settings
         {
             Panel pane = new Panel();
             Title(pane, "倉頡輸入法設定");
-            GroupBox typing = Group(pane, "打字功能", 44, 136);
+            GroupBox typing = Group(pane, "打字功能", 44, 162);
             cangjieCommitAtMaximum = Check(typing, "打到字根最大長度時立刻組字", 14, 24);
             cangjieComposeWhileTyping = Check(typing, "打字時同時組字", 14, 50);
             cangjieClearOnError = Check(typing, "組字錯誤時清除字根", 14, 76);
             cangjieDynamicFrequency = Check(typing, "使用動態字頻調整（將常用字移動到選字列表前方）", 14, 102);
+            cangjieAllCharacters = Check(typing, AllCharacters, 14, 128);
             Exclusive(cangjieComposeWhileTyping, cangjieClearOnError);
-            Note(pane, ExclusiveNote, 190);
+            GroupBox punctuation = Group(pane, "標點符號", 214, 60);
+            cangjiePunctuation = Combo(punctuation, "標點符號樣式：", 22, CangjiePunctuations);
+            cangjiePunctuation.Width = 300;
+            Note(pane, ExclusiveNote, 284);
             return pane;
         }
 
@@ -411,11 +510,12 @@ namespace ChiaKey.Settings
         {
             Panel pane = new Panel();
             Title(pane, "簡易輸入法設定");
-            GroupBox typing = Group(pane, "打字功能", 44, 84);
+            GroupBox typing = Group(pane, "打字功能", 44, 110);
             simplexComposeWhileTyping = Check(typing, "打字時同時組字", 14, 24);
             simplexClearOnError = Check(typing, "組字錯誤時清除字根", 14, 50);
+            simplexAllCharacters = Check(typing, AllCharacters, 14, 76);
             Exclusive(simplexComposeWhileTyping, simplexClearOnError);
-            Note(pane, ExclusiveNote, 138);
+            Note(pane, ExclusiveNote, 164);
             return pane;
         }
 
@@ -423,10 +523,11 @@ namespace ChiaKey.Settings
         {
             Panel pane = new Panel();
             Title(pane, "泛用輸入法設定");
-            GroupBox tables = Group(pane, "自訂字表（.cin）", 44, 200);
+            GroupBox tables = Group(pane, "自訂字表（.cin）", 44, 150);
             userTables = new ListBox();
-            userTables.Bounds = new Rectangle(14, 24, 330, 160);
+            userTables.Bounds = new Rectangle(14, 24, 330, 110);
             userTables.IntegralHeight = false;
+            userTables.SelectedIndexChanged += delegate { ShowTableSettings(); };
             tables.Controls.Add(userTables);
             // a ListBox does not keep its height through DPI scaling, so it follows the group
             tables.Layout += delegate
@@ -454,11 +555,105 @@ namespace ChiaKey.Settings
             };
             tables.Controls.Add(open);
 
+            // TakaoGenericSettings, one table at a time
+            tableSettings = Group(pane, "選取字表的設定", 202, 164);
+            tableSettings.Enabled = false;
+            Label lengthLabel = new Label();
+            lengthLabel.Text = "字根組合最大長度：";
+            lengthLabel.AutoSize = true;
+            lengthLabel.Location = new Point(14, 26);
+            tableSettings.Controls.Add(lengthLabel);
+            tableMaximumLength = new NumericUpDown();
+            tableMaximumLength.Minimum = 1;
+            tableMaximumLength.Maximum = 128;
+            tableMaximumLength.Bounds = new Rectangle(ControlLeft, 22, 60, 24);
+            tableMaximumLength.ValueChanged += delegate { Changed(); };
+            tableSettings.Controls.Add(tableMaximumLength);
+
+            Label wildcardLabel = new Label();
+            wildcardLabel.Text = "萬用字元：";
+            wildcardLabel.AutoSize = true;
+            wildcardLabel.Location = new Point(14, 56);
+            tableSettings.Controls.Add(wildcardLabel);
+            tableMatchOne = Wildcard(tableSettings, "單一長度", ControlLeft, 52);
+            tableMatchMany = Wildcard(tableSettings, "不限長度", ControlLeft + 120, 52);
+
+            tableCommitAtMaximum = Check(tableSettings, "打到字根最大長度時立刻組字", 14, 82);
+            tableClearOnError = Check(tableSettings, "組字錯誤時清除字根", 250, 82);
+            tableComposeWhileTyping = Check(tableSettings, "打字時同時組字", 14, 108);
+            tableDynamicFrequency = Check(tableSettings, "使用動態字頻調整", 250, 108);
+            tableSpaceFirst = Check(tableSettings, "空白鍵選一字，第一選字鍵選第二字", 14, 134);
+            Exclusive(tableComposeWhileTyping, tableClearOnError);
+
             Label note = Note(pane, "大易、行列、嘸蝦米等字表不隨附，請自行匯入 .cin 檔。\n" +
                                     "新增或移除字表後，需要重新開啟正在使用的程式，才會出現在輸入法選單中。",
-                              254);
+                              374);
             note.AutoSize = true;
             return pane;
+        }
+
+        private TextBox Wildcard(Control parent, string label, int left, int top)
+        {
+            Label caption = new Label();
+            caption.Text = label;
+            caption.AutoSize = true;
+            caption.Location = new Point(left, top + 4);
+            parent.Controls.Add(caption);
+            TextBox box = new TextBox();
+            box.MaxLength = 1;
+            box.TextAlign = HorizontalAlignment.Center;
+            box.Bounds = new Rectangle(left + 64, top, 30, 24);
+            box.TextChanged += delegate { Changed(); };
+            parent.Controls.Add(box);
+            return box;
+        }
+
+        private void StoreTableSettings()
+        {
+            if (shownTable == null)
+                return;
+            shownTable.SetInt("MaximumRadicalLength", (int)tableMaximumLength.Value);
+            shownTable.SetString("MatchOneChar", tableMatchOne.Text);
+            shownTable.SetString("MatchZeroOrMoreChar", tableMatchMany.Text);
+            shownTable.SetBool("ShouldCommitAtMaximumRadicalLength", tableCommitAtMaximum.Checked);
+            shownTable.SetBool("ClearReadingBufferAtCompositionError", tableClearOnError.Checked);
+            shownTable.SetBool("ComposeWhileTyping", tableComposeWhileTyping.Checked);
+            shownTable.SetBool("UseDynamicFrequency", tableDynamicFrequency.Checked);
+            shownTable.SetBool("UseSpaceAsFirstCandidateSelectionKey", tableSpaceFirst.Checked);
+        }
+
+        // the defaults are OVIMGeneric's for a table it has no preset for
+        private void ShowTableSettings()
+        {
+            StoreTableSettings();
+            shownTable = null;
+            TableEntry entry = userTables.SelectedItem as TableEntry;
+            tableSettings.Enabled = entry != null;
+            if (entry == null)
+                return;
+            string identifier = TableIdentifier(entry.Path);
+            Plist plist;
+            if (!tablePlists.TryGetValue(identifier, out plist))
+            {
+                plist = new Plist(Path.Combine(preferencesPath, identifier + ".plist"));
+                tablePlists[identifier] = plist;
+            }
+            bool wasLoading = loading;
+            loading = true;
+            int length = plist.GetInt("MaximumRadicalLength", 128);
+            if (length <= 0)
+                length = 128;
+            tableMaximumLength.Maximum = Math.Max(128, length);
+            tableMaximumLength.Value = length;
+            tableMatchOne.Text = plist.GetString("MatchOneChar", "");
+            tableMatchMany.Text = plist.GetString("MatchZeroOrMoreChar", "");
+            tableCommitAtMaximum.Checked = plist.GetBool("ShouldCommitAtMaximumRadicalLength", false);
+            tableClearOnError.Checked = plist.GetBool("ClearReadingBufferAtCompositionError", false);
+            tableComposeWhileTyping.Checked = plist.GetBool("ComposeWhileTyping", false);
+            tableDynamicFrequency.Checked = plist.GetBool("UseDynamicFrequency", true);
+            tableSpaceFirst.Checked = plist.GetBool("UseSpaceAsFirstCandidateSelectionKey", false);
+            loading = wasLoading;
+            shownTable = plist;
         }
 
         private sealed class TableEntry
@@ -503,14 +698,21 @@ namespace ChiaKey.Settings
 
         private void LoadTables()
         {
+            StoreTableSettings();
+            shownTable = null;
             userTables.Items.Clear();
-            if (!Directory.Exists(tablesPath))
-                return;
-            foreach (string path in Directory.GetFiles(tablesPath, "*.cin"))
+            if (Directory.Exists(tablesPath))
             {
-                userTables.Items.Add(new TableEntry(path, TableName(path) + "（" +
-                                                          Path.GetFileName(path) + "）"));
+                foreach (string path in Directory.GetFiles(tablesPath, "*.cin"))
+                {
+                    userTables.Items.Add(new TableEntry(path, TableName(path) + "（" +
+                                                              Path.GetFileName(path) + "）"));
+                }
             }
+            ShowTableSettings();
+            // an imported table joins the menu list with the boxes ticked so far kept
+            if (menuInputMethods.Items.Count > 0)
+                LoadMenuInputMethods(HiddenInputMethods());
         }
 
         private void ImportTable()
@@ -551,6 +753,13 @@ namespace ChiaKey.Settings
             try
             {
                 File.Delete(entry.Path);
+                Plist removed;
+                if (tablePlists.TryGetValue(TableIdentifier(entry.Path), out removed))
+                {
+                    if (shownTable == removed)
+                        shownTable = null;
+                    tablePlists.Remove(TableIdentifier(entry.Path));
+                }
             }
             catch (Exception error)
             {
@@ -630,7 +839,9 @@ namespace ChiaKey.Settings
         {
             loading = true;
             controlBackslash.Checked = frontend.GetBool("ToggleInputMethodWithControlBackslash", true);
+            shiftTogglesEnglish.Checked = frontend.GetBool("ShiftTogglesTemporaryEnglish", true);
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
+            LoadMenuInputMethods(frontend.GetStringArray("ModulesSuppressedFromUI"));
 
             Select(smartLayout, Layouts,
                    CanonicalLayout(smartMandarin.GetString("KeyboardLayout", "Standard")));
@@ -647,9 +858,11 @@ namespace ChiaKey.Settings
             cursorAtEnd.Checked = smartMandarin.GetBool("CandidateCursorAtEndOfTargetBlock", false);
             shiftUppercase.Checked =
                 smartMandarin.GetBool("ShiftKeyAlwaysCommitUppercaseCharacters", false);
+            smartAllCharacters.Checked = AllowsAllCharacters(smartMandarin);
 
             Select(traditionalLayout, Layouts,
                    CanonicalLayout(traditionalMandarin.GetString("KeyboardLayout", "Standard")));
+            traditionalAllCharacters.Checked = AllowsAllCharacters(traditionalMandarin);
 
             Select(highlightColor, HighlightColors, frontend.GetString("HighlightColor", "Purple"));
             Select(backgroundColor, BackgroundColors, frontend.GetString("BackgroundColor", "Black"));
@@ -664,14 +877,31 @@ namespace ChiaKey.Settings
             cangjieDynamicFrequency.Checked = cangjie.GetBool("UseDynamicFrequency", true);
             simplexComposeWhileTyping.Checked = simplex.GetBool("ComposeWhileTyping", false);
             simplexClearOnError.Checked = simplex.GetBool("ClearReadingBufferAtCompositionError", true);
+            cangjieAllCharacters.Checked = AllowsAllCharacters(cangjie);
+            simplexAllCharacters.Checked = AllowsAllCharacters(simplex);
+            Select(cangjiePunctuation, CangjiePunctuations, cangjie.GetString("UseOverrideTable", ""));
             LoadTables();
             loading = false;
+        }
+
+        // the modules ignore an encoding they do not know, so only BIG-5 restricts
+        private static bool AllowsAllCharacters(Plist plist)
+        {
+            return !string.Equals(plist.GetString("UseCharactersSupportedByEncoding", ""), "BIG-5",
+                                  StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void SetAllCharacters(Plist plist, bool allowed)
+        {
+            plist.SetString("UseCharactersSupportedByEncoding", allowed ? "" : "BIG-5");
         }
 
         private bool SaveSettings()
         {
             frontend.SetBool("ToggleInputMethodWithControlBackslash", controlBackslash.Checked);
+            frontend.SetBool("ShiftTogglesTemporaryEnglish", shiftTogglesEnglish.Checked);
             frontend.SetBool("EnableAssociatedPhrases", associatedPhrases.Checked);
+            frontend.SetStringArray("ModulesSuppressedFromUI", HiddenInputMethods());
             frontend.SetString("HighlightColor", Selected(highlightColor));
             frontend.SetString("BackgroundColor", Selected(backgroundColor));
             frontend.SetString("TextColor", Selected(textColor));
@@ -685,8 +915,10 @@ namespace ChiaKey.Settings
             smartMandarin.SetBool("ClearComposingTextWithEsc", escClears.Checked);
             smartMandarin.SetBool("CandidateCursorAtEndOfTargetBlock", cursorAtEnd.Checked);
             smartMandarin.SetBool("ShiftKeyAlwaysCommitUppercaseCharacters", shiftUppercase.Checked);
+            SetAllCharacters(smartMandarin, smartAllCharacters.Checked);
 
             traditionalMandarin.SetString("KeyboardLayout", Selected(traditionalLayout));
+            SetAllCharacters(traditionalMandarin, traditionalAllCharacters.Checked);
 
             cangjie.SetBool("ShouldCommitAtMaximumRadicalLength", cangjieCommitAtMaximum.Checked);
             cangjie.SetBool("ComposeWhileTyping", cangjieComposeWhileTyping.Checked);
@@ -694,6 +926,10 @@ namespace ChiaKey.Settings
             cangjie.SetBool("UseDynamicFrequency", cangjieDynamicFrequency.Checked);
             simplex.SetBool("ComposeWhileTyping", simplexComposeWhileTyping.Checked);
             simplex.SetBool("ClearReadingBufferAtCompositionError", simplexClearOnError.Checked);
+            SetAllCharacters(cangjie, cangjieAllCharacters.Checked);
+            SetAllCharacters(simplex, simplexAllCharacters.Checked);
+            cangjie.SetString("UseOverrideTable", Selected(cangjiePunctuation));
+            StoreTableSettings();
 
             try
             {
@@ -702,6 +938,8 @@ namespace ChiaKey.Settings
                 traditionalMandarin.Save();
                 cangjie.Save();
                 simplex.Save();
+                foreach (Plist table in tablePlists.Values)
+                    table.Save();
                 return true;
             }
             catch (Exception error)

@@ -280,6 +280,20 @@ private:
     size_t next_ = 0;
 };
 
+// bpmf-punctuations.cin's _ctrl_opt_ chords; Ctrl+Alt+. is the symbol window's instead
+constexpr UINT kPunctuationChordKeys[] = {
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+    'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', VK_OEM_1, VK_OEM_7, VK_OEM_COMMA, VK_OEM_2,
+};
+constexpr wchar_t kPunctuationChordName[] = L"千秋輸入法標點";
+constexpr TF_PRESERVEDKEY kSymbolWindowKey{VK_OEM_PERIOD, TF_MOD_CONTROL | TF_MOD_ALT};
+
+GUID PunctuationChordGuid(size_t index) {
+    GUID guid = kPunctuationChordKeyGuidBase;
+    guid.Data4[7] = static_cast<unsigned char>(index);
+    return guid;
+}
+
 bool IsKeyDown(UINT virtualKey) {
     return (GetKeyState(static_cast<int>(virtualKey)) & 0x8000) != 0;
 }
@@ -468,13 +482,19 @@ HRESULT TextService::adviseSinks() {
     if (FAILED(result)) return result;
     result = keystrokes->AdviseKeyEventSink(clientId_, this, TRUE);
     if (FAILED(result)) return result;
-    // preserved, since some hosts (Notepad) never pass Ctrl+Alt chords to the key sink;
-    // it takes over the lexicon's Ctrl+Alt+. for ．
-    const TF_PRESERVEDKEY symbolKey{VK_OEM_PERIOD, TF_MOD_CONTROL | TF_MOD_ALT};
+    // TSF never passes Ctrl+Alt chords to the key sink, so they are preserved keys;
+    // the symbol window takes over the lexicon's Ctrl+Alt+. for ．
     static constexpr wchar_t kSymbolKeyName[] = L"符號表";
-    const HRESULT preserveResult =
-        keystrokes->PreserveKey(clientId_, kSymbolWindowKeyGuid, &symbolKey, kSymbolKeyName,
-                                static_cast<ULONG>(std::size(kSymbolKeyName) - 1));
+    HRESULT preserveResult =
+        keystrokes->PreserveKey(clientId_, kSymbolWindowKeyGuid, &kSymbolWindowKey,
+                                kSymbolKeyName, static_cast<ULONG>(std::size(kSymbolKeyName) - 1));
+    for (size_t index = 0; index < std::size(kPunctuationChordKeys); ++index) {
+        const TF_PRESERVEDKEY chord{kPunctuationChordKeys[index], TF_MOD_CONTROL | TF_MOD_ALT};
+        const HRESULT chordResult = keystrokes->PreserveKey(
+            clientId_, PunctuationChordGuid(index), &chord, kPunctuationChordName,
+            static_cast<ULONG>(std::size(kPunctuationChordName) - 1));
+        if (FAILED(chordResult)) preserveResult = chordResult;
+    }
     if (FAILED(preserveResult)) {
         Trace("PreserveKey hr=0x%08lX", static_cast<unsigned long>(preserveResult));
     }
@@ -510,8 +530,12 @@ void TextService::unadviseSinks() {
     unadviseInputModeSink();
     ComPtr<ITfKeystrokeMgr> keystrokes;
     if (SUCCEEDED(threadManager_.As(&keystrokes)) && clientId_ != TF_CLIENTID_NULL) {
-        const TF_PRESERVEDKEY symbolKey{VK_OEM_PERIOD, TF_MOD_CONTROL | TF_MOD_ALT};
-        keystrokes->UnpreserveKey(kSymbolWindowKeyGuid, &symbolKey);
+        keystrokes->UnpreserveKey(kSymbolWindowKeyGuid, &kSymbolWindowKey);
+        for (size_t index = 0; index < std::size(kPunctuationChordKeys); ++index) {
+            const TF_PRESERVEDKEY chord{kPunctuationChordKeys[index],
+                                        TF_MOD_CONTROL | TF_MOD_ALT};
+            keystrokes->UnpreserveKey(PunctuationChordGuid(index), &chord);
+        }
         keystrokes->UnadviseKeyEventSink(clientId_);
     }
     ComPtr<ITfSource> source;
@@ -822,6 +846,11 @@ bool TextService::isModeToggleKey(const KeyEvent& event) const {
             CurrentFrontendSettings().toggleWithControlBackslash);
 }
 
+bool TextService::isShiftToggleKey(const KeyEvent& event) const {
+    return IsShiftKey(event.virtualKey) && !event.control && !event.alt &&
+           CurrentFrontendSettings().shiftTogglesEnglish;
+}
+
 bool TextService::isWidthToggleKey(const KeyEvent& event) const {
     return event.virtualKey == VK_SPACE && event.shift && !event.control && !event.alt;
 }
@@ -899,7 +928,7 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
         shiftTogglePending_ = false;
         shiftPressedAt_ = 0;
     }
-    if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
+    if (isShiftToggleKey(event)) {
         // OnKeyDown only runs for keys claimed here; it leaves Shift uneaten
         *eaten = TRUE;
         return S_OK;
@@ -925,7 +954,7 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     if (!context || !eaten) return E_INVALIDARG;
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
-    if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
+    if (isShiftToggleKey(event)) {
         if (!shiftTogglePending_) shiftPressedAt_ = GetTickCount();
         shiftTogglePending_ = true;
         return S_OK;
@@ -942,7 +971,10 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
         return S_OK;
     }
     if (!isPotentialKey(event)) return S_OK;
+    return runKeySession(context, std::move(event), eaten);
+}
 
+HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten) {
     auto* session = new (std::nothrow) KeyEditSession(this, context, std::move(event));
     if (!session) return E_OUTOFMEMORY;
     HRESULT editResult = E_FAIL;
@@ -984,10 +1016,26 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eate
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnPreservedKey(ITfContext*, REFGUID guid, BOOL* eaten) {
+STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
-    *eaten = guid == kSymbolWindowKeyGuid;
-    if (*eaten) toggleSymbolWindow();
+    *eaten = FALSE;
+    if (guid == kSymbolWindowKeyGuid) {
+        toggleSymbolWindow();
+        *eaten = TRUE;
+        return S_OK;
+    }
+    for (size_t index = 0; index < std::size(kPunctuationChordKeys); ++index) {
+        if (guid != PunctuationChordGuid(index)) continue;
+        KeyEvent event;
+        event.virtualKey = kPunctuationChordKeys[index];
+        event.control = true;
+        event.alt = true;
+        event.capsLock = (GetKeyState(VK_CAPITAL) & 1) != 0;
+        event.numLock = (GetKeyState(VK_NUMLOCK) & 1) != 0;
+        // an unclaimed chord goes on to the app, as in English mode
+        if (!context || !isPotentialKey(event)) return S_OK;
+        return runKeySession(context, std::move(event), eaten);
+    }
     return S_OK;
 }
 

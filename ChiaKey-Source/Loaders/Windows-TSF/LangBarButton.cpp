@@ -49,6 +49,19 @@ int ChineseIconFor(const std::string& inputMethod) {
     return IDI_CHINESE;
 }
 
+// the selected one stays, so the menu always shows what is in use
+std::vector<std::pair<std::string, std::wstring>> MenuInputMethods(const std::string& selected) {
+    const std::vector<std::string> hidden = CurrentFrontendSettings().suppressedInputMethods;
+    std::vector<std::pair<std::string, std::wstring>> result;
+    for (auto& method : InputMethods()) {
+        if (method.first == selected ||
+            std::find(hidden.begin(), hidden.end(), method.first) == hidden.end()) {
+            result.push_back(std::move(method));
+        }
+    }
+    return result;
+}
+
 std::wstring InputMethodName(const std::string& inputMethod) {
     for (const auto& method : InputMethods()) {
         if (method.first == inputMethod) return method.second;
@@ -137,7 +150,7 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
                     service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         const std::string selected = CurrentInputMethod();
-        const auto methods = InputMethods();
+        const auto methods = MenuInputMethods(selected);
         menuInputMethods_.clear();
         for (const auto& method : methods) {
             AppendMenuW(menu, MF_STRING | (method.first == selected ? MF_CHECKED : 0),
@@ -184,7 +197,7 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
     if (FAILED(result)) return result;
     const std::string selected = CurrentInputMethod();
     menuInputMethods_.clear();
-    for (const auto& method : InputMethods()) {
+    for (const auto& method : MenuInputMethods(selected)) {
         result = menu->AddMenuItem(
             kMenuFirstInputMethod + static_cast<UINT>(menuInputMethods_.size()),
             method.first == selected ? TF_LBMENUF_CHECKED : 0, nullptr, nullptr,

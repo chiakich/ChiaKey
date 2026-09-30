@@ -25,6 +25,11 @@ inline constexpr GUID kFocusedDisplayAttributeGuid = {
 inline constexpr GUID kSymbolWindowKeyGuid = {
     0x31271245, 0x36f6, 0x4472, {0x83, 0xdb, 0xd7, 0x09, 0x34, 0x46, 0x96, 0x52}};
 
+// the lexicon's Ctrl+Alt chords; the last byte is the chord's index
+// {271B88E0-8F2F-49FF-9FAF-E7050E55D600}
+inline constexpr GUID kPunctuationChordKeyGuidBase = {
+    0x271b88e0, 0x8f2f, 0x49ff, {0x9f, 0xaf, 0xe7, 0x05, 0x0e, 0x55, 0xd6, 0x00}};
+
 inline constexpr LANGID kTraditionalChineseLangId = 0x0404;
 inline constexpr wchar_t kTextServiceDescription[] = L"千秋輸入法";
 inline constexpr wchar_t kThreadingModel[] = L"Apartment";

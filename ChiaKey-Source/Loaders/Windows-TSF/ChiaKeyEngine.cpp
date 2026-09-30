@@ -17,15 +17,14 @@ namespace {
 using OpenVanilla::OVKeyCode;
 using OpenVanilla::OVKeyValueMap;
 using OpenVanilla::OVPathHelper;
+using OpenVanilla::PVPlistValue;
 using OpenVanilla::PVPropertyList;
 
 constexpr char kSmartMandarinPlist[] = "SmartMandarin.plist";
 constexpr char kFrontendPlist[] = "Windows.plist";
-// the modules the settings app edits besides Smart Mandarin
-constexpr const char* kOtherModulePlists[] = {
-    "TraditionalMandarin.plist",
-    "Generic-cj-cin.plist",
-    "Generic-simplex-cin.plist",
+// in Preferences but not a module's: the rest are, user tables included
+constexpr const wchar_t* kNonModulePlists[] = {
+    L"SmartMandarin.plist", L"Windows.plist", L"Loader.plist", L"SymbolWindow.plist",
 };
 
 bool BoolValue(OVKeyValueMap& map, const char* key, bool fallback) {
@@ -56,6 +55,28 @@ FILETIME Stamp(const std::string& path) {
 }
 
 bool SameStamp(const FILETIME& a, const FILETIME& b) { return CompareFileTime(&a, &b) == 0; }
+
+// one value for every module plist, so an edit, a new table's plist or a removal all show
+ULONGLONG ModulePlistsStamp(const std::string& preferencesPath) {
+    ULONGLONG stamp = 14695981039346656037ull;
+    const auto mix = [&stamp](ULONGLONG value) {
+        stamp = (stamp ^ value) * 1099511628211ull;
+    };
+    WIN32_FIND_DATAW found{};
+    HANDLE search = FindFirstFileW((Utf8ToWide(preferencesPath) + L"\\*.plist").c_str(), &found);
+    if (search == INVALID_HANDLE_VALUE) return stamp;
+    do {
+        const bool skipped = std::any_of(
+            std::begin(kNonModulePlists), std::end(kNonModulePlists),
+            [&found](const wchar_t* name) { return _wcsicmp(name, found.cFileName) == 0; });
+        if (skipped) continue;
+        for (const wchar_t* character = found.cFileName; *character; ++character) mix(*character);
+        mix((static_cast<ULONGLONG>(found.ftLastWriteTime.dwHighDateTime) << 32) |
+            found.ftLastWriteTime.dwLowDateTime);
+    } while (FindNextFileW(search, &found));
+    FindClose(search);
+    return stamp;
+}
 
 std::wstring Utf8ToWide(const std::string& text) {
     if (text.empty()) return {};
@@ -233,7 +254,7 @@ struct RuntimeHolder {
     std::shared_ptr<ChiaKey::Runtime> runtime;
     std::string preferencesPath;
     FILETIME smartStamp{};
-    FILETIME otherStamps[std::size(kOtherModulePlists)]{};
+    ULONGLONG moduleStamp = 0;
     FILETIME frontendStamp{};
     FrontendSettings frontend;
     ULONGLONG nextRefresh = 0;
@@ -277,19 +298,19 @@ void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
     const std::string smartPath = OVPathHelper::PathCat(holder.preferencesPath, kSmartMandarinPlist);
     const std::string frontendPath = OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist);
 
-    bool otherChanged = false;
-    for (size_t index = 0; index < std::size(kOtherModulePlists); ++index) {
-        const FILETIME stamp =
-            Stamp(OVPathHelper::PathCat(holder.preferencesPath, kOtherModulePlists[index]));
-        // a fresh runtime has just read them all
-        if (!force && !SameStamp(stamp, holder.otherStamps[index])) otherChanged = true;
-        holder.otherStamps[index] = stamp;
-    }
-    if (force || otherChanged || !SameStamp(Stamp(smartPath), holder.smartStamp)) {
+    const ULONGLONG moduleStamp = ModulePlistsStamp(holder.preferencesPath);
+    // a fresh runtime has just read them all
+    const bool moduleChanged = !force && moduleStamp != holder.moduleStamp;
+    holder.moduleStamp = moduleStamp;
+    const bool smartChanged = !force && !SameStamp(Stamp(smartPath), holder.smartStamp);
+    if (force || moduleChanged || smartChanged) {
         const ChiaKey::EngineConfig current = holder.runtime->config();
         const ChiaKey::EngineConfig wanted = ReadEngineConfig(holder.preferencesPath, current);
-        // setConfig also resyncs the active module, which picks up the other modules' edits
-        if (otherChanged || !SameConfig(current, wanted)) holder.runtime->setConfig(wanted);
+        // setConfig also resyncs the modules, which picks up keys EngineConfig does not carry,
+        // and rewrites a plist only when its values differ
+        if (moduleChanged || smartChanged || !SameConfig(current, wanted)) {
+            holder.runtime->setConfig(wanted);
+        }
         holder.smartStamp = Stamp(smartPath);
     }
 
@@ -640,8 +661,18 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
         BoolValue(map, "ShouldPlaySoundOnTypingError", settings.playSoundOnTypingError);
     settings.toggleWithControlBackslash = BoolValue(
         map, "ToggleInputMethodWithControlBackslash", settings.toggleWithControlBackslash);
+    settings.shiftTogglesEnglish =
+        BoolValue(map, "ShiftTogglesTemporaryEnglish", settings.shiftTogglesEnglish);
     settings.associatedPhrases =
         BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);
+    if (PVPlistValue* hidden = plist.rootDictionary()->valueForKey("ModulesSuppressedFromUI")) {
+        for (size_t index = 0; index < hidden->arraySize(); ++index) {
+            PVPlistValue* identifier = hidden->arrayElementAtIndex(index);
+            if (identifier && identifier->type() == PVPlistValue::String) {
+                settings.suppressedInputMethods.push_back(identifier->stringValue());
+            }
+        }
+    }
     return settings;
 }
 

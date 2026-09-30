@@ -63,7 +63,10 @@ struct FrontendSettings {
     bool backgroundPattern = false;
     bool playSoundOnTypingError = true;
     bool toggleWithControlBackslash = true;
+    bool shiftTogglesEnglish = true;
     bool associatedPhrases = false;
+    // input method identifiers left out of the menus
+    std::vector<std::string> suppressedInputMethods;
 };
 
 FrontendSettings CurrentFrontendSettings();
