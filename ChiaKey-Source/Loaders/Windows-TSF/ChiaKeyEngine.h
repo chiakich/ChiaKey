@@ -33,6 +33,10 @@ struct EngineResult {
     bool candidatesVisible = false;
     size_t highlightedCandidate = 0;
     std::vector<EngineCandidate> candidates;
+    size_t candidatesPerPage = 0;
+    // 1-based, as the page indicator shows it
+    size_t candidatePage = 0;
+    size_t candidatePageCount = 0;
     std::wstring message;
 };
 
@@ -50,6 +54,25 @@ struct KeyEvent {
 bool IsInputMethodControlKey(const KeyEvent& event);
 ChiaKey::KeyEvent MakeCoreKey(const KeyEvent& event);
 EngineResult MakeResult(const ChiaKey::EngineState& state);
+
+// Preferences/Windows.plist, with the original KeyKey key names
+struct FrontendSettings {
+    std::string highlightColor = "Purple";  // Purple, Green, Yellow, Red
+    std::string backgroundColor = "Black";  // Black, White
+    std::string textColor = "White";        // White, Black
+    bool backgroundPattern = false;
+    bool playSoundOnTypingError = true;
+    bool toggleWithControlBackslash = true;
+    bool associatedPhrases = false;
+};
+
+FrontendSettings CurrentFrontendSettings();
+// rereads the plists if they changed; applying them can rebuild contexts
+void RefreshSettings();
+ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,
+                                       ChiaKey::EngineConfig config);
+FrontendSettings ReadFrontendSettings(const std::string& preferencesPath);
+std::wstring SettingsAppPath();
 
 // for tests; must run before the first session
 bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMessage);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <ctffunc.h>
 #include <msctf.h>
 #include <wrl/client.h>
 
@@ -22,7 +23,9 @@ class TextService final : public ITfTextInputProcessorEx,
                           public ITfTextEditSink,
                           public ITfThreadMgrEventSink,
                           public ITfCompartmentEventSink,
-                          public ITfDisplayAttributeProvider {
+                          public ITfDisplayAttributeProvider,
+                          public ITfFunctionProvider,
+                          public ITfFnConfigure {
 public:
     static HRESULT CreateInstance(IUnknown* outer, REFIID iid, void** object);
 
@@ -68,6 +71,15 @@ public:
     STDMETHODIMP GetDisplayAttributeInfo(REFGUID guid,
                                          ITfDisplayAttributeInfo** info) override;
 
+    // ITfFunctionProvider
+    STDMETHODIMP GetType(GUID* guid) override;
+    STDMETHODIMP GetDescription(BSTR* description) override;
+    STDMETHODIMP GetFunction(REFGUID guid, REFIID iid, IUnknown** object) override;
+
+    // ITfFunction / ITfFnConfigure, which Windows calls for the IME's options button
+    STDMETHODIMP GetDisplayName(BSTR* name) override;
+    STDMETHODIMP Show(HWND parent, LANGID language, REFGUID profile) override;
+
     HRESULT processKey(TfEditCookie editCookie, ITfContext* context,
                        const KeyEvent& event, bool* handled);
     HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie, ITfContext* context);
@@ -76,8 +88,11 @@ public:
     void toggleChineseMode();
     void toggleFullWidthMode();
     bool selectInputMethod(const std::string& identifier);
+    HRESULT openSettings(HWND parent = nullptr) const;
 
 private:
+    HRESULT adviseFunctionProvider();
+    void unadviseFunctionProvider();
     ~TextService();
 
     bool isPotentialKey(const KeyEvent& event) const;

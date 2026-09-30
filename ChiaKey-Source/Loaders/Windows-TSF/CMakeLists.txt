@@ -38,7 +38,7 @@ target_compile_definitions(ChiaKeyTsf PRIVATE
     CHIAKEY_VERSION_STRING="${PROJECT_VERSION}"
 )
 target_compile_options(ChiaKeyTsf PRIVATE /W4 /permissive-)
-target_link_libraries(ChiaKeyTsf PRIVATE chiakey_tsf_engine gdi32 oleaut32 user32 uuid)
+target_link_libraries(ChiaKeyTsf PRIVATE chiakey_tsf_engine gdi32 msimg32 oleaut32 user32 uuid)
 set_target_properties(ChiaKeyTsf PROPERTIES PREFIX "")
 
 if(EXISTS "${CHIAKEY_LEXICON_DATABASE}")
@@ -50,6 +50,53 @@ if(EXISTS "${CHIAKEY_LEXICON_DATABASE}")
 else()
     message(WARNING "CHIAKEY_LEXICON_DATABASE not set: ChiaKeySource.db has to be "
                     "copied next to ChiaKeyTsf.dll by hand.")
+endif()
+
+# Every Windows 10 and 11 has .NET Framework 4.8 and its C# 5 compiler, so the
+# settings app needs neither a .NET SDK nor a runtime installer.
+find_program(CHIAKEY_CSC csc
+    PATHS "$ENV{WINDIR}/Microsoft.NET/Framework64/v4.0.30319"
+          "$ENV{WINDIR}/Microsoft.NET/Framework/v4.0.30319"
+    NO_DEFAULT_PATH)
+if(CHIAKEY_CSC)
+    set(CHIAKEY_SETTINGS_EXE "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeySettings.exe")
+    set(CHIAKEY_SETTINGS_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs")
+    set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
+    # csc reads forward slashes as option prefixes, so every path goes native
+    set(CHIAKEY_SETTINGS_ARGUMENTS)
+    foreach(icon general phonetic plugin)
+        file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_ICONS}/${icon}.tiff" icon_path)
+        list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${icon_path},${icon}.tiff")
+    endforeach()
+    foreach(source IN LISTS CHIAKEY_SETTINGS_SOURCES)
+        file(TO_NATIVE_PATH "${source}" source_path)
+        list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "${source_path}")
+    endforeach()
+    file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_EXE}" settings_exe_path)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
+         settings_manifest_path)
+    add_custom_command(
+        OUTPUT "${CHIAKEY_SETTINGS_EXE}"
+        # the LIB that vcvars sets lists MSVC folders csc warns about
+        COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB
+                "${CHIAKEY_CSC}" /nologo /target:winexe /optimize+ /utf8output
+                "/out:${settings_exe_path}" "/win32manifest:${settings_manifest_path}"
+                /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml.dll
+                ${CHIAKEY_SETTINGS_ARGUMENTS}
+        DEPENDS ${CHIAKEY_SETTINGS_SOURCES}
+                "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
+        COMMENT "Compiling ChiaKeySettings.exe"
+        VERBATIM)
+    add_custom_target(ChiaKeySettings ALL
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CHIAKEY_SETTINGS_EXE}"
+                "$<TARGET_FILE_DIR:ChiaKeyTsf>/ChiaKeySettings.exe"
+        DEPENDS "${CHIAKEY_SETTINGS_EXE}"
+        VERBATIM)
+    add_dependencies(ChiaKeySettings ChiaKeyTsf)
+else()
+    message(WARNING "csc.exe from .NET Framework 4 not found: ChiaKeySettings.exe is not built.")
 endif()
 
 if(BUILD_TESTING AND EXISTS "${CHIAKEY_LEXICON_DATABASE}")

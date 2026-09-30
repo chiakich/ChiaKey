@@ -14,6 +14,7 @@ namespace {
 constexpr UINT kMenuToggleLanguage = 1;
 constexpr UINT kMenuHalfWidth = 2;
 constexpr UINT kMenuFullWidth = 3;
+constexpr UINT kMenuSettings = 4;
 constexpr UINT kMenuFirstInputMethod = 100;
 
 HICON CreateLabelIcon(const wchar_t* label, COLORREF background) {
@@ -162,6 +163,8 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
                     kMenuHalfWidth, L"半形");
         AppendMenuW(menu, MF_STRING | (service_->isFullWidthMode() ? MF_CHECKED : 0),
                     kMenuFullWidth, L"全形");
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(menu, MF_STRING, kMenuSettings, L"輸入法設定…");
         HWND owner = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 0, 0, HWND_DESKTOP,
                                      nullptr, nullptr, nullptr);
         const UINT chosen = TrackPopupMenu(
@@ -206,15 +209,20 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
                                service_->isFullWidthMode() ? 0 : TF_LBMENUF_CHECKED, nullptr,
                                nullptr, L"半形", 2, nullptr);
     if (FAILED(result)) return result;
-    return menu->AddMenuItem(kMenuFullWidth,
-                             service_->isFullWidthMode() ? TF_LBMENUF_CHECKED : 0, nullptr,
-                             nullptr, L"全形", 2, nullptr);
+    result = menu->AddMenuItem(kMenuFullWidth,
+                               service_->isFullWidthMode() ? TF_LBMENUF_CHECKED : 0, nullptr,
+                               nullptr, L"全形", 2, nullptr);
+    if (FAILED(result)) return result;
+    result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr, nullptr, 0, nullptr);
+    if (FAILED(result)) return result;
+    return menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"輸入法設定…", 6, nullptr);
 }
 
 STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
     if (id == kMenuToggleLanguage) service_->toggleChineseMode();
     if (id == kMenuHalfWidth && service_->isFullWidthMode()) service_->toggleFullWidthMode();
     if (id == kMenuFullWidth && !service_->isFullWidthMode()) service_->toggleFullWidthMode();
+    if (id == kMenuSettings) return service_->openSettings();
     if (id >= kMenuFirstInputMethod &&
         id - kMenuFirstInputMethod < menuInputMethods_.size()) {
         service_->selectInputMethod(menuInputMethods_[id - kMenuFirstInputMethod]);

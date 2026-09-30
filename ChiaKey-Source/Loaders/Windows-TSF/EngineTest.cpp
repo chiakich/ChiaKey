@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -66,12 +67,16 @@ void TestLayout() {
     state.candidateState.candidates = {"a", "b", "c", "d", "e"};
     state.candidateState.candidatesPerPage = 3;
     state.candidateState.currentPage = 1;
+    state.candidateState.pageCount = 2;
     state.candidateState.selectionKeys = {"1", "2"};
     state.candidateState.highlightedIndex = 1;
     result = MakeResult(state);
     Check(result.candidates.size() == 2 && result.candidates[0].text == L"d" &&
               result.candidates[1].selectionKey == L"2" && result.highlightedCandidate == 1,
           "candidates are taken from the current page");
+    Check(result.candidatePage == 2 && result.candidatePageCount == 2 &&
+              result.candidatesPerPage == 3,
+          "the page indicator is 1-based and the page keeps its full height");
 }
 
 void TestKeys() {
@@ -122,6 +127,68 @@ void TestSession() {
     Check(!session->hasComposition(), "reset drops the composition");
 }
 
+void WritePlist(const std::string& path, const std::string& body) {
+    std::ofstream out(path, std::ios::trunc);
+    out << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\">\n<dict>\n"
+        << body << "</dict>\n</plist>\n";
+}
+
+std::string Entry(const char* key, const char* value) {
+    return std::string("\t<key>") + key + "</key>\n\t<string>" + value + "</string>\n";
+}
+
+void TestSettings(const std::string& writableDir) {
+    const std::string preferences = writableDir + "\\Preferences";
+    WritePlist(preferences + "\\Windows.plist",
+               Entry("HighlightColor", "Green") +
+                   Entry("ToggleInputMethodWithControlBackslash", "false"));
+    // the settings app writes the whole module plist, as the core does
+    WritePlist(preferences + "\\SmartMandarin.plist",
+               Entry("KeyboardLayout", "ETen") + Entry("CandidateSelectionKeys", "") +
+                   Entry("ShowCandidateListWithSpace", "true"));
+
+    std::unique_ptr<EngineSession> session = EngineSession::Create();
+    const FrontendSettings frontend = CurrentFrontendSettings();
+    Check(frontend.highlightColor == "Green", "a changed Windows.plist is reread");
+    Check(!frontend.toggleWithControlBackslash, "boolean settings are read");
+    Check(frontend.textColor == "White", "missing keys keep their defaults");
+
+    Type(*session, "su3cl3");
+    Check(session->handleKey(Key(VK_RIGHT)).compositionText != L"你好",
+          "a changed SmartMandarin.plist applies the keyboard layout");
+    session->reset();
+
+    WritePlist(preferences + "\\SmartMandarin.plist", Entry("KeyboardLayout", "Standard"));
+    session = EngineSession::Create();
+    Type(*session, "su3cl3");
+    Check(session->handleKey(Key(VK_RIGHT)).compositionText == L"你好",
+          "switching the layout back applies too");
+    session->reset();
+
+    // a restored backup keeps its old timestamp, older than what the engine last wrote
+    WritePlist(preferences + "\\SmartMandarin.plist", Entry("KeyboardLayout", "ETen"));
+    session = EngineSession::Create();
+    WritePlist(preferences + "\\SmartMandarin.plist", Entry("KeyboardLayout", "Standard"));
+    {
+        HANDLE file = CreateFileA((preferences + "\\SmartMandarin.plist").c_str(),
+                                  FILE_WRITE_ATTRIBUTES, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+        FILETIME old{};
+        SYSTEMTIME year2020{2020, 1, 3, 1, 0, 0, 0, 0};
+        SystemTimeToFileTime(&year2020, &old);
+        SetFileTime(file, nullptr, nullptr, &old);
+        CloseHandle(file);
+    }
+    session = EngineSession::Create();
+    Type(*session, "su3cl3");
+    Check(session->handleKey(Key(VK_RIGHT)).compositionText == L"你好",
+          "a plist restored with an older timestamp still applies");
+    session->reset();
+
+    const ChiaKey::EngineConfig config = ReadEngineConfig(preferences, ChiaKey::EngineConfig());
+    Check(config.keyboardLayout == "Standard" && config.showCandidateListWithSpace,
+          "a missing key falls back to the config passed in");
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -145,6 +212,7 @@ int main(int argc, char* argv[]) {
     TestLayout();
     TestKeys();
     TestSession();
+    TestSettings(argv[2]);
     if (failures) return 1;
     std::cout << "chiakey_tsf_engine_test: OK" << std::endl;
     return 0;
