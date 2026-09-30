@@ -464,6 +464,11 @@ bool IsNavigationOrEditingKey(UINT key) {
     return SpecialKeyCode(key) != 0;
 }
 
+bool IsPunctuationListKey(const KeyEvent& event) {
+    return event.control && !event.alt && !event.shift &&
+           (event.virtualKey == '0' || event.virtualKey == '1');
+}
+
 bool IsQuickUserPhraseKey(const KeyEvent& event) {
     return event.control && !event.alt && !event.shift && event.virtualKey >= '1' &&
            event.virtualKey <= '9';
@@ -710,7 +715,8 @@ bool EngineSession::wantsKey(const KeyEvent& event) const {
     const bool composing = hasComposition();
     // Ctrl+1..9 marks the last N composed characters as a user phrase
     if (IsQuickUserPhraseKey(event)) return composing;
-    // TextService checks the punctuation chords itself
+    // punctuation chords always type; Ctrl+0/1 is left to app zoom and tab keys when idle
+    if (IsInputMethodControlKey(event)) return composing || !IsPunctuationListKey(event);
     if (event.control || event.alt) return false;
     if (composing && IsNavigationOrEditingKey(event.virtualKey)) return true;
     // declining here makes TSF skip OnKeyDown and hand the raw key to the app

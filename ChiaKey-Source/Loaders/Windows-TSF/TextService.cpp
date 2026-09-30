@@ -751,7 +751,6 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
     if (!composition_ && !candidateActive_ && IsHostEditingKey(event.virtualKey)) {
         return false;
     }
-    if (IsInputMethodControlKey(event)) return true;
     return engine_->wantsKey(event);
 }
 

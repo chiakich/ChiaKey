@@ -103,6 +103,10 @@ void TestSession() {
     if (!session || !session->ready()) return;
 
     Check(!session->wantsKey(Key('2', false, true)), "Ctrl+2 without a composition stays with the host");
+    Check(session->wantsKey(Key(VK_OEM_COMMA, false, true)),
+          "Ctrl+, types punctuation without a composition");
+    Check(!session->wantsKey(Key('0', false, true)), "Ctrl+0 without a composition stays with the host");
+    Check(!session->wantsKey(Key('1', false, true)), "Ctrl+1 without a composition stays with the host");
     Check(Type(*session, "su3cl3"), "你好 keys are handled");
     EngineResult result = session->handleKey(Key(VK_RIGHT));
     Check(result.compositionText == L"你好", "composes 你好");
@@ -110,6 +114,7 @@ void TestSession() {
     Check(result.focusedSegment.length > 0, "a word is focused");
     Check(session->wantsKey(Key('2', false, true)), "Ctrl+2 in a composition goes to the engine");
     Check(!session->wantsKey(Key('C', false, true)), "Ctrl+C in a composition stays with the host");
+    Check(session->wantsKey(Key(VK_OEM_COMMA, false, true)), "Ctrl+, in a composition goes to the engine");
 
     result = session->handleKey(Key(VK_SPACE));
     Check(result.candidatesVisible && !result.candidates.empty() &&
