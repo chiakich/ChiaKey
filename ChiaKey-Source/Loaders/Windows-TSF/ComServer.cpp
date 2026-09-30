@@ -119,6 +119,13 @@ void UnregisterProfile() {
                                     kTraditionalChineseProfileGuid, 0);
         profiles->Release();
     }
+    // the profile goes above; this takes the text service's own CTF\TIP key with it
+    ITfInputProcessorProfiles* service = nullptr;
+    if (SUCCEEDED(CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr,
+                                   CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&service)))) {
+        service->Unregister(kTextServiceClsid);
+        service->Release();
+    }
 }
 
 // immersive support is what lets Start/Search and Store apps load the TIP
