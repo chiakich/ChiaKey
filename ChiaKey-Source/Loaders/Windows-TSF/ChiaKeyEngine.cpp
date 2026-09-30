@@ -256,7 +256,15 @@ ChiaKey::RuntimePaths DefaultPaths(const std::wstring& writableRoot, bool shareW
     ChiaKey::RuntimePaths paths;
     paths.loadedPath = WideToUtf8(moduleDirectory);
     paths.resourcePath = paths.loadedPath;
-    paths.lexiconDatabasePath = WideToUtf8(moduleDirectory + L"\\ChiaKeySource.db");
+    // the installer puts the 32-bit DLL in a subfolder and ships the lexicon once
+    std::wstring lexicon = moduleDirectory + L"\\ChiaKeySource.db";
+    if (GetFileAttributesW(lexicon.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        const size_t separator = moduleDirectory.find_last_of(L"\\/");
+        if (separator != std::wstring::npos) {
+            lexicon = moduleDirectory.substr(0, separator) + L"\\ChiaKeySource.db";
+        }
+    }
+    paths.lexiconDatabasePath = WideToUtf8(lexicon);
     if (!writableRoot.empty()) {
         const std::wstring writable = writableRoot + L"\\ChiaKey";
         CreateDirectoryW(writable.c_str(), nullptr);

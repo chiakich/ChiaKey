@@ -103,10 +103,12 @@ find_program(CHIAKEY_CSC csc
     NO_DEFAULT_PATH)
 if(CHIAKEY_CSC)
     set(CHIAKEY_SETTINGS_EXE "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeySettings.exe")
+    configure_file(Settings/AssemblyInfo.cs.in "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs" @ONLY)
     set(CHIAKEY_SETTINGS_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs")
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs"
+        "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs")
     set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
     # csc reads forward slashes as option prefixes, so every path goes native
     set(CHIAKEY_SETTINGS_ARGUMENTS)
