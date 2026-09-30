@@ -458,6 +458,13 @@ class Engine::Impl {
         panel->currentHightlightIndexInCandidateList();
     state.candidateState.candidates =
         CandidateListToVector(panel->candidateList());
+    if (state.candidateState.visible) {
+      const std::size_t onPage = panel->currentPageCandidateCount();
+      for (std::size_t index = 0; index < onPage; ++index) {
+        state.candidateState.selectionKeys.push_back(
+            panel->candidateKeyAtIndex(index).receivedString());
+      }
+    }
 
     // other fillers (associated phrases) share this panel, so take the flags
     // only when they still describe a list of exactly this length
