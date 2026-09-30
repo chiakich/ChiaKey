@@ -12,6 +12,7 @@
 
 #include "CandidateWindow.h"
 #include "ChiaKeyEngine.h"
+#include "SymbolWindow.h"
 
 namespace ChiaKey::WindowsTsf {
 
@@ -22,6 +23,7 @@ class TextService final : public ITfTextInputProcessorEx,
                           public ITfCompositionSink,
                           public ITfTextEditSink,
                           public ITfThreadMgrEventSink,
+                          public ITfThreadFocusSink,
                           public ITfCompartmentEventSink,
                           public ITfDisplayAttributeProvider,
                           public ITfFunctionProvider,
@@ -63,6 +65,10 @@ public:
     STDMETHODIMP OnPushContext(ITfContext* context) override;
     STDMETHODIMP OnPopContext(ITfContext* context) override;
 
+    // ITfThreadFocusSink
+    STDMETHODIMP OnSetThreadFocus() override;
+    STDMETHODIMP OnKillThreadFocus() override;
+
     // ITfCompartmentEventSink
     STDMETHODIMP OnChange(REFGUID guid) override;
 
@@ -91,6 +97,9 @@ public:
     void toggleFullWidthMode();
     bool selectInputMethod(const std::string& identifier);
     HRESULT openSettings(HWND parent = nullptr) const;
+    bool isSymbolWindowVisible() const { return symbolWindow_.isVisible(); }
+    void toggleSymbolWindow();
+    HRESULT insertSymbol(TfEditCookie editCookie, ITfContext* context, const std::wstring& text);
 
 private:
     HRESULT adviseFunctionProvider();
@@ -101,6 +110,7 @@ private:
     bool isModeToggleKey(const KeyEvent& event) const;
     bool isWidthToggleKey(const KeyEvent& event) const;
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
+    void sendSymbol(const std::wstring& text);
     HRESULT adviseInputModeSink();
     void unadviseInputModeSink();
     HRESULT adviseTextEditSink(ITfContext* context);
@@ -134,6 +144,7 @@ private:
     Microsoft::WRL::ComPtr<ITfThreadMgr> threadManager_;
     TfClientId clientId_ = TF_CLIENTID_NULL;
     DWORD threadManagerCookie_ = TF_INVALID_COOKIE;
+    DWORD threadFocusCookie_ = TF_INVALID_COOKIE;
     DWORD inputModeCookie_ = TF_INVALID_COOKIE;
     DWORD conversionModeCookie_ = TF_INVALID_COOKIE;
     DWORD textEditCookie_ = TF_INVALID_COOKIE;
@@ -154,6 +165,7 @@ private:
     Microsoft::WRL::ComPtr<ITfContext> candidateContext_;
     std::unique_ptr<EngineSession> engine_;
     CandidateWindow candidateWindow_;
+    SymbolWindow symbolWindow_{[this](const std::wstring& text) { sendSymbol(text); }};
     std::mutex langBarMutex_;
     LangBarButton* modeIconButton_ = nullptr;
     LangBarButton* switchLanguageButton_ = nullptr;

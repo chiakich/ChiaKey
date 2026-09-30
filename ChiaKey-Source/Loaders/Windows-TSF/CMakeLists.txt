@@ -65,6 +65,7 @@ add_library(ChiaKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
     LangBarButton.cpp
+    SymbolWindow.cpp
     TextService.cpp
     ChiaKeyTsf.rc
     "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc"
@@ -78,7 +79,8 @@ target_compile_definitions(ChiaKeyTsf PRIVATE
     CHIAKEY_VERSION_STRING="${PROJECT_VERSION}"
 )
 target_compile_options(ChiaKeyTsf PRIVATE /W4 /permissive-)
-target_link_libraries(ChiaKeyTsf PRIVATE chiakey_tsf_engine gdi32 msimg32 oleaut32 user32 uuid)
+target_link_libraries(ChiaKeyTsf PRIVATE chiakey_tsf_engine comctl32 gdi32 msimg32 oleaut32 user32
+                                         uuid uxtheme)
 set_target_properties(ChiaKeyTsf PROPERTIES PREFIX "")
 
 if(EXISTS "${CHIAKEY_LEXICON_DATABASE}")

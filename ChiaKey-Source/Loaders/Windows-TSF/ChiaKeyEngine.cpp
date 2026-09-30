@@ -663,6 +663,99 @@ bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMes
     return holder.runtime != nullptr;
 }
 
+namespace {
+
+constexpr char kSymbolWindowPlist[] = "SymbolWindow.plist";
+
+// the name, the code points, then the description, as the mac symbol window shows them
+std::wstring SymbolTooltip(const ChiaKey::SymbolItem& item) {
+    std::wstring codePoints;
+    for (const std::wstring& codePoint : SplitCodePoints(item.text)) {
+        unsigned value = codePoint[0];
+        if (codePoint.size() == 2) {
+            value = 0x10000 + ((value - 0xD800) << 10) + (codePoint[1] - 0xDC00u);
+        }
+        wchar_t buffer[16]{};
+        swprintf_s(buffer, L"%sU+%04X", codePoints.empty() ? L"" : L" ", value);
+        codePoints += buffer;
+    }
+    std::wstring tooltip = Utf8ToWide(item.name);
+    if (!tooltip.empty()) tooltip += L"\n";
+    tooltip += codePoints;
+    if (!item.description.empty()) tooltip += L"\n" + Utf8ToWide(item.description);
+    return tooltip;
+}
+
+std::string SymbolWindowPlistPath() {
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    return holder.preferencesPath.empty()
+               ? std::string()
+               : OVPathHelper::PathCat(holder.preferencesPath, kSymbolWindowPlist);
+}
+
+}  // namespace
+
+std::vector<SymbolPage> SymbolPages() {
+    std::vector<SymbolPage> pages;
+    const auto runtime = SharedRuntime();
+    if (!runtime) return pages;
+    for (const ChiaKey::SymbolCategory& category : runtime->symbolCategories()) {
+        SymbolPage page;
+        page.name = Utf8ToWide(category.name);
+        page.buttons = category.buttons;
+        for (const ChiaKey::SymbolItem& item : category.items) {
+            SymbolEntry entry;
+            entry.text = Utf8ToWide(item.text);
+            // edit controls only break a line on CR LF
+            for (size_t at = entry.text.find(L'\n'); at != std::wstring::npos;
+                 at = entry.text.find(L'\n', at + 2)) {
+                entry.text.insert(at, 1, L'\r');
+            }
+            entry.label = Utf8ToWide(item.label);
+            if (category.buttons) entry.tooltip = SymbolTooltip(item);
+            page.entries.push_back(std::move(entry));
+        }
+        pages.push_back(std::move(page));
+    }
+    return pages;
+}
+
+std::wstring UserCannedMessagesPath() {
+    const auto runtime = SharedRuntime();
+    return runtime ? Utf8ToWide(runtime->userCannedMessagesPath()) : std::wstring();
+}
+
+SymbolWindowState ReadSymbolWindowState() {
+    SymbolWindowState state;
+    const std::string path = SymbolWindowPlistPath();
+    if (path.empty() || !OVPathHelper::PathExists(path)) return state;
+    PVPropertyList plist(path);
+    OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
+    state.visible = BoolValue(map, "Visible", false);
+    state.page = Utf8ToWide(StringValue(map, "Page", std::string()));
+    state.hasPosition = map.hasKey("Left") && map.hasKey("Bottom");
+    if (state.hasPosition) {
+        state.left = map.intValueForKey("Left");
+        state.bottom = map.intValueForKey("Bottom");
+    }
+    return state;
+}
+
+void WriteSymbolWindowState(const SymbolWindowState& state) {
+    const std::string path = SymbolWindowPlistPath();
+    if (path.empty()) return;
+    PVPropertyList plist(path);
+    OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
+    map.setKeyBoolValue("Visible", state.visible);
+    map.setKeyStringValue("Page", WideToUtf8(state.page));
+    if (state.hasPosition) {
+        map.setKeyIntValue("Left", state.left);
+        map.setKeyIntValue("Bottom", state.bottom);
+    }
+    plist.write();
+}
+
 std::string CurrentInputMethod() {
     const auto runtime = SharedRuntime();
     return runtime ? runtime->primaryInputMethod() : std::string();
