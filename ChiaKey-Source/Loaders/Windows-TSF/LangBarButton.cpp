@@ -6,6 +6,8 @@
 
 #include "ChiaKeyEngine.h"
 #include "Guids.h"
+#include "IconIds.h"
+#include "ModuleState.h"
 #include "TextService.h"
 
 namespace ChiaKey::WindowsTsf {
@@ -17,57 +19,23 @@ constexpr UINT kMenuFullWidth = 3;
 constexpr UINT kMenuSettings = 4;
 constexpr UINT kMenuFirstInputMethod = 100;
 
-HICON CreateLabelIcon(const wchar_t* label, COLORREF background) {
-    HDC screen = GetDC(nullptr);
-    if (!screen) return nullptr;
-    HDC memory = CreateCompatibleDC(screen);
-    HBITMAP color = CreateCompatibleBitmap(screen, 16, 16);
-    HBITMAP mask = CreateBitmap(16, 16, 1, 1, nullptr);
-    if (!memory || !color || !mask) {
-        if (mask) DeleteObject(mask);
-        if (color) DeleteObject(color);
-        if (memory) DeleteDC(memory);
-        ReleaseDC(nullptr, screen);
-        return nullptr;
-    }
+bool TaskbarIsLight() {
+    DWORD value = 0;
+    DWORD size = sizeof(value);
+    return RegGetValueW(HKEY_CURRENT_USER,
+                        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                        L"SystemUsesLightTheme", RRF_RT_REG_DWORD, nullptr, &value,
+                        &size) == ERROR_SUCCESS &&
+           value != 0;
+}
 
-    HBITMAP oldBitmap = static_cast<HBITMAP>(SelectObject(memory, color));
-    RECT rectangle{0, 0, 16, 16};
-    HBRUSH backgroundBrush = CreateSolidBrush(background);
-    FillRect(memory, &rectangle, backgroundBrush);
-    DeleteObject(backgroundBrush);
-    SetBkMode(memory, TRANSPARENT);
-    SetTextColor(memory, RGB(32, 33, 36));
-    const int fontHeight = wcslen(label) == 1 ? -17 : -13;
-    HFONT font = CreateFontW(fontHeight, 0, 0, 0, FW_BLACK, FALSE, FALSE, FALSE,
-                             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                             ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
-                             L"Microsoft JhengHei UI");
-    HFONT oldFont = static_cast<HFONT>(SelectObject(memory, font));
-    DrawTextW(memory, label, -1, &rectangle,
-              DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    SelectObject(memory, oldFont);
-
-    // opaque, since Windows 11 does not always recolor a third-party TIP icon
-    HDC maskDc = CreateCompatibleDC(screen);
-    HBITMAP oldMask = static_cast<HBITMAP>(SelectObject(maskDc, mask));
-    PatBlt(maskDc, 0, 0, 16, 16, BLACKNESS);
-    SelectObject(maskDc, oldMask);
-    DeleteDC(maskDc);
-    SelectObject(memory, oldBitmap);
-
-    ICONINFO info{};
-    info.fIcon = TRUE;
-    info.hbmColor = color;
-    info.hbmMask = mask;
-    HICON result = CreateIconIndirect(&info);
-
-    DeleteObject(font);
-    DeleteObject(mask);
-    DeleteObject(color);
-    DeleteDC(memory);
-    ReleaseDC(nullptr, screen);
-    return result;
+// each icon ID is followed by its dark-taskbar variant
+HICON LoadThemedIcon(int lightId) {
+    const int id = TaskbarIsLight() ? lightId : lightId + 1;
+    // the tray draws at the system DPI, whatever DPI the host app runs at
+    const int size = GetSystemMetricsForDpi(SM_CXSMICON, GetDpiForSystem());
+    return static_cast<HICON>(
+        LoadImageW(g_module, MAKEINTRESOURCEW(id), IMAGE_ICON, size, size, LR_DEFAULTCOLOR));
 }
 
 }  // namespace
@@ -232,13 +200,15 @@ STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
 
 const wchar_t* LangBarButton::label() const {
     if (kind_ == Kind::FullHalf) return service_->isFullWidthMode() ? L"全" : L"半";
-    return service_->isChineseMode() ? L"ㄅ" : L"英";
+    return service_->isChineseMode() ? L"中" : L"英";
 }
 
 STDMETHODIMP LangBarButton::GetIcon(HICON* icon) {
     if (!icon) return E_INVALIDARG;
-    *icon = CreateLabelIcon(label(), RGB(255, 255, 255));
-    return *icon ? S_OK : E_OUTOFMEMORY;
+    int id = service_->isChineseMode() ? IDI_CHINESE : IDI_ENGLISH;
+    if (kind_ == Kind::FullHalf) id = service_->isFullWidthMode() ? IDI_FULL_WIDTH : IDI_HALF_WIDTH;
+    *icon = LoadThemedIcon(id);
+    return *icon ? S_OK : E_FAIL;
 }
 
 STDMETHODIMP LangBarButton::GetText(BSTR* text) {

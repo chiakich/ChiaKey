@@ -23,12 +23,49 @@ add_library(chiakey_tsf_engine STATIC
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32)
 
+# The SVGs in Icons/ are the source; the .ico files are built from them.
+set(CHIAKEY_ICON_DIR "${CMAKE_CURRENT_BINARY_DIR}/icons")
+set(CHIAKEY_ICON_RESOURCES
+    "IDI_CHIAKEY:badge"
+    "IDI_CHINESE:chinese-on-light" "IDI_CHINESE_DARK:chinese-on-dark"
+    "IDI_ENGLISH:english-on-light" "IDI_ENGLISH_DARK:english-on-dark"
+    "IDI_FULL_WIDTH:full-on-light" "IDI_FULL_WIDTH_DARK:full-on-dark"
+    "IDI_HALF_WIDTH:half-on-light" "IDI_HALF_WIDTH_DARK:half-on-dark")
+set(CHIAKEY_ICON_FILES)
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/IconIds.h" icon_ids_path)
+string(REPLACE "\\" "\\\\" icon_ids_path "${icon_ids_path}")
+set(CHIAKEY_ICON_RC "#include \"${icon_ids_path}\"\n")
+foreach(entry IN LISTS CHIAKEY_ICON_RESOURCES)
+    string(REPLACE ":" ";" entry "${entry}")
+    list(GET entry 0 icon_id)
+    list(GET entry 1 icon_name)
+    list(APPEND CHIAKEY_ICON_FILES "${CHIAKEY_ICON_DIR}/${icon_name}.ico")
+    file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/${icon_name}.ico" icon_path)
+    string(REPLACE "\\" "\\\\" icon_path "${icon_path}")
+    string(APPEND CHIAKEY_ICON_RC "${icon_id} ICON \"${icon_path}\"\n")
+endforeach()
+file(CONFIGURE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc"
+     CONTENT "${CHIAKEY_ICON_RC}" @ONLY)
+file(GLOB CHIAKEY_ICON_SVGS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Icons/*.svg")
+add_custom_command(
+    OUTPUT ${CHIAKEY_ICON_FILES}
+    COMMAND powershell -NoProfile -STA -ExecutionPolicy Bypass
+            -File "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1"
+            -SvgDir "${CMAKE_CURRENT_SOURCE_DIR}/Icons" -OutDir "${CHIAKEY_ICON_DIR}"
+    DEPENDS ${CHIAKEY_ICON_SVGS} "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1"
+    COMMENT "Building the TIP icons from Icons/*.svg"
+    VERBATIM)
+set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc" PROPERTIES
+    OBJECT_DEPENDS "${CHIAKEY_ICON_FILES}")
+
 add_library(ChiaKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
     LangBarButton.cpp
     TextService.cpp
     ChiaKeyTsf.rc
+    "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc"
+    ${CHIAKEY_ICON_FILES}
     ChiaKeyTsf.def
 )
 target_compile_definitions(ChiaKeyTsf PRIVATE
@@ -77,16 +114,19 @@ if(CHIAKEY_CSC)
     file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_EXE}" settings_exe_path)
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
          settings_manifest_path)
+    file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/badge.ico" settings_icon_path)
     add_custom_command(
         OUTPUT "${CHIAKEY_SETTINGS_EXE}"
         # the LIB that vcvars sets lists MSVC folders csc warns about
         COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB
                 "${CHIAKEY_CSC}" /nologo /target:winexe /optimize+ /utf8output
                 "/out:${settings_exe_path}" "/win32manifest:${settings_manifest_path}"
+                "/win32icon:${settings_icon_path}"
                 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml.dll
                 ${CHIAKEY_SETTINGS_ARGUMENTS}
         DEPENDS ${CHIAKEY_SETTINGS_SOURCES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
+                "${CHIAKEY_ICON_DIR}/badge.ico"
         COMMENT "Compiling ChiaKeySettings.exe"
         VERBATIM)
     add_custom_target(ChiaKeySettings ALL
