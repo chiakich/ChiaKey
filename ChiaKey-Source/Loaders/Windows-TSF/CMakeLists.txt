@@ -30,7 +30,10 @@ set(CHIAKEY_ICON_RESOURCES
     "IDI_CHINESE:chinese-on-light" "IDI_CHINESE_DARK:chinese-on-dark"
     "IDI_ENGLISH:english-on-light" "IDI_ENGLISH_DARK:english-on-dark"
     "IDI_FULL_WIDTH:full-on-light" "IDI_FULL_WIDTH_DARK:full-on-dark"
-    "IDI_HALF_WIDTH:half-on-light" "IDI_HALF_WIDTH_DARK:half-on-dark")
+    "IDI_HALF_WIDTH:half-on-light" "IDI_HALF_WIDTH_DARK:half-on-dark"
+    "IDI_ZHUYIN:zhuyin-on-light" "IDI_ZHUYIN_DARK:zhuyin-on-dark"
+    "IDI_CANGJIE:cangjie-on-light" "IDI_CANGJIE_DARK:cangjie-on-dark"
+    "IDI_SIMPLEX:simplex-on-light" "IDI_SIMPLEX_DARK:simplex-on-dark")
 set(CHIAKEY_ICON_FILES)
 file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/IconIds.h" icon_ids_path)
 string(REPLACE "\\" "\\\\" icon_ids_path "${icon_ids_path}")
