@@ -20,8 +20,13 @@ using OpenVanilla::OVPathHelper;
 using OpenVanilla::PVPropertyList;
 
 constexpr char kSmartMandarinPlist[] = "SmartMandarin.plist";
-constexpr char kTraditionalMandarinPlist[] = "TraditionalMandarin.plist";
 constexpr char kFrontendPlist[] = "Windows.plist";
+// the modules the settings app edits besides Smart Mandarin
+constexpr const char* kOtherModulePlists[] = {
+    "TraditionalMandarin.plist",
+    "Generic-cj-cin.plist",
+    "Generic-simplex-cin.plist",
+};
 
 bool BoolValue(OVKeyValueMap& map, const char* key, bool fallback) {
     return map.hasKey(key) ? map.isKeyTrue(key) : fallback;
@@ -228,7 +233,7 @@ struct RuntimeHolder {
     std::shared_ptr<ChiaKey::Runtime> runtime;
     std::string preferencesPath;
     FILETIME smartStamp{};
-    FILETIME traditionalStamp{};
+    FILETIME otherStamps[std::size(kOtherModulePlists)]{};
     FILETIME frontendStamp{};
     FrontendSettings frontend;
 };
@@ -255,18 +260,22 @@ std::shared_ptr<ChiaKey::Runtime> CreateRuntime(const ChiaKey::RuntimePaths& pat
 void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
     if (!holder.runtime || holder.preferencesPath.empty()) return;
     const std::string smartPath = OVPathHelper::PathCat(holder.preferencesPath, kSmartMandarinPlist);
-    const std::string traditionalPath =
-        OVPathHelper::PathCat(holder.preferencesPath, kTraditionalMandarinPlist);
     const std::string frontendPath = OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist);
 
-    const bool traditionalChanged = !SameStamp(Stamp(traditionalPath), holder.traditionalStamp);
-    if (force || traditionalChanged || !SameStamp(Stamp(smartPath), holder.smartStamp)) {
+    bool otherChanged = false;
+    for (size_t index = 0; index < std::size(kOtherModulePlists); ++index) {
+        const FILETIME stamp =
+            Stamp(OVPathHelper::PathCat(holder.preferencesPath, kOtherModulePlists[index]));
+        // a fresh runtime has just read them all
+        if (!force && !SameStamp(stamp, holder.otherStamps[index])) otherChanged = true;
+        holder.otherStamps[index] = stamp;
+    }
+    if (force || otherChanged || !SameStamp(Stamp(smartPath), holder.smartStamp)) {
         const ChiaKey::EngineConfig current = holder.runtime->config();
         const ChiaKey::EngineConfig wanted = ReadEngineConfig(holder.preferencesPath, current);
-        // setConfig also resyncs the active module, which picks up Traditional Mandarin edits
-        if (traditionalChanged || !SameConfig(current, wanted)) holder.runtime->setConfig(wanted);
+        // setConfig also resyncs the active module, which picks up the other modules' edits
+        if (otherChanged || !SameConfig(current, wanted)) holder.runtime->setConfig(wanted);
         holder.smartStamp = Stamp(smartPath);
-        holder.traditionalStamp = Stamp(traditionalPath);
     }
 
     const FILETIME frontendStamp = Stamp(frontendPath);
@@ -609,11 +618,26 @@ bool SelectInputMethod(const std::string& identifier) {
 }
 
 std::vector<std::pair<std::string, std::wstring>> InputMethods() {
+    // the mac menu's names and order (CVApplicationController); the rest are user tables
+    static const std::pair<const char*, const wchar_t*> kKnown[] = {
+        {"SmartMandarin", L"好打注音"},
+        {"TraditionalMandarin", L"傳統注音"},
+        {"Generic-cj-cin", L"倉頡"},
+        {"Generic-simplex-cin", L"簡易"},
+    };
     std::vector<std::pair<std::string, std::wstring>> result;
-    if (const auto runtime = SharedRuntime()) {
-        for (const auto& entry : runtime->inputMethods()) {
-            result.emplace_back(entry.first, Utf8ToWide(entry.second));
+    const auto runtime = SharedRuntime();
+    if (!runtime) return result;
+    const auto available = runtime->inputMethods();
+    for (const auto& known : kKnown) {
+        for (const auto& entry : available) {
+            if (entry.first == known.first) result.emplace_back(entry.first, known.second);
         }
+    }
+    for (const auto& entry : available) {
+        const bool listed = std::any_of(std::begin(kKnown), std::end(kKnown),
+                                        [&](const auto& known) { return entry.first == known.first; });
+        if (!listed) result.emplace_back(entry.first, Utf8ToWide(entry.second));
     }
     return result;
 }

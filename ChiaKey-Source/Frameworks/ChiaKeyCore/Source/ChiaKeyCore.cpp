@@ -12,6 +12,7 @@
 #include "PlainVanilla.h"
 #endif
 
+#include "OVIMGenericPackage.h"
 #include "OVIMMandarinPackage.h"
 #include "OVIMSmartMandarin.h"
 
@@ -30,10 +31,12 @@
 namespace ChiaKey {
 namespace {
 
+using OpenVanilla::OVCINDatabaseService;
 using OpenVanilla::OVCandidateList;
 using OpenVanilla::OVCandidatePanel;
 using OpenVanilla::OVDirectoryHelper;
 using OpenVanilla::OVEventHandlingContext;
+using OpenVanilla::OVIMGenericPackage;
 using OpenVanilla::OVIMMandarinPackage;
 using OpenVanilla::OVIMSmartMandarinContext;
 using OpenVanilla::OVKey;
@@ -55,7 +58,9 @@ using OpenVanilla::PVStaticModulePackageLoadingSystem;
 using OpenVanilla::PVTextBuffer;
 
 const char kMandarinPackageName[] = "OVIMMandarin";
+const char kGenericPackageName[] = "OVIMGeneric";
 const char kPreferencesDirectoryName[] = "Preferences";
+const char kTablesDirectoryName[] = "Tables";
 
 // CheckDirectory() only proves the path exists and is a directory, so a
 // read-only path would get through and every later write -- preferences, the
@@ -326,7 +331,14 @@ class Runtime::Impl {
     }
     writeModuleConfig();
 
-    service.reset(new PVLoaderService(config.locale, nullptr, database.get()));
+    // Tables/Generic/x.cin becomes the Generic-x-cin input method
+    const std::string tablesPath =
+        OVPathHelper::PathCat(paths.writablePath, kTablesDirectoryName);
+    if (OVPathHelper::IsDirectory(tablesPath)) {
+      cinTables.reset(new OVCINDatabaseService(tablesPath, "*.cin", "", 0));
+    }
+    service.reset(
+        new PVLoaderService(config.locale, cinTables.get(), database.get()));
 
     OVPathInfo pathInfo;
     pathInfo.loadedPath = paths.loadedPath;
@@ -341,6 +353,14 @@ class Runtime::Impl {
       delete mandarin;
       if (errorMessage) *errorMessage = "OVIMMandarin package failed to load";
       return false;
+    }
+
+    // Cangjie, Simplex and user tables; none of them is required to type
+    auto* generic = new OVIMGenericPackage;
+    if (!generic->initialize(&pathInfo, service.get()) ||
+        !packages->addInitializedPackage(kGenericPackageName, generic)) {
+      generic->finalize();
+      delete generic;
     }
 
     std::vector<PVModulePackageLoadingSystem*> systems{packages.get()};
@@ -374,6 +394,7 @@ class Runtime::Impl {
   // order matters: the loader tears down its modules before the package
   // system, the service and the database go
   std::unique_ptr<OVSQLiteDatabaseService> database;
+  std::unique_ptr<OVCINDatabaseService> cinTables;
   std::unique_ptr<CorePolicy> policy;
   std::unique_ptr<PVLoaderService> service;
   std::unique_ptr<PVStaticModulePackageLoadingSystem> packages;
