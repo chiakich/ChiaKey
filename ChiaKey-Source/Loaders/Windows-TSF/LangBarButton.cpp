@@ -43,14 +43,6 @@ HICON LoadThemedIcon(int lightId) {
         LoadImageW(g_module, MAKEINTRESOURCEW(id), IMAGE_ICON, size, size, LR_DEFAULTCOLOR));
 }
 
-int ChineseIconFor(const std::string& inputMethod) {
-    if (inputMethod == "SmartMandarin" || inputMethod == "TraditionalMandarin") return IDI_ZHUYIN;
-    if (inputMethod == "Generic-cj-cin") return IDI_CANGJIE;
-    if (inputMethod == "Generic-simplex-cin") return IDI_SIMPLEX;
-    // user .cin tables
-    return IDI_CHINESE;
-}
-
 // the selected one stays, so the menu always shows what is in use
 std::vector<std::pair<std::string, std::wstring>> MenuInputMethods(const std::string& selected) {
     const std::vector<std::string> hidden = CurrentFrontendSettings().suppressedInputMethods;
@@ -252,9 +244,13 @@ const wchar_t* LangBarButton::label() const {
 
 STDMETHODIMP LangBarButton::GetIcon(HICON* icon) {
     if (!icon) return E_INVALIDARG;
-    int id = service_->isChineseMode() ? ChineseIconFor(CurrentInputMethod()) : IDI_ENGLISH;
+    int id = service_->isChineseMode() ? IDI_CHIAKEY : IDI_ENGLISH;
     if (kind_ == Kind::FullHalf) id = service_->isFullWidthMode() ? IDI_FULL_WIDTH : IDI_HALF_WIDTH;
-    *icon = LoadThemedIcon(id);
+    *icon = id == IDI_CHIAKEY
+                ? static_cast<HICON>(LoadImageW(g_module, MAKEINTRESOURCEW(id), IMAGE_ICON,
+                                               GetSystemMetricsForDpi(SM_CXSMICON, GetDpiForSystem()),
+                                               GetSystemMetricsForDpi(SM_CYSMICON, GetDpiForSystem()), LR_DEFAULTCOLOR))
+                : LoadThemedIcon(id);
     return *icon ? S_OK : E_FAIL;
 }
 

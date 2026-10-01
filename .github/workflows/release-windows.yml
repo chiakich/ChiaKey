@@ -98,7 +98,7 @@ jobs:
           $root = (Get-Location).Path
           & $iscc /Q "/DVersion=${{ steps.version.outputs.version }}" `
             "/DX64Dir=$root\build\x64\Release" "/DX86Dir=$root\build\Win32\Release" `
-            "/DIconFile=$root\build\x64\icons\badge.ico" "/DOutputDir=$root\dist" `
+            "/DIconFile=$root\build\x64\icons\app.ico" "/DOutputDir=$root\dist" `
             Packaging\Windows\ChiaKey.iss
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Push-Location dist

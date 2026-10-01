@@ -16,8 +16,12 @@
 重載、學習寫入落到磁碟，以及引擎一結束就存檔。
 
 TSF 前端在 `ChiaKey-Source/Loaders/Windows-TSF`：inline 組字、仿 KeyKey 的候選窗、
-語言列與工作列圖示（依輸入法顯示 注／倉／簡）、`ChiaKeySettings.exe` 設定程式，
+語言列與工作列圖示（中文模式為透明背景、黑色「千」，保留英文與全半形狀態）、`ChiaKeySettings.exe` 設定程式，
 以及倉頡、簡易與使用者 `.cin` 字表（`%APPDATA%\ChiaKey\Tables\Generic\*.cin`）。
+
+設定程式與安裝器使用 Mac 的 `ChiaKey.icns` 角色圖示；建置時從該檔的 PNG
+representation 產生 `app.ico`。TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
+兩者不共用圖像，也不在「千」字背後繪製底色。
 
 AppContainer（開始選單搜尋、Store app）與桌面程式共用 `%APPDATA%\ChiaKey`：桌面程式
 第一次建立它時會開放給 `ALL APPLICATION PACKAGES` 並標成 Low integrity。這代表任何
