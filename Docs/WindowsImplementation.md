@@ -20,7 +20,9 @@ TSF 前端在 `ChiaKey-Source/Loaders/Windows-TSF`：inline 組字、仿 KeyKey 
 以及倉頡、簡易與使用者 `.cin` 字表（`%APPDATA%\ChiaKey\Tables\Generic\*.cin`）。
 
 設定程式與安裝器使用 Mac 的 `ChiaKey.icns` 角色圖示；建置時從該檔的 PNG
-representation 產生 `app.ico`。TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
+representation 產生 `app.ico`，同時嵌入設定程式的 Win32 圖示與 managed resource。
+偏好設定與詞彙編輯器視窗直接讀取內嵌的橘色角色圖示，避免受 Windows 關聯圖示快取影響。
+TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
 兩者不共用圖像，也不在「千」字背後繪製底色。
 
 AppContainer（開始選單搜尋、Store app）與桌面程式共用 `%APPDATA%\ChiaKey`：桌面程式

@@ -143,6 +143,8 @@ if(CHIAKEY_CSC)
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
          settings_manifest_path)
     file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/app.ico" settings_icon_path)
+    # Load the window icon from the assembly, avoiding the shell's icon cache.
+    list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${settings_icon_path},app.ico")
     add_custom_command(
         OUTPUT "${CHIAKEY_SETTINGS_EXE}"
         # the LIB that vcvars sets lists MSVC folders csc warns about
