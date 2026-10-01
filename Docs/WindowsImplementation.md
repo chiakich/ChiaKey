@@ -1,6 +1,6 @@
 # Windows 實作指南
 
-最後更新：2026-10-01
+最後更新：2026-10-02
 
 這份文件說明 Windows TSF 輸入法要如何接 `ChiaKeyCore`，也是第二階段（接 TSF
 前端）的交接文件。第一階段已完成：核心能用 MSVC 編譯並執行。
@@ -124,3 +124,37 @@ TSF 前端換成 `ChiaKey-Source\Loaders\Windows-TSF` 當 `-S`，產出的 `Chia
 - `Scripts/test-learning-store.sh` 裡的學習並發測試只在 macOS 跑，沒有進 Windows CI。
 - 加詞寫入失敗時會顯示「該詞已經存在於資料庫中」。不再謊稱成功，但把寫入失敗
   說成已存在仍不對，需要讓 `addUserUnigram` 的回傳值多一種狀態。
+
+## Windows 更新機制
+
+偏好設定的「更新」頁可檢查、下載與安裝本體／詞庫，兩者有獨立的自動更新開關，
+預設關閉。手動檢查與安裝不受三天等待期限制。開啟後，由同一個設定 EXE 的
+`/update-background` 桌面 helper 在登入時執行；每分鐘查看設定與每日節流標記，
+每天最多連網檢查一次，發布滿三天才自動安裝。下載與 DB 完整性驗證在 helper／
+設定程式的背景執行緒處理，TSF DLL 不連網。失敗原因與最後檢查結果可在更新頁看到。
+
+本體只接受 `chiakich/ChiaKey` 的 `windows-vX.Y.Z` release（含目前的預覽版，排除
+draft），尋找版本相符的 `ChiaKey-Windows-X.Y.Z-Setup.exe`，核對該 release 的
+`SHA256SUMS.txt`。安裝前再核對下載內容，透過 Windows `runas` 啟動 Inno 安裝器，
+使用者仍須回應 UAC 並完成安裝流程；取消不更動現有安裝。舊應用程式仍保留原 DLL，
+重新開啟才載入新版。新安裝器以原始桌面使用者執行 `/update-register`，把登入啟動
+路徑改到新版；舊 helper 注意到路徑改變後退出，新 helper 接手。解除安裝移除啟動項。
+
+詞庫採用與 Mac 相同的 CDN manifest，網路失敗時回到 GitHub。只接受詞庫 repo
+release／CDN 的 HTTPS artifact URL，schema 1；DB 的 manifest SHA-256 必須與
+GitHub release 校驗清單一致。WinSQLite 唯讀驗證 integrity、必要 tables／metadata、
+最小筆數、Shift+, 標點、符號 plist 與禁止的 OneKey 資料，再由實際 bundled core
+建立隔離 Runtime 並驗證「你好」組字。optional metadata 也核對 SHA-256。
+
+外部詞庫與更新狀態存於 `%APPDATA%\ChiaKeyUpdates`，與 low-integrity 的學習資料
+目錄分開。AppContainer 只有讀取權限，不能修改下載的 EXE 或詞庫啟用指標。
+每次下載建立新版本目錄，再以 `File.Replace` 原子更新 `Lexicons/active.txt`；第一行
+為目前目錄名、第二行為前一版。TSF 只接受安全目錄名，依序嘗試目前／前一版／內建 DB。
+每個 Engine 在沒有組字時才接上新 Runtime，詞彙編輯器亦使用目前載入的 DB。
+helper 若發現外部 DB 被移除或損壞，會驗證前一版並修正指標，讓下次檢查能重試。
+保留舊版本檔案以供仍持有 SQLite handle 的應用程式繼續使用。
+
+`chiakey_windows_updates` 是離線 CTest：以 fixture 取代網路、不寫入登入啟動項、不
+啟動安裝器，涵蓋合法安裝、hash／SQLite／core 拒絕、回退、重新嘗試、Windows
+頻道、快取竄改與三天／每日節流；原有 TSF engine test 另測指標解析。
+正式發布前仍須實測網路下載、UAC／取消、登入排程、更新中組字與 AppContainer 載入。

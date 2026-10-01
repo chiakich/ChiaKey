@@ -20,3 +20,4 @@ EXPORTS
     ChiaKeyPhrasesReadings
     ChiaKeyPhrasesExport
     ChiaKeyPhrasesImport
+    ChiaKeyUpdatesValidateCore

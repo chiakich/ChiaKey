@@ -125,6 +125,7 @@ namespace ChiaKey.Settings
         private readonly List<Control> panes = new List<Control>();
         private readonly Button applyButton = new Button();
         private bool loading;
+        private UpdatePane updates;
 
         private static readonly Choice[] CangjiePunctuations = {
             new Choice("", "全部使用全形標點"),
@@ -221,6 +222,8 @@ namespace ChiaKey.Settings
             AddPane("泛用(&E)", "generic.tiff", BuildGenericPane());
             AddPane("詞彙(&W)", "phrase.tiff", BuildPhrasePane());
             AddPane("其他(&M)", "plugin.tiff", BuildMiscPane());
+            updates = new UpdatePane(Changed);
+            AddPane("更新(&U)", "update.tiff", updates);
 
             LoadSettings();
             ShowPane(0);
@@ -277,7 +280,7 @@ namespace ChiaKey.Settings
         {
             int index = toolbarItems.Count;
             ToolbarItem item = new ToolbarItem(title, LoadIcon(icon));
-            item.Bounds = new Rectangle(6 + index * 70, 2, 66, ToolbarHeight - 4);
+            item.Bounds = new Rectangle(2 + index * 62, 2, 60, ToolbarHeight - 4);
             item.Click += delegate { ShowPane(index); };
             toolbar.Controls.Add(item);
             toolbarItems.Add(item);
@@ -1002,6 +1005,7 @@ namespace ChiaKey.Settings
                 simplex.Save();
                 foreach (Plist table in tablePlists.Values)
                     table.Save();
+                updates.Save();
                 return true;
             }
             catch (Exception error)
@@ -1023,6 +1027,21 @@ namespace ChiaKey.Settings
         [STAThread]
         private static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "/update-background")
+            {
+                UpdateService.RunBackground();
+                return;
+            }
+            if (args.Length > 0 && args[0] == "/update-register")
+            {
+                UpdateService service = UpdateService.Default();
+                service.RegisterStartup();
+                if (service.Preferences.GetBool("AutoUpdateApp", false) || service.Preferences.GetBool("AutoUpdateLexicon", false))
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath,
+                        "/update-background") { UseShellExecute = false, CreateNoWindow = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden });
+                return;
+            }
             // the input menu opens the phrase editor on its own, as Yahoo's separate PhraseEditor.exe
             bool phrases = args.Length > 0 &&
                            string.Equals(args[0], PhraseEditorArgument, StringComparison.OrdinalIgnoreCase);

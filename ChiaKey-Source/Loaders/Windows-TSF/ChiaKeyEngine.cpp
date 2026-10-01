@@ -8,6 +8,7 @@
 #include <mutex>
 
 #include "Diagnostics.h"
+#include "UpdateLexicon.h"
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
 
@@ -288,6 +289,9 @@ struct RuntimeHolder {
     // an AppContainer running on its temp folder until the shared one is usable
     bool privateFallback = false;
     ULONGLONG nextSharedRetry = 0;
+    std::vector<std::string> lexiconCandidates;
+    std::string lexiconDatabasePath;
+    bool explicitPaths = false;
 };
 
 // leaked on purpose: no teardown under the loader lock; each Engine saves its own learning
@@ -312,10 +316,25 @@ std::string PreferencesPath(const std::string& writablePath) {
 
 // Create() writes its config back over the module plist, so it gets the saved one
 std::shared_ptr<ChiaKey::Runtime> CreateRuntime(const ChiaKey::RuntimePaths& paths,
-                                                std::string* error) {
-    return ChiaKey::Runtime::Create(
+                                                std::string* error, bool allowUpdates = true) {
+    // The helper validates before publication; still handle missing/unreadable/corrupt
+    // external files here. AppContainer fallback must never prevent offline input.
+    for (const auto& candidate : allowUpdates ? UpdateLexiconCandidates(RoamingFolder()) : std::vector<std::string>()) {
+        ChiaKey::RuntimePaths external = paths;
+        external.lexiconDatabasePath = candidate;
+        auto runtime = ChiaKey::Runtime::Create(
+            external, ReadEngineConfig(PreferencesPath(paths.writablePath), ChiaKey::EngineConfig()), error);
+        if (runtime) {
+            Holder().lexiconDatabasePath = candidate;
+            return runtime;
+        }
+        Trace("Updated lexicon rejected: %s", error ? error->c_str() : "unknown error");
+    }
+    auto runtime = ChiaKey::Runtime::Create(
         paths, ReadEngineConfig(PreferencesPath(paths.writablePath), ChiaKey::EngineConfig()),
         error);
+    if (runtime) Holder().lexiconDatabasePath = paths.lexiconDatabasePath;
+    return runtime;
 }
 
 // only real differences: setConfig rewrites the plist and would wake every other process
@@ -365,6 +384,7 @@ void AdoptLocked(RuntimeHolder& holder, std::shared_ptr<ChiaKey::Runtime> runtim
     holder.preferencesPath = PreferencesPath(writablePath);
     holder.userPhrasesDirtyFlag = OVPathHelper::PathCat(writablePath, kUserPhrasesDirtyFlag);
     holder.privateFallback = privateFallback;
+    holder.lexiconCandidates = UpdateLexiconCandidates(RoamingFolder());
     holder.nextSharedRetry = GetTickCount64() + kSharedRetryIntervalMilliseconds;
     RefreshSettingsLocked(holder, true);
 }
@@ -458,6 +478,14 @@ std::shared_ptr<ChiaKey::Runtime> SharedRuntime(bool throttled = false) {
         AdoptLocked(holder, std::move(runtime), writablePath, privateFallback);
     } else if (!throttled || GetTickCount64() >= holder.nextRefresh) {
         RetrySharedRuntimeLocked(holder);
+        const auto candidates = holder.explicitPaths ? holder.lexiconCandidates : UpdateLexiconCandidates(RoamingFolder());
+        if (candidates != holder.lexiconCandidates) {
+            std::string writablePath;
+            bool privateFallback = false;
+            if (auto runtime = CreateDefaultRuntime(&writablePath, &privateFallback)) {
+                AdoptLocked(holder, std::move(runtime), writablePath, privateFallback);
+            }
+        }
         RefreshSettingsLocked(holder, false);
     }
     return holder.runtime;
@@ -718,15 +746,34 @@ FrontendSettings CurrentFrontendSettings() {
     return holder.frontend;
 }
 
-std::wstring SettingsAppPath() { return ModuleDirectory() + L"\\ChiaKeySettings.exe"; }
+std::wstring SettingsAppPath() {
+    const std::wstring directory = ModuleDirectory();
+    std::wstring settings = directory + L"\\ChiaKeySettings.exe";
+    // A 32-bit application on x64 Windows loads the DLL in the x86 subfolder;
+    // the desktop settings/updater lives alongside the main 64-bit DLL.
+    if (GetFileAttributesW(settings.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        const size_t separator = directory.find_last_of(L"\\/");
+        if (separator != std::wstring::npos)
+            settings = directory.substr(0, separator) + L"\\ChiaKeySettings.exe";
+    }
+    return settings;
+}
 
-ChiaKey::RuntimePaths DesktopRuntimePaths() { return DefaultPaths(RoamingFolder(), true); }
+ChiaKey::RuntimePaths DesktopRuntimePaths() {
+    SharedRuntime();
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    auto paths = DefaultPaths(RoamingFolder(), true);
+    if (!holder.lexiconDatabasePath.empty()) paths.lexiconDatabasePath = holder.lexiconDatabasePath;
+    return paths;
+}
 
 bool InitializeRuntime(const ChiaKey::RuntimePaths& paths, std::string* errorMessage) {
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     if (holder.runtime) return true;
-    AdoptLocked(holder, CreateRuntime(paths, errorMessage), paths.writablePath, false);
+    holder.explicitPaths = true;
+    AdoptLocked(holder, CreateRuntime(paths, errorMessage, false), paths.writablePath, false);
     return holder.runtime != nullptr;
 }
 
