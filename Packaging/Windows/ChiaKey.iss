@@ -60,12 +60,21 @@ Source: "{#X86Dir}\ChiaKeyTsf.dll"; DestDir: "{app}\{#Version}\x86"; Flags: igno
 Source: "{#X64Dir}\ChiaKeyTsf.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion regserver 64bit uninsrestartdelete; Check: Is64BitInstallMode
 Source: "{#X86Dir}\ChiaKeyTsf.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion regserver 32bit uninsrestartdelete; Check: not Is64BitInstallMode
 Source: "{#X64Dir}\ChiaKeySource.db"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: LexiconNeeded
-Source: "{#X64Dir}\ChiaKeySettings.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete
+Source: "{#X64Dir}\ChiaKeySettings.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
+Source: "{#X86Dir}\ChiaKeySettings.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
 Source: "..\..\LICENSE"; DestDir: "{app}\{#Version}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\千秋輸入法\千秋輸入法設定"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"
 Name: "{autoprograms}\千秋輸入法\千秋輸入法詞彙編輯器"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/phrases"
+
+[Run]
+; Preserve opt-in and refresh the per-user startup path after an upgrade. The helper
+; must run as the original desktop user, never with the installer's elevated token.
+Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/update-register"; Flags: runasoriginaluser nowait runhidden
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "ChiaKeyUpdates"; Flags: uninsdeletevalue
 
 [UninstallDelete]
 Type: dirifempty; Name: "{app}"

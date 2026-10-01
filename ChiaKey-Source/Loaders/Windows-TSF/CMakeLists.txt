@@ -19,6 +19,7 @@ add_subdirectory("${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore" core)
 add_library(chiakey_tsf_engine STATIC
     ChiaKeyEngine.cpp
     Diagnostics.cpp
+    UpdateLexicon.cpp
 )
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32)
@@ -102,17 +103,24 @@ find_program(CHIAKEY_CSC csc
           "$ENV{WINDIR}/Microsoft.NET/Framework/v4.0.30319"
     NO_DEFAULT_PATH)
 if(CHIAKEY_CSC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(CHIAKEY_MANAGED_PLATFORM x64)
+    else()
+        set(CHIAKEY_MANAGED_PLATFORM x86)
+    endif()
     set(CHIAKEY_SETTINGS_EXE "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeySettings.exe")
     configure_file(Settings/AssemblyInfo.cs.in "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs" @ONLY)
     set(CHIAKEY_SETTINGS_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdatePane.cs"
         "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs")
     set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
     # csc reads forward slashes as option prefixes, so every path goes native
     set(CHIAKEY_SETTINGS_ARGUMENTS)
-    foreach(icon general phonetic cangjie simplex generic phrase plugin)
+    foreach(icon general phonetic cangjie simplex generic phrase plugin update)
         file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_ICONS}/${icon}.tiff" icon_path)
         list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${icon_path},${icon}.tiff")
     endforeach()
@@ -137,9 +145,11 @@ if(CHIAKEY_CSC)
         # the LIB that vcvars sets lists MSVC folders csc warns about
         COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB
                 "${CHIAKEY_CSC}" /nologo /target:winexe /optimize+ /utf8output
+                "/platform:${CHIAKEY_MANAGED_PLATFORM}"
                 "/out:${settings_exe_path}" "/win32manifest:${settings_manifest_path}"
                 "/win32icon:${settings_icon_path}"
                 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml.dll
+                /r:System.Web.Extensions.dll
                 ${CHIAKEY_SETTINGS_ARGUMENTS}
         DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
@@ -152,6 +162,30 @@ if(CHIAKEY_CSC)
         DEPENDS "${CHIAKEY_SETTINGS_EXE}"
         VERBATIM)
     add_dependencies(ChiaKeySettings ChiaKeyTsf)
+    if(BUILD_TESTING AND EXISTS "${CHIAKEY_LEXICON_DATABASE}")
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyUpdateTests.exe" update_tests_exe)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs" update_tests_plist)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs" update_tests_service)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateTests.cs" update_tests_source)
+        add_custom_command(
+            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyUpdateTests.exe"
+            COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB "${CHIAKEY_CSC}" /nologo /utf8output
+                    /target:exe "/out:${update_tests_exe}" /r:System.dll /r:System.Xml.dll
+                    "/platform:${CHIAKEY_MANAGED_PLATFORM}"
+                    /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll
+                    "${update_tests_plist}" "${update_tests_service}" "${update_tests_source}"
+            DEPENDS Settings/Plist.cs Settings/UpdateService.cs Settings/UpdateTests.cs
+            VERBATIM)
+        add_custom_target(ChiaKeyUpdateTests ALL
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyUpdateTests.exe"
+                    "$<TARGET_FILE_DIR:ChiaKeyTsf>/ChiaKeyUpdateTests.exe"
+            DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyUpdateTests.exe" ChiaKeyTsf
+            VERBATIM)
+        add_test(NAME chiakey_windows_updates
+            COMMAND "$<TARGET_FILE_DIR:ChiaKeyTsf>/ChiaKeyUpdateTests.exe"
+                    "${CMAKE_CURRENT_BINARY_DIR}" "${CHIAKEY_LEXICON_DATABASE}")
+    endif()
 else()
     message(WARNING "csc.exe from .NET Framework 4 not found: ChiaKeySettings.exe is not built.")
 endif()

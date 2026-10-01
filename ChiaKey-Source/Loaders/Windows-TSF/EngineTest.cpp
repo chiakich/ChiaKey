@@ -4,6 +4,7 @@
 #include <string>
 
 #include "ChiaKeyEngine.h"
+#include "UpdateLexicon.h"
 
 using namespace ChiaKey::WindowsTsf;
 
@@ -95,6 +96,26 @@ void TestKeys() {
     KeyEvent controlAlt = Key('A', false, true);
     controlAlt.alt = true;
     Check(IsInputMethodControlKey(controlAlt), "Ctrl+Alt+A is a punctuation chord");
+}
+
+void TestUpdatePointers(const char* writable) {
+    const std::string base = std::string(writable) + "\\ChiaKeyUpdates";
+    CreateDirectoryA(base.c_str(), nullptr);
+    CreateDirectoryA((base + "\\Lexicons").c_str(), nullptr);
+    const std::string pointer = base + "\\Lexicons\\active.txt";
+    const std::wstring root(writable, writable + strlen(writable));
+    Check(UpdateLexiconCandidates(root).empty(), "no external pointer uses bundled lexicon");
+    { std::ofstream output(pointer, std::ios::binary); output << "2026.10.2-current\n2026.9.1-previous\n"; }
+    auto candidates = UpdateLexiconCandidates(root);
+    Check(candidates.size() == 2 && candidates[0].find("2026.10.2-current") != std::string::npos &&
+              candidates[1].find("2026.9.1-previous") != std::string::npos,
+          "current and previous pointers preserve priority");
+    { std::ofstream output(pointer, std::ios::binary); output << "../escape\nC:\\outside\n2026.1-third\n"; }
+    Check(UpdateLexiconCandidates(root).empty(), "unsafe and extra pointer lines cannot select a database");
+    { std::ofstream output(pointer, std::ios::binary); output << "\n2026.9.1-previous\n"; }
+    Check(UpdateLexiconCandidates(root).size() == 1, "previous pointer survives absent current pointer");
+    { std::ofstream output(pointer, std::ios::binary); output << std::string(600, '1'); }
+    Check(UpdateLexiconCandidates(root).empty(), "oversized activation pointer is rejected");
 }
 
 void TestSession() {
@@ -301,6 +322,7 @@ int main(int argc, char* argv[]) {
           "the input methods are listed in the mac menu's order and names");
     TestLayout();
     TestKeys();
+    TestUpdatePointers(argv[2]);
     TestSession();
     TestSettings(argv[2]);
     TestGenericInputMethods();
