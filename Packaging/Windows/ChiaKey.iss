@@ -1,5 +1,5 @@
 ﻿; The Windows installer. Built by .github/workflows/release-windows.yml; locally:
-;   ISCC /DVersion=0.1.0 /DX64Dir=<x64 Release> /DX86Dir=<x86 Release> /DIconFile=<badge.ico>
+;   ISCC /DVersion=0.1.0 /DX64Dir=<x64 Release> /DX86Dir=<x86 Release> /DIconFile=<app.ico>
 ;        /DOutputDir=<dir> Packaging\Windows\ChiaKey.iss
 
 #ifndef Version

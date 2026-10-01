@@ -24,7 +24,7 @@ add_library(chiakey_tsf_engine STATIC
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32)
 
-# The SVGs in Icons/ are the source; the .ico files are built from them.
+# TIP icons use Icons/*.svg; the settings/installer icon uses the Mac app artwork.
 set(CHIAKEY_ICON_DIR "${CMAKE_CURRENT_BINARY_DIR}/icons")
 set(CHIAKEY_ICON_RESOURCES
     "IDI_CHIAKEY:badge"
@@ -36,6 +36,8 @@ set(CHIAKEY_ICON_RESOURCES
     "IDI_CANGJIE:cangjie-on-light" "IDI_CANGJIE_DARK:cangjie-on-dark"
     "IDI_SIMPLEX:simplex-on-light" "IDI_SIMPLEX_DARK:simplex-on-dark")
 set(CHIAKEY_ICON_FILES)
+list(APPEND CHIAKEY_ICON_FILES "${CHIAKEY_ICON_DIR}/app.ico")
+set(CHIAKEY_APP_ICON "${CHIAKEY_SOURCE}/Loaders/OSX-IMK/Images/ChiaKey.icns")
 file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/IconIds.h" icon_ids_path)
 string(REPLACE "\\" "\\\\" icon_ids_path "${icon_ids_path}")
 set(CHIAKEY_ICON_RC "#include \"${icon_ids_path}\"\n")
@@ -56,7 +58,8 @@ add_custom_command(
     COMMAND powershell -NoProfile -STA -ExecutionPolicy Bypass
             -File "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1"
             -SvgDir "${CMAKE_CURRENT_SOURCE_DIR}/Icons" -OutDir "${CHIAKEY_ICON_DIR}"
-    DEPENDS ${CHIAKEY_ICON_SVGS} "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1"
+            -AppIconPath "${CHIAKEY_APP_ICON}"
+    DEPENDS ${CHIAKEY_ICON_SVGS} "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1" "${CHIAKEY_APP_ICON}"
     COMMENT "Building the TIP icons from Icons/*.svg"
     VERBATIM)
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc" PROPERTIES
@@ -139,7 +142,7 @@ if(CHIAKEY_CSC)
     file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_EXE}" settings_exe_path)
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
          settings_manifest_path)
-    file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/badge.ico" settings_icon_path)
+    file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/app.ico" settings_icon_path)
     add_custom_command(
         OUTPUT "${CHIAKEY_SETTINGS_EXE}"
         # the LIB that vcvars sets lists MSVC folders csc warns about
@@ -153,7 +156,7 @@ if(CHIAKEY_CSC)
                 ${CHIAKEY_SETTINGS_ARGUMENTS}
         DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
-                "${CHIAKEY_ICON_DIR}/badge.ico"
+                "${CHIAKEY_ICON_DIR}/app.ico"
         COMMENT "Compiling ChiaKeySettings.exe"
         VERBATIM)
     add_custom_target(ChiaKeySettings ALL

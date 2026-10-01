@@ -1,19 +1,21 @@
-# Rasterizes the SVGs here into the .ico files the TIP embeds; run by CMake.
+# Builds TIP icons from these SVGs and the settings icon from Mac artwork; run by CMake.
 param(
     [Parameter(Mandatory = $true)] [string] $SvgDir,
-    [Parameter(Mandatory = $true)] [string] $OutDir
+    [Parameter(Mandatory = $true)] [string] $OutDir,
+    [Parameter(Mandatory = $true)] [string] $AppIconPath
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
 $invariant = [Globalization.CultureInfo]::InvariantCulture
 
-# glyph color per taskbar theme; the badge carries its own colors
+# State glyphs follow the taskbar theme; the product glyph stays black and transparent.
 $onLight = '#1A1A1A'
 $onDark = '#FFFFFF'
 $modeSizes = 16, 20, 24, 32, 40, 48
 $badgeSizes = 16, 20, 24, 32, 40, 48, 64, 256
 $targets = @(
-    @{ Name = 'badge'; Svg = 'badge'; Color = $onLight; Sizes = $badgeSizes },
+    @{ Name = 'badge'; Svg = 'qian'; Color = '#000000'; Sizes = $badgeSizes },
+    @{ Name = 'app'; Artwork = $true; Sizes = $badgeSizes },
     @{ Name = 'chinese-on-light'; Svg = 'chinese'; Color = $onLight; Sizes = $modeSizes },
     @{ Name = 'chinese-on-dark'; Svg = 'chinese'; Color = $onDark; Sizes = $modeSizes },
     @{ Name = 'english-on-light'; Svg = 'english'; Color = $onLight; Sizes = $modeSizes },
@@ -29,6 +31,40 @@ $targets = @(
     @{ Name = 'simplex-on-light'; Svg = 'simplex'; Color = $onLight; Sizes = $modeSizes },
     @{ Name = 'simplex-on-dark'; Svg = 'simplex'; Color = $onDark; Sizes = $modeSizes }
 )
+
+# Use the actual Mac app icon's PNG representation, rather than a second copy
+# of the artwork. ICNS chunk lengths are big-endian and include the header.
+$icns = [IO.File]::ReadAllBytes($AppIconPath)
+$appBitmap = $null
+for ($at = 8; $at + 8 -le $icns.Length;) {
+    $kind = [Text.Encoding]::ASCII.GetString($icns, $at, 4)
+    $length = ([int]$icns[$at+4] * 16777216) + ([int]$icns[$at+5] * 65536) + ([int]$icns[$at+6] * 256) + $icns[$at+7]
+    if ($length -lt 8 -or $at + $length -gt $icns.Length) { throw 'Invalid ICNS chunk' }
+    if ($kind -eq 'ic10' -and $icns[$at+8] -eq 137) {
+        $inputStream = New-Object IO.MemoryStream
+        $inputStream.Write($icns, $at + 8, $length - 8)
+        $inputStream.Position = 0
+        $decoder = [Windows.Media.Imaging.PngBitmapDecoder]::new($inputStream,
+            [Windows.Media.Imaging.BitmapCreateOptions]::PreservePixelFormat,
+            [Windows.Media.Imaging.BitmapCacheOption]::OnLoad)
+        $appBitmap = $decoder.Frames[0]
+        $inputStream.Dispose()
+        break
+    }
+    $at += $length
+}
+if (-not $appBitmap) { throw 'Mac app icon has no 1024px PNG representation' }
+
+function RenderApp([int] $size) {
+    $visual = New-Object Windows.Media.DrawingVisual
+    $dc = $visual.RenderOpen()
+    $dc.DrawImage($appBitmap, ([Windows.Rect]::new(0, 0, $size, $size)))
+    $dc.Close()
+    [Windows.Media.RenderOptions]::SetBitmapScalingMode($visual, [Windows.Media.BitmapScalingMode]::HighQuality)
+    $bitmap = [Windows.Media.Imaging.RenderTargetBitmap]::new($size, $size, 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
+    $bitmap.Render($visual)
+    return $bitmap
+}
 
 function Brush([string] $fill, [string] $currentColor) {
     if (-not $fill -or $fill -eq 'currentColor') { $fill = $currentColor }
@@ -86,10 +122,12 @@ function PngBytes($bitmap) {
 
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 foreach ($target in $targets) {
-    [xml] $svg = [IO.File]::ReadAllText((Join-Path $SvgDir ($target.Svg + '.svg')), [Text.Encoding]::UTF8)
+    if (-not $target.Artwork) {
+        [xml] $svg = [IO.File]::ReadAllText((Join-Path $SvgDir ($target.Svg + '.svg')), [Text.Encoding]::UTF8)
+    }
     $images = @()
     foreach ($size in $target.Sizes) {
-        $bitmap = Render $svg $target.Color $size
+        $bitmap = if ($target.Artwork) { RenderApp $size } else { Render $svg $target.Color $size }
         # Vista and later read PNG entries; only 256 is worth compressing
         $images += , @($size, $(if ($size -ge 256) { PngBytes $bitmap } else { DibBytes $bitmap $size }))
     }
