@@ -9,4 +9,4 @@ using System.Reflection;
 [assembly: AssemblyCopyright("Copyright (c) 2012 Yahoo! Inc., (c) 2026 Chiaki.C")]
 [assembly: AssemblyVersion("@PROJECT_VERSION@.0")]
 [assembly: AssemblyFileVersion("@PROJECT_VERSION@.0")]
-[assembly: AssemblyInformationalVersion("@PROJECT_VERSION@")]
+[assembly: AssemblyInformationalVersion("@CHIAKEY_DISPLAY_VERSION@")]

@@ -1,11 +1,11 @@
 name: Windows release
 
-# A windows-v<version> tag publishes a Pre-release with the installer; the
-# version has to match project() in Loaders/Windows-TSF/CMakeLists.txt, so the
-# tag and every file's version resource agree.
+# A win-v<version> tag publishes a Pre-release with the installer; the
+# numeric version has to match project() in Loaders/Windows-TSF/CMakeLists.txt;
+# an optional -beta.N suffix labels the release and its installer.
 on:
   push:
-    tags: ['windows-v*']
+    tags: ['win-v*']
 
 permissions:
   contents: read
@@ -64,10 +64,13 @@ jobs:
           }
           $version = $Matches[1]
           $tag = '${{ github.ref_name }}'
-          if ($tag -ne "windows-v$version") {
+          if ($tag -notmatch "^win-v$([regex]::Escape($version))(-beta\.[1-9][0-9]*)?$") {
             throw "tag $tag does not match the project version $version"
           }
-          "version=$version" >> $env:GITHUB_OUTPUT
+          $prerelease = if ($Matches[1]) { $Matches[1].TrimStart('-') } else { '' }
+          "numeric_version=$version" >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+          "version=$($tag.Substring('win-v'.Length))" >> $env:GITHUB_OUTPUT
 
       - name: Build and test
         shell: pwsh
@@ -75,7 +78,8 @@ jobs:
           $db = (Resolve-Path lexicon/ChiaKeySource.db).Path -replace '\\', '/'
           foreach ($arch in 'x64', 'Win32') {
             cmake -S ChiaKey-Source/Loaders/Windows-TSF -B "build/$arch" -A $arch `
-              "-DCHIAKEY_LEXICON_DATABASE=$db"
+              "-DCHIAKEY_LEXICON_DATABASE=$db" `
+              "-DCHIAKEY_PRERELEASE=${{ steps.version.outputs.prerelease }}"
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
             cmake --build "build/$arch" --config Release
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -97,6 +101,7 @@ jobs:
           }
           $root = (Get-Location).Path
           & $iscc /Q "/DVersion=${{ steps.version.outputs.version }}" `
+            "/DNumericVersion=${{ steps.version.outputs.numeric_version }}" `
             "/DX64Dir=$root\build\x64\Release" "/DX86Dir=$root\build\Win32\Release" `
             "/DIconFile=$root\build\x64\icons\app.ico" "/DOutputDir=$root\dist" `
             Packaging\Windows\ChiaKey.iss

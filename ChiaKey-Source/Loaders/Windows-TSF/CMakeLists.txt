@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.21)
 
 project(ChiaKeyWindowsTsf VERSION 0.1.0 LANGUAGES C CXX)
 
+set(CHIAKEY_PRERELEASE "" CACHE STRING "Release suffix, e.g. beta.1")
+set(CHIAKEY_DISPLAY_VERSION "${PROJECT_VERSION}")
+if(CHIAKEY_PRERELEASE)
+    string(APPEND CHIAKEY_DISPLAY_VERSION "-${CHIAKEY_PRERELEASE}")
+endif()
+
 if(NOT WIN32)
     message(FATAL_ERROR "The Windows TSF front end can only be built on Windows.")
 endif()
@@ -81,7 +87,7 @@ target_compile_definitions(ChiaKeyTsf PRIVATE
     CHIAKEY_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
     CHIAKEY_VERSION_MINOR=${PROJECT_VERSION_MINOR}
     CHIAKEY_VERSION_PATCH=${PROJECT_VERSION_PATCH}
-    CHIAKEY_VERSION_STRING="${PROJECT_VERSION}"
+    CHIAKEY_VERSION_STRING="${CHIAKEY_DISPLAY_VERSION}"
 )
 target_compile_options(ChiaKeyTsf PRIVATE /W4 /permissive-)
 target_link_libraries(ChiaKeyTsf PRIVATE chiakey_tsf_engine comctl32 gdi32 msimg32 oleaut32 user32

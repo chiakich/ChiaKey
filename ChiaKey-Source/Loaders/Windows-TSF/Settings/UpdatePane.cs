@@ -47,7 +47,7 @@ namespace ChiaKey.Settings
         {
             string version;
             try { version = service.CurrentLexiconVersion(); } catch (Exception error) { version = "無法讀取：" + error.Message; }
-            current.Text = "本體版本：" + service.AppVersion.ToString(3) + "\n詞庫版本：" + version;
+            current.Text = "本體版本：" + service.AppReleaseVersion + "\n詞庫版本：" + version;
             string path = Path.Combine(service.Root, "status.txt");
             if (File.Exists(path))
                 try { status.Text = File.ReadAllText(path); } catch (IOException) { }

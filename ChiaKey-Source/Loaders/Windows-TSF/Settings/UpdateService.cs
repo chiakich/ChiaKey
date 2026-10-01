@@ -35,14 +35,16 @@ namespace ChiaKey.Settings
         internal const string LexiconCdn = "https://cdn.chiaki.ch/chiakey/lexicon/";
         internal readonly string Root, Executable;
         internal readonly Version AppVersion;
+        internal readonly string AppReleaseVersion;
         internal Func<string, long, byte[]> Fetch;
         internal Action<string> CoreValidator;
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false, true);
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 };
 
-        internal UpdateService(string root, string executable, Version version)
+        internal UpdateService(string root, string executable, Version version, string releaseVersion = null)
         {
             Root = root; Executable = executable; AppVersion = version;
+            AppReleaseVersion = releaseVersion ?? version.ToString(3);
             Fetch = Download;
             CoreValidator = ValidateCore;
         }
@@ -51,9 +53,13 @@ namespace ChiaKey.Settings
         {
             // ChiaKey itself is low integrity and writable by Store apps. Executable downloads
             // and the activation pointer must live in a separate, medium-integrity directory.
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            var release = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(
+                assembly, typeof(AssemblyInformationalVersionAttribute));
             return new UpdateService(Path.Combine(Environment.GetFolderPath(
                 Environment.SpecialFolder.ApplicationData), "ChiaKeyUpdates"),
-                Application.ExecutablePath, Assembly.GetExecutingAssembly().GetName().Version);
+                Application.ExecutablePath, assembly.GetName().Version,
+                release != null ? release.InformationalVersion : null);
         }
 
         internal Plist Preferences { get { return new Plist(Path.Combine(Root, "Updates.plist")); } }
@@ -205,6 +211,18 @@ namespace ChiaKey.Settings
             return 0;
         }
 
+        internal static int CompareAppVersions(string a, string b)
+        {
+            Match left = Regex.Match(a ?? "", @"\A(\d+\.\d+\.\d+)(?:-beta\.([1-9][0-9]*))?\z");
+            Match right = Regex.Match(b ?? "", @"\A(\d+\.\d+\.\d+)(?:-beta\.([1-9][0-9]*))?\z");
+            if (!left.Success || !right.Success) throw new InvalidDataException("更新版本格式不正確。");
+            int result = CompareVersions(left.Groups[1].Value, right.Groups[1].Value);
+            if (result != 0) return result;
+            bool leftBeta = left.Groups[2].Success, rightBeta = right.Groups[2].Success;
+            if (leftBeta != rightBeta) return leftBeta ? -1 : 1;
+            return leftBeta ? CompareVersions(left.Groups[2].Value, right.Groups[2].Value) : 0;
+        }
+
         internal string CurrentLexiconVersion()
         {
             string pointer = Path.Combine(Root, "Lexicons", "active.txt");
@@ -266,10 +284,10 @@ namespace ChiaKey.Settings
                     ++count;
                     if (Convert.ToBoolean(release["draft"], CultureInfo.InvariantCulture)) continue;
                     string tag = Text(release, "tag_name");
-                    if (!Regex.IsMatch(tag, @"\Awindows-v\d+\.\d+\.\d+\z")) continue;
-                    string version = tag.Substring(9);
-                    if (CompareVersions(version, AppVersion.ToString()) <= 0 ||
-                        (newest != null && CompareVersions(version, newest.Version) <= 0)) continue;
+                    if (!Regex.IsMatch(tag, @"\Awin-v\d+\.\d+\.\d+(?:-beta\.[1-9][0-9]*)?\z")) continue;
+                    string version = tag.Substring("win-v".Length);
+                    if (CompareAppVersions(version, AppReleaseVersion) <= 0 ||
+                        (newest != null && CompareAppVersions(version, newest.Version) <= 0)) continue;
                     string name = "ChiaKey-Windows-" + version + "-Setup.exe";
                     string url = null, checksum = null;
                     foreach (var asset in Items(release["assets"]))

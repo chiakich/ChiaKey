@@ -58,6 +58,11 @@ namespace ChiaKey.Settings
             Check(UpdateService.CompareVersions("2026.10.2", "2026.9.30") > 0, "numeric version order");
             Check(UpdateService.CompareVersions("1.2.3", "1.2.3.0") == 0, "padded version equality");
             Reject(delegate { UpdateService.CompareVersions("1.2-beta", "1.2"); }, "unsupported version accepted");
+            Check(UpdateService.CompareAppVersions("0.1.0-beta.10", "0.1.0-beta.2") > 0, "numeric beta order");
+            Check(UpdateService.CompareAppVersions("0.1.0", "0.1.0-beta.1") > 0, "stable follows beta");
+            Check(UpdateService.CompareAppVersions("0.2.0-beta.1", "0.1.0") > 0, "next version beta follows older stable");
+            Check(UpdateService.CompareAppVersions("0.1.0-beta.1", "0.1.0-beta.1") == 0, "same beta equality");
+            Reject(delegate { UpdateService.CompareAppVersions("0.1.0-beta.0", "0.1.0"); }, "invalid beta accepted");
             string digest = new string('a', 64);
             Check(UpdateService.ListedDigest(digest + "  file.db\r\n", "file.db") == digest, "CRLF checksums");
             Reject(delegate { UpdateService.ListedDigest(digest + "  file.db\n" + digest + "  file.db\n", "file.db"); }, "duplicate checksum accepted");
@@ -124,15 +129,15 @@ namespace ChiaKey.Settings
             Check(service.CurrentLexiconVersion() == "9999.1.1", "missing current falls back to previous");
             Check(service.CheckLexicon() != null, "failed release can be retried after rollback");
 
-            string appName = "ChiaKey-Windows-0.2.0-Setup.exe";
+            string appName = "ChiaKey-Windows-0.2.0-beta.1-Setup.exe";
             byte[] appBytes = Encoding.ASCII.GetBytes("MZoffline installer fixture");
             string appHash = UpdateService.Hash(appBytes);
-            var assets = new[] { new { name = appName, browser_download_url = UpdateService.AppRepository + "windows-v0.2.0/" + appName },
-                new { name = "SHA256SUMS.txt", browser_download_url = UpdateService.AppRepository + "windows-v0.2.0/SHA256SUMS.txt" } };
+            var assets = new[] { new { name = appName, browser_download_url = UpdateService.AppRepository + "win-v0.2.0-beta.1/" + appName },
+                new { name = "SHA256SUMS.txt", browser_download_url = UpdateService.AppRepository + "win-v0.2.0-beta.1/SHA256SUMS.txt" } };
             string releases = new JavaScriptSerializer().Serialize(new[] {
                 new { tag_name = "v99.0.0", draft = false, prerelease = false, published_at = "2020-01-01T00:00:00Z", assets = assets },
-                new { tag_name = "windows-v0.2.0", draft = true, prerelease = true, published_at = "2020-01-01T00:00:00Z", assets = assets },
-                new { tag_name = "windows-v0.2.0", draft = false, prerelease = true, published_at = "2020-01-01T00:00:00Z", assets = assets }
+                new { tag_name = "win-v0.2.0-beta.1", draft = true, prerelease = true, published_at = "2020-01-01T00:00:00Z", assets = assets },
+                new { tag_name = "win-v0.2.0-beta.1", draft = false, prerelease = true, published_at = "2020-01-01T00:00:00Z", assets = assets }
             });
             service.Fetch = delegate(string url, long limit)
             {
@@ -142,7 +147,7 @@ namespace ChiaKey.Settings
                 throw new Exception("Unexpected app URL");
             };
             UpdateOffer app = service.CheckApp();
-            Check(app != null && app.Version == "0.2.0", "Windows prerelease selected, Mac and drafts ignored");
+            Check(app != null && app.Version == "0.2.0-beta.1", "Windows prerelease selected, Mac and drafts ignored");
             string installer = service.DownloadApp(app);
             File.AppendAllText(installer, "tamper");
             Reject(delegate { UpdateService.InstallApp(installer, app.Sha256); }, "modified cached installer executed");
