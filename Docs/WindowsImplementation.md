@@ -139,7 +139,7 @@ TSF 前端換成 `ChiaKey-Source\Loaders\Windows-TSF` 當 `-S`，產出的 `Chia
 每天最多連網檢查一次，發布滿三天才自動安裝。下載與 DB 完整性驗證在 helper／
 設定程式的背景執行緒處理，TSF DLL 不連網。失敗原因與最後檢查結果可在更新頁看到。
 
-本體只接受 `chiakich/ChiaKey` 的 `windows-vX.Y.Z` release（含目前的預覽版，排除
+本體只接受 `chiakich/ChiaKey` 的 `win-vX.Y.Z` 或 `win-vX.Y.Z-beta.N` release（含目前的預覽版，排除
 draft），尋找版本相符的 `ChiaKey-Windows-X.Y.Z-Setup.exe`，核對該 release 的
 `SHA256SUMS.txt`。安裝前再核對下載內容，透過 Windows `runas` 啟動 Inno 安裝器，
 使用者仍須回應 UAC 並完成安裝流程；取消不更動現有安裝。舊應用程式仍保留原 DLL，

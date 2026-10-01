@@ -5,6 +5,9 @@
 #ifndef Version
   #error Version is required, e.g. /DVersion=0.1.0
 #endif
+#ifndef NumericVersion
+  #define NumericVersion Version
+#endif
 #ifndef OutputDir
   #define OutputDir "."
 #endif
@@ -20,7 +23,7 @@ AppPublisher=Chiaki.C
 AppPublisherURL=https://chiaki.ch/works/chiakey
 AppSupportURL=https://github.com/chiakich/ChiaKey/issues
 AppUpdatesURL=https://github.com/chiakich/ChiaKey/releases
-VersionInfoVersion={#Version}
+VersionInfoVersion={#NumericVersion}
 VersionInfoProductName=ChiaKey
 VersionInfoProductVersion={#Version}
 VersionInfoCompany=ChiaKey
