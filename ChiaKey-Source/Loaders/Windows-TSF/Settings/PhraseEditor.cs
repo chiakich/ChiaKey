@@ -242,8 +242,12 @@ namespace ChiaKey.Settings
 
         public static Icon LoadIcon(string name)
         {
-            Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
-            return stream != null ? new Icon(stream) : null;
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
+            {
+                if (stream == null) return null;
+                using (Icon icon = new Icon(stream))
+                    return (Icon)icon.Clone();
+            }
         }
 
         public PhraseEditorForm()
@@ -262,7 +266,7 @@ namespace ChiaKey.Settings
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = WindowTitle;
             Font = new Font("Microsoft JhengHei UI", 9F);
-            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            Icon = LoadIcon("app.ico");
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(480, 520);
             MinimumSize = new Size(360, 300);

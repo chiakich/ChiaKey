@@ -201,7 +201,7 @@ namespace ChiaKey.Settings
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = WindowTitle;
             Font = new Font("Microsoft JhengHei UI", 9F);
-            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            Icon = PhraseEditorForm.LoadIcon("app.ico");
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
