@@ -16,5 +16,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check dev install publication
         run: python3 Scripts/tests/test_dev_install.py
+      - name: Check macOS release isolation
+        run: |
+          python3 Scripts/tests/test_release_changelog.py
+          bash Scripts/test-macos-release-selection.sh
       - name: Check new and legacy lexicon metadata and button layout
         run: Scripts/test-symbol-metadata.sh

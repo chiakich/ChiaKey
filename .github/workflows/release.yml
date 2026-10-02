@@ -79,7 +79,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          latest="$(git -c versionsort.suffix=-beta tag --sort=-v:refname | head -n1 || true)"
+          latest="$(git -c versionsort.suffix=-beta tag --list 'v[0-9]*' --merged HEAD --sort=-v:refname | head -n1 || true)"
           echo "Latest tag: ${latest:-<none>}"
           base="${latest#v}"
 
@@ -128,7 +128,7 @@ jobs:
           if [[ "${prerelease}" == "true" ]]; then
             notes_base="${latest}"
           else
-            notes_base="$(git tag --list 'v*' | grep -v -- '-beta\.' \
+            notes_base="$(git tag --list 'v[0-9]*' --merged HEAD | grep -v -- '-beta\.' \
               | sort -V | tail -n1 || true)"
           fi
 
@@ -263,10 +263,8 @@ jobs:
           echo "lexicon_version=${lexicon_version}" >>"$GITHUB_OUTPUT"
 
       # Build categorized notes from Conventional Commit subjects since the
-      # previous tag. This repo commits straight to main, so GitHub's built-in
-      # PR-based generator has nothing to group; parsing the log ourselves gives
-      # a proper changelog. awk (not bash) does the bucketing so it runs on the
-      # runner's bash 3.2, which has no associative arrays.
+      # previous macOS tag. Filter Windows/iOS scopes and legacy Windows-only
+      # paths before both the AI summary and the fallback commit list.
       - name: Generate release notes
         id: notes
         env:
@@ -281,46 +279,11 @@ jobs:
 
           # Only diff against the previous tag when it actually exists (the very
           # first release has none, so we fall back to the whole history).
-          range=()
+          args=()
           if [[ -n "${PREV}" ]] && git rev-parse -q --verify "${PREV}^{commit}" >/dev/null 2>&1; then
-            range=("${PREV}..HEAD")
+            args=(--since "$PREV")
           fi
-
-          changelog="$(git log ${range[@]+"${range[@]}"} --no-merges \
-            --pretty=format:'%h%x1f%s' | awk -F'\037' '
-            BEGIN {
-              n = split("feat fix perf refactor test build style chore other", ord, " ")
-              title["feat"]="### Features"; title["fix"]="### Bug Fixes"
-              title["perf"]="### Performance"; title["refactor"]="### Refactoring"
-              title["test"]="### Tests"; title["build"]="### Build"
-              title["style"]="### Styling"; title["other"]="### Other Changes"
-              drop["docs"]=1; drop["ci"]=1        # not user-facing; keep them out of notes
-            }
-            {
-              hash=$1; s=$2
-              if (s ~ /^chore.*bump version/) next          # skip the automated bump commit
-              type="other"; desc=s
-              p=index(s, ": ")
-              if (p > 1) {
-                left=substr(s, 1, p-1); right=substr(s, p+2)
-                gsub(/\([^)]*\)/, "", left); gsub(/!/, "", left)
-                gsub(/^[ \t]+|[ \t]+$/, "", left); left=tolower(left)
-                if (left in drop) next
-                if (left in title || left == "chore") { type=left; desc=right }
-              }
-              bucket[type]=bucket[type] "- " desc " (`" hash "`)\n"
-            }
-            END {
-              for (i=1; i<=n; i++) {
-                t=ord[i]; if (!(t in bucket)) continue
-                if (t == "chore")
-                  printf "<details>\n<summary>Chores</summary>\n\n%s</details>\n\n", bucket[t]
-                else
-                  printf "%s\n\n%s\n", title[t], bucket[t]
-              }
-            }')"
-
-          printf '%s\n' "${changelog}" > changelog.md
+          python3 Scripts/generate-macos-changelog.py ${args[@]+"${args[@]}"} > changelog.md
 
           # Assembled as a file rather than an action input: commit subjects are
           # author-controlled, and this way they never pass through a shell or a
