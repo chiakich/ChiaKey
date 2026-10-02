@@ -13,8 +13,8 @@
 包含 macOS `.pkg`、Windows `Setup.exe`、兩者的 `SHA256SUMS.txt` 及平台 notes。
 Windows 仍標示為預覽版，GitHub release 的 stable／Beta 標記由共同版號決定。
 兩邊成功才公開 release，draft 期間先上傳完整產物，避免舊 mac 更新器看到缺少
-`.pkg` 的版本。`.github/workflows/release-windows.yml` 只供共同流程建置，不再
-透過推送 `win-v*` 單獨發布。
+`.pkg` 的版本。Windows workflow 也支援手動重建供朋友測試的
+`win-v0.1.0-beta.1`；僅建置，不自動發布或更新 CDN。
 
 macOS 沿用 `/chiakey/appcast.json` 的 schema 1、頂層 stable／beta 與 `.pkg` URL。
 平台 feed 在 `/chiakey/updates/macos/appcast.json` 與
@@ -24,9 +24,10 @@ Windows 先讀自己的 CDN feed，並與 GitHub SHA256SUMS.txt 交叉核對；�
 回到 GitHub，辨識共同 `v*` 及舊 `win-v*`，依實際 Windows installer 篩選。
 同名重發的 `win-v0.1.0-beta.1` 測試預覽可直接更新至共同版本；重發前的原建置需手動安裝一次新版。
 
-使用者可見變更寫在 `ReleaseNotes/*.json`，明確列出 macos／windows 平台；
-共用核心改動不會自動被當成雙平台新功能。scope 可繼續使用 mac／win／core，
-但 release notes 由平台變更檔產生，詳見 `ReleaseNotes/README.md`。
+release notes 從 conventional commit messages 產生：win／mac scope 分平台，
+未指定平台的使用者變更預設共用；舊提交依 Windows 關鍵字及檔案路徑分流。
+使用 feat／fix／perf／revert 描述使用者變更，內部重構使用 refactor／chore。
+workflow 的 notes_macos／notes_windows 可補充 Markdown，無須額外 JSON 檔。
 
 `.github/workflows/core-msvc.yml` 在 `windows-latest` 上編譯核心並跑 smoke test，
 另一個 job 編譯 TSF 前端（DLL、圖示、設定程式）並跑 `chiakey_tsf_engine_test`。
