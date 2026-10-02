@@ -32,6 +32,10 @@ def assemble(directory, tag):
         notes = summary or raw or "- 此平台沒有額外的使用者可見變更。"
         if summary and raw:
             notes += f"\n\n<details>\n<summary>完整變更</summary>\n\n{raw}\n\n</details>"
+        extra_path = root / f"extra-{platform}.md"
+        extra = extra_path.read_text().strip() if extra_path.exists() else ""
+        if extra:
+            notes += "\n\n" + extra
         if platform == "windows":
             notes += "\n\nWindows 安裝檔目前尚未簽章；ARM64 尚未支援。同名重發的 win-v0.1.0-beta.1 測試預覽可直接追蹤 v* 更新；重發前的原建置需手動安裝一次新版。"
         (root / f"release-notes-{platform}.md").write_text(notes + "\n")

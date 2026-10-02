@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Exercise platform filtering against a temporary Git history."""
-import json
 import subprocess
 import tempfile
 import unittest
@@ -38,30 +37,36 @@ class ReleaseChangelogTests(unittest.TestCase):
             cwd=self.repo, text=True,
         )
 
-    def fragment(self, name, changes):
-        path = self.repo / 'ReleaseNotes' / name
-        path.parent.mkdir(exist_ok=True)
-        path.write_text(json.dumps({'changes': changes}))
-        self.git('add', '.')
-        self.git('commit', '-qm', 'docs: add platform notes')
-
     def test_platforms_and_internal_commits(self):
-        self.commit('feat(win): Windows update', 'windows.cpp')
-        self.fragment('one.json', [
-            {'platforms': ['macos'], 'type': 'fix', 'description': 'Mac focus'},
-            {'platforms': ['windows'], 'type': 'feat', 'description': 'Windows output'},
-            {'platforms': ['macos', 'windows'], 'type': 'fix', 'description': 'Shared fix'},
-        ])
+        self.commit('feat(win): Windows update', 'shared.cpp')
+        self.commit('fix(mac): Mac focus', 'shared.cpp')
+        self.commit('fix: Shared fix', 'shared.cpp')
+        self.commit('ci: build both', '.github/workflows/test.yml')
+        self.commit('docs: explain updates', 'Docs/updates.md')
+        self.commit('refactor: internals', 'shared.cpp')
+        self.commit('feat: legacy Windows settings', 'shared.cpp')
+        self.commit('fix: legacy composition focus', 'ChiaKey-Source/Loaders/Windows-TSF/TextService.cpp')
+        self.commit('fix: legacy Mac symbols', 'ChiaKey-Source/Loaders/OSX-IMK/InputController.mm')
         notes = self.notes('--since', 'v1.2.6')
         self.assertIn('Mac focus', notes)
         self.assertIn('Shared fix', notes)
-        self.assertNotIn('Windows output', notes)
-        self.assertNotIn('Windows update', notes)
+        self.assertIn('legacy Mac symbols', notes)
+        for omitted in ['Windows update', 'legacy Windows settings', 'legacy composition focus',
+                        'build both', 'explain updates', 'internals']:
+            self.assertNotIn(omitted, notes)
+        windows = subprocess.check_output(
+            ['python3', str(ROOT / 'Scripts/generate-release-notes.py'), '--platform', 'windows', '--since', 'v1.2.6'],
+            cwd=self.repo, text=True)
+        self.assertIn('Windows update', windows)
+        self.assertIn('Shared fix', windows)
+        self.assertIn('legacy composition focus', windows)
+        self.assertNotIn('Mac focus', windows)
+        self.assertNotIn('legacy Mac symbols', windows)
 
     def test_stable_notes_include_beta_series_and_no_repeat_after_release(self):
-        self.fragment('one.json', [{'platforms': ['macos'], 'type': 'feat', 'description': 'Feature in beta'}])
+        self.commit('feat: Feature in beta', 'shared.cpp')
         self.git('tag', 'v1.2.7-beta.1')
-        self.fragment('two.json', [{'platforms': ['macos'], 'type': 'fix', 'description': 'Later fix'}])
+        self.commit('fix: Later fix', 'shared.cpp')
         self.assertIn('Feature in beta', self.notes('--since', 'v1.2.6'))
         self.assertNotIn('Feature in beta', self.notes('--since', 'v1.2.7-beta.1'))
         self.assertIn('Later fix', self.notes('--since', 'v1.2.7-beta.1'))

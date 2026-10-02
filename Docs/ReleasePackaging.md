@@ -109,7 +109,12 @@ Scripts/build-release-package.sh --local-lexicon /path/to/ChiaKeySource.db
 2. 同步調整 macOS 的兩份 plist、Windows CMake 版號，保存確切提交的 Git bundle。
 3. 建置並驗證 macOS `.pkg`；Windows reusable workflow 從同一 bundle 建置 x64／x86
    DLL、設定程式、離線測試與 Inno Setup installer。任一失敗都不發布。
-4. 從 `ReleaseNotes/*.json` 依平台與上次共同 tag 收集變更，分別產生 AI 摘要。
+4. 從上次共同 tag 的 conventional commit messages 依平台收集變更，分別產生 AI 摘要。
+   `feat(win)`／`fix(win)` 僅 Windows，`feat(mac)`／`fix(mac)` 僅 macOS；未指定平台
+   的使用者變更預設共用，既有無 scope 提交依 Windows 關鍵字與檔案路徑分流。
+   收集 feat／fix／perf／revert，略過 docs／ci／test／refactor／chore 等內部提交。
+   可用 `notes_macos`／`notes_windows` 在 workflow 輸入補充 Markdown，原文追加至
+   平台 notes 與 CDN notes，不經 AI 改寫；無須維護每項變更的額外文件。
    stable 版的基準是上次 stable，包含整個 Beta 系列；AI 失敗使用平台原始清單。
 5. 合併兩平台 SHA256SUMS.txt 與 notes，確認產物版號；dry_run 在此上傳完整
    artifacts 與 notes 預覽，不推送版號提交、tag，不建立 release，也不寫入 CDN。

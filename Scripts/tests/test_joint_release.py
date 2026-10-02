@@ -65,7 +65,11 @@ class JointReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 assembly.assemble(root, 'v1.2.7')
             (root / 'ChiaKey-Windows-1.2.7-Setup.exe').write_bytes(b'MZwin')
+            (root / 'extra-macos.md').write_text('- Manual Mac reminder')
+            (root / 'summary-macos.md').write_text('- AI summary')
             assembly.assemble(root, 'v1.2.7')
+            self.assertIn('Manual Mac reminder', (root / 'release-notes-macos.md').read_text())
+            self.assertNotIn('Manual Mac reminder', (root / 'release-notes-windows.md').read_text())
             self.assertIn('macOS', (root / 'RELEASE_NOTES.md').read_text())
             self.assertIn('Windows', (root / 'RELEASE_NOTES.md').read_text())
             self.assertNotIn('- windows', (root / 'release-notes-macos.md').read_text())

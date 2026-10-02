@@ -20,6 +20,14 @@ on:
         type: boolean
         required: false
         default: false
+      notes_macos:
+        description: 'Optional macOS notes to append verbatim (Markdown)'
+        type: string
+        required: false
+      notes_windows:
+        description: 'Optional Windows notes to append verbatim (Markdown)'
+        type: string
+        required: false
       verbose:
         description: 'Show full xcodebuild output (for diagnosing build failures)'
         type: boolean
@@ -302,12 +310,16 @@ jobs:
           echo "Bundled lexicon: ${lexicon_version:-<unknown>}"
           echo "lexicon_version=${lexicon_version}" >>"$GITHUB_OUTPUT"
 
-      - name: Collect explicit platform release notes
+      - name: Collect platform commit messages
         env:
           PREV: ${{ steps.version.outputs.notes_base }}
+          NOTES_MACOS: ${{ inputs.notes_macos }}
+          NOTES_WINDOWS: ${{ inputs.notes_windows }}
         run: |
           set -euo pipefail
           mkdir -p release-notes
+          printf '%s\n' "$NOTES_MACOS" > release-notes/extra-macos.md
+          printf '%s\n' "$NOTES_WINDOWS" > release-notes/extra-windows.md
           args=()
           [[ -z "$PREV" ]] || args=(--since "$PREV")
           for platform in macos windows; do

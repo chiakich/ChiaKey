@@ -77,9 +77,12 @@ CDN 先上傳不可變產物與 notes，再更新平台指標及 legacy feed。G
 可初始化，其他錯誤停止。各指標更新為完整 object，跨指標不具有單一交易；
 失敗時保留可用的舊或新版本，支援對同一份 artifacts 重試。
 
-變更以 `ReleaseNotes/*.json` 標明 macos／windows；GitHub body 分平台，CDN
-各自提供 notes。AI 只摘要該平台的清單，失敗回到相同清單。stable 從前次
-stable 累積，包含該 Beta 系列。內部重構不自動列入使用者變更。
+變更由 conventional commit messages 產生，win／mac scope 決定平台，未指定
+平台者預設共用；舊無 scope 提交以 Windows 關鍵字與修改路徑分流，無須改寫歷史。
+GitHub body 分平台，CDN 各自提供 notes。AI 只摘要該平台的清單，失敗回到
+原 commit messages。workflow 的 notes_macos／notes_windows 可原文補充 Markdown。
+stable 從前次 stable 累積，包含該 Beta 系列。docs／ci／test／refactor／chore 等
+內部提交不自動列入使用者變更，不再維護 ReleaseNotes JSON。
 
 ## 遷移與驗證
 
