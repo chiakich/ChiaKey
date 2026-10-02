@@ -21,6 +21,8 @@ constexpr UINT kMenuSettings = 4;
 constexpr UINT kMenuSymbols = 5;
 constexpr wchar_t kSymbolsLabel[] = L"符號表（Ctrl+Alt+.）";
 constexpr UINT kMenuPhraseEditor = 6;
+constexpr UINT kMenuSimplifiedOutput = 7;
+constexpr wchar_t kSimplifiedOutputLabel[] = L"簡體輸出";
 constexpr wchar_t kPhraseEditorLabel[] = L"詞彙編輯器…";
 constexpr UINT kMenuFirstInputMethod = 100;
 
@@ -160,6 +162,9 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
             menuInputMethods_.push_back(method.first);
         }
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+        RefreshSettings();
+        AppendMenuW(menu, MF_STRING | (CurrentFrontendSettings().simplifiedOutput ? MF_CHECKED : 0),
+                    kMenuSimplifiedOutput, kSimplifiedOutputLabel);
         AppendMenuW(menu, MF_STRING | (!service_->isFullWidthMode() ? MF_CHECKED : 0),
                     kMenuHalfWidth, L"半形");
         AppendMenuW(menu, MF_STRING | (service_->isFullWidthMode() ? MF_CHECKED : 0),
@@ -209,6 +214,12 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
     }
     result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr, nullptr, 0, nullptr);
     if (FAILED(result)) return result;
+    RefreshSettings();
+    result = menu->AddMenuItem(kMenuSimplifiedOutput,
+                               CurrentFrontendSettings().simplifiedOutput ? TF_LBMENUF_CHECKED : 0,
+                               nullptr, nullptr, kSimplifiedOutputLabel,
+                               static_cast<ULONG>(std::size(kSimplifiedOutputLabel) - 1), nullptr);
+    if (FAILED(result)) return result;
     result = menu->AddMenuItem(kMenuHalfWidth,
                                service_->isFullWidthMode() ? 0 : TF_LBMENUF_CHECKED, nullptr,
                                nullptr, L"半形", 2, nullptr);
@@ -232,6 +243,7 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
 
 STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
     if (id == kMenuToggleLanguage) service_->toggleChineseMode();
+    if (id == kMenuSimplifiedOutput && !service_->toggleSimplifiedOutput()) return E_FAIL;
     if (id == kMenuHalfWidth && service_->isFullWidthMode()) service_->toggleFullWidthMode();
     if (id == kMenuFullWidth && !service_->isFullWidthMode()) service_->toggleFullWidthMode();
     if (id == kMenuSettings) return service_->openSettings();

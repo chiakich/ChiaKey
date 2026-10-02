@@ -145,6 +145,7 @@ namespace ChiaKey.Settings
         private CheckBox controlBackslash;
         private CheckBox shiftTogglesEnglish;
         private CheckBox associatedPhrases;
+        private CheckBox simplifiedOutput;
         private CheckedListBox menuInputMethods;
         private CheckBox smartAllCharacters;
         private CheckBox traditionalAllCharacters;
@@ -365,12 +366,13 @@ namespace ChiaKey.Settings
         {
             Panel pane = new Panel();
             Title(pane, "一般設定");
-            GroupBox basic = Group(pane, "基本功能", 44, 110);
+            GroupBox basic = Group(pane, "基本功能", 44, 136);
             controlBackslash = Check(basic, "使用 Ctrl + \\ 切換中英模式", 14, 24);
             shiftTogglesEnglish = Check(basic, "輕點 Shift 切換英文", 14, 50);
             associatedPhrases = Check(basic, "輸入後顯示聯想詞", 14, 76);
+            simplifiedOutput = Check(basic, "簡體輸出", 14, 102);
 
-            GroupBox menu = Group(pane, "輸入法選單", 164, 236);
+            GroupBox menu = Group(pane, "輸入法選單", 190, 210);
             Label hint = new Label();
             hint.Text = "取消勾選的輸入法不會出現在輸入選單中（使用中的除外）。";
             hint.AutoSize = true;
@@ -906,6 +908,7 @@ namespace ChiaKey.Settings
             controlBackslash.Checked = frontend.GetBool("ToggleInputMethodWithControlBackslash", true);
             shiftTogglesEnglish.Checked = frontend.GetBool("ShiftTogglesTemporaryEnglish", true);
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
+            simplifiedOutput.Checked = frontend.GetBool("SimplifiedOutput", false);
             LoadMenuInputMethods(frontend.GetStringArray("ModulesSuppressedFromUI"));
 
             Select(smartLayout, Layouts,
@@ -966,6 +969,7 @@ namespace ChiaKey.Settings
             frontend.SetBool("ToggleInputMethodWithControlBackslash", controlBackslash.Checked);
             frontend.SetBool("ShiftTogglesTemporaryEnglish", shiftTogglesEnglish.Checked);
             frontend.SetBool("EnableAssociatedPhrases", associatedPhrases.Checked);
+            frontend.SetBool("SimplifiedOutput", simplifiedOutput.Checked);
             frontend.SetStringArray("ModulesSuppressedFromUI", HiddenInputMethods());
             frontend.SetString("HighlightColor", Selected(highlightColor));
             frontend.SetString("BackgroundColor", Selected(backgroundColor));

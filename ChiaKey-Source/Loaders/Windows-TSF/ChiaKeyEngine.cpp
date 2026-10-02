@@ -727,6 +727,7 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
         BoolValue(map, "ShiftTogglesTemporaryEnglish", settings.shiftTogglesEnglish);
     settings.associatedPhrases =
         BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);
+    settings.simplifiedOutput = BoolValue(map, "SimplifiedOutput", settings.simplifiedOutput);
     if (PVPlistValue* hidden = plist.rootDictionary()->valueForKey("ModulesSuppressedFromUI")) {
         for (size_t index = 0; index < hidden->arraySize(); ++index) {
             PVPlistValue* identifier = hidden->arrayElementAtIndex(index);
@@ -744,6 +745,20 @@ FrontendSettings CurrentFrontendSettings() {
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     return holder.frontend;
+}
+
+bool SetSimplifiedOutput(bool enabled) {
+    SharedRuntime();
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    if (holder.preferencesPath.empty()) return false;
+    PVPropertyList plist(OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist));
+    OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
+    map.setKeyBoolValue("SimplifiedOutput", enabled);
+    plist.write();
+    holder.frontend = ReadFrontendSettings(holder.preferencesPath);
+    holder.frontendStamp = Stamp(OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist));
+    return holder.frontend.simplifiedOutput == enabled;
 }
 
 std::wstring SettingsAppPath() {

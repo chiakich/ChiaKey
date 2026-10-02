@@ -11,6 +11,7 @@
 #include "Guids.h"
 #include "LangBarButton.h"
 #include "ModuleState.h"
+#include "OutputFilter.h"
 
 namespace ChiaKey::WindowsTsf {
 namespace {
@@ -797,6 +798,13 @@ void TextService::setFullWidthMode(bool enabled) {
 
 void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
 
+bool TextService::toggleSimplifiedOutput() {
+    RefreshSettings();
+    const bool changed = SetSimplifiedOutput(!CurrentFrontendSettings().simplifiedOutput);
+    if (changed) refreshLangBar();
+    return changed;
+}
+
 bool TextService::selectInputMethod(const std::string& identifier) {
     if (CurrentInputMethod() != identifier) {
         // the switch rebuilds every context, which would drop the composition
@@ -1153,11 +1161,12 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
 HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
                                 const std::wstring& text) {
     if (text.empty()) return S_OK;
+    const std::wstring output = FilterCommittedText(text, CurrentFrontendSettings().simplifiedOutput);
     if (composition_ && compositionContext_.Get() == context) {
         ComPtr<ITfRange> range;
         HRESULT result = composition_->GetRange(&range);
         if (FAILED(result)) return result;
-        result = range->SetText(editCookie, 0, text.data(), static_cast<LONG>(text.size()));
+        result = range->SetText(editCookie, 0, output.data(), static_cast<LONG>(output.size()));
         if (FAILED(result)) return result;
         // not every host moves the caret on SetText; the next word would land in front
         result = range->Collapse(editCookie, TF_ANCHOR_END);
@@ -1171,12 +1180,33 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
     HRESULT result = context->QueryInterface(IID_PPV_ARGS(&insertion));
     if (FAILED(result)) return result;
     ComPtr<ITfRange> insertedRange;
-    result = insertion->InsertTextAtSelection(editCookie, 0, text.data(),
-                                              static_cast<LONG>(text.size()), &insertedRange);
+    result = insertion->InsertTextAtSelection(editCookie, 0, output.data(),
+                                              static_cast<LONG>(output.size()), &insertedRange);
     if (FAILED(result) || !insertedRange) return result;
     result = insertedRange->Collapse(editCookie, TF_ANCHOR_END);
     if (FAILED(result)) return result;
     return MoveCaret(editCookie, context, insertedRange.Get());
+}
+
+HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
+    if (!composition_ || !CurrentFrontendSettings().simplifiedOutput) return S_OK;
+    ComPtr<ITfRange> range, reader;
+    HRESULT result = composition_->GetRange(&range);
+    if (FAILED(result)) return result;
+    result = range->Clone(&reader);
+    if (FAILED(result)) return result;
+    std::wstring text;
+    std::array<wchar_t, 256> buffer{};
+    ULONG fetched = 0;
+    do {
+        result = reader->GetText(editCookie, TF_TF_MOVESTART, buffer.data(),
+                                 static_cast<ULONG>(buffer.size()), &fetched);
+        if (FAILED(result)) return result;
+        text.append(buffer.data(), fetched);
+    } while (fetched != 0);
+    const std::wstring output = FilterCommittedText(text, true);
+    if (output == text) return S_OK;
+    return range->SetText(editCookie, 0, output.data(), static_cast<LONG>(output.size()));
 }
 
 HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
@@ -1244,8 +1274,9 @@ HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
                                                     ITfContext* context, bool moveCaret) {
     HRESULT result = S_OK;
     if (composition_ && compositionContext_.Get() == context) {
+        result = convertCompositionForCommit(editCookie);
         // EndComposition keeps the text; abandoning would clear the user's sentence
-        if (moveCaret) {
+        if (SUCCEEDED(result) && moveCaret) {
             ComPtr<ITfRange> range;
             result = composition_->GetRange(&range);
             ComPtr<ITfRange> caret;
@@ -1409,8 +1440,12 @@ STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie, ITfComposition* composition) {
+STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie, ITfComposition* composition) {
     if (composition_.Get() == composition) {
+        if (!endingComposition_) {
+            const HRESULT conversion = convertCompositionForCommit(editCookie);
+            if (FAILED(conversion)) Trace("Host termination conversion failed: 0x%08lX", conversion);
+        }
         composition_.Reset();
         compositionContext_.Reset();
         if (!endingComposition_) {

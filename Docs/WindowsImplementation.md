@@ -26,6 +26,12 @@ representation 產生 `app.ico`，同時嵌入設定程式的 Win32 圖示與 ma
 TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
 兩者不共用圖像，也不在「千」字背後繪製底色。
 
+「一般設定」與語言列右鍵選單提供「簡體輸出」，預設關閉，選項保存於
+`Preferences/Windows.plist` 的 `SimplifiedOutput`。送出文字時沿用 Mac
+`OVOFHanConvert-TC2SC` 的字元表；組字、候選與學習資料維持原始繁體。
+英文、符號、emoji 與 UTF-16 surrogate pair 原樣保留；切換中英、焦點移動
+和宿主結束組字時也會套用輸出轉換。
+
 AppContainer（開始選單搜尋、Store app）與桌面程式共用 `%APPDATA%\ChiaKey`：桌面程式
 第一次建立它時會開放給 `ALL APPLICATION PACKAGES` 並標成 Low integrity。這代表任何
 Store app 都讀得到學習資料庫，是刻意接受的取捨。共用目錄出現之前，AppContainer
