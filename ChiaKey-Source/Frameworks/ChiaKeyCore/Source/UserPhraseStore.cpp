@@ -147,8 +147,12 @@ long long SecondsSinceModified(const std::string& path) {
   const OVFileTimestamp modified = OVPathHelper::TimestampForPath(path);
   // a missing file hands back the zero timestamp
   if (modified.timestamp() == 0 && modified.subtimestamp() == 0) return -1;
-  const long long age = static_cast<long long>(time(nullptr)) -
-                        static_cast<long long>(modified.timestamp());
+  long long modifiedSeconds = static_cast<long long>(modified.timestamp());
+#if defined(_WIN32)
+  // TimestampForPath preserves FILETIME's 1601 epoch; time() uses 1970.
+  modifiedSeconds -= 11644473600LL;
+#endif
+  const long long age = static_cast<long long>(time(nullptr)) - modifiedSeconds;
   return age < 0 ? 0 : age;
 }
 
