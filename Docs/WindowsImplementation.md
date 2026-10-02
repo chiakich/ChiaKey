@@ -22,7 +22,7 @@ macOS 沿用 `/chiakey/appcast.json` 的 schema 1、頂層 stable／beta 與 `.p
 平台專屬 notes_url。詞庫維持既有共用介面。
 Windows 先讀自己的 CDN feed，並與 GitHub SHA256SUMS.txt 交叉核對；失敗時
 回到 GitHub，辨識共同 `v*` 及舊 `win-v*`，依實際 Windows installer 篩選。
-舊 `win-v0.1.0-beta.1` 使用者必須手動安裝一次共同版本。
+同名重發的 `win-v0.1.0-beta.1` 測試預覽可直接更新至共同版本；重發前的原建置需手動安裝一次新版。
 
 使用者可見變更寫在 `ReleaseNotes/*.json`，明確列出 macos／windows 平台；
 共用核心改動不會自動被當成雙平台新功能。scope 可繼續使用 mac／win／core，

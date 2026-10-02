@@ -84,7 +84,9 @@ stable 累積，包含該 Beta 系列。內部重構不自動列入使用者變�
 ## 遷移與驗證
 
 舊 Windows win-v0.1.0-beta.1 僅認 win-v*；使用者需手動安裝一次共同版本。
-此次不另發布 Windows-only 過渡 release。
+在原安裝檔下載次數為 0 時，同名重發此預覽供朋友測試，納入新版更新器，
+可直接升級至共同 v1.2.7；重發前已下載的原建置仍需手動安裝一次。
+這是既有預覽的一次替換，不新增 Windows-only 版本，也不寫入 macOS CDN。
 
 需通過：舊版 macOS manifest 與 fallback fixture、平台 notes 與 Beta 基準測試、
 feed 合併及故障處理測試、macOS 雙架構建置、Windows x64／x86 建置、更新器

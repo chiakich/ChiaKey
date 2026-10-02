@@ -122,8 +122,10 @@ Scripts/build-release-package.sh --local-lexicon /path/to/ChiaKeySource.db
 新版 feed 是 `/chiakey/updates/macos/appcast.json` 與
 `/chiakey/updates/windows/appcast.json`，使用相同 schema 1，加上 platform、version、
 notes_url、release_url。安裝檔使用不可變版本 URL、SHA-256 與首次公開時間。
-Windows 不再透過 `win-v*` tag 推送獨立發布。舊 Windows 0.1.0-beta.1 需手動安裝
-一次共同版；新版支援共同 `v*`、Windows CDN 及既有 `win-v*` fallback。
+Windows 不再透過 `win-v*` tag 推送獨立發布。Windows build workflow 的手動執行
+僅建置同名 `win-v0.1.0-beta.1` 朋友測試預覽，不自動發布；建置與測試成功後
+替換原 GitHub release，不寫入 CDN。重發的預覽支援共同 `v*`、Windows CDN
+及既有 `win-v*` fallback；重發前的原建置需手動安裝一次新版。
 
 CDN 同時預檢兩平台 feed；只有讀取物件得到 404 才可初始化，403／5xx／逾時或
 資料不合法都會停止，不可當成空檔。Beta 保留 stable，stable 不覆蓋更新的 Beta。
