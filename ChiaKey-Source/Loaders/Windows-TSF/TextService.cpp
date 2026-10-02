@@ -889,13 +889,7 @@ void TextService::sendSymbol(const std::wstring& text) {
     auto* session = new (std::nothrow) SymbolEditSession(this, context.Get(), text);
     if (!session) return;
     HRESULT editResult = E_FAIL;
-    HRESULT requestResult = context->RequestEditSession(clientId_, session,
-                                                        TF_ES_SYNC | TF_ES_READWRITE, &editResult);
-    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
-        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
-        requestResult = context->RequestEditSession(
-            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, &editResult);
-    }
+    HRESULT requestResult = requestEditSession(context.Get(), session, &editResult);
     if (FAILED(requestResult) || FAILED(editResult)) {
         Trace("Symbol request=0x%08lX edit=0x%08lX", static_cast<unsigned long>(requestResult),
               static_cast<unsigned long>(editResult));
@@ -982,17 +976,29 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     return runKeySession(context, std::move(event), eaten);
 }
 
+HRESULT TextService::requestEditSession(ITfContext* context, ITfEditSession* session,
+                                        HRESULT* editResult, bool* retriedAsync) {
+    *editResult = E_FAIL;
+    HRESULT requestResult = context->RequestEditSession(
+        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, editResult);
+    const bool refused = requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
+                         (SUCCEEDED(requestResult) && *editResult == TF_E_SYNCHRONOUS);
+    if (refused) {
+        *editResult = E_FAIL;
+        requestResult = context->RequestEditSession(
+            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, editResult);
+    }
+    if (retriedAsync) *retriedAsync = refused;
+    return requestResult;
+}
+
 HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten) {
     auto* session = new (std::nothrow) KeyEditSession(this, context, std::move(event));
     if (!session) return E_OUTOFMEMORY;
     HRESULT editResult = E_FAIL;
-    HRESULT requestResult = context->RequestEditSession(
-        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, &editResult);
-    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
-        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
-        editResult = E_FAIL;
-        requestResult = context->RequestEditSession(
-            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, &editResult);
+    bool retriedAsync = false;
+    HRESULT requestResult = requestEditSession(context, session, &editResult, &retriedAsync);
+    if (retriedAsync) {
         // the session may run after this returns, so the key is claimed now
         if (SUCCEEDED(requestResult) && SUCCEEDED(editResult)) *eaten = TRUE;
     } else if (SUCCEEDED(requestResult) && SUCCEEDED(editResult)) {
@@ -1251,14 +1257,7 @@ bool TextService::requestCommitComposition(bool moveCaret) {
     if (!session) return false;
     pendingModeCommit_ = true;
     HRESULT editResult = E_FAIL;
-    HRESULT requestResult = compositionContext_->RequestEditSession(
-        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, &editResult);
-    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
-        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
-        editResult = E_FAIL;
-        requestResult = compositionContext_->RequestEditSession(
-            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, &editResult);
-    }
+    HRESULT requestResult = requestEditSession(compositionContext_.Get(), session, &editResult);
     const bool accepted = SUCCEEDED(requestResult) && SUCCEEDED(editResult);
     if (!accepted) {
         pendingModeCommit_ = false;

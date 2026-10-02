@@ -63,7 +63,6 @@ class UserPhraseStore {
 
   // most probable first; never empty
   std::vector<std::string> readingsForCharacter(const std::string& character) const;
-  std::string defaultReading(const std::string& phrase) const;
 
   // MJSR 1.0.0, the format the mac app and Yahoo! KeyKey read and write
   bool exportTo(const std::string& path) const;

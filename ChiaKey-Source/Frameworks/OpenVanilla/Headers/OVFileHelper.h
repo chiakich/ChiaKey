@@ -135,6 +135,14 @@ class OVFileTimestamp {
       : m_timestamp(timestamp), m_subtimestamp(subtimestamp) {
   }
 
+#if defined(__APPLE__)
+  __darwin_time_t timestamp() const { return m_timestamp; }
+  long subtimestamp() const { return m_subtimestamp; }
+#elif defined(WIN32)
+  time_t timestamp() const { return m_timestamp; }
+  time_t subtimestamp() const { return m_subtimestamp; }
+#endif
+
   OVFileTimestamp(const OVFileTimestamp& timestamp)
       : m_timestamp(timestamp.m_timestamp),
         m_subtimestamp(timestamp.m_subtimestamp) {}

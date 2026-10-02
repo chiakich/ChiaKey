@@ -53,6 +53,14 @@ private:
     ~LangBarButton();
     const wchar_t* label() const;
 
+    // one popup menu entry; id 0 draws a separator
+    struct MenuItem {
+        UINT id;
+        std::wstring label;
+        bool checked;
+    };
+    std::vector<MenuItem> menuItems();
+
     std::atomic<ULONG> referenceCount_{1};
     TextService* service_ = nullptr;
     GUID guid_{};

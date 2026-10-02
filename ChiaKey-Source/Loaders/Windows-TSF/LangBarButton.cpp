@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cwchar>
-#include <iterator>
 #include <new>
 
 #include "ChiaKeyEngine.h"
@@ -145,35 +144,44 @@ STDMETHODIMP LangBarButton::GetTooltipString(BSTR* tooltip) {
     return *tooltip ? S_OK : E_OUTOFMEMORY;
 }
 
+// both the right-click popup and the lang bar's ITfMenu show these items
+std::vector<LangBarButton::MenuItem> LangBarButton::menuItems() {
+    std::vector<MenuItem> items;
+    items.push_back({kMenuToggleLanguage,
+                     service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音", false});
+    items.push_back({0, L"", false});
+    const std::string selected = CurrentInputMethod();
+    menuInputMethods_.clear();
+    for (const auto& method : MenuInputMethods(selected)) {
+        items.push_back({kMenuFirstInputMethod + static_cast<UINT>(menuInputMethods_.size()),
+                         method.second, method.first == selected});
+        menuInputMethods_.push_back(method.first);
+    }
+    items.push_back({0, L"", false});
+    RefreshSettings();
+    items.push_back({kMenuSimplifiedOutput, kSimplifiedOutputLabel,
+                     CurrentFrontendSettings().simplifiedOutput});
+    items.push_back({kMenuHalfWidth, L"半形", !service_->isFullWidthMode()});
+    items.push_back({kMenuFullWidth, L"全形", service_->isFullWidthMode()});
+    items.push_back({0, L"", false});
+    items.push_back({kMenuSymbols, kSymbolsLabel, service_->isSymbolWindowVisible()});
+    items.push_back({kMenuPhraseEditor, kPhraseEditorLabel, false});
+    items.push_back({kMenuSettings, L"輸入法設定…", false});
+    return items;
+}
+
 STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) {
     if (click == TF_LBI_CLK_RIGHT) {
         HMENU menu = CreatePopupMenu();
         if (!menu) return E_OUTOFMEMORY;
-        AppendMenuW(menu, MF_STRING, kMenuToggleLanguage,
-                    service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音");
-        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-        const std::string selected = CurrentInputMethod();
-        const auto methods = MenuInputMethods(selected);
-        menuInputMethods_.clear();
-        for (const auto& method : methods) {
-            AppendMenuW(menu, MF_STRING | (method.first == selected ? MF_CHECKED : 0),
-                        kMenuFirstInputMethod + static_cast<UINT>(menuInputMethods_.size()),
-                        method.second.c_str());
-            menuInputMethods_.push_back(method.first);
+        for (const auto& item : menuItems()) {
+            if (item.id == 0) {
+                AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+            } else {
+                AppendMenuW(menu, MF_STRING | (item.checked ? MF_CHECKED : 0), item.id,
+                            item.label.c_str());
+            }
         }
-        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-        RefreshSettings();
-        AppendMenuW(menu, MF_STRING | (CurrentFrontendSettings().simplifiedOutput ? MF_CHECKED : 0),
-                    kMenuSimplifiedOutput, kSimplifiedOutputLabel);
-        AppendMenuW(menu, MF_STRING | (!service_->isFullWidthMode() ? MF_CHECKED : 0),
-                    kMenuHalfWidth, L"半形");
-        AppendMenuW(menu, MF_STRING | (service_->isFullWidthMode() ? MF_CHECKED : 0),
-                    kMenuFullWidth, L"全形");
-        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-        AppendMenuW(menu, MF_STRING | (service_->isSymbolWindowVisible() ? MF_CHECKED : 0),
-                    kMenuSymbols, kSymbolsLabel);
-        AppendMenuW(menu, MF_STRING, kMenuPhraseEditor, kPhraseEditorLabel);
-        AppendMenuW(menu, MF_STRING, kMenuSettings, L"輸入法設定…");
         HWND owner = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 0, 0, HWND_DESKTOP,
                                      nullptr, nullptr, nullptr);
         const UINT chosen = TrackPopupMenu(
@@ -195,50 +203,19 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
 
 STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
     if (!menu) return E_INVALIDARG;
-    HRESULT result = menu->AddMenuItem(
-        kMenuToggleLanguage, 0, nullptr, nullptr,
-        service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音",
-        service_->isChineseMode() ? 5 : 7, nullptr);
-    if (FAILED(result)) return result;
-    result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr, nullptr, 0, nullptr);
-    if (FAILED(result)) return result;
-    const std::string selected = CurrentInputMethod();
-    menuInputMethods_.clear();
-    for (const auto& method : MenuInputMethods(selected)) {
-        result = menu->AddMenuItem(
-            kMenuFirstInputMethod + static_cast<UINT>(menuInputMethods_.size()),
-            method.first == selected ? TF_LBMENUF_CHECKED : 0, nullptr, nullptr,
-            method.second.c_str(), static_cast<ULONG>(method.second.size()), nullptr);
+    for (const auto& item : menuItems()) {
+        if (item.id == 0) {
+            const HRESULT result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr,
+                                                     nullptr, 0, nullptr);
+            if (FAILED(result)) return result;
+            continue;
+        }
+        const HRESULT result = menu->AddMenuItem(
+            item.id, item.checked ? TF_LBMENUF_CHECKED : 0, nullptr, nullptr,
+            item.label.c_str(), static_cast<ULONG>(item.label.size()), nullptr);
         if (FAILED(result)) return result;
-        menuInputMethods_.push_back(method.first);
     }
-    result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr, nullptr, 0, nullptr);
-    if (FAILED(result)) return result;
-    RefreshSettings();
-    result = menu->AddMenuItem(kMenuSimplifiedOutput,
-                               CurrentFrontendSettings().simplifiedOutput ? TF_LBMENUF_CHECKED : 0,
-                               nullptr, nullptr, kSimplifiedOutputLabel,
-                               static_cast<ULONG>(std::size(kSimplifiedOutputLabel) - 1), nullptr);
-    if (FAILED(result)) return result;
-    result = menu->AddMenuItem(kMenuHalfWidth,
-                               service_->isFullWidthMode() ? 0 : TF_LBMENUF_CHECKED, nullptr,
-                               nullptr, L"半形", 2, nullptr);
-    if (FAILED(result)) return result;
-    result = menu->AddMenuItem(kMenuFullWidth,
-                               service_->isFullWidthMode() ? TF_LBMENUF_CHECKED : 0, nullptr,
-                               nullptr, L"全形", 2, nullptr);
-    if (FAILED(result)) return result;
-    result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr, nullptr, 0, nullptr);
-    if (FAILED(result)) return result;
-    result = menu->AddMenuItem(kMenuSymbols,
-                               service_->isSymbolWindowVisible() ? TF_LBMENUF_CHECKED : 0,
-                               nullptr, nullptr, kSymbolsLabel,
-                               static_cast<ULONG>(std::size(kSymbolsLabel) - 1), nullptr);
-    if (FAILED(result)) return result;
-    result = menu->AddMenuItem(kMenuPhraseEditor, 0, nullptr, nullptr, kPhraseEditorLabel,
-                               static_cast<ULONG>(std::size(kPhraseEditorLabel) - 1), nullptr);
-    if (FAILED(result)) return result;
-    return menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"輸入法設定…", 6, nullptr);
+    return S_OK;
 }
 
 STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {

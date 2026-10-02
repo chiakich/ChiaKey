@@ -114,6 +114,10 @@ private:
     bool isShiftToggleKey(const KeyEvent& event) const;
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
     void sendSymbol(const std::wstring& text);
+    // a synchronous request is refused when the document is locked or TSF will
+    // not block the caller; the same session is then requested asynchronously
+    HRESULT requestEditSession(ITfContext* context, ITfEditSession* session,
+                               HRESULT* editResult, bool* retriedAsync = nullptr);
     HRESULT runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten);
     HRESULT adviseInputModeSink();
     void unadviseInputModeSink();

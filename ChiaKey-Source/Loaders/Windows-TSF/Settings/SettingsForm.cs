@@ -313,8 +313,6 @@ namespace ChiaKey.Settings
             }
         }
 
-        // --- panes --------------------------------------------------------------
-
         private static Label Title(Control parent, string text)
         {
             Label label = new Label();
@@ -850,8 +848,6 @@ namespace ChiaKey.Settings
             return pane;
         }
 
-        // --- settings -----------------------------------------------------------
-
         private void Changed()
         {
             if (!loading)
@@ -1041,9 +1037,7 @@ namespace ChiaKey.Settings
                 UpdateService service = UpdateService.Default();
                 service.RegisterStartup();
                 if (service.Preferences.GetBool("AutoUpdateApp", true) || service.Preferences.GetBool("AutoUpdateLexicon", true))
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath,
-                        "/update-background") { UseShellExecute = false, CreateNoWindow = true,
-                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden });
+                    UpdateService.StartBackgroundUpdater(Application.ExecutablePath);
                 return;
             }
             // the input menu opens the phrase editor on its own, as Yahoo's separate PhraseEditor.exe

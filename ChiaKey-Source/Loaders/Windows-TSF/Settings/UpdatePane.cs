@@ -141,12 +141,22 @@ namespace ChiaKey.Settings
             catch (Exception error) { lexicon.status.Text = "無法讀取詞庫：" + error.Message; }
         }
 
+        private void SetBusy(Section section, bool isLexicon, bool busy)
+        {
+            section.busy = busy;
+            if (!IsDisposed)
+            {
+                section.Buttons();
+                if (!isLexicon) beta.Enabled = !busy;
+            }
+        }
+
         private async Task Check(Section section, bool isLexicon)
         {
             if (section.busy || IsDisposed) return;
             bool includeBeta = beta.Checked;
-            section.busy = true; section.offer = null; section.Buttons();
-            if (!isLexicon) beta.Enabled = false;
+            section.offer = null;
+            SetBusy(section, isLexicon, true);
             section.status.Text = "正在檢查更新…";
             try
             {
@@ -162,19 +172,15 @@ namespace ChiaKey.Settings
                 section.status.Text = offer == null ? "已是最新版本。" : "有新版本可供下載。";
             }
             catch (Exception error) { if (!IsDisposed) section.status.Text = "檢查失敗：" + error.Message; }
-            finally
-            {
-                section.busy = false;
-                if (!IsDisposed) { section.Buttons(); if (!isLexicon) beta.Enabled = true; }
-            }
+            finally { SetBusy(section, isLexicon, false); }
         }
 
         private async Task Install(Section section, bool isLexicon)
         {
             UpdateOffer offer = section.offer;
             if (offer == null) return;
-            section.busy = true; section.Buttons(); section.status.Text = "正在下載更新…";
-            if (!isLexicon) beta.Enabled = false;
+            SetBusy(section, isLexicon, true);
+            section.status.Text = "正在下載更新…";
             try
             {
                 string installer = null;
@@ -189,11 +195,7 @@ namespace ChiaKey.Settings
                 section.status.Text = isLexicon ? "詞庫已更新。" : "已開啟安裝器。";
             }
             catch (Exception error) { if (!IsDisposed) section.status.Text = "更新失敗：" + error.Message; }
-            finally
-            {
-                section.busy = false;
-                if (!IsDisposed) { section.Buttons(); if (!isLexicon) beta.Enabled = true; }
-            }
+            finally { SetBusy(section, isLexicon, false); }
         }
 
         internal void Save() { service.Configure(app.automatic.Checked, lexicon.automatic.Checked, beta.Checked); }

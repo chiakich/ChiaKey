@@ -4,6 +4,7 @@
 #include <mutex>
 #include <string>
 
+#include "GdiText.h"
 #include "ModuleState.h"
 
 namespace ChiaKey::WindowsTsf {
@@ -93,14 +94,6 @@ void FillGradient(HDC dc, const RECT& rect, COLORREF top, COLORREF bottom) {
     };
     GRADIENT_RECT gradient{0, 1};
     GradientFill(dc, vertices, 2, &gradient, 1, GRADIENT_FILL_RECT_V);
-}
-
-int TextWidth(HDC dc, HFONT font, const std::wstring& text) {
-    HGDIOBJ old = SelectObject(dc, font);
-    SIZE extent{};
-    GetTextExtentPoint32W(dc, text.c_str(), static_cast<int>(text.size()), &extent);
-    SelectObject(dc, old);
-    return extent.cx;
 }
 
 void DrawTextIn(HDC dc, HFONT font, COLORREF color, const std::wstring& text, RECT rect,

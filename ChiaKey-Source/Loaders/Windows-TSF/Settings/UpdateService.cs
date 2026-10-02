@@ -25,7 +25,6 @@ namespace ChiaKey.Settings
     {
         public string Version, Url, Filename, Sha256, Manifest;
         public DateTime Published;
-        public bool Lexicon;
     }
 
     internal sealed class UpdateService
@@ -264,7 +263,7 @@ namespace ChiaKey.Settings
             Component(Text(checksum, "filename"));
             string filename = Component(Text(db, "filename"));
             if (!filename.EndsWith(".db", StringComparison.Ordinal)) throw new InvalidDataException("詞庫檔名必須是 .db。");
-            UpdateOffer offer = new UpdateOffer { Lexicon = true, Version = version, Manifest = manifest,
+            UpdateOffer offer = new UpdateOffer { Version = version, Manifest = manifest,
                 Url = AllowedUrl(Text(db, "url"), LexiconCdn, LexiconRepository + version + "/"),
                 Filename = filename, Sha256 = Digest(Text(db, "sha256")),
                 Published = Date(Text(data, "generated_at")) };
@@ -496,6 +495,12 @@ namespace ChiaKey.Settings
             Process.Start(new ProcessStartInfo(path, "/SP- /NORESTART") { UseShellExecute = true, Verb = "runas" });
         }
 
+        internal static void StartBackgroundUpdater(string executable)
+        {
+            Process.Start(new ProcessStartInfo(executable, "/update-background") {
+                UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+        }
+
         internal void Configure(bool app, bool lexicon, bool includeBeta)
         {
             PrepareRoot();
@@ -505,8 +510,7 @@ namespace ChiaKey.Settings
             preferences.Save();
             RegisterStartup();
             if (app || lexicon)
-                Process.Start(new ProcessStartInfo(Executable, "/update-background") {
-                    UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+                StartBackgroundUpdater(Executable);
         }
 
         internal void RegisterStartup()

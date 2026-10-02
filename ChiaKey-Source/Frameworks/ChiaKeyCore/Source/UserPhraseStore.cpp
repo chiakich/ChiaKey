@@ -15,6 +15,7 @@
 #include "Mandarin.h"
 
 #include <sqlite3.h>
+#include <time.h>
 
 #if defined(_WIN32)
 #include <process.h>
@@ -24,8 +25,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/file.h>
-#include <sys/stat.h>
-#include <time.h>
 #include <unistd.h>
 #endif
 
@@ -40,6 +39,7 @@ namespace {
 
 using Formosa::Mandarin::BPMF;
 using OpenVanilla::OVFileHelper;
+using OpenVanilla::OVFileTimestamp;
 using OpenVanilla::OVPathHelper;
 
 const char kUserDatabaseName[] = "SmartMandarinUserData.db";
@@ -144,27 +144,12 @@ void RemoveFile(const std::string& path) {
 
 // seconds since the last write, or -1 when the file is not there
 long long SecondsSinceModified(const std::string& path) {
-#if defined(_WIN32)
-  WIN32_FILE_ATTRIBUTE_DATA data{};
-  if (!GetFileAttributesExW(OpenVanilla::OVUTF16::FromUTF8(path).c_str(),
-                            GetFileExInfoStandard, &data)) {
-    return -1;
-  }
-  FILETIME now{};
-  GetSystemTimeAsFileTime(&now);
-  ULARGE_INTEGER modified{}, current{};
-  modified.LowPart = data.ftLastWriteTime.dwLowDateTime;
-  modified.HighPart = data.ftLastWriteTime.dwHighDateTime;
-  current.LowPart = now.dwLowDateTime;
-  current.HighPart = now.dwHighDateTime;
-  if (current.QuadPart < modified.QuadPart) return 0;
-  return static_cast<long long>((current.QuadPart - modified.QuadPart) / 10000000ULL);
-#else
-  struct stat info;
-  if (stat(path.c_str(), &info) != 0) return -1;
-  const long long age = static_cast<long long>(time(nullptr) - info.st_mtime);
+  const OVFileTimestamp modified = OVPathHelper::TimestampForPath(path);
+  // a missing file hands back the zero timestamp
+  if (modified.timestamp() == 0 && modified.subtimestamp() == 0) return -1;
+  const long long age = static_cast<long long>(time(nullptr)) -
+                        static_cast<long long>(modified.timestamp());
   return age < 0 ? 0 : age;
-#endif
 }
 
 long CurrentProcessId() {
@@ -711,10 +696,6 @@ bool UserPhraseStore::remove(const std::vector<long long>& rowids) {
 std::vector<std::string> UserPhraseStore::readingsForCharacter(
     const std::string& character) const {
   return impl_->readingsForCharacter(character);
-}
-
-std::string UserPhraseStore::defaultReading(const std::string& phrase) const {
-  return impl_->defaultReading(phrase);
 }
 
 bool UserPhraseStore::exportTo(const std::string& path) const {

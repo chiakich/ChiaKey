@@ -795,9 +795,13 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
       return Fail("an editing session did not create the lock file");
     }
 
-    if (store->defaultReading("你好") != "ㄋㄧˇ,ㄏㄠˇ") {
-      return Fail("expected 你好 to read ㄋㄧˇ,ㄏㄠˇ, got " + store->defaultReading("你好"));
+    // an empty reading derives each character's most likely one; removed right
+    // away so the later 你好 compositions stay unaffected by the user phrase
+    ChiaKey::UserPhrase derived;
+    if (!store->add("你好", "", &derived) || derived.reading != "ㄋㄧˇ,ㄏㄠˇ") {
+      return Fail("expected 你好 to read ㄋㄧˇ,ㄏㄠˇ, got " + derived.reading);
     }
+    store->remove({derived.rowid});
     ChiaKey::UserPhrase added;
     if (!store->add("測詞", "ㄘㄜˋ,ㄘˊ", &added) || added.rowid <= 0 ||
         added.reading != "ㄘㄜˋ,ㄘˊ") {

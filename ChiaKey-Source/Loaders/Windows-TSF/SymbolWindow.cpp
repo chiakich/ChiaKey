@@ -9,6 +9,7 @@
 #include <mutex>
 
 #include "Diagnostics.h"
+#include "GdiText.h"
 #include "ModuleState.h"
 
 namespace ChiaKey::WindowsTsf {
@@ -46,14 +47,6 @@ HFONT MakeFont(int points, UINT dpi) {
     return CreateFontW(-MulDiv(points, static_cast<int>(dpi), 72), 0, 0, 0, FW_NORMAL, FALSE,
                        FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
                        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Microsoft JhengHei UI");
-}
-
-int TextWidth(HDC dc, HFONT font, const std::wstring& text) {
-    HGDIOBJ old = SelectObject(dc, font);
-    SIZE extent{};
-    GetTextExtentPoint32W(dc, text.c_str(), static_cast<int>(text.size()), &extent);
-    SelectObject(dc, old);
-    return extent.cx;
 }
 
 const std::wstring& DisplayText(const SymbolEntry& entry) {

@@ -46,7 +46,6 @@ jobs:
     runs-on: macos-26
     outputs:
       tag: ${{ steps.version.outputs.tag }}
-      core: ${{ steps.version.outputs.core }}
       prerelease: ${{ steps.version.outputs.prerelease }}
       source_sha: ${{ steps.source.outputs.sha }}
       built_sha: ${{ steps.snapshot.outputs.sha }}
@@ -173,7 +172,6 @@ jobs:
           echo "tag=${next}" >>"$GITHUB_OUTPUT"
           echo "core=${core}" >>"$GITHUB_OUTPUT"
           echo "prerelease=${prerelease}" >>"$GITHUB_OUTPUT"
-          echo "previous=${latest}" >>"$GITHUB_OUTPUT"
           echo "notes_base=${notes_base}" >>"$GITHUB_OUTPUT"
 
       - name: Bump both platform versions
@@ -241,7 +239,6 @@ jobs:
           args=(--pkg-name "ChiaKey-${{ steps.version.outputs.tag }}.pkg")
           args[1]="${args[1]/ChiaKey-v/ChiaKey-}"
 
-          # Import code-signing certificates into a temporary keychain.
           if [[ -n "${APP_CERT_P12}" ]]; then
             KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
             KEYCHAIN_PASSWORD="ci-temp-$RANDOM"
@@ -268,7 +265,6 @@ jobs:
             echo "No signing secrets configured; building an unsigned (ad-hoc) package."
           fi
 
-          # Notarize when an App Store Connect API key is provided.
           if [[ -n "${NOTARY_API_KEY_P8}" ]]; then
             echo "$NOTARY_API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary_key.p8"
             xcrun notarytool store-credentials chiakey-notary \
@@ -308,7 +304,6 @@ jobs:
 
           lexicon_version="$(cat artifacts/release/lexicon-version.txt 2>/dev/null || true)"
           echo "Bundled lexicon: ${lexicon_version:-<unknown>}"
-          echo "lexicon_version=${lexicon_version}" >>"$GITHUB_OUTPUT"
 
       - name: Collect platform commit messages
         env:

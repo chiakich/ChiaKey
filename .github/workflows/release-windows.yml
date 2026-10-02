@@ -67,8 +67,6 @@ jobs:
   build:
     runs-on: windows-latest
     needs: lexicon
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
