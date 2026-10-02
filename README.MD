@@ -4,7 +4,7 @@
 
 <img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />
 
-千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。  
+千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。Windows 版目前為預覽版，見下方〈Windows（預覽版）〉。  
 
 官方網站：[千秋輸入法 ChiaKey](https://chiaki.ch/works/chiakey)  
 相關文章：[都 2026 年了，怎麼還有人在寫輸入法？](https://chiaki.ch/blog/writing-an-input-method-in-2026)  
@@ -58,6 +58,33 @@ Scripts/uninstall.sh
 ```
 
 加上 `--purge` 會一併刪除自訂詞、詞庫與設定。全域安裝（`/Library/Input Methods`）需要另外以 `sudo rm -rf '/Library/Input Methods/ChiaKey.app'` 移除。
+
+## Windows（預覽版）
+
+Windows 版目前是預覽版，以 `win-v` 開頭的版本號，在 [GitHub Releases](https://github.com/chiakich/ChiaKey/releases) 以 Pre-release 發佈，下載 `ChiaKey-Windows-<版本>-Setup.exe` 執行即可。
+
+- 支援 Windows 10 / 11 的 x64 版，64 位元與 32 位元程式都能打字；ARM64 版尚未支援。
+- 安裝後，已經開著的程式要重新開啟才會載入輸入法。若輸入法清單裡沒有千秋輸入法，請到「設定 > 時間與語言 > 語言與地區」加入「中文 (繁體，台灣)」。
+- 目前的安裝檔**尚未簽章**（見下方 [Code signing policy](#code-signing-policy)）。下載後執行時 SmartScreen 會跳出警告，按「其他資訊 > 仍要執行」即可；開啟了「智慧型應用程式控制」（Smart App Control）的電腦則會直接擋下，暫時無法使用。
+- 解除安裝：「設定 > 應用程式 > 已安裝的應用程式」中的「千秋輸入法」。自訂詞、學習記錄與設定存在 `%APPDATA%\ChiaKey`，解除安裝時會保留。
+- 「偏好設定 > 更新」可檢查並安裝本體與詞庫更新，也可分別開啟自動更新（預設關閉）。開啟後每天檢查一次，發布滿三天才自動更新；本體安裝需要 Windows 權限確認。詞庫驗證通過後於組字結束時切換，失敗則保留舊版。更新設定與外部詞庫存於 `%APPDATA%\ChiaKeyUpdates`。
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/) — applied for, not yet granted. Until it is,
+the Windows release files are unsigned.
+
+- **Roles.** Committers and reviewers: [@chiakich](https://github.com/chiakich).
+  Approvers: [@chiakich](https://github.com/chiakich).
+- **What is signed.** The Windows text service (`ChiaKeyTsf.dll`, 64-bit and 32-bit), the
+  settings and phrase editor app (`ChiaKeySettings.exe`) and the installer, all built by
+  [GitHub Actions](.github/workflows/release-windows.yml) from the source in this repository.
+  No third-party binaries are redistributed.
+- **Privacy.** Typing remains offline. The separate update helper connects to ChiaKey's
+  GitHub releases and lexicon CDN only when checking or downloading updates; automatic
+  updates are opt-in. It never sends typed text, phrases, or learning data. Your phrases
+  and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
 
 ## 適合誰使用
 
