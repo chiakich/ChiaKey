@@ -64,7 +64,7 @@ Scripts/uninstall.sh
 
 ## Windows（預覽版）
 
-Windows 版目前是預覽版，以 `win-v` 開頭的版本號，在 [GitHub Releases](https://github.com/chiakich/ChiaKey/releases) 以 Pre-release 發佈，下載 `ChiaKey-Windows-<版本>-Setup.exe` 執行即可。
+Windows 版目前仍是預覽版；自 `v1.2.7` 起與 macOS 使用同一版號共同發佈。在 [GitHub Releases](https://github.com/chiakich/ChiaKey/releases) 下載 `ChiaKey-Windows-<版本>-Setup.exe` 執行即可。GitHub release 的正式／Beta 標記依共同版本決定，Windows 預覽狀態會另行標示。舊 `win-v0.1.0-beta.1` 的更新器只認 `win-v`，需要手動安裝一次共同版本；之後即可正常追蹤 `v` 版本。
 
 - 支援 Windows 10 / 11 的 x64 版，64 位元與 32 位元程式都能打字；ARM64 版尚未支援。
 - 安裝後，已經開著的程式要重新開啟才會載入輸入法。若輸入法清單裡沒有千秋輸入法，請到「設定 > 時間與語言 > 語言與地區」加入「中文 (繁體，台灣)」。

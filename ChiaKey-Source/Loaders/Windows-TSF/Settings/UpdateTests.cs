@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Web.Script.Serialization;
 
@@ -144,6 +145,7 @@ namespace ChiaKey.Settings
             });
             service.Fetch = delegate(string url, long limit)
             {
+                if (url == UpdateService.AppCdn + "appcast.json") throw new WebException("fixture CDN unavailable");
                 if (url.StartsWith("https://api.github.com/")) return Encoding.UTF8.GetBytes(releases);
                 if (url.EndsWith("SHA256SUMS.txt")) return Encoding.UTF8.GetBytes(appHash + "  " + appName + "\n");
                 if (url.EndsWith(".exe")) return appBytes;
@@ -169,6 +171,7 @@ namespace ChiaKey.Settings
             });
             service.Fetch = delegate(string url, long limit)
             {
+                if (url == UpdateService.AppCdn + "appcast.json") throw new WebException("fixture CDN unavailable");
                 if (url.StartsWith("https://api.github.com/")) return Encoding.UTF8.GetBytes(releases);
                 if (url.EndsWith("SHA256SUMS.txt")) return Encoding.UTF8.GetBytes(appHash + "  " + appName + "\n" + appHash + "  " + stableName + "\n");
                 throw new Exception("Unexpected channel URL");
@@ -179,6 +182,52 @@ namespace ChiaKey.Settings
             Check(service.CheckApp().Version == "0.2.0-beta.1", "background check honors saved beta option");
             channels.SetBool("IncludeBetaReleases", false); channels.Save();
             Check(service.CheckApp().Version == "0.1.1", "saved beta opt-out restores stable channel");
+
+            // A shared v* release is stable for Mac and still carries the Windows preview.
+            string jointName = "ChiaKey-Windows-1.2.7-Setup.exe";
+            var jointAssets = new[] {
+                new { name = jointName, browser_download_url = UpdateService.AppRepository + "v1.2.7/" + jointName },
+                new { name = "ChiaKey-1.2.7.pkg", browser_download_url = UpdateService.AppRepository + "v1.2.7/ChiaKey-1.2.7.pkg" },
+                new { name = "SHA256SUMS.txt", browser_download_url = UpdateService.AppRepository + "v1.2.7/SHA256SUMS.txt" }
+            };
+            releases = new JavaScriptSerializer().Serialize(new[] {
+                new { tag_name = "v1.2.7", draft = false, prerelease = false, published_at = "2020-01-01T00:00:00Z", assets = jointAssets },
+                new { tag_name = "v99.0.0", draft = false, prerelease = false, published_at = "2020-01-01T00:00:00Z", assets = new[] {
+                    new { name = "ChiaKey-99.0.0.pkg", browser_download_url = UpdateService.AppRepository + "v99.0.0/ChiaKey-99.0.0.pkg" }
+                } }
+            });
+            string jointList = appHash + "  " + jointName + "\n";
+            int apiRequests = 0;
+            string appFeed = null;
+            service.Fetch = delegate(string url, long limit)
+            {
+                if (url == UpdateService.AppCdn + "appcast.json") {
+                    if (appFeed == null) throw new WebException("fixture CDN unavailable");
+                    return Encoding.UTF8.GetBytes(appFeed);
+                }
+                if (url.StartsWith("https://api.github.com/")) { ++apiRequests; return Encoding.UTF8.GetBytes(releases); }
+                if (url.EndsWith("SHA256SUMS.txt")) return Encoding.UTF8.GetBytes(jointList);
+                throw new Exception("Unexpected joint release URL: " + url);
+            };
+            Check(service.CheckApp(false).Version == "1.2.7", "joint stable selected; Mac-only release ignored");
+            var jointEntry = new { tag = "v1.2.7", prerelease = false, package_name = jointName,
+                package_url = UpdateService.AppCdn + "releases/v1.2.7/" + jointName,
+                sha256 = appHash, published_at = "2020-01-01T00:00:00Z" };
+            appFeed = new JavaScriptSerializer().Serialize(new { schema = 1, platform = "windows", stable = jointEntry, beta = jointEntry });
+            apiRequests = 0;
+            Check(service.CheckApp(false).Url.StartsWith(UpdateService.AppCdn), "platform CDN selected");
+            Check(apiRequests == 0, "healthy CDN does not query GitHub release list");
+            Check(service.CheckApp(true).Version == "1.2.7", "Beta followers also receive newer stable");
+            string validAppFeed = appFeed;
+            appFeed = validAppFeed.Replace("\"windows\"", "\"macos\"");
+            Check(service.CheckApp(false).Version == "1.2.7" && apiRequests > 0, "wrong platform falls back to filtered GitHub");
+            appFeed = validAppFeed.Replace(appHash, new string('0', 64));
+            Check(service.CheckApp(false).Url.StartsWith(UpdateService.AppRepository), "CDN checksum disagreement falls back to GitHub verified offer");
+            appFeed = validAppFeed;
+            var currentService = new UpdateService(Path.Combine(root, "current-state"), executable, new Version("1.2.7"));
+            currentService.Fetch = service.Fetch;
+            apiRequests = 0;
+            Check(currentService.CheckApp(false) == null && apiRequests == 0, "up-to-date CDN avoids GitHub fallback");
 
             // Automatic age gate and daily throttle; never invokes an installer.
             int autoFetches = 0;

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise platform filtering against a temporary Git history."""
+import json
 import subprocess
 import tempfile
 import unittest
@@ -33,30 +34,40 @@ class ReleaseChangelogTests(unittest.TestCase):
 
     def notes(self, *args):
         return subprocess.check_output(
-            ["python3", str(ROOT / "Scripts/generate-macos-changelog.py"), *args],
+            ["python3", str(ROOT / "Scripts/generate-release-notes.py"), "--platform", "macos", *args],
             cwd=self.repo, text=True,
         )
 
-    def test_scopes_legacy_paths_and_shared_changes(self):
-        self.commit("feat(win): scoped Windows update", "shared.cpp")
-        self.commit("feat(ios): iOS keyboard", "ios.cpp")
-        self.commit("fix: legacy Windows icon", "ChiaKey-Source/Loaders/Windows-TSF/icon.cpp", "README.MD")
-        self.commit("feat: legacy Windows installer", "Packaging/Windows/installer.iss")
-        self.commit("fix(mac): focus bug", "mac.m")
-        self.commit("fix(core): shared learning", "core.cpp", "ChiaKey-Source/Loaders/Windows-TSF/engine.cpp")
-        self.commit("docs: manual", "README.MD")
-        self.commit("ci: workflow", ".github/workflows/example.yml")
-        self.commit("chore: bump version to 1.2.7", "version.txt")
-        notes = self.notes("--since", "v1.2.6")
-        self.assertIn("focus bug", notes)
-        self.assertIn("shared learning", notes)
-        for excluded in ["initial version", "Windows", "iOS keyboard", "manual", "workflow", "bump version"]:
-            self.assertNotIn(excluded, notes)
+    def fragment(self, name, changes):
+        path = self.repo / 'ReleaseNotes' / name
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(json.dumps({'changes': changes}))
+        self.git('add', '.')
+        self.git('commit', '-qm', 'docs: add platform notes')
 
-    def test_first_release_and_empty_platform_range(self):
-        self.commit("feat(win): Windows only", "Packaging/Windows/file.iss")
-        self.assertEqual(self.notes("--since", "v1.2.6"), "")
-        self.assertIn("initial version", self.notes())
+    def test_platforms_and_internal_commits(self):
+        self.commit('feat(win): Windows update', 'windows.cpp')
+        self.fragment('one.json', [
+            {'platforms': ['macos'], 'type': 'fix', 'description': 'Mac focus'},
+            {'platforms': ['windows'], 'type': 'feat', 'description': 'Windows output'},
+            {'platforms': ['macos', 'windows'], 'type': 'fix', 'description': 'Shared fix'},
+        ])
+        notes = self.notes('--since', 'v1.2.6')
+        self.assertIn('Mac focus', notes)
+        self.assertIn('Shared fix', notes)
+        self.assertNotIn('Windows output', notes)
+        self.assertNotIn('Windows update', notes)
+
+    def test_stable_notes_include_beta_series_and_no_repeat_after_release(self):
+        self.fragment('one.json', [{'platforms': ['macos'], 'type': 'feat', 'description': 'Feature in beta'}])
+        self.git('tag', 'v1.2.7-beta.1')
+        self.fragment('two.json', [{'platforms': ['macos'], 'type': 'fix', 'description': 'Later fix'}])
+        self.assertIn('Feature in beta', self.notes('--since', 'v1.2.6'))
+        self.assertNotIn('Feature in beta', self.notes('--since', 'v1.2.7-beta.1'))
+        self.assertIn('Later fix', self.notes('--since', 'v1.2.7-beta.1'))
+        self.git('tag', 'v1.2.7')
+        self.assertEqual(self.notes('--since', 'v1.2.7'), '')
+        self.assertIn('Feature in beta', self.notes())
 
     def test_workflow_ignores_higher_windows_and_unmerged_mac_tags(self):
         self.git("tag", "win-v99.0.0-beta.1")

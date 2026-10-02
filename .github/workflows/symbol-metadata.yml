@@ -14,11 +14,16 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Check dev install publication
         run: python3 Scripts/tests/test_dev_install.py
       - name: Check macOS release isolation
         run: |
           python3 Scripts/tests/test_release_changelog.py
+          python3 Scripts/tests/test_joint_release.py
+          python3 Scripts/tests/test_appcast_publisher.py
           bash Scripts/test-macos-release-selection.sh
+          bash Scripts/test-legacy-macos-release-selection.sh
       - name: Check new and legacy lexicon metadata and button layout
         run: Scripts/test-symbol-metadata.sh

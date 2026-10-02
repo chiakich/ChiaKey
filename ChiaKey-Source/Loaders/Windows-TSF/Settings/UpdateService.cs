@@ -31,6 +31,7 @@ namespace ChiaKey.Settings
     internal sealed class UpdateService
     {
         internal const string AppRepository = "https://github.com/chiakich/ChiaKey/releases/download/";
+        internal const string AppCdn = "https://cdn.chiaki.ch/chiakey/updates/windows/";
         internal const string LexiconRepository = "https://github.com/chiakich/ChiaKey-Lexicon/releases/download/";
         internal const string LexiconCdn = "https://cdn.chiaki.ch/chiakey/lexicon/";
         internal readonly string Root, Executable;
@@ -277,7 +278,9 @@ namespace ChiaKey.Settings
 
         internal UpdateOffer CheckApp(bool includeBeta)
         {
-            // Windows currently ships as prereleases; /latest would return the Mac release.
+            UpdateOffer cdnOffer;
+            if (TryCheckAppCdn(includeBeta, out cdnOffer)) return cdnOffer;
+            // Joint v* releases carry both platforms; legacy win-v* remains readable.
             UpdateOffer newest = null;
             for (int page = 1; page <= 5; ++page)
             {
@@ -289,8 +292,8 @@ namespace ChiaKey.Settings
                     ++count;
                     if (Convert.ToBoolean(release["draft"], CultureInfo.InvariantCulture)) continue;
                     string tag = Text(release, "tag_name");
-                    if (!Regex.IsMatch(tag, @"\Awin-v\d+\.\d+\.\d+(?:-beta\.[1-9][0-9]*)?\z")) continue;
-                    string version = tag.Substring("win-v".Length);
+                    if (!Regex.IsMatch(tag, @"\A(?:win-)?v\d+\.\d+\.\d+(?:-beta\.[1-9][0-9]*)?\z")) continue;
+                    string version = tag.Substring(tag.StartsWith("win-v", StringComparison.Ordinal) ? 5 : 1);
                     if (!includeBeta && (version.Contains("-beta.") ||
                         Convert.ToBoolean(release["prerelease"], CultureInfo.InvariantCulture))) continue;
                     if (CompareAppVersions(version, AppReleaseVersion) <= 0 ||
@@ -310,6 +313,55 @@ namespace ChiaKey.Settings
                 if (count < 100) break;
             }
             return newest;
+        }
+
+        private bool TryCheckAppCdn(bool includeBeta, out UpdateOffer offer)
+        {
+            offer = null;
+            try
+            {
+                var feed = Object(Json.DeserializeObject(Utf8.GetString(Fetch(AppCdn + "appcast.json", 1024 * 1024))));
+                if (Convert.ToInt32(feed["schema"], CultureInfo.InvariantCulture) != 1 || Text(feed, "platform") != "windows")
+                    throw new InvalidDataException("本體 manifest 平台或格式不符。");
+                string chosenTag = null;
+                foreach (string channel in new[] { "stable", "beta" })
+                {
+                    object value;
+                    if (!feed.TryGetValue(channel, out value) || value == null) continue;
+                    var entry = Object(value);
+                    string tag = Text(entry, "tag");
+                    if (!Regex.IsMatch(tag, @"\A(?:win-)?v\d+\.\d+\.\d+(?:-beta\.[1-9][0-9]*)?\z"))
+                        throw new InvalidDataException("本體 manifest 版號不合法。");
+                    string version = tag.Substring(tag.StartsWith("win-v", StringComparison.Ordinal) ? 5 : 1);
+                    bool prerelease = Convert.ToBoolean(entry["prerelease"], CultureInfo.InvariantCulture);
+                    if (prerelease != version.Contains("-beta.")) throw new InvalidDataException("Beta 標記與版號不符。");
+                    if (channel == "stable" && prerelease) throw new InvalidDataException("正式頻道含 Beta 版。");
+                    string name = "ChiaKey-Windows-" + version + "-Setup.exe";
+                    if (Text(entry, "package_name") != name) throw new InvalidDataException("本體檔名與版號不符。");
+                    string url = AllowedUrl(Text(entry, "package_url"), AppCdn + "releases/" + tag + "/", AppRepository + tag + "/");
+                    string digest = Digest(Text(entry, "sha256"));
+                    if (!includeBeta && prerelease) continue;
+                    if (CompareAppVersions(version, AppReleaseVersion) <= 0 ||
+                        (offer != null && CompareAppVersions(version, offer.Version) <= 0)) continue;
+                    offer = new UpdateOffer { Version = version, Filename = name, Url = url,
+                        Sha256 = digest, Published = Date(Text(entry, "published_at")) };
+                    chosenTag = tag;
+                }
+                if (offer != null)
+                {
+                    string list = Utf8.GetString(Fetch(AppRepository + chosenTag + "/SHA256SUMS.txt", 1024 * 1024));
+                    if (ListedDigest(list, offer.Filename) != offer.Sha256)
+                        throw new InvalidDataException("本體 manifest 與 GitHub 校驗清單不一致。");
+                }
+                return true;
+            }
+            catch (Exception error)
+            {
+                if (!(error is WebException || error is IOException || error is InvalidDataException || error is ArgumentException ||
+                      error is FormatException || error is InvalidCastException || error is KeyNotFoundException)) throw;
+                offer = null;
+                return false;
+            }
         }
 
         internal static void AtomicText(string path, string contents)
