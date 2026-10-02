@@ -74,7 +74,7 @@ Name: "{autoprograms}\千秋輸入法\千秋輸入法設定"; Filename: "{app}\{
 Name: "{autoprograms}\千秋輸入法\千秋輸入法詞彙編輯器"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/phrases"
 
 [Run]
-; Preserve opt-in and refresh the per-user startup path after an upgrade. The helper
+; Preserve update preferences and refresh the per-user startup path after an upgrade. The helper
 ; must run as the original desktop user, never with the installer's elevated token.
 Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/update-register"; Flags: runasoriginaluser nowait runhidden
 

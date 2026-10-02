@@ -272,6 +272,11 @@ namespace ChiaKey.Settings
 
         internal UpdateOffer CheckApp()
         {
+            return CheckApp(Preferences.GetBool("IncludeBetaReleases", false));
+        }
+
+        internal UpdateOffer CheckApp(bool includeBeta)
+        {
             // Windows currently ships as prereleases; /latest would return the Mac release.
             UpdateOffer newest = null;
             for (int page = 1; page <= 5; ++page)
@@ -286,6 +291,8 @@ namespace ChiaKey.Settings
                     string tag = Text(release, "tag_name");
                     if (!Regex.IsMatch(tag, @"\Awin-v\d+\.\d+\.\d+(?:-beta\.[1-9][0-9]*)?\z")) continue;
                     string version = tag.Substring("win-v".Length);
+                    if (!includeBeta && (version.Contains("-beta.") ||
+                        Convert.ToBoolean(release["prerelease"], CultureInfo.InvariantCulture))) continue;
                     if (CompareAppVersions(version, AppReleaseVersion) <= 0 ||
                         (newest != null && CompareAppVersions(version, newest.Version) <= 0)) continue;
                     string name = "ChiaKey-Windows-" + version + "-Setup.exe";
@@ -435,11 +442,12 @@ namespace ChiaKey.Settings
             Process.Start(new ProcessStartInfo(path, "/SP- /NORESTART") { UseShellExecute = true, Verb = "runas" });
         }
 
-        internal void Configure(bool app, bool lexicon)
+        internal void Configure(bool app, bool lexicon, bool includeBeta)
         {
             PrepareRoot();
             Plist preferences = Preferences;
             preferences.SetBool("AutoUpdateApp", app); preferences.SetBool("AutoUpdateLexicon", lexicon);
+            preferences.SetBool("IncludeBetaReleases", includeBeta);
             preferences.Save();
             RegisterStartup();
             if (app || lexicon)
@@ -452,7 +460,7 @@ namespace ChiaKey.Settings
             Plist settings = Preferences;
             using (RegistryKey run = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run"))
             {
-                if (settings.GetBool("AutoUpdateApp", false) || settings.GetBool("AutoUpdateLexicon", false))
+                if (settings.GetBool("AutoUpdateApp", true) || settings.GetBool("AutoUpdateLexicon", true))
                     run.SetValue("ChiaKeyUpdates", "\"" + Executable + "\" /update-background");
                 else run.DeleteValue("ChiaKeyUpdates", false);
             }
@@ -466,7 +474,7 @@ namespace ChiaKey.Settings
         internal void AutomaticPass()
         {
             Plist options = Preferences;
-            bool app = options.GetBool("AutoUpdateApp", false), lexicon = options.GetBool("AutoUpdateLexicon", false);
+            bool app = options.GetBool("AutoUpdateApp", true), lexicon = options.GetBool("AutoUpdateLexicon", true);
             if (!app && !lexicon) return;
             PrepareRoot();
             // Cross-process lock also serializes the persisted daily gate.
@@ -532,7 +540,7 @@ namespace ChiaKey.Settings
                         if (command != "\"" + service.Executable + "\" /update-background") return;
                     }
                     Plist options = service.Preferences;
-                    if (!options.GetBool("AutoUpdateApp", false) && !options.GetBool("AutoUpdateLexicon", false)) return;
+                    if (!options.GetBool("AutoUpdateApp", true) && !options.GetBool("AutoUpdateLexicon", true)) return;
                     try { service.AutomaticPass(); }
                     catch (Exception error) { try { service.Status("更新失敗：" + error.Message); } catch (IOException) { } }
                     // A one-minute tick notices uninstall/upgrade/opt-out without another network request.

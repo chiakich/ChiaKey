@@ -1036,7 +1036,7 @@ namespace ChiaKey.Settings
             {
                 UpdateService service = UpdateService.Default();
                 service.RegisterStartup();
-                if (service.Preferences.GetBool("AutoUpdateApp", false) || service.Preferences.GetBool("AutoUpdateLexicon", false))
+                if (service.Preferences.GetBool("AutoUpdateApp", true) || service.Preferences.GetBool("AutoUpdateLexicon", true))
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath,
                         "/update-background") { UseShellExecute = false, CreateNoWindow = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden });
