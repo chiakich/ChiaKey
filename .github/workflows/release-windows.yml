@@ -1,7 +1,9 @@
 name: Windows release build
 
-# Reusable build only: the joint workflow publishes after BOTH platforms pass.
+# Build only: joint publication waits for both platforms. Manual runs rebuild the
+# original friend-testing preview; publication is performed separately after checks.
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       tag:
@@ -24,13 +26,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
       - uses: actions/download-artifact@v4
+        if: github.event_name != 'workflow_dispatch'
         with:
           name: joint-source
           path: source-snapshot
       - name: Restore joint source
+        if: github.event_name != 'workflow_dispatch'
         shell: bash
         env:
           BUILT_SHA: ${{ inputs.built_sha }}
@@ -68,13 +72,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
       - uses: actions/download-artifact@v4
+        if: github.event_name != 'workflow_dispatch'
         with:
           name: joint-source
           path: source-snapshot
       - name: Restore joint source
+        if: github.event_name != 'workflow_dispatch'
         shell: bash
         env:
           BUILT_SHA: ${{ inputs.built_sha }}
@@ -99,13 +105,18 @@ jobs:
           }
           $version = $Matches[1]
           $tag = '${{ inputs.tag }}'
-          if ($tag -notmatch "^v$([regex]::Escape($version))(-beta\.[1-9][0-9]*)?$") {
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            if ($version -ne '0.1.0') { throw 'manual preview rebuild requires project version 0.1.0' }
+            $tag = 'win-v0.1.0-beta.1'
+          }
+          $versionTag = $tag -replace '^win-v', 'v'
+          if ($versionTag -notmatch "^v$([regex]::Escape($version))(-beta\.[1-9][0-9]*)?$") {
             throw "tag $tag does not match the project version $version"
           }
           $prerelease = if ($Matches[1]) { $Matches[1].TrimStart('-') } else { '' }
           "numeric_version=$version" >> $env:GITHUB_OUTPUT
           "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
-          "version=$($tag.Substring('v'.Length))" >> $env:GITHUB_OUTPUT
+          "version=$($versionTag.Substring('v'.Length))" >> $env:GITHUB_OUTPUT
 
       - name: Build and test
         shell: pwsh

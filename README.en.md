@@ -64,7 +64,7 @@ Add `--purge` to delete user phrases, the lexicon and settings as well. A global
 
 ## Windows (Preview)
 
-Windows remains a preview. Starting with `v1.2.7`, macOS and Windows share one version and one [GitHub Release](https://github.com/chiakich/ChiaKey/releases). Download `ChiaKey-Windows-<version>-Setup.exe` and run it. The release’s stable/Beta flag follows the shared version; the Windows preview status is stated separately. The old `win-v0.1.0-beta.1` updater only recognizes `win-v` tags: install a joint version manually once, then future `v` releases can be discovered automatically.
+Windows remains a preview. Starting with `v1.2.7`, macOS and Windows share one version and one [GitHub Release](https://github.com/chiakich/ChiaKey/releases). Download `ChiaKey-Windows-<version>-Setup.exe` and run it. The release’s stable/Beta flag follows the shared version; the Windows preview status is stated separately. The rebuilt `win-v0.1.0-beta.1` testing preview supports joint `v` releases. Anyone with the original build must install the newer build manually once.
 
 - Supports Windows 10 / 11 on x64; both 64-bit and 32-bit apps can type with it. ARM64 is not supported yet.
 - Apps that are already open need to be restarted to load the input method. If ChiaKey doesn't appear in your input method list, add "Chinese (Traditional, Taiwan)" under "Settings > Time & language > Language & region".
