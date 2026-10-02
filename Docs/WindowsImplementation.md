@@ -16,12 +16,13 @@
 重載、學習寫入落到磁碟，以及引擎一結束就存檔。
 
 TSF 前端在 `ChiaKey-Source/Loaders/Windows-TSF`：inline 組字、仿 KeyKey 的候選窗、
-語言列與工作列圖示（中文模式為透明背景、黑色「千」，保留英文與全半形狀態）、`ChiaKeySettings.exe` 設定程式，
+語言列與工作列狀態圖示（中文模式依輸入法顯示「注／倉／簡／中」，保留英文與全半形狀態）、`ChiaKeySettings.exe` 設定程式，
 以及倉頡、簡易與使用者 `.cin` 字表（`%APPDATA%\ChiaKey\Tables\Generic\*.cin`）。
 
 設定程式與安裝器使用 Mac 的 `ChiaKey.icns` 角色圖示；建置時從該檔的 PNG
 representation 產生 `app.ico`，同時嵌入設定程式的 Win32 圖示與 managed resource。
-偏好設定與詞彙編輯器視窗直接讀取內嵌的橘色角色圖示，避免受 Windows 關聯圖示快取影響。
+偏好設定視窗直接讀取內嵌的橘色角色圖示；詞彙編輯器使用 Mac 的
+`PhraseEditor.icns` 紫色角色圖示，轉成內嵌的 `phrase-editor.ico`。
 TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
 兩者不共用圖像，也不在「千」字背後繪製底色。
 
@@ -133,8 +134,10 @@ TSF 前端換成 `ChiaKey-Source\Loaders\Windows-TSF` 當 `-S`，產出的 `Chia
 
 ## Windows 更新機制
 
-偏好設定的「更新」頁可檢查、下載與安裝本體／詞庫，兩者有獨立的自動更新開關，
-預設關閉。手動檢查與安裝不受三天等待期限制。開啟後，由同一個設定 EXE 的
+偏好設定的「更新」頁開啟時即檢查本體與詞庫，也可分別手動檢查、下載與安裝。
+兩者有獨立的自動更新開關，預設皆開啟；已儲存的關閉選項仍保留。
+「接受 Beta 版」獨立勾選且預設關閉，套用後手動與背景檢查都使用該選項。
+手動檢查與安裝不受三天等待期限制。開啟後，由同一個設定 EXE 的
 `/update-background` 桌面 helper 在登入時執行；每分鐘查看設定與每日節流標記，
 每天最多連網檢查一次，發布滿三天才自動安裝。下載與 DB 完整性驗證在 helper／
 設定程式的背景執行緒處理，TSF DLL 不連網。失敗原因與最後檢查結果可在更新頁看到。

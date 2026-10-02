@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -9,78 +8,173 @@ namespace ChiaKey.Settings
     internal sealed class UpdatePane : Panel
     {
         private readonly UpdateService service = UpdateService.Default();
-        private readonly CheckBox app = new CheckBox(), lexicon = new CheckBox();
-        private readonly Label current = new Label(), status = new Label();
-        private readonly Button check = new Button(), installApp = new Button(), installLexicon = new Button();
-        private UpdateOffer appOffer, lexiconOffer;
-        private bool busy;
+
+        private sealed class Section : GroupBox
+        {
+            internal readonly CheckBox automatic = new CheckBox();
+            internal readonly Label latest = new Label(), current = new Label(), checkedAt = new Label(), status = new Label();
+            internal readonly Button check = new Button(), install = new Button();
+            internal readonly FlowLayoutPanel options = new FlowLayoutPanel();
+            internal UpdateOffer offer;
+            internal bool busy;
+
+            internal Section(string title, string option)
+            {
+                SuspendLayout();
+                DoubleBuffered = true;
+                UseCompatibleTextRendering = true;
+                Text = title;
+                Dock = DockStyle.Top;
+                AutoSize = true;
+                AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                Padding = new Padding(12, 6, 12, 10);
+                Margin = new Padding(0, 0, 0, 12);
+                TableLayoutPanel rows = new TableLayoutPanel {
+                    Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, RowCount = 5,
+                    Margin = Padding.Empty, Padding = Padding.Empty };
+                rows.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                rows.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+                rows.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                for (int i = 0; i < 5; ++i) rows.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                Row(rows, "最新版本：", latest, 0);
+                Row(rows, "目前版本：", current, 1);
+                Row(rows, "上次檢查：", checkedAt, 2);
+                latest.Text = "尚未檢查"; checkedAt.Text = "尚未檢查";
+                automatic.Text = option; automatic.AutoSize = true;
+                automatic.UseCompatibleTextRendering = true;
+                automatic.Margin = new Padding(0, 8, 0, 4);
+                options.AutoSize = true; options.Dock = DockStyle.Fill;
+                options.Margin = Padding.Empty;
+                options.Controls.Add(automatic);
+                rows.Controls.Add(options, 0, 3); rows.SetColumnSpan(options, 3);
+                check.Text = "檢查更新";
+                install.Text = "下載安裝";
+                foreach (Button button in new[] { check, install })
+                {
+                    button.FlatStyle = FlatStyle.System;
+                    button.UseVisualStyleBackColor = true;
+                    button.AutoSize = true;
+                    button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                    button.MinimumSize = new Size(112, 30);
+                    button.Margin = new Padding(12, 0, 0, 4);
+                }
+                rows.Controls.Add(check, 2, 0); rows.Controls.Add(install, 2, 1);
+                status.AutoSize = true; status.UseCompatibleTextRendering = true;
+                status.Margin = new Padding(0, 4, 0, 0);
+                status.Visible = false;
+                status.TextChanged += delegate { status.Visible = status.Text.Length > 0; };
+                rows.Controls.Add(status, 0, 4); rows.SetColumnSpan(status, 3);
+                rows.SizeChanged += delegate { status.MaximumSize = new Size(rows.ClientSize.Width, 0); };
+                Controls.Add(rows);
+                Buttons();
+                ResumeLayout(true);
+            }
+
+            private void Row(TableLayoutPanel rows, string text, Label value, int row)
+            {
+                Label caption = new Label { Text = text, AutoSize = true,
+                    UseCompatibleTextRendering = true, Margin = new Padding(0, 4, 6, 4) };
+                value.AutoSize = true; value.UseCompatibleTextRendering = true;
+                value.Margin = new Padding(0, 4, 0, 4);
+                value.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                value.AutoEllipsis = true;
+                rows.Controls.Add(caption, 0, row); rows.Controls.Add(value, 1, row);
+            }
+
+            internal void Buttons()
+            {
+                check.Enabled = !busy;
+                install.Visible = offer != null;
+                install.Enabled = !busy && offer != null;
+            }
+        }
+
+        private readonly Section app;
+        private readonly Section lexicon;
+        private readonly CheckBox beta = new CheckBox { Text = "接受 Beta 版", AutoSize = true,
+            UseCompatibleTextRendering = true, Margin = new Padding(16, 8, 0, 4) };
 
         internal UpdatePane(Action changed)
         {
-            Label title = new Label { Text = "更新", Font = new Font("Microsoft JhengHei UI", 11F, FontStyle.Bold),
-                AutoSize = true, Location = new Point(16, 10) };
-            Controls.Add(title);
-            current.SetBounds(16, 48, 465, 60); Controls.Add(current);
-            app.Text = "自動更新千秋輸入法（安裝時需 Windows 權限確認）";
-            app.SetBounds(16, 112, 465, 26); Controls.Add(app);
-            lexicon.Text = "自動更新詞庫"; lexicon.SetBounds(16, 144, 465, 26); Controls.Add(lexicon);
-            app.Checked = service.Preferences.GetBool("AutoUpdateApp", false);
-            lexicon.Checked = service.Preferences.GetBool("AutoUpdateLexicon", false);
-            app.CheckedChanged += delegate { changed(); }; lexicon.CheckedChanged += delegate { changed(); };
-            Label note = new Label { Text = "開啟後每天背景檢查一次，發布滿三天才自動更新。\n" +
-                "更新只連線至千秋輸入法的發布來源，不傳送輸入內容。\n" +
-                "詞庫在組字結束後切換；本體安裝後請重新開啟應用程式。",
-                Location = new Point(16, 180), Size = new Size(465, 65) };
-            Controls.Add(note);
-            check.Text = "檢查更新"; check.SetBounds(16, 258, 110, 28); Controls.Add(check);
-            installApp.Text = "更新本體"; installApp.SetBounds(142, 258, 110, 28); Controls.Add(installApp);
-            installLexicon.Text = "更新詞庫"; installLexicon.SetBounds(268, 258, 110, 28); Controls.Add(installLexicon);
-            status.SetBounds(16, 306, 465, 100); Controls.Add(status);
-            check.Click += async delegate { await Check(); };
-            installApp.Click += async delegate { await Install(false); };
-            installLexicon.Click += async delegate { await Install(true); };
-            VisibleChanged += delegate { if (Visible && !busy) RefreshCurrent(); };
-            RefreshCurrent(); Buttons();
+            SuspendLayout();
+            DoubleBuffered = true;
+            AutoScroll = true;
+            app = new Section("輸入法更新", "自動更新輸入法");
+            lexicon = new Section("詞庫更新", "自動更新詞庫");
+            TableLayoutPanel sections = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true,
+                ColumnCount = 1, RowCount = 2, Padding = new Padding(16), Margin = Padding.Empty };
+            sections.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            sections.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            sections.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            sections.Controls.Add(app, 0, 0); sections.Controls.Add(lexicon, 0, 1);
+            Controls.Add(sections);
+            app.automatic.Checked = service.Preferences.GetBool("AutoUpdateApp", true);
+            lexicon.automatic.Checked = service.Preferences.GetBool("AutoUpdateLexicon", true);
+            beta.Checked = service.Preferences.GetBool("IncludeBetaReleases", false);
+            app.options.Controls.Add(beta);
+            beta.CheckedChanged += async delegate
+            {
+                changed();
+                app.offer = null; app.Buttons();
+                if (Visible) await Check(app, false);
+            };
+            app.automatic.CheckedChanged += delegate { changed(); };
+            lexicon.automatic.CheckedChanged += delegate { changed(); };
+            app.check.Click += async delegate { await Check(app, false); };
+            lexicon.check.Click += async delegate { await Check(lexicon, true); };
+            app.install.Click += async delegate { await Install(app, false); };
+            lexicon.install.Click += async delegate { await Install(lexicon, true); };
+            VisibleChanged += async delegate
+            {
+                if (!Visible) return;
+                RefreshCurrent();
+                await Task.WhenAll(Check(app, false), Check(lexicon, true));
+            };
+            RefreshCurrent();
+            ResumeLayout(true);
         }
 
         private void RefreshCurrent()
         {
-            string version;
-            try { version = service.CurrentLexiconVersion(); } catch (Exception error) { version = "無法讀取：" + error.Message; }
-            current.Text = "本體版本：" + service.AppReleaseVersion + "\n詞庫版本：" + version;
-            string path = Path.Combine(service.Root, "status.txt");
-            if (File.Exists(path))
-                try { status.Text = File.ReadAllText(path); } catch (IOException) { }
+            app.current.Text = service.AppReleaseVersion;
+            try { lexicon.current.Text = service.CurrentLexiconVersion(); }
+            catch (Exception error) { lexicon.status.Text = "無法讀取詞庫：" + error.Message; }
         }
 
-        private void Buttons()
+        private async Task Check(Section section, bool isLexicon)
         {
-            check.Enabled = !busy; installApp.Enabled = !busy && appOffer != null;
-            installLexicon.Enabled = !busy && lexiconOffer != null;
-        }
-
-        private async Task Check()
-        {
-            busy = true; Buttons(); status.Text = "正在檢查更新…";
-            appOffer = null; lexiconOffer = null;
-            string appResult = "", lexiconResult = "";
-            await Task.Run(delegate
+            if (section.busy || IsDisposed) return;
+            bool includeBeta = beta.Checked;
+            section.busy = true; section.offer = null; section.Buttons();
+            if (!isLexicon) beta.Enabled = false;
+            section.status.Text = "正在檢查更新…";
+            try
             {
-                try { appOffer = service.CheckApp(); appResult = appOffer == null ? "本體已是最新。" : "本體可更新至 " + appOffer.Version; }
-                catch (Exception error) { appResult = "本體檢查失敗：" + error.Message; }
-                try { service.RecoverLexicon(); lexiconOffer = service.CheckLexicon(); lexiconResult = lexiconOffer == null ? "詞庫已是最新。" : "詞庫可更新至 " + lexiconOffer.Version; }
-                catch (Exception error) { lexiconResult = "詞庫檢查失敗：" + error.Message; }
-            });
-            if (IsDisposed) return;
-            status.Text = appResult + "\n" + lexiconResult;
-            busy = false; Buttons();
+                UpdateOffer offer = await Task.Run(delegate
+                {
+                    if (isLexicon) { service.RecoverLexicon(); return service.CheckLexicon(); }
+                    return service.CheckApp(includeBeta);
+                });
+                if (IsDisposed) return;
+                section.offer = offer;
+                section.latest.Text = offer == null ? section.current.Text : offer.Version;
+                section.checkedAt.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                section.status.Text = offer == null ? "已是最新版本。" : "有新版本可供下載。";
+            }
+            catch (Exception error) { if (!IsDisposed) section.status.Text = "檢查失敗：" + error.Message; }
+            finally
+            {
+                section.busy = false;
+                if (!IsDisposed) { section.Buttons(); if (!isLexicon) beta.Enabled = true; }
+            }
         }
 
-        private async Task Install(bool isLexicon)
+        private async Task Install(Section section, bool isLexicon)
         {
-            UpdateOffer offer = isLexicon ? lexiconOffer : appOffer;
+            UpdateOffer offer = section.offer;
             if (offer == null) return;
-            busy = true; Buttons(); status.Text = "正在下載並驗證更新…";
+            section.busy = true; section.Buttons(); section.status.Text = "正在下載更新…";
+            if (!isLexicon) beta.Enabled = false;
             try
             {
                 string installer = null;
@@ -91,14 +185,17 @@ namespace ChiaKey.Settings
                 });
                 if (IsDisposed) return;
                 if (!isLexicon) UpdateService.InstallApp(installer, offer.Sha256);
-                else { lexiconOffer = null; RefreshCurrent(); }
-                status.Text = isLexicon ? "詞庫已更新至 " + offer.Version + "，組字結束後載入新版。" :
-                    "已開啟安裝器。完成後請重新開啟應用程式以載入新版。";
+                else { section.offer = null; RefreshCurrent(); }
+                section.status.Text = isLexicon ? "詞庫已更新。" : "已開啟安裝器。";
             }
-            catch (Exception error) { if (!IsDisposed) status.Text = "更新失敗：" + error.Message; }
-            finally { busy = false; if (!IsDisposed) Buttons(); }
+            catch (Exception error) { if (!IsDisposed) section.status.Text = "更新失敗：" + error.Message; }
+            finally
+            {
+                section.busy = false;
+                if (!IsDisposed) { section.Buttons(); if (!isLexicon) beta.Enabled = true; }
+            }
         }
 
-        internal void Save() { service.Configure(app.Checked, lexicon.Checked); }
+        internal void Save() { service.Configure(app.automatic.Checked, lexicon.automatic.Checked, beta.Checked); }
     }
 }

@@ -87,6 +87,9 @@ namespace ChiaKey.Settings
                 if (url.EndsWith("ChiaKeySource.db")) return payload;
                 throw new Exception("Unexpected URL: " + url);
             };
+            var defaults = service.Preferences;
+            Check(defaults.GetBool("AutoUpdateApp", true) && defaults.GetBool("AutoUpdateLexicon", true), "automatic updates default on independently");
+            defaults.SetBool("AutoUpdateApp", false); defaults.SetBool("AutoUpdateLexicon", false); defaults.Save();
             service.AutomaticPass(); Check(downloads == 0, "disabled updater must stay offline");
             UpdateService.ValidateDatabase(databasePath);
             UpdateOffer offer = service.CheckLexicon();
@@ -146,7 +149,8 @@ namespace ChiaKey.Settings
                 if (url.EndsWith(".exe")) return appBytes;
                 throw new Exception("Unexpected app URL");
             };
-            UpdateOffer app = service.CheckApp();
+            Check(service.CheckApp() == null, "beta releases excluded by default");
+            UpdateOffer app = service.CheckApp(true);
             Check(app != null && app.Version == "0.2.0-beta.1", "Windows prerelease selected, Mac and drafts ignored");
             string installer = service.DownloadApp(app);
             File.AppendAllText(installer, "tamper");
@@ -154,9 +158,33 @@ namespace ChiaKey.Settings
             app.Sha256 = new string('0', 64);
             Reject(delegate { service.DownloadApp(app); }, "app checksum ignored");
 
+            string stableName = "ChiaKey-Windows-0.1.1-Setup.exe";
+            var stableAssets = new[] {
+                new { name = stableName, browser_download_url = UpdateService.AppRepository + "win-v0.1.1/" + stableName },
+                new { name = "SHA256SUMS.txt", browser_download_url = UpdateService.AppRepository + "win-v0.1.1/SHA256SUMS.txt" }
+            };
+            releases = new JavaScriptSerializer().Serialize(new[] {
+                new { tag_name = "win-v0.1.1", draft = false, prerelease = false, published_at = "2020-01-01T00:00:00Z", assets = stableAssets },
+                new { tag_name = "win-v0.2.0-beta.1", draft = false, prerelease = false, published_at = "2020-01-01T00:00:00Z", assets = assets }
+            });
+            service.Fetch = delegate(string url, long limit)
+            {
+                if (url.StartsWith("https://api.github.com/")) return Encoding.UTF8.GetBytes(releases);
+                if (url.EndsWith("SHA256SUMS.txt")) return Encoding.UTF8.GetBytes(appHash + "  " + appName + "\n" + appHash + "  " + stableName + "\n");
+                throw new Exception("Unexpected channel URL");
+            };
+            Check(service.CheckApp(false).Version == "0.1.1", "stable selected when beta channel disabled even if beta tag is not marked prerelease");
+            Check(service.CheckApp(true).Version == "0.2.0-beta.1", "beta channel includes newer beta alongside stable");
+            var channels = service.Preferences; channels.SetBool("IncludeBetaReleases", true); channels.Save();
+            Check(service.CheckApp().Version == "0.2.0-beta.1", "background check honors saved beta option");
+            channels.SetBool("IncludeBetaReleases", false); channels.Save();
+            Check(service.CheckApp().Version == "0.1.1", "saved beta opt-out restores stable channel");
+
             // Automatic age gate and daily throttle; never invokes an installer.
             int autoFetches = 0;
-            var options = service.Preferences; options.SetBool("AutoUpdateLexicon", true); options.Save();
+            var options = service.Preferences;
+            options.SetBool("AutoUpdateApp", false); options.SetBool("AutoUpdateLexicon", true); options.Save();
+            Check(!service.Preferences.GetBool("AutoUpdateApp", true) && service.Preferences.GetBool("AutoUpdateLexicon", true), "app opt-out preserves lexicon automatic updates");
             manifest = Manifest("9999.1.3", dbHash, DateTime.UtcNow.ToString("o"));
             service.Fetch = delegate(string url, long limit)
             {
