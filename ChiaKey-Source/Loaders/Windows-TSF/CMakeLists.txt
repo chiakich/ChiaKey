@@ -25,6 +25,8 @@ add_subdirectory("${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore" core)
 add_library(chiakey_tsf_engine STATIC
     ChiaKeyEngine.cpp
     Diagnostics.cpp
+    OutputFilter.cpp
+    "${CHIAKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c"
     UpdateLexicon.cpp
 )
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

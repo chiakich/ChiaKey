@@ -65,11 +65,13 @@ struct FrontendSettings {
     bool toggleWithControlBackslash = true;
     bool shiftTogglesEnglish = true;
     bool associatedPhrases = false;
+    bool simplifiedOutput = false;
     // input method identifiers left out of the menus
     std::vector<std::string> suppressedInputMethods;
 };
 
 FrontendSettings CurrentFrontendSettings();
+bool SetSimplifiedOutput(bool enabled);
 // rereads the plists if they changed; applying them can rebuild contexts
 void RefreshSettings();
 ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,

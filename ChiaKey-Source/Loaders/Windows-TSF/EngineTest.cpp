@@ -5,6 +5,7 @@
 
 #include "ChiaKeyEngine.h"
 #include "UpdateLexicon.h"
+#include "OutputFilter.h"
 
 using namespace ChiaKey::WindowsTsf;
 
@@ -79,6 +80,33 @@ void TestLayout() {
     Check(result.candidatePage == 2 && result.candidatePageCount == 2 &&
               result.candidatesPerPage == 3,
           "the page indicator is 1-based and the page keeps its full height");
+}
+
+void TestOutputConversion() {
+    const std::wstring traditional = L"千秋輸入法，臺灣測試繁體龍門";
+    Check(FilterCommittedText(traditional, true) == L"千秋输入法，台湾测试繁体龙门",
+          "simplified output uses the Mac conversion table");
+    Check(FilterCommittedText(traditional, false) == traditional,
+          "traditional output preserves the original text");
+    Check(FilterCommittedText(L"ABC 123 ㄅ，。😀\U00020000測試", true) ==
+              L"ABC 123 ㄅ，。😀\U00020000测试",
+          "conversion preserves Latin, punctuation, Bopomofo, emoji and supplementary Han");
+    Check(FilterCommittedText(L"", true).empty(), "empty output remains empty");
+    Check(FilterCommittedText(L"汉语输入", true) == L"汉语输入",
+          "already simplified text remains simplified");
+    ChiaKey::EngineState state;
+    state.composingText = "繁體";
+    state.committedText = "繁體";
+    state.candidateState.visible = true;
+    state.candidateState.candidates = {"繁體"};
+    state.candidateState.selectionKeys = {"1"};
+    state.candidateState.candidatesPerPage = 1;
+    state.candidateState.pageCount = 1;
+    const EngineResult result = MakeResult(state);
+    Check(result.compositionText == L"繁體" && !result.candidates.empty() &&
+              result.candidates[0].text == L"繁體" &&
+              FilterCommittedText(result.committedText, true) == L"繁体",
+          "conversion leaves composition and candidates traditional");
 }
 
 void TestKeys() {
@@ -191,9 +219,18 @@ void TestSettings(const std::string& writableDir) {
     Check(!frontend.toggleWithControlBackslash, "boolean settings are read");
     Check(frontend.textColor == "White", "missing keys keep their defaults");
     Check(!frontend.shiftTogglesEnglish, "the Shift tap toggle can be turned off");
+    Check(!frontend.simplifiedOutput, "simplified output defaults off");
     Check(frontend.suppressedInputMethods.size() == 2 &&
               frontend.suppressedInputMethods[0] == "Generic-simplex-cin",
           "the input methods hidden from the menu are read as an array");
+    Check(SetSimplifiedOutput(true) && CurrentFrontendSettings().simplifiedOutput &&
+              ReadFrontendSettings(preferences).simplifiedOutput,
+          "menu toggle enables simplified output and saves it");
+    Check(CurrentFrontendSettings().highlightColor == "Green" &&
+              CurrentFrontendSettings().suppressedInputMethods.size() == 2,
+          "output toggle preserves other frontend preferences");
+    Check(SetSimplifiedOutput(false) && !ReadFrontendSettings(preferences).simplifiedOutput,
+          "menu toggle restores traditional output and saves it");
 
     Type(*session, "su3cl3");
     Check(session->handleKey(Key(VK_RIGHT)).compositionText != L"你好",
@@ -321,6 +358,7 @@ int main(int argc, char* argv[]) {
               methods[3].second == L"簡易",
           "the input methods are listed in the mac menu's order and names");
     TestLayout();
+    TestOutputConversion();
     TestKeys();
     TestUpdatePointers(argv[2]);
     TestSession();

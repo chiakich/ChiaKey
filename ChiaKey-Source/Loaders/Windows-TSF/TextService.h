@@ -95,6 +95,7 @@ public:
     bool isFullWidthMode() const noexcept { return fullWidthMode_; }
     void toggleChineseMode();
     void toggleFullWidthMode();
+    bool toggleSimplifiedOutput();
     bool selectInputMethod(const std::string& identifier);
     // "/phrases" opens the phrase editor instead
     HRESULT openSettings(HWND parent = nullptr, const wchar_t* arguments = nullptr) const;
@@ -136,6 +137,7 @@ private:
     HRESULT commitText(TfEditCookie editCookie, ITfContext* context,
                        const std::wstring& text);
     HRESULT endComposition(TfEditCookie editCookie, bool clearText);
+    HRESULT convertCompositionForCommit(TfEditCookie editCookie);
     bool requestCommitComposition(bool moveCaret = true);
     void abandonComposition();
     void resetCandidateState();
