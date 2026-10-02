@@ -1,9 +1,10 @@
 # Windows 實作指南
 
-最後更新：2026-10-02
+最後更新：2026-10-03
 
-這份文件說明 Windows TSF 輸入法要如何接 `ChiaKeyCore`，也是第二階段（接 TSF
-前端）的交接文件。第一階段已完成：核心能用 MSVC 編譯並執行。
+這份文件說明已接入 `ChiaKeyCore` 的 Windows TSF 前端架構、移植限制與更新機制。
+開發環境、完整建置／測試、本機註冊及 commit message 規則集中在
+[CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 ## 目前狀態
 
@@ -80,14 +81,14 @@ DLL 裡。server 剩下的工作只有引擎與資料庫，卻得在每個按鍵
 `Runtime` 就是 process 邊界的接縫。Yahoo 的 `BIServerRPCInterface.idl` 與它幾乎
 一對一，所以日後若要拆成 server，不必重畫邊界。
 
-## 第二階段：接 TSF 前端
+## TSF 前端的移植來源
 
-從 [polobread/KeyKey](https://github.com/polobread/KeyKey) 的
+TSF 前端的移植起點是 [polobread/KeyKey](https://github.com/polobread/KeyKey) 的
 `Source/Loaders/Windows-TSF` 開始。那是 MIT 授權，請保留 Chui-Ping Cheng 的版權
 聲明。
 
-TSF 程式碼只透過 `KeyKeyEngine.cpp` 這一層接觸引擎。把它換成包 `ChiaKeyCore` 的
-實作即可，`TextService.cpp` 的 COM 與組字處理可以沿用。
+目前 TSF 程式碼透過 `ChiaKeyEngine.cpp` 接觸 `ChiaKeyCore`，
+`TextService.cpp` 負責 COM 與組字處理。
 
 **要編在我們的 framework tree 上，不要合併他們的。** 他們的 OpenVanilla、
 PlainVanilla、Formosa 已經與我們分歧很多，`Mandarin.cpp` 差了一千多行。
@@ -132,17 +133,10 @@ polobread 已經註冊了 `ITfDisplayAttributeProvider`，也會把 `GUID_PROP_A
 
 ## 建置與測試
 
-在 x64 Native Tools 命令列裡執行，需要 CMake 3.21 以上。`ChiaKeySource.db` 不在
-git 裡，要另外複製過去。
-
-```powershell
-cmake -S ChiaKey-Source\Frameworks\ChiaKeyCore -B build\core-cmake -DCHIAKEY_LEXICON_DATABASE=C:\path\to\ChiaKeySource.db
-cmake --build build\core-cmake --config Release
-ctest --test-dir build\core-cmake -C Release --output-on-failure
-```
-
-TSF 前端換成 `ChiaKey-Source\Loaders\Windows-TSF` 當 `-S`，產出的 `ChiaKeyTsf.dll` 用
-`Register-Tip.ps1 -DllPath ...` 註冊。
+請依 [Windows 開發](../CONTRIBUTING.md#windows-開發) 準備 MSVC、Windows SDK、
+CMake 與詞庫，建置 x64／Win32 前端並執行 CTest。該指南也包含
+`Register-Tip.ps1` 註冊／解除註冊步驟；只測引擎核心時可使用其中的
+`ChiaKeyCore` CMake 入口。
 
 ## 需要實機的項目
 

@@ -6,7 +6,7 @@
 
 <img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />
 
-ChiaKey is a Traditional Chinese Bopomofo input method for macOS. It is built on the open-sourced code of Yahoo! KeyKey (奇摩輸入法) / OpenVanilla, with the goal of preserving KeyKey's familiar typing feel and keeping this input engine usable and maintained on modern macOS. A Windows version is available as a preview — see [Windows (Preview)](#windows-preview) below.
+ChiaKey is a Traditional Chinese Bopomofo input method for macOS and Windows. It is built on the open-sourced code of Yahoo! KeyKey (奇摩輸入法) / OpenVanilla, with the goal of preserving KeyKey's familiar typing feel and keeping this input engine usable and maintained on modern macOS and Windows. A Windows version is available as a preview — see [Windows (Preview)](#windows-preview) below.
 
 Official website: [ChiaKey](https://chiaki.ch/works/chiakey)
 Related article: [It's 2026 — why is anyone still writing an input method?](https://chiaki.ch/blog/writing-an-input-method-in-2026)
@@ -29,9 +29,10 @@ This is not an official Yahoo product. The source code is released under a BSD-s
 ## Download
 
 - [Download the latest macOS installer (.pkg)](https://cdn.chiaki.ch/chiakey/ChiaKey.pkg)
+- [Download the Windows preview (GitHub Releases)](https://github.com/chiakich/ChiaKey/releases/)
 - [Browse all releases](https://github.com/chiakich/ChiaKey/releases/)
 
-The installer installs into the current user's `~/Library/Input Methods`.
+The macOS installer installs into the current user's `~/Library/Input Methods`.
 If the input method isn't active after the first installation, add "ChiaKey" under "System Settings > Keyboard > Text Input". If the system still shows an old version or can't find the input method after installing, signing out and back in usually resolves it.
 
 Note: for a global installation (usable by every account on this Mac) or batch deployment with MDM, use the command line:
@@ -119,6 +120,8 @@ This is the part of the project with the deepest investment. The full data layer
 
 Beyond Bopomofo, Cangjie and Simplex, ChiaKey keeps OpenVanilla's generic table engine and can load `.cin` mapping tables. Code-driven lookup input methods — Cangjie variants, Array, Dayi, Cantonese romanisation, Hakka, Taiwanese Hokkien and more — all come in this format.
 
+The following import instructions are for macOS. Windows stores custom tables in `%APPDATA%\ChiaKey\Tables\Generic\`.
+
 In "ChiaKey Preferences > Custom Input Methods", press **+** and choose a `.cin` file to import. Before importing, it shows the table name, entry count and selection keys for confirmation; legacy Big5-encoded tables are converted to UTF-8 automatically. Once imported, the input method appears in the input menu, and you can untick it in the "General" tab to hide it from the menu.
 
 Select a table in the list and press **−** to remove it. Only tables you imported are listed here; the four built-in input methods are unaffected.
@@ -145,22 +148,26 @@ This fork's upstream lineage comes from the official `YahooArchive/KeyKey`; the 
 Note:
 
 - `ChiaKey` is a homophone pun combining `Chiaki` and `KeyKey`.
-- The current release mainline maintains the modern macOS InputMethodKit version.
-- bundle id / TIS id: `com.chiakey.inputmethod.ChiaKey`.
-- User data path: `~/Library/Application Support/ChiaKey`.
+- The release mainline maintains macOS InputMethodKit and Windows TSF hosts; Windows remains a preview.
+- macOS bundle id / TIS id: `com.chiakey.inputmethod.ChiaKey`.
+- User data: `~/Library/Application Support/ChiaKey` on macOS; `%APPDATA%\ChiaKey` on Windows.
 - The lexicon is published from the separate `ChiaKey-Lexicon` repository.
-- An experimental `ChiaKeyCore` host-neutral engine facade serves as the shared input-core foundation for a standalone iOS host repository.
+- `ChiaKeyCore` provides the shared input engine used by Windows TSF and available to standalone iOS hosts.
 
-Requires a modern Xcode with Apple silicon support; currently verified on Xcode 26.5.
+## Development and contributing
+
+macOS development uses a modern Xcode with Apple silicon support (verified on Xcode 26.5). Windows development uses MSVC, the Windows SDK and CMake 3.21 or later. See [CONTRIBUTING.md](CONTRIBUTING.md) (in Traditional Chinese) for build, test and local installation and registration instructions.
+
+Use **single-line Conventional Commit messages**, such as `fix(win): correct editing lock timestamp epoch`. Use the `win` scope for Windows-only changes and `mac` for macOS-only changes; shared changes can omit the platform scope. See the [commit message rules](CONTRIBUTING.md#commit-message-規則) for types and release-note selection.
 
 ## Documentation
 
-- [CONTRIBUTING.md](CONTRIBUTING.md): building, testing, release packaging, lexicon update testing and maintenance boundaries.
+- [CONTRIBUTING.md](CONTRIBUTING.md): macOS and Windows development, testing, commit message rules and maintenance boundaries.
 - [Architecture](Docs/Architecture.md): product scope, runtime routes, legacy cleanup principles and the test baseline.
 - [Project structure](Docs/ProjectStructure.md): source tree layering, host boundaries and the standalone iOS host repo relationship.
 - [iOS implementation guide](Docs/iOSImplementation.md): how the iOS keyboard extension wires up the core, repo boundaries and verification entry points.
 - [Windows implementation guide](Docs/WindowsImplementation.md): TSF front-end architecture decisions, porting constraints and build instructions.
 - [Lexicon contract](Docs/LexiconContract.md): GitHub release assets, required SQLite data, validation rules and fallback behaviour.
-- [Release packaging](Docs/ReleasePackaging.md): the official `.pkg` installer, signing and notarization flow.
+- [Release packaging](Docs/ReleasePackaging.md): macOS `.pkg` packaging, signing and notarization, and joint macOS and Windows releases.
 - [Modernization roadmap](Docs/ModernizationPlan.md): completed baseline, next steps and deferred items.
 - [OneKey removal notes](Docs/LexiconOneKeyRemoval.md): compatibility notes for the lexicon repository.
