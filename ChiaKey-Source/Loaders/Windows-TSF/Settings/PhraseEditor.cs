@@ -266,7 +266,7 @@ namespace ChiaKey.Settings
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = WindowTitle;
             Font = new Font("Microsoft JhengHei UI", 9F);
-            Icon = LoadIcon("app.ico");
+            Icon = LoadIcon("phrase-editor.ico");
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(480, 520);
             MinimumSize = new Size(360, 300);

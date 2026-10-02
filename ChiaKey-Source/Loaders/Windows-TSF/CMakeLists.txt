@@ -42,7 +42,8 @@ set(CHIAKEY_ICON_RESOURCES
     "IDI_CANGJIE:cangjie-on-light" "IDI_CANGJIE_DARK:cangjie-on-dark"
     "IDI_SIMPLEX:simplex-on-light" "IDI_SIMPLEX_DARK:simplex-on-dark")
 set(CHIAKEY_ICON_FILES)
-list(APPEND CHIAKEY_ICON_FILES "${CHIAKEY_ICON_DIR}/app.ico")
+list(APPEND CHIAKEY_ICON_FILES "${CHIAKEY_ICON_DIR}/app.ico" "${CHIAKEY_ICON_DIR}/phrase-editor.ico")
+set(CHIAKEY_PHRASE_ICON "${CHIAKEY_SOURCE}/Utilities/PhraseEditor/OSX/Images/PhraseEditor.icns")
 set(CHIAKEY_APP_ICON "${CHIAKEY_SOURCE}/Loaders/OSX-IMK/Images/ChiaKey.icns")
 file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/IconIds.h" icon_ids_path)
 string(REPLACE "\\" "\\\\" icon_ids_path "${icon_ids_path}")
@@ -64,8 +65,8 @@ add_custom_command(
     COMMAND powershell -NoProfile -STA -ExecutionPolicy Bypass
             -File "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1"
             -SvgDir "${CMAKE_CURRENT_SOURCE_DIR}/Icons" -OutDir "${CHIAKEY_ICON_DIR}"
-            -AppIconPath "${CHIAKEY_APP_ICON}"
-    DEPENDS ${CHIAKEY_ICON_SVGS} "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1" "${CHIAKEY_APP_ICON}"
+            -AppIconPath "${CHIAKEY_APP_ICON}" -PhraseIconPath "${CHIAKEY_PHRASE_ICON}"
+    DEPENDS ${CHIAKEY_ICON_SVGS} "${CMAKE_CURRENT_SOURCE_DIR}/Icons/build-icons.ps1" "${CHIAKEY_APP_ICON}" "${CHIAKEY_PHRASE_ICON}"
     COMMENT "Building the TIP icons from Icons/*.svg"
     VERBATIM)
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc" PROPERTIES
@@ -150,6 +151,8 @@ if(CHIAKEY_CSC)
          settings_manifest_path)
     file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/app.ico" settings_icon_path)
     # Load the window icon from the assembly, avoiding the shell's icon cache.
+    file(TO_NATIVE_PATH "${CHIAKEY_ICON_DIR}/phrase-editor.ico" phrase_icon_path)
+    list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${phrase_icon_path},phrase-editor.ico")
     list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${settings_icon_path},app.ico")
     add_custom_command(
         OUTPUT "${CHIAKEY_SETTINGS_EXE}"
@@ -164,7 +167,7 @@ if(CHIAKEY_CSC)
                 ${CHIAKEY_SETTINGS_ARGUMENTS}
         DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
-                "${CHIAKEY_ICON_DIR}/app.ico"
+                "${CHIAKEY_ICON_DIR}/app.ico" "${CHIAKEY_ICON_DIR}/phrase-editor.ico"
         COMMENT "Compiling ChiaKeySettings.exe"
         VERBATIM)
     add_custom_target(ChiaKeySettings ALL
