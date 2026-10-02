@@ -250,7 +250,7 @@ namespace ChiaKey.Settings
             var options = service.Preferences;
             options.SetBool("AutoUpdateApp", false); options.SetBool("AutoUpdateLexicon", true); options.Save();
             Check(!service.Preferences.GetBool("AutoUpdateApp", true) && service.Preferences.GetBool("AutoUpdateLexicon", true), "app opt-out preserves lexicon automatic updates");
-            manifest = Manifest("9999.1.3", dbHash, DateTime.UtcNow.ToString("o"));
+            manifest = Manifest("9999.1.4", dbHash, DateTime.UtcNow.ToString("o"));
             service.Fetch = delegate(string url, long limit)
             {
                 ++autoFetches;
