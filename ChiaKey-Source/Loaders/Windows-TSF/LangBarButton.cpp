@@ -148,7 +148,7 @@ STDMETHODIMP LangBarButton::GetTooltipString(BSTR* tooltip) {
 std::vector<LangBarButton::MenuItem> LangBarButton::menuItems() {
     std::vector<MenuItem> items;
     items.push_back({kMenuToggleLanguage,
-                     service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音", false});
+                     service_->isChineseMode() ? L"切換至英文" : L"切換至" + InputMethodName(CurrentInputMethod()), false});
     items.push_back({0, L"", false});
     const std::string selected = CurrentInputMethod();
     menuInputMethods_.clear();

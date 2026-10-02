@@ -147,11 +147,7 @@ long long SecondsSinceModified(const std::string& path) {
   const OVFileTimestamp modified = OVPathHelper::TimestampForPath(path);
   // a missing file hands back the zero timestamp
   if (modified.timestamp() == 0 && modified.subtimestamp() == 0) return -1;
-  long long modifiedSeconds = static_cast<long long>(modified.timestamp());
-#if defined(_WIN32)
-  // TimestampForPath preserves FILETIME's 1601 epoch; time() uses 1970.
-  modifiedSeconds -= 11644473600LL;
-#endif
+  const long long modifiedSeconds = static_cast<long long>(modified.timestamp());
   const long long age = static_cast<long long>(time(nullptr)) - modifiedSeconds;
   return age < 0 ? 0 : age;
 }
@@ -305,8 +301,10 @@ std::string FilterClause(const std::string& filter, std::vector<std::string>* pa
   // a filter that reads as Bopomofo also matches readings by whole-syllable prefix
   const std::string qstring = QstringFromComposed(filter);
   if (!qstring.empty()) {
-    clause += " OR (qstring LIKE ? ESCAPE '\\')";
-    parameters->push_back(EscapeForLike(qstring) + "%");
+    // Absolute-order syllable codes use both ASCII cases; LIKE folds them.
+    clause += " OR (substr(qstring, 1, length(?)) = ?)";
+    parameters->push_back(qstring);
+    parameters->push_back(qstring);
   }
   return clause;
 }
@@ -673,6 +671,15 @@ bool UserPhraseStore::setPhrase(long long rowid, const std::string& phrase) {
 bool UserPhraseStore::setReading(long long rowid, const std::string& reading) {
   const std::string qstring = QstringFromComposed(reading);
   if (qstring.empty()) return false;
+  {
+    Statement current(impl_->user, "SELECT current FROM user_unigrams WHERE rowid = ?");
+    if (!current) return false;
+    current.bind(1, rowid);
+    if (current.step() != SQLITE_ROW ||
+        qstring.size() / 2 != CodePoints(ColumnText(current.get(), 0)).size()) {
+      return false;
+    }
+  }
   Statement statement(impl_->user, "UPDATE user_unigrams SET qstring = ? WHERE rowid = ?");
   if (!statement) return false;
   statement.bind(1, qstring);

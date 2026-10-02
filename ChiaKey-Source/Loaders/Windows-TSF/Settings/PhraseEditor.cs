@@ -183,7 +183,7 @@ namespace ChiaKey.Settings
                 string mine = index < current.Length ? current[index] : "";
                 if (mine.Length > 0 && !box.Items.Contains(mine))
                     box.Items.Insert(0, mine);
-                box.SelectedIndex = mine.Length > 0 ? box.Items.IndexOf(mine) : 0;
+                box.SelectedIndex = mine.Length > 0 ? box.Items.IndexOf(mine) : (box.Items.Count > 0 ? 0 : -1);
                 cell.Controls.Add(box);
                 row.Controls.Add(cell);
                 syllables.Add(box);
@@ -196,6 +196,11 @@ namespace ChiaKey.Settings
             Button ok = new Button();
             ok.Text = "確定(&O)";
             ok.DialogResult = DialogResult.OK;
+            ok.Enabled = syllables.Count > 0 && syllables.TrueForAll(box => box.SelectedIndex >= 0);
+            foreach (ComboBox box in syllables)
+                box.SelectedIndexChanged += delegate {
+                    ok.Enabled = syllables.TrueForAll(item => item.SelectedIndex >= 0);
+                };
             ok.Bounds = new Rectangle(width - 184, buttonTop, 82, 26);
             Controls.Add(ok);
             Button cancel = new Button();

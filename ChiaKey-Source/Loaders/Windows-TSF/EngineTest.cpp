@@ -6,6 +6,7 @@
 #include "ChiaKeyEngine.h"
 #include "UpdateLexicon.h"
 #include "OutputFilter.h"
+#include <OVFileHelper.h>
 
 using namespace ChiaKey::WindowsTsf;
 
@@ -146,6 +147,31 @@ void TestUpdatePointers(const char* writable) {
     Check(UpdateLexiconCandidates(root).empty(), "oversized activation pointer is rejected");
 }
 
+void TestFileTimestamps(const char* writable) {
+    const std::string path = std::string(writable) + "/timestamp-test.txt";
+    std::ofstream(path) << "timestamp fixture";
+    const std::wstring wide = OpenVanilla::OVUTF16::FromUTF8(path);
+    HANDLE file = CreateFileW(wide.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ,
+                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    Check(file != INVALID_HANDLE_VALUE, "timestamp fixture can be opened");
+    if (file == INVALID_HANDLE_VALUE) return;
+    const ULONGLONG epoch = 116444736000000000ULL;
+    for (const ULONGLONG ticks : {epoch + 1700000000ULL * 10000000ULL + 1234567ULL,
+                                  epoch, epoch - 1}) {
+        ULARGE_INTEGER value;
+        value.QuadPart = ticks;
+        FILETIME time = {value.LowPart, value.HighPart};
+        Check(SetFileTime(file, nullptr, nullptr, &time) != 0, "fixture write time can be set");
+        const auto timestamp = OpenVanilla::OVPathHelper::TimestampForPath(path);
+        const ULONGLONG unixTicks = ticks > epoch ? ticks - epoch : 0;
+        Check(timestamp.timestamp() == static_cast<time_t>(unixTicks / 10000000ULL) &&
+                  timestamp.subtimestamp() == static_cast<time_t>(unixTicks % 10000000ULL),
+              "FILETIME uses Unix seconds and retains fractional ticks, clamping before epoch");
+    }
+    CloseHandle(file);
+    DeleteFileW(wide.c_str());
+}
+
 void TestSession() {
     std::unique_ptr<EngineSession> session = EngineSession::Create();
     Check(session && session->ready(), "session is ready");
@@ -274,7 +300,7 @@ void TestGenericInputMethods() {
     Type(*session, "hapi");
     EngineResult result = session->handleKey(Key(VK_SPACE));
     if (result.committedText != L"的") {
-        Check(result.candidatesVisible && result.candidates[0].text == L"的",
+        Check(result.candidatesVisible && !result.candidates.empty() && result.candidates[0].text == L"的",
               "Cangjie hapi offers 的");
         result = session->handleKey(Key('1'));
     }
@@ -292,7 +318,7 @@ void TestGenericInputMethods() {
     Type(*session, "ab");
     result = session->handleKey(Key(VK_SPACE));
     Check(result.committedText == L"測" || result.compositionText == L"測" ||
-              (result.candidatesVisible && result.candidates[0].text == L"測"),
+              (result.candidatesVisible && !result.candidates.empty() && result.candidates[0].text == L"測"),
           "the user table composes from its own chardef");
     session.reset();
 
@@ -361,6 +387,7 @@ int main(int argc, char* argv[]) {
     TestOutputConversion();
     TestKeys();
     TestUpdatePointers(argv[2]);
+    TestFileTimestamps(argv[2]);
     TestSession();
     TestSettings(argv[2]);
     TestGenericInputMethods();

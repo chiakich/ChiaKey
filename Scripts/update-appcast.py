@@ -60,5 +60,5 @@ if __name__ == "__main__":
     parser.add_argument("--platform", choices=["macos", "windows"], required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    result = merge(json.loads(Path(args.current).read_text()), json.loads(Path(args.entry).read_text()), args.platform)
-    Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+    result = merge(json.loads(Path(args.current).read_text(encoding="utf-8")), json.loads(Path(args.entry).read_text(encoding="utf-8")), args.platform)
+    Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

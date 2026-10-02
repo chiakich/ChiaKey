@@ -29,12 +29,12 @@ jobs:
           ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
       - uses: actions/download-artifact@v4
-        if: github.event_name != 'workflow_dispatch'
+        if: inputs.built_sha != ''
         with:
           name: joint-source
           path: source-snapshot
       - name: Restore joint source
-        if: github.event_name != 'workflow_dispatch'
+        if: inputs.built_sha != ''
         shell: bash
         env:
           BUILT_SHA: ${{ inputs.built_sha }}
@@ -73,12 +73,12 @@ jobs:
           ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
       - uses: actions/download-artifact@v4
-        if: github.event_name != 'workflow_dispatch'
+        if: inputs.built_sha != ''
         with:
           name: joint-source
           path: source-snapshot
       - name: Restore joint source
-        if: github.event_name != 'workflow_dispatch'
+        if: inputs.built_sha != ''
         shell: bash
         env:
           BUILT_SHA: ${{ inputs.built_sha }}
@@ -103,7 +103,7 @@ jobs:
           }
           $version = $Matches[1]
           $tag = '${{ inputs.tag }}'
-          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+          if ('${{ inputs.built_sha }}' -eq '') {
             if ($version -ne '0.1.0') { throw 'manual preview rebuild requires project version 0.1.0' }
             $tag = 'win-v0.1.0-beta.1'
           }

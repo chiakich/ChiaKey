@@ -349,8 +349,11 @@ class OVPathHelper {
       ULARGE_INTEGER ticks;
       ticks.LowPart = data.ftLastWriteTime.dwLowDateTime;
       ticks.HighPart = data.ftLastWriteTime.dwHighDateTime;
-      timestamp = OVFileTimestamp(static_cast<time_t>(ticks.QuadPart / 10000000ULL),
-                                  static_cast<time_t>(ticks.QuadPart % 10000000ULL));
+      // FILETIME starts in 1601; timestamp() uses Unix epoch seconds.
+      const ULONGLONG epochTicks = 116444736000000000ULL;
+      const ULONGLONG unixTicks = ticks.QuadPart > epochTicks ? ticks.QuadPart - epochTicks : 0;
+      timestamp = OVFileTimestamp(static_cast<time_t>(unixTicks / 10000000ULL),
+                                  static_cast<time_t>(unixTicks % 10000000ULL));
     }
 #else
 #error Sorry, no idea for Linux yet.

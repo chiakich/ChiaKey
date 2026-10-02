@@ -63,6 +63,20 @@ class ReleaseChangelogTests(unittest.TestCase):
         self.assertNotIn('Mac focus', windows)
         self.assertNotIn('legacy Mac symbols', windows)
 
+    def test_shared_paths_override_keywords_and_ios_only_is_excluded(self):
+        self.commit('fix: Windows and macOS shared input', 'ChiaKey-Source/Frameworks/ChiaKeyCore/Source/ChiaKeyCore.cpp')
+        self.commit('feat: iOS keyboard', 'ChiaKey-Source/Loaders/iOS/Keyboard.swift')
+        self.commit('feat: Windows iOS bridge', 'ChiaKey-Source/Loaders/iOS/Bridge.swift')
+        self.commit('fix: Unknown path fallback', 'unknown.txt')
+        for platform in ['macos', 'windows']:
+            notes = subprocess.check_output(
+                ['python3', str(ROOT / 'Scripts/generate-release-notes.py'), '--platform', platform, '--since', 'v1.2.6'],
+                cwd=self.repo, text=True)
+            self.assertIn('Windows and macOS shared input', notes)
+            self.assertIn('Unknown path fallback', notes)
+            self.assertNotIn('iOS keyboard', notes)
+            self.assertNotIn('iOS bridge', notes)
+
     def test_stable_notes_include_beta_series_and_no_repeat_after_release(self):
         self.commit('feat: Feature in beta', 'shared.cpp')
         self.git('tag', 'v1.2.7-beta.1')

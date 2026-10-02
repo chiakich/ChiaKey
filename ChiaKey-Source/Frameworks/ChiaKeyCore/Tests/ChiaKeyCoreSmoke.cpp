@@ -810,6 +810,24 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     if (store->add("三字詞", "ㄙㄢ", nullptr)) {
       return Fail("a reading shorter than the phrase was accepted");
     }
+    if (store->setReading(added.rowid, "ㄘㄜˋ") ||
+        store->setReading(added.rowid, "ㄘㄜˋ,ㄘˊ,ㄙㄢ") ||
+        store->setReading(-1, "ㄘㄜˋ,ㄘˊ")) {
+      return Fail("setReading accepted a missing row or a syllable count mismatch");
+    }
+    if (store->phrases("測詞", ChiaKey::UserPhraseOrder::Insertion, true, 0, 1)
+            .front().reading != "ㄘㄜˋ,ㄘˊ" ||
+        !store->setReading(added.rowid, "ㄘㄜˋ,ㄘˊ")) {
+      return Fail("setReading did not preserve or accept a matching reading");
+    }
+    // ㄘ and ㄉㄨ encode as A0 and a0, which SQLite LIKE treats as equal.
+    ChiaKey::UserPhrase upper, lower;
+    if (!store->add("甲", "ㄘ", &upper) || !store->add("乙", "ㄉㄨ", &lower) ||
+        store->count("ㄘ") != 1 || store->count("ㄉㄨ") != 1 ||
+        store->phrases("ㄘ", ChiaKey::UserPhraseOrder::Insertion, true, 0, 10).size() != 1) {
+      return Fail("reading prefix search confused ASCII cases in syllable codes");
+    }
+    store->remove({upper.rowid, lower.rowid});
     if (store->count("測") != 1 || store->count("ㄘㄜˋ") != 1 ||
         store->phrases("", ChiaKey::UserPhraseOrder::Insertion, false, 0, 1).front().phrase !=
             "測詞") {

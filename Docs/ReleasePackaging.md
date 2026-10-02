@@ -129,8 +129,9 @@ Scripts/build-release-package.sh --local-lexicon /path/to/ChiaKeySource.db
 notes_url、release_url。安裝檔使用不可變版本 URL、SHA-256 與首次公開時間。
 Windows 不再透過 `win-v*` tag 推送獨立發布。Windows build workflow 的手動執行
 僅建置同名 `win-v0.1.0-beta.1` 朋友測試預覽，不自動發布；建置與測試成功後
-替換原 GitHub release，不寫入 CDN。重發的預覽支援共同 `v*`、Windows CDN
-及既有 `win-v*` fallback；重發前的原建置需手動安裝一次新版。
+僅在原安裝檔下載次數為零時，才可同名替換原 GitHub release，不寫入 CDN。
+若已有使用者下載舊建置，則應使用新的預覽 tag 發布，且這些使用者仍須手動安裝新版。
+新版預覽支援共同 `v*`、Windows CDN 及既有 `win-v*` fallback。
 
 CDN 同時預檢兩平台 feed；只有讀取物件得到 404 才可初始化，403／5xx／逾時或
 資料不合法都會停止，不可當成空檔。Beta 保留 stable，stable 不覆蓋更新的 Beta。
@@ -143,7 +144,7 @@ R2 設定為實際發布的必要條件；dry_run 無須這些密鑰。
 | 參數 | 說明 |
 | --- | --- |
 | `release_type` | 依現有 tag 遞增下一版,預設 `patch`。`beta`→`vX.Y.Z-beta.N`(標為 prerelease);`patch`/`minor`/`major`→遞增對應位;`stable`→去掉 `-beta` 後綴。 |
-| `dry_run` | 只算 tag 與建置,不 push、不發佈。先驗證用。 |
+| `dry_run` | 建置、組裝並上傳完整 artifacts 與 notes 預覽；不推送版號提交或 tag、不建立 release、不寫入 CDN。 |
 
 ### 簽章 / notarization(可選)
 

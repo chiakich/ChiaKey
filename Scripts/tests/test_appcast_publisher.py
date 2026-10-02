@@ -68,6 +68,34 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(legacy, json.loads((objects / 'appcast.json').read_text()))
 
+    def test_beta_and_stable_keep_distinct_mac_packages(self):
+        self.env['TAG'] = 'v1.2.7-beta.1'
+        (self.release / 'ChiaKey-Windows-1.2.7-Setup.exe').rename(
+            self.release / 'ChiaKey-Windows-1.2.7-beta.1-Setup.exe')
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        objects = self.root / 'objects'
+        beta = json.loads((objects / 'appcast.json').read_text())['beta']
+        self.assertEqual(beta['package_name'], 'ChiaKey-1.2.7.pkg')
+        self.assertIn('/releases/v1.2.7-beta.1/', beta['package_url'])
+        self.assertFalse((objects / 'ChiaKey.pkg').exists())
+        (self.release / 'ChiaKey-1.2.7.pkg').write_bytes(b'stable mac')
+        self.env['TAG'] = 'v1.2.7'
+        (self.release / 'ChiaKey-Windows-1.2.7-beta.1-Setup.exe').rename(
+            self.release / 'ChiaKey-Windows-1.2.7-Setup.exe')
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((objects / 'releases/v1.2.7-beta.1/ChiaKey-1.2.7.pkg').read_bytes(), b'mac')
+        self.assertEqual((objects / 'releases/v1.2.7/ChiaKey-1.2.7.pkg').read_bytes(), b'stable mac')
+        self.assertEqual((objects / 'ChiaKey.pkg').read_bytes(), b'stable mac')
+
+    def test_ambiguous_mac_package_is_rejected(self):
+        (self.release / 'extra.pkg').write_bytes(b'extra')
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('exactly one macOS package', result.stderr)
+        self.assertFalse((self.root / 'calls').exists())
+
     def test_server_error_does_not_initialize_or_write_any_pointer(self):
         self.env['PUBLISH_FIXTURE_FAIL'] = 'appcast.json'
         result = self.publish()

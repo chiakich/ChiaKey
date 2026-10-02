@@ -17,23 +17,35 @@ def platforms(scope, description, paths):
         return {"macos"}
     if scope in {"ios"}:
         return set()
-    if not scope and re.search(r"\b(windows|win32|tsf|appcontainer|msvc)\b", description, re.I):
-        return {"windows"}
     found = set()
+    classified = False
+    unclassified = False
     for path in paths:
         if path.startswith(("Docs/", ".github/", "Scripts/tests/")) or path.lower().startswith("readme"):
             continue
         if path.startswith(("ChiaKey-Source/Loaders/Windows-TSF/", "Packaging/Windows/")):
+            classified = True
             found.add("windows")
         elif path.startswith("ChiaKey-Source/Loaders/iOS/"):
-            continue
+            classified = True
         elif (path.startswith("ChiaKey-Source/Loaders/OSX-IMK/") or
               "/OSX/" in path or path.endswith(".xcodeproj/project.pbxproj") or
               path in {"Scripts/build-release-package.sh", "Scripts/build-dev.sh"}):
+            classified = True
             found.add("macos")
-        else:
+        elif path.startswith(("ChiaKey-Source/Frameworks/", "ChiaKey-Source/ModulePackages/",
+                              "ChiaKey-Source/Loaders/CrossPlatform/")):
+            classified = True
             found.update({"macos", "windows"})
-    return found or {"macos", "windows"}
+        else:
+            unclassified = True
+    if classified:
+        if unclassified:
+            found.update({"macos", "windows"})
+        return found
+    if not scope and re.search(r"\b(windows|win32|tsf|appcontainer|msvc)\b", description, re.I):
+        return {"windows"}
+    return {"macos", "windows"}
 
 
 def generate(platform, since=None):

@@ -435,6 +435,7 @@ namespace ChiaKey.Settings
                     string previous = existing.Length > 0 && existing[0] != "" ? Component(existing[0]) : "";
                     AtomicText(pointer, Path.GetFileName(directory) + "\n" + previous + "\n");
                     activated = true;
+                    PruneDirectories(Path.Combine(lexicons, "versions"), Path.GetFileName(directory), previous);
                 }
                 finally { if (!activated) Directory.Delete(directory, true); }
             }
@@ -475,13 +476,32 @@ namespace ChiaKey.Settings
             }
         }
 
+        private static void PruneDirectories(string root, params string[] keep)
+        {
+            try
+            {
+                foreach (string directory in Directory.GetDirectories(root))
+                {
+                    if (Array.Exists(keep, name => string.Equals(name, Path.GetFileName(directory), StringComparison.OrdinalIgnoreCase))) continue;
+                    try { Directory.Delete(directory, true); }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
         internal string DownloadApp(UpdateOffer offer)
         {
             PrepareRoot();
             byte[] bytes = Fetch(offer.Url, 256L * 1024 * 1024);
             if (Hash(bytes) != offer.Sha256 || bytes.Length < 2 || bytes[0] != 'M' || bytes[1] != 'Z')
                 throw new InvalidDataException("本體更新校驗失敗，未執行安裝器。");
-            string directory = Path.Combine(Root, "Downloads", Guid.NewGuid().ToString("N"));
+            string downloads = Path.Combine(Root, "Downloads");
+            Directory.CreateDirectory(downloads);
+            PruneDirectories(downloads);
+            string directory = Path.Combine(downloads, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             string path = Path.Combine(directory, Component(offer.Filename));
             File.WriteAllBytes(path, bytes);

@@ -133,6 +133,17 @@ namespace ChiaKey.Settings
             Check(service.CurrentLexiconVersion() == "9999.1.1", "missing current falls back to previous");
             Check(service.CheckLexicon() != null, "failed release can be retried after rollback");
 
+            service.InstallLexicon(service.CheckLexicon());
+            string versionsRoot = Path.Combine(service.Root, "Lexicons", "versions");
+            string second = File.ReadAllLines(pointer)[0];
+            manifest = Manifest("9999.1.3", dbHash, "2020-01-01T00:00:00Z");
+            service.InstallLexicon(service.CheckLexicon());
+            lines = File.ReadAllLines(pointer);
+            Check(lines[1] == second && Directory.GetDirectories(versionsRoot).Length == 2,
+                "third update prunes versions older than current and previous");
+            Check(!Directory.Exists(Path.Combine(versionsRoot, firstPointer.Split('\n')[0])),
+                "oldest lexicon directory removed");
+
             string appName = "ChiaKey-Windows-0.2.0-beta.1-Setup.exe";
             byte[] appBytes = Encoding.ASCII.GetBytes("MZoffline installer fixture");
             string appHash = UpdateService.Hash(appBytes);
@@ -155,6 +166,11 @@ namespace ChiaKey.Settings
             UpdateOffer app = service.CheckApp(true);
             Check(app != null && app.Version == "0.2.0-beta.1", "Windows prerelease selected, Mac and drafts ignored");
             string installer = service.DownloadApp(app);
+            string oldInstaller = installer;
+            installer = service.DownloadApp(app);
+            Check(!Directory.Exists(Path.GetDirectoryName(oldInstaller)) &&
+                Directory.GetDirectories(Path.Combine(service.Root, "Downloads")).Length == 1,
+                "new installer download prunes old download directories");
             File.AppendAllText(installer, "tamper");
             Reject(delegate { UpdateService.InstallApp(installer, app.Sha256); }, "modified cached installer executed");
             app.Sha256 = new string('0', 64);

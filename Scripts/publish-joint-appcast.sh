@@ -37,7 +37,13 @@ published_at="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .publi
 version="${TAG#v}"
 prerelease=false
 [[ "$TAG" == *-beta.* ]] && prerelease=true
-pkg="$RELEASE_DIR/ChiaKey-$version.pkg"
+shopt -s nullglob
+packages=("$RELEASE_DIR"/*.pkg)
+if [[ "${#packages[@]}" -ne 1 ]]; then
+  echo "Expected exactly one macOS package in $RELEASE_DIR" >&2
+  exit 1
+fi
+pkg="${packages[0]}"
 exe="$RELEASE_DIR/ChiaKey-Windows-$version-Setup.exe"
 [[ -f "$pkg" && -f "$exe" ]]
 # Stage and validate BOTH feeds before changing any published pointer.
@@ -46,7 +52,7 @@ for platform in macos windows; do
   if [[ "$platform" == macos ]]; then
     current_key=appcast.json
     artifact="$pkg"
-    artifact_key="releases/$(basename "$artifact")"
+    artifact_key="releases/$TAG/$(basename "$artifact")"
   else
     artifact="$exe"
     artifact_key="updates/windows/releases/$TAG/$(basename "$artifact")"

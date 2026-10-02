@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -55,6 +58,21 @@ class JointReleaseTests(unittest.TestCase):
             self.assertIn(field, mac['stable'])
         self.assertTrue(mac['beta']['package_name'].endswith('.pkg'))
         self.assertTrue(win['stable']['package_name'].endswith('-Setup.exe'))
+
+    def test_appcast_cli_uses_utf8_under_ascii_locale(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'current.json').write_text('{"schema": 1}', encoding='utf-8')
+            value = entry('v1.2.7')
+            value['notes_url'] = 'https://example.invalid/中文說明.md'
+            (root / 'entry.json').write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
+            env = dict(os.environ, LC_ALL='C', PYTHONUTF8='0', PYTHONCOERCECLOCALE='0',
+                       PYTHONWARNDEFAULTENCODING='1', PYTHONWARNINGS='error::EncodingWarning')
+            subprocess.run([sys.executable, str(ROOT / 'Scripts/update-appcast.py'),
+                            '--current', str(root / 'current.json'), '--entry', str(root / 'entry.json'),
+                            '--output', str(root / 'output.json'), '--platform', 'macos'], env=env, check=True)
+            result = json.loads((root / 'output.json').read_text(encoding='utf-8'))
+            self.assertEqual(result['stable']['notes_url'], value['notes_url'])
 
     def test_no_release_body_until_both_matching_artifacts_exist(self):
         with tempfile.TemporaryDirectory() as directory:
