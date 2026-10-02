@@ -33,7 +33,7 @@ def assemble(directory, tag):
         if summary and raw:
             notes += f"\n\n<details>\n<summary>完整變更</summary>\n\n{raw}\n\n</details>"
         if platform == "windows":
-            notes += "\n\nWindows 安裝檔目前尚未簽章；ARM64 尚未支援。舊 win-v0.1.0-beta.1 使用者需手動安裝一次共同版本，之後即可追蹤 v* 更新。"
+            notes += "\n\nWindows 安裝檔目前尚未簽章；ARM64 尚未支援。同名重發的 win-v0.1.0-beta.1 測試預覽可直接追蹤 v* 更新；重發前的原建置需手動安裝一次新版。"
         (root / f"release-notes-{platform}.md").write_text(notes + "\n")
         sections.append(f"## {label}\n\n{notes}\n")
     sections.append("macOS 請下載 `.pkg`；Windows 請下載 `ChiaKey-Windows-" + version + "-Setup.exe`。\n")
