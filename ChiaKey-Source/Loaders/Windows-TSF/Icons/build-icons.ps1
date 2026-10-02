@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory = $true)] [string] $SvgDir,
     [Parameter(Mandatory = $true)] [string] $OutDir,
-    [Parameter(Mandatory = $true)] [string] $AppIconPath
+    [Parameter(Mandatory = $true)] [string] $AppIconPath,
+    [Parameter(Mandatory = $true)] [string] $PhraseIconPath
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
@@ -15,7 +16,8 @@ $modeSizes = 16, 20, 24, 32, 40, 48
 $badgeSizes = 16, 20, 24, 32, 40, 48, 64, 256
 $targets = @(
     @{ Name = 'badge'; Svg = 'qian'; Color = '#000000'; Sizes = $badgeSizes },
-    @{ Name = 'app'; Artwork = $true; Sizes = $badgeSizes },
+    @{ Name = 'app'; Artwork = $AppIconPath; Sizes = $badgeSizes },
+    @{ Name = 'phrase-editor'; Artwork = $PhraseIconPath; Sizes = $badgeSizes },
     @{ Name = 'chinese-on-light'; Svg = 'chinese'; Color = $onLight; Sizes = $modeSizes },
     @{ Name = 'chinese-on-dark'; Svg = 'chinese'; Color = $onDark; Sizes = $modeSizes },
     @{ Name = 'english-on-light'; Svg = 'english'; Color = $onLight; Sizes = $modeSizes },
@@ -34,7 +36,8 @@ $targets = @(
 
 # Use the actual Mac app icon's PNG representation, rather than a second copy
 # of the artwork. ICNS chunk lengths are big-endian and include the header.
-$icns = [IO.File]::ReadAllBytes($AppIconPath)
+function ReadMacIcon([string] $path) {
+$icns = [IO.File]::ReadAllBytes($path)
 $appBitmap = $null
 for ($at = 8; $at + 8 -le $icns.Length;) {
     $kind = [Text.Encoding]::ASCII.GetString($icns, $at, 4)
@@ -53,9 +56,11 @@ for ($at = 8; $at + 8 -le $icns.Length;) {
     }
     $at += $length
 }
-if (-not $appBitmap) { throw 'Mac app icon has no 1024px PNG representation' }
+if (-not $appBitmap) { throw 'Mac icon has no 1024px PNG representation' }
+return $appBitmap
+}
 
-function RenderApp([int] $size) {
+function RenderApp($appBitmap, [int] $size) {
     $visual = New-Object Windows.Media.DrawingVisual
     $dc = $visual.RenderOpen()
     $dc.DrawImage($appBitmap, ([Windows.Rect]::new(0, 0, $size, $size)))
@@ -122,12 +127,13 @@ function PngBytes($bitmap) {
 
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 foreach ($target in $targets) {
+    if ($target.Artwork) { $appBitmap = ReadMacIcon $target.Artwork }
     if (-not $target.Artwork) {
         [xml] $svg = [IO.File]::ReadAllText((Join-Path $SvgDir ($target.Svg + '.svg')), [Text.Encoding]::UTF8)
     }
     $images = @()
     foreach ($size in $target.Sizes) {
-        $bitmap = if ($target.Artwork) { RenderApp $size } else { Render $svg $target.Color $size }
+        $bitmap = if ($target.Artwork) { RenderApp $appBitmap $size } else { Render $svg $target.Color $size }
         # Vista and later read PNG entries; only 256 is worth compressing
         $images += , @($size, $(if ($size -ge 256) { PngBytes $bitmap } else { DibBytes $bitmap $size }))
     }
