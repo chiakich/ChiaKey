@@ -10,6 +10,7 @@
 
 官方網站：[千秋輸入法 ChiaKey](https://chiaki.ch/works/chiakey)  
 相關文章：[都 2026 年了，怎麼還有人在寫輸入法？](https://chiaki.ch/blog/writing-an-input-method-in-2026)  
+媒體報導：[免費資源網路社群：Yahoo 奇摩輸入法 macOS 27 不能用？千秋輸入法免費接棒](https://free.com.tw/chiakey/)  
 
 本專案專注於修復與更新輸入法本體，詞庫資料則使用 [千秋輸入法綜合詞庫](https://github.com/chiakich/ChiaKey-Lexicon)，遇到缺詞、選字錯誤問題，請至該專案反應。
 

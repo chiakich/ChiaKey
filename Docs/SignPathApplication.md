@@ -70,7 +70,9 @@ companion open source repository.
 ChiaKey has been developed in the open at https://github.com/chiakich/ChiaKey since June 2026
 and has shipped 14 macOS releases so far (current: v1.2.6) with 170+ cumulative release
 downloads, each built by a GitHub Actions workflow and distributed as an Apple-notarized,
-Developer ID-signed installer. The repository has 75 stars and 3 forks. The codebase descends
+Developer ID-signed installer. The repository has 75 stars and 3 forks. free.com.tw
+(免費資源網路社群), a long-running Taiwanese freeware blog, published a hands-on review and
+tutorial of ChiaKey in September 2026: https://free.com.tw/chiakey/ The codebase descends
 from Yahoo! KeyKey, a widely used Traditional Chinese input method in Taiwan, which Yahoo
 open-sourced in 2012. The Windows version is built by the same CI from the same source tree,
 and nothing is uploaded from a developer machine.

@@ -10,6 +10,7 @@ ChiaKey is a Traditional Chinese Bopomofo input method for macOS. It is built on
 
 Official website: [ChiaKey](https://chiaki.ch/works/chiakey)
 Related article: [It's 2026 — why is anyone still writing an input method?](https://chiaki.ch/blog/writing-an-input-method-in-2026)
+Media coverage: [free.com.tw — "Yahoo! KeyKey can't run on macOS 27? ChiaKey takes over for free" (in Traditional Chinese)](https://free.com.tw/chiakey/)
 
 This project focuses on fixing and updating the input method itself; the lexicon data comes from the [ChiaKey Lexicon](https://github.com/chiakich/ChiaKey-Lexicon). Please report missing phrases or wrong candidates in that repository.
 
