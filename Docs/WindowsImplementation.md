@@ -7,22 +7,26 @@
 
 ## 目前狀態
 
-### 分開發版
+### 共同發版
 
-目前 macOS 使用 `vX.Y.Z`（含 `-beta.N`），Windows 使用 `win-vX.Y.Z`（含
-`-beta.N`）。Windows release 一律標為 Pre-release，並明確設定 `--latest=false`；
-只有 macOS 流程會發布 macOS 更新 manifest。兩個平台的版本各自遞增。
+自 `v1.2.7` 起兩平台共用 `vX.Y.Z`／`vX.Y.Z-beta.N`，同一 GitHub release
+包含 macOS `.pkg`、Windows `Setup.exe`、兩者的 `SHA256SUMS.txt` 及平台 notes。
+Windows 仍標示為預覽版，GitHub release 的 stable／Beta 標記由共同版號決定。
+兩邊成功才公開 release，draft 期間先上傳完整產物，避免舊 mac 更新器看到缺少
+`.pkg` 的版本。`.github/workflows/release-windows.yml` 只供共同流程建置，不再
+透過推送 `win-v*` 單獨發布。
 
-提交使用 `feat(win):`、`fix(win):` 等標示 Windows 專屬改動；macOS 使用
-`mac`，共用核心使用 `core`。macOS release notes 在 AI 摘要前排除 `win`、
-`windows`、`ios` scope，並以 Windows 專屬檔案路徑補判沒有 scope 的舊提交。
-涉及共用程式碼的提交會保留，避免漏掉跨平台修正。
+macOS 沿用 `/chiakey/appcast.json` 的 schema 1、頂層 stable／beta 與 `.pkg` URL。
+平台 feed 在 `/chiakey/updates/macos/appcast.json` 與
+`/chiakey/updates/windows/appcast.json`，同樣使用 schema 1，加上 platform 與
+平台專屬 notes_url。詞庫維持既有共用介面。
+Windows 先讀自己的 CDN feed，並與 GitHub SHA256SUMS.txt 交叉核對；失敗時
+回到 GitHub，辨識共同 `v*` 及舊 `win-v*`，依實際 Windows installer 篩選。
+舊 `win-v0.1.0-beta.1` 使用者必須手動安裝一次共同版本。
 
-新版 macOS 更新器只接受 `vX.Y.Z`／`vX.Y.Z-beta.N` 與可用的 `.pkg`。
-已安裝的舊版不會得到這項篩選：未接受 Beta 者略過 Windows Pre-release；
-接受 Beta 者仍依數字版號比較。目前 Windows `0.1.0-beta.1` 低於 macOS
-`1.2.6`，不會取代它；若未來 Windows 版號較高，舊版 Beta 使用者仍可能
-看到無法安裝的 Windows 更新。需要完全隔離時應改用獨立 release 倉庫。
+使用者可見變更寫在 `ReleaseNotes/*.json`，明確列出 macos／windows 平台；
+共用核心改動不會自動被當成雙平台新功能。scope 可繼續使用 mac／win／core，
+但 release notes 由平台變更檔產生，詳見 `ReleaseNotes/README.md`。
 
 `.github/workflows/core-msvc.yml` 在 `windows-latest` 上編譯核心並跑 smoke test，
 另一個 job 編譯 TSF 前端（DLL、圖示、設定程式）並跑 `chiakey_tsf_engine_test`。
@@ -165,8 +169,8 @@ TSF 前端換成 `ChiaKey-Source\Loaders\Windows-TSF` 當 `-S`，產出的 `Chia
 每天最多連網檢查一次，發布滿三天才自動安裝。下載與 DB 完整性驗證在 helper／
 設定程式的背景執行緒處理，TSF DLL 不連網。失敗原因與最後檢查結果可在更新頁看到。
 
-本體只接受 `chiakich/ChiaKey` 的 `win-vX.Y.Z` 或 `win-vX.Y.Z-beta.N` release（含目前的預覽版，排除
-draft），尋找版本相符的 `ChiaKey-Windows-X.Y.Z-Setup.exe`，核對該 release 的
+本體接受 `chiakich/ChiaKey` 的共同 `vX.Y.Z`／`vX.Y.Z-beta.N`，
+也相容舊 `win-vX.Y.Z`／`win-vX.Y.Z-beta.N` release（排除 draft），尋找版本相符的 `ChiaKey-Windows-X.Y.Z-Setup.exe`，核對該 release 的
 `SHA256SUMS.txt`。安裝前再核對下載內容，透過 Windows `runas` 啟動 Inno 安裝器，
 使用者仍須回應 UAC 並完成安裝流程；取消不更動現有安裝。舊應用程式仍保留原 DLL，
 重新開啟才載入新版。新安裝器以原始桌面使用者執行 `/update-register`，把登入啟動
