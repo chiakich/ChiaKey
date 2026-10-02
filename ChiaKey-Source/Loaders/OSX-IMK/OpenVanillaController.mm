@@ -155,6 +155,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 + (void)_applicationDeactivated:(NSNotification *)notification {
   NSRunningApplication *application =
       [[notification userInfo] objectForKey:NSWorkspaceApplicationKey];
+  [OpenVanillaLoader sharedLoader]->syncLoaderConfig();
   OVCTemporaryEnglish.deactivateApplication(
       [application processIdentifier],
       OVCResetTemporaryEnglishOnApplicationSwitch());
@@ -512,6 +513,8 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   // Each -bundleIdentifier is a synchronous round trip to the client, so ask
   // once and reuse it for every app-specific check below.
   NSString *clientBundleIdentifier = [sender bundleIdentifier];
+  // Apply preference changes before deciding whether to reset Shift English.
+  [OpenVanillaLoader sharedLoader]->syncLoaderConfig();
   OVCTemporaryEnglish.activateApplication(
       [[[NSWorkspace sharedWorkspace] frontmostApplication] processIdentifier],
       [clientBundleIdentifier UTF8String],
@@ -530,8 +533,6 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   }
 
   [[OpenVanillaLoader sharedInstance] syncUserCannedMessages];
-
-  [OpenVanillaLoader sharedLoader]->syncLoaderConfig();
   OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
   string style = kvm.stringValueForKey("OneDimensionalCandidatePanelStyle");
   if (OVWildcard::Match(style, "horizontal")) {
