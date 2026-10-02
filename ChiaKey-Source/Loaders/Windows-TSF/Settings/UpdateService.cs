@@ -302,10 +302,12 @@ namespace ChiaKey.Settings
                     string url = null, checksum = null;
                     foreach (var asset in Items(release["assets"]))
                     {
-                        if (Text(asset, "name") == name) url = AllowedUrl(Text(asset, "browser_download_url"), AppRepository + tag + "/");
-                        if (Text(asset, "name") == "SHA256SUMS.txt") checksum = AllowedUrl(Text(asset, "browser_download_url"), AppRepository + tag + "/");
+                        if (Text(asset, "name") == name) url = Text(asset, "browser_download_url");
+                        if (Text(asset, "name") == "SHA256SUMS.txt") checksum = Text(asset, "browser_download_url");
                     }
                     if (url == null || checksum == null) continue;
+                    url = AllowedUrl(url, AppRepository + tag + "/");
+                    checksum = AllowedUrl(checksum, AppRepository + tag + "/");
                     newest = new UpdateOffer { Version = version, Filename = name, Url = url,
                         Sha256 = ListedDigest(Utf8.GetString(Fetch(checksum, 1024 * 1024)), name),
                         Published = Date(Text(release, "published_at")) };
