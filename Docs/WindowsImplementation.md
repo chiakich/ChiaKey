@@ -7,6 +7,23 @@
 
 ## 目前狀態
 
+### 分開發版
+
+目前 macOS 使用 `vX.Y.Z`（含 `-beta.N`），Windows 使用 `win-vX.Y.Z`（含
+`-beta.N`）。Windows release 一律標為 Pre-release，並明確設定 `--latest=false`；
+只有 macOS 流程會發布 macOS 更新 manifest。兩個平台的版本各自遞增。
+
+提交使用 `feat(win):`、`fix(win):` 等標示 Windows 專屬改動；macOS 使用
+`mac`，共用核心使用 `core`。macOS release notes 在 AI 摘要前排除 `win`、
+`windows`、`ios` scope，並以 Windows 專屬檔案路徑補判沒有 scope 的舊提交。
+涉及共用程式碼的提交會保留，避免漏掉跨平台修正。
+
+新版 macOS 更新器只接受 `vX.Y.Z`／`vX.Y.Z-beta.N` 與可用的 `.pkg`。
+已安裝的舊版不會得到這項篩選：未接受 Beta 者略過 Windows Pre-release；
+接受 Beta 者仍依數字版號比較。目前 Windows `0.1.0-beta.1` 低於 macOS
+`1.2.6`，不會取代它；若未來 Windows 版號較高，舊版 Beta 使用者仍可能
+看到無法安裝的 Windows 更新。需要完全隔離時應改用獨立 release 倉庫。
+
 `.github/workflows/core-msvc.yml` 在 `windows-latest` 上編譯核心並跑 smoke test，
 另一個 job 編譯 TSF 前端（DLL、圖示、設定程式）並跑 `chiakey_tsf_engine_test`。
 詞庫不在 git 裡，所以由一個 `macos-26` job 用 `install-lexicon-release.sh

@@ -141,5 +141,5 @@ jobs:
           printf '\n```text\n%s\n```\n' "$(cat dist/SHA256SUMS.txt)" >> notes.md
           # a Pre-release never becomes Latest, so it stays out of the mac updater's way
           gh release create "$GITHUB_REF_NAME" dist/* \
-            --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --latest=false \
             --title "千秋輸入法 Windows 版 $VERSION（預覽）" --notes-file notes.md
