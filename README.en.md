@@ -70,7 +70,7 @@ The Windows version is currently a preview, versioned with a `win-v` prefix and 
 - Apps that are already open need to be restarted to load the input method. If ChiaKey doesn't appear in your input method list, add "Chinese (Traditional, Taiwan)" under "Settings > Time & language > Language & region".
 - The current installer is **unsigned** (see the [Code signing policy](#code-signing-policy) below). SmartScreen will show a warning on first run — choose "More info > Run anyway". Machines with Smart App Control enabled will block it outright for now.
 - To uninstall, use "Settings > Apps > Installed apps" → "ChiaKey". User phrases, learning data and settings live in `%APPDATA%\ChiaKey` and are kept when you uninstall.
-- "Preferences > Update" can check for and install app and lexicon updates, each with its own opt-in auto-update (off by default). When enabled it checks daily and only auto-updates releases that have been out for three days; the app update needs a Windows privilege confirmation. The lexicon is switched at composition end after validation, keeping the old one if validation fails. Update settings and external lexicons live in `%APPDATA%\ChiaKeyUpdates`.
+- "Preferences > Update" can check for and install app and lexicon updates, each with its own auto-update switch (both on by default; either can be turned off). "Accept Beta versions" is off by default. When enabled it checks daily and only auto-updates releases that have been out for three days; the app update needs a Windows privilege confirmation. The lexicon is switched at composition end after validation, keeping the old one if validation fails. Update settings and external lexicons live in `%APPDATA%\ChiaKeyUpdates`.
 
 ## Code signing policy
 
@@ -86,8 +86,9 @@ the Windows release files are unsigned.
   No third-party binaries are redistributed.
 - **Privacy.** Typing remains offline. The separate update helper connects to ChiaKey's
   GitHub releases and lexicon CDN only when checking or downloading updates; automatic
-  updates are opt-in. It never sends typed text, phrases, or learning data. Your phrases
-  and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
+  updates are enabled by default and can be disabled separately for the app and lexicon
+  in Preferences > Update. Beta updates are off by default. It never sends typed text,
+  phrases, or learning data. Your phrases and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
 
 ## Who is this for
 
