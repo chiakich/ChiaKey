@@ -70,7 +70,7 @@ Windows 版目前是預覽版，以 `win-v` 開頭的版本號，在 [GitHub Rel
 - 安裝後，已經開著的程式要重新開啟才會載入輸入法。若輸入法清單裡沒有千秋輸入法，請到「設定 > 時間與語言 > 語言與地區」加入「中文 (繁體，台灣)」。
 - 目前的安裝檔**尚未簽章**（見下方 [Code signing policy](#code-signing-policy)）。下載後執行時 SmartScreen 會跳出警告，按「其他資訊 > 仍要執行」即可；開啟了「智慧型應用程式控制」（Smart App Control）的電腦則會直接擋下，暫時無法使用。
 - 解除安裝：「設定 > 應用程式 > 已安裝的應用程式」中的「千秋輸入法」。自訂詞、學習記錄與設定存在 `%APPDATA%\ChiaKey`，解除安裝時會保留。
-- 「偏好設定 > 更新」可檢查並安裝本體與詞庫更新，也可分別開啟自動更新（預設關閉）。開啟後每天檢查一次，發布滿三天才自動更新；本體安裝需要 Windows 權限確認。詞庫驗證通過後於組字結束時切換，失敗則保留舊版。更新設定與外部詞庫存於 `%APPDATA%\ChiaKeyUpdates`。
+- 「偏好設定 > 更新」可檢查並安裝本體與詞庫更新，本體與詞庫的自動更新各有獨立開關（預設皆開啟），可分別關閉；「接受 Beta 版」預設關閉。自動更新每天檢查一次，發布滿三天才自動更新；本體安裝需要 Windows 權限確認。詞庫驗證通過後於組字結束時切換，失敗則保留舊版。更新設定與外部詞庫存於 `%APPDATA%\ChiaKeyUpdates`。
 
 ## Code signing policy
 
@@ -86,8 +86,9 @@ the Windows release files are unsigned.
   No third-party binaries are redistributed.
 - **Privacy.** Typing remains offline. The separate update helper connects to ChiaKey's
   GitHub releases and lexicon CDN only when checking or downloading updates; automatic
-  updates are opt-in. It never sends typed text, phrases, or learning data. Your phrases
-  and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
+  updates are enabled by default and can be disabled separately for the app and lexicon
+  in Preferences > Update. Beta updates are off by default. It never sends typed text,
+  phrases, or learning data. Your phrases and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
 
 ## 適合誰使用
 
