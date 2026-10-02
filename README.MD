@@ -1,3 +1,5 @@
+繁體中文 · [English](README.en.md)
+
 # 千秋輸入法 ChiaKey
 
 <img width="256" height="256" alt="千秋輸入法 ChiaKey" src="Docs/images/chiakey-icon.png" />

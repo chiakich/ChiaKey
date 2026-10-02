@@ -26,20 +26,31 @@ Windows 版的程式碼簽章打算申請 [SignPath Foundation](https://signpath
 
 ## 表單答案
 
+欄位以 2026-10-02 在 [signpath.org/apply.html](https://signpath.org/apply.html) 實際讀到的表單為準（HubSpot 嵌入表單，綁 reCAPTCHA Enterprise）。
+
 | 欄位 | 內容 |
 |---|---|
-| Name | `ChiaKey` |
-| Handle | `chiakey` |
-| Type | `Program` |
-| License | `BSD 3-Clause "New" or "Revised" License` — `https://opensource.org/license/bsd-3-clause` |
-| Repository URL | `https://github.com/chiakich/ChiaKey` |
-| Homepage URL | `https://chiaki.ch/works/chiakey` |
+| Project Name* | `ChiaKey` |
+| Repository URL* | `https://github.com/chiakich/ChiaKey` |
+| Homepage URL* | `https://chiaki.ch/works/chiakey` |
 | Download URL | `https://github.com/chiakich/ChiaKey/releases` |
 | Privacy Policy URL | `https://github.com/chiakich/ChiaKey#code-signing-policy` |
-| Wikipedia URL | （留空） |
-| Tagline | `A Traditional Chinese input method for macOS and Windows, reviving Yahoo! KeyKey` |
-| User Full Name / Email | 本人姓名與信箱 |
-| Build System | `GitHub Actions` |
+| Wikipedia URL (optional) | （留空） |
+| Tagline* | `A Traditional Chinese input method for macOS and Windows, reviving Yahoo! KeyKey` |
+| Description* | 見下方 |
+| Reputation* | 見下方（數字送出前更新） |
+| Maintainer Type | `Individual maintainer(s)` |
+| Build System* | `GitHub Actions` |
+| First Name* / Last Name* | 本人姓名（成為 SignPath 帳號名稱） |
+| Email* | 本人信箱（帳號與審核通知） |
+| Company Name | （留空） |
+| Primary Discovery Channel* | 據實填寫；「exact source」可寫 `ZCode (AI coding assistant)` |
+
+勾選框：
+
+1. 「I have read and agree to the SignPath Foundation Code of Conduct…certificates are issued in SignPath Foundation's name…」— **必勾**。
+2. 「I agree to receive other communications from SignPath.」— 行銷信，自由勾選。
+3. 「I agree to allow SignPath to store and process my personal data.」— **必勾**。
 
 **Description**
 
@@ -57,14 +68,15 @@ companion open source repository.
 
 ```text
 ChiaKey has been developed in the open at https://github.com/chiakich/ChiaKey since June 2026
-and has shipped 14 macOS releases so far (current: v1.2.6), each built by a GitHub Actions
-workflow and distributed as an Apple-notarized, Developer ID-signed installer. The repository
-has 75 stars and 3 forks. The codebase descends from Yahoo! KeyKey, a widely used Traditional
-Chinese input method in Taiwan, which Yahoo open-sourced in 2012. The Windows version is built
-by the same CI from the same source tree, and nothing is uploaded from a developer machine.
+and has shipped 14 macOS releases so far (current: v1.2.6) with 170+ cumulative release
+downloads, each built by a GitHub Actions workflow and distributed as an Apple-notarized,
+Developer ID-signed installer. The repository has 75 stars and 3 forks. The codebase descends
+from Yahoo! KeyKey, a widely used Traditional Chinese input method in Taiwan, which Yahoo
+open-sourced in 2012. The Windows version is built by the same CI from the same source tree,
+and nothing is uploaded from a developer machine.
 ```
 
-最後勾選「I hereby accept the terms of use」。
+核准後在 SignPath 建立專案時會用到：Handle `chiakey`、Type `Program`、License `BSD 3-Clause "New" or "Revised" License`（`https://opensource.org/license/bsd-3-clause`）。
 
 ## 隱私說明要照實寫
 
