@@ -30,6 +30,7 @@ file for terms.
   IBOutlet id _useCtrlBackSlashToggleInputMethod;
   IBOutlet id _applyCapsLockDelayOverrideCheckBox;
   IBOutlet id _shiftTogglesTemporaryEnglishCheckBox;
+  IBOutlet id _resetTemporaryEnglishOnApplicationSwitchCheckBox;
 
   NSMutableDictionary *_takaoDictionary;
   NSString *_preferenceFilePath;

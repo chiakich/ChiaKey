@@ -64,6 +64,12 @@ static BOOL OVCShiftTogglesTemporaryEnglish() {
   return kvm.stringValueForKey("ShiftTogglesTemporaryEnglish") != "false";
 }
 
+static BOOL OVCResetTemporaryEnglishOnApplicationSwitch() {
+  OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
+  return kvm.stringValueForKey("ResetTemporaryEnglishOnApplicationSwitch") !=
+         "false";
+}
+
 static UniChar OVCAsciiDigitForVirtualKeyCode(unsigned short virtualKeyCode) {
   switch (virtualKeyCode) {
     case 0x12:
@@ -149,7 +155,9 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 + (void)_applicationDeactivated:(NSNotification *)notification {
   NSRunningApplication *application =
       [[notification userInfo] objectForKey:NSWorkspaceApplicationKey];
-  OVCTemporaryEnglish.deactivateApplication([application processIdentifier]);
+  OVCTemporaryEnglish.deactivateApplication(
+      [application processIdentifier],
+      OVCResetTemporaryEnglishOnApplicationSwitch());
 }
 
 + (void)_inputSourceChanged:(NSNotification *)notification {
@@ -506,7 +514,8 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   NSString *clientBundleIdentifier = [sender bundleIdentifier];
   OVCTemporaryEnglish.activateApplication(
       [[[NSWorkspace sharedWorkspace] frontmostApplication] processIdentifier],
-      [clientBundleIdentifier UTF8String]);
+      [clientBundleIdentifier UTF8String],
+      OVCResetTemporaryEnglishOnApplicationSwitch());
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
   if ([clientBundleIdentifier isEqualToString:@"com.apple.Terminal"]) {
