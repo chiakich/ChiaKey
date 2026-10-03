@@ -1,9 +1,9 @@
 # 專案目錄結構
 
-最後更新：2026-09-18
+最後更新：2026-10-03
 
 這份文件固定 ChiaKey repo 的資料夾分工。整理原則是：現有 macOS
-InputMethodKit target 先不做破壞性搬移；新的跨平台核心與 iOS repo
+InputMethodKit target 先不做破壞性搬移；共用輸入核心、Windows TSF host 與獨立 iOS repo
 放在清楚的邊界裡，讓後續 Xcode target、Swift Package 或 submodule 可以逐步接上。
 
 ## Top Level
@@ -11,8 +11,10 @@ InputMethodKit target 先不做破壞性搬移；新的跨平台核心與 iOS re
 ```text
 .
 ├── ChiaKey-Source/      # 主要 source tree
-├── Docs/                # 架構、iOS 實作、詞庫 contract、roadmap、目錄結構
+├── Docs/                # 架構、Windows / iOS 實作、詞庫 contract、roadmap、目錄結構
 ├── Scripts/             # 本機 build、install、驗證與維護 scripts
+├── Packaging/           # Windows Inno Setup 安裝器
+├── CONTRIBUTING.md      # macOS / Windows 開發與 commit message 規則
 ├── KeyKey.xcworkspace   # workspace 入口
 ├── README.MD
 └── LICENSE
@@ -70,7 +72,7 @@ build 檔請以它為準。plist 走 `PVPropertyListExpat.cpp`，需要 expat。
 1. 跨平台 engine facade。
 2. host-neutral state snapshot。
 3. Swift/ObjC++ 可接的 C ABI bridge。
-4. macOS / iOS 都能使用的 C++ tests。
+4. macOS / Windows / iOS 都能使用的 C++ tests。
 
 不要放在這裡：
 
@@ -96,11 +98,16 @@ build 檔請以它為準。plist 走 `PVPropertyListExpat.cpp`，需要 expat。
 ChiaKey-Source/Loaders/
 ├── CrossPlatform/       # macOS host 目前仍使用的 shared loader helpers
 ├── OSX-IMK/             # 目前發佈中的 macOS InputMethodKit host
+├── Windows-TSF/         # Windows TSF host、設定程式與更新 helper
 └── iOS-Keyboard/        # iOS host placeholder; implementation can live in a separate repo
 ```
 
 `OSX-IMK` 已被 `Takao.xcodeproj` 大量引用。除非一起做 Xcode project
 migration，否則不要直接更名或搬動這個資料夾。
+
+`Windows-TSF` 透過 `ChiaKeyEngine` 接入 `ChiaKeyCore`，使用 CMake / MSVC 建置。
+開發流程見 [CONTRIBUTING.md](../CONTRIBUTING.md#windows-開發)，平台架構與限制見
+[WindowsImplementation.md](WindowsImplementation.md)。
 
 `iOS-Keyboard` 目前只保留平台位置；實際 iOS app / keyboard extension 可放在
 獨立 repo。iOS repo 應只透過 `ChiaKeyCore` 接主 repo，不直接把 host code

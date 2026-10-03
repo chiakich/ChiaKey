@@ -377,14 +377,22 @@ static NSComparisonResult CKCompareIdentifier(NSString *lhs, NSString *rhs) {
   return [formatter dateFromString:string];
 }
 
+- (BOOL)_isMacReleaseTag:(id)tag {
+  if (![tag isKindOfClass:[NSString class]]) return NO;
+  return [tag rangeOfString:@"^v[0-9]+\\.[0-9]+\\.[0-9]+(-beta\\.[1-9][0-9]*)?$"
+                   options:NSRegularExpressionSearch].location != NSNotFound;
+}
+
 - (ChiaKeyUpdateRelease *)_releaseFromJSON:(NSDictionary *)json {
   NSString *tag = [json objectForKey:@"tag_name"];
-  if (![tag isKindOfClass:[NSString class]] || ![tag length]) return nil;
+  if (![self _isMacReleaseTag:tag]) return nil;
 
   NSDictionary *asset = [self _packageAssetFromRelease:json];
   NSString *releaseURL = [json objectForKey:@"html_url"];
   NSString *packageURL = [asset objectForKey:@"browser_download_url"];
   NSString *packageName = [asset objectForKey:@"name"];
+  if (![packageURL isKindOfClass:[NSString class]] || ![packageURL length])
+    return nil;
 
   ChiaKeyUpdateRelease *release =
       [[[ChiaKeyUpdateRelease alloc] init] autorelease];
@@ -411,7 +419,7 @@ static NSComparisonResult CKCompareIdentifier(NSString *lhs, NSString *rhs) {
 
   NSString *tag = [entry objectForKey:@"tag"];
   NSString *packageURL = [entry objectForKey:@"package_url"];
-  if (![tag isKindOfClass:[NSString class]] || ![tag length]) return nil;
+  if (![self _isMacReleaseTag:tag]) return nil;
   if (![packageURL isKindOfClass:[NSString class]] || ![packageURL length])
     return nil;
 

@@ -1,0 +1,23 @@
+LIBRARY "ChiaKeyTsf"
+
+EXPORTS
+    DllCanUnloadNow PRIVATE
+    DllGetClassObject PRIVATE
+    DllRegisterServer PRIVATE
+    DllUnregisterServer PRIVATE
+    ChiaKeyPhrasesOpen
+    ChiaKeyPhrasesClose
+    ChiaKeyPhrasesBeginSession
+    ChiaKeyPhrasesRefreshSession
+    ChiaKeyPhrasesEndSession
+    ChiaKeyPhrasesCount
+    ChiaKeyPhrasesList
+    ChiaKeyPhrasesContains
+    ChiaKeyPhrasesAdd
+    ChiaKeyPhrasesSetPhrase
+    ChiaKeyPhrasesSetReading
+    ChiaKeyPhrasesRemove
+    ChiaKeyPhrasesReadings
+    ChiaKeyPhrasesExport
+    ChiaKeyPhrasesImport
+    ChiaKeyUpdatesValidateCore

@@ -66,6 +66,8 @@ struct CandidateState {
   std::vector<std::string> candidates;
   // aligned with candidates; true = the preceding text promotes this pick
   std::vector<bool> contextPicks;
+  // one per candidate on the current page, as the user types them
+  std::vector<std::string> selectionKeys;
   std::size_t currentPage = 0;
   std::size_t pageCount = 0;
   std::size_t candidatesPerPage = 0;
@@ -85,6 +87,23 @@ struct EngineState {
   CandidateState candidateState;
   bool beeped = false;
   std::vector<std::string> notifications;
+};
+
+struct SymbolItem {
+  // what is typed
+  std::string text;
+  // what is shown, when it differs from text
+  std::string label;
+  // from the category's SymbolMetadata, if any
+  std::string name;
+  std::string description;
+};
+
+struct SymbolCategory {
+  std::string name;
+  // a grid of single symbols; otherwise a list of canned messages
+  bool buttons = false;
+  std::vector<SymbolItem> items;
 };
 
 class Engine;
@@ -121,6 +140,16 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
   // Rebuilds every Engine's context: any composition in progress is dropped.
   void setAssociatedPhrasesEnabled(bool enabled);
 
+  // The symbol table: the lexicon's canned_messages, then UserCannedMessages.plist
+  // and UserCannedMessages.txt under writablePath, read afresh on every call.
+  std::vector<SymbolCategory> symbolCategories() const;
+  // UserCannedMessages.txt, created with its header line if missing
+  std::string userCannedMessagesPath() const;
+
+  // For when a phrase editor has changed the user database (its dirty flag
+  // moved): drops what Smart Mandarin cached and reads the user tables again.
+  void reloadUserPhrases();
+
   static const char* SmartMandarinIdentifier();
   static const char* TraditionalMandarinIdentifier();
 
@@ -152,6 +181,8 @@ class Engine {
   void reset();
 
   EngineState snapshot() const;
+  // what snapshot() would report as reading, composing text or a visible panel
+  bool isComposing() const;
   void acknowledgeCommit();
 
   std::shared_ptr<Runtime> runtime() const;

@@ -105,20 +105,46 @@ Scripts/build-release-package.sh --local-lexicon /path/to/ChiaKeySource.db
 
 流程：
 
-1. 從現有 tag 算出下一個版本 tag(若已存在則中止)。
-2. 在 macOS runner 執行 `Scripts/build-release-package.sh` 產生 `.pkg`。
-3. push tag。
-4. 建立 GitHub Release,用 `generate_release_notes` 自動 summary 這版改動,並附上 `.pkg`。
+1. 從目前原始碼可達的 `v*` tag 計算共同版號（預設 patch；v1.2.6 的下一版是 v1.2.7）。
+2. 同步調整 macOS 的兩份 plist、Windows CMake 版號，保存確切提交的 Git bundle。
+3. 建置並驗證 macOS `.pkg`；Windows reusable workflow 從同一 bundle 建置 x64／x86
+   DLL、設定程式、離線測試與 Inno Setup installer。任一失敗都不發布。
+4. 從上次共同 tag 的 conventional commit messages 依平台收集變更，分別產生 AI 摘要。
+   `feat(win)`／`fix(win)` 僅 Windows，`feat(mac)`／`fix(mac)` 僅 macOS；未指定平台
+   的使用者變更預設共用，既有無 scope 提交依 Windows 關鍵字與檔案路徑分流。
+   收集 feat／fix／perf／revert，略過 docs／ci／test／refactor／chore 等內部提交。
+   可用 `notes_macos`／`notes_windows` 在 workflow 輸入補充 Markdown，原文追加至
+   平台 notes 與 CDN notes，不經 AI 改寫；無須維護每項變更的額外文件。
+   stable 版的基準是上次 stable，包含整個 Beta 系列；AI 失敗使用平台原始清單。
+5. 合併兩平台 SHA256SUMS.txt 與 notes，確認產物版號；dry_run 在此上傳完整
+   artifacts 與 notes 預覽，不推送版號提交、tag，不建立 release，也不寫入 CDN。
+6. 實際發布時推送兩平台確實建置的提交與共同 tag。原分支若已移動則中止，不 rebase。
+7. 完整產物先上傳 GitHub draft，完成後才公開為共同 release。只有 stable 設為 Latest；
+   Windows 目前仍是預覽版，在該平台說明中標示，並不把整個 macOS 正式版標為預覽。
+8. 發布兩個平台 CDN feed 與專屬 notes，並維持既有 macOS `/chiakey/appcast.json`
+   schema 1 的頂層 stable／beta 與 `/chiakey/ChiaKey.pkg` 人工下載連結。
 
-`generate_release_notes` 由 `softprops/action-gh-release` 觸發,等同呼叫 GitHub
-API 依上一個 tag 至今的 commit / PR 產生 release notes,不需額外設定。
+新版 feed 是 `/chiakey/updates/macos/appcast.json` 與
+`/chiakey/updates/windows/appcast.json`，使用相同 schema 1，加上 platform、version、
+notes_url、release_url。安裝檔使用不可變版本 URL、SHA-256 與首次公開時間。
+Windows 不再透過 `win-v*` tag 推送獨立發布。Windows build workflow 的手動執行
+僅建置同名 `win-v0.1.0-beta.1` 朋友測試預覽，不自動發布；建置與測試成功後
+僅在原安裝檔下載次數為零時，才可同名替換原 GitHub release，不寫入 CDN。
+若已有使用者下載舊建置，則應使用新的預覽 tag 發布，且這些使用者仍須手動安裝新版。
+新版預覽支援共同 `v*`、Windows CDN 及既有 `win-v*` fallback。
+
+CDN 同時預檢兩平台 feed；只有讀取物件得到 404 才可初始化，403／5xx／逾時或
+資料不合法都會停止，不可當成空檔。Beta 保留 stable，stable 不覆蓋更新的 Beta。
+同版內容不可更換，發布流程序列化；重試保留 GitHub 原始 published_at。
+所有 CDN 指標只會指向已上傳的完整產物，但各 feed 之間不是跨物件單一交易。
+R2 設定為實際發布的必要條件；dry_run 無須這些密鑰。
 
 ### 輸入參數
 
 | 參數 | 說明 |
 | --- | --- |
-| `release_type` | 依現有 tag 遞增下一版,預設 `beta`。`beta`→`vX.Y.Z-beta.N`(標為 prerelease);`patch`/`minor`/`major`→遞增對應位;`stable`→去掉 `-beta` 後綴。 |
-| `dry_run` | 只算 tag 與建置,不 push、不發佈。先驗證用。 |
+| `release_type` | 依現有 tag 遞增下一版,預設 `patch`。`beta`→`vX.Y.Z-beta.N`(標為 prerelease);`patch`/`minor`/`major`→遞增對應位;`stable`→去掉 `-beta` 後綴。 |
+| `dry_run` | 建置、組裝並上傳完整 artifacts 與 notes 預覽；不推送版號提交或 tag、不建立 release、不寫入 CDN。 |
 
 ### 簽章 / notarization(可選)
 

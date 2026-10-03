@@ -12,6 +12,7 @@
 #include "PlainVanilla.h"
 #endif
 
+#include "OVIMGenericPackage.h"
 #include "OVIMMandarinPackage.h"
 #include "OVIMSmartMandarin.h"
 
@@ -22,6 +23,7 @@
 #endif
 
 #include <cstdio>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <sstream>
@@ -30,10 +32,12 @@
 namespace ChiaKey {
 namespace {
 
+using OpenVanilla::OVCINDatabaseService;
 using OpenVanilla::OVCandidateList;
 using OpenVanilla::OVCandidatePanel;
 using OpenVanilla::OVDirectoryHelper;
 using OpenVanilla::OVEventHandlingContext;
+using OpenVanilla::OVIMGenericPackage;
 using OpenVanilla::OVIMMandarinPackage;
 using OpenVanilla::OVIMSmartMandarinContext;
 using OpenVanilla::OVKey;
@@ -55,7 +59,11 @@ using OpenVanilla::PVStaticModulePackageLoadingSystem;
 using OpenVanilla::PVTextBuffer;
 
 const char kMandarinPackageName[] = "OVIMMandarin";
+const char kGenericPackageName[] = "OVIMGeneric";
 const char kPreferencesDirectoryName[] = "Preferences";
+const char kTablesDirectoryName[] = "Tables";
+const char kUserCannedMessagesPlistName[] = "UserCannedMessages.plist";
+const char kUserCannedMessagesTextName[] = "UserCannedMessages.txt";
 
 // CheckDirectory() only proves the path exists and is a directory, so a
 // read-only path would get through and every later write -- preferences, the
@@ -70,11 +78,12 @@ bool DirectoryIsWritable(const std::string& path) {
   name << ".chiakey-write-probe." << static_cast<long>(getpid());
 #endif
   const std::string probe = OVPathHelper::PathCat(path, name.str());
-  std::FILE* file = std::fopen(probe.c_str(), "w");
+  // narrow CRT calls read UTF-8 as ANSI on Windows, failing CJK user folders
+  std::FILE* file = OpenVanilla::OVFileHelper::OpenStream(probe, "w");
   if (!file) return false;
 
   std::fclose(file);
-  std::remove(probe.c_str());
+  OVPathHelper::RemoveEverythingAtPath(probe);
   return true;
 }
 
@@ -145,6 +154,122 @@ std::vector<std::string> CandidateListToVector(OVCandidateList* list) {
     result.push_back(list->candidateAtIndex(index));
   }
   return result;
+}
+
+#if defined(WIN32)
+// what UseCharactersSupportedByEncoding = BIG-5 filters on; the mac's CVEncodingService
+// uses Big5-HKSCS, code page 950 is plain Big5 with Microsoft's additions
+class CoreEncodingService : public OpenVanilla::PVDefaultEncodingService {
+ public:
+  bool codepointSupportedByEncoding(const std::string& codepoint,
+                                    const std::string& encoding) override {
+    if (encoding != "BIG-5") return true;
+    const std::wstring wide = OpenVanilla::OVUTF16::FromUTF8(codepoint);
+    if (wide.empty()) return true;
+    char converted[8];
+    BOOL usedDefault = FALSE;
+    const int length = WideCharToMultiByte(
+        950, WC_NO_BEST_FIT_CHARS, wide.data(), static_cast<int>(wide.size()), converted,
+        static_cast<int>(sizeof(converted)), nullptr, &usedDefault);
+    return length > 0 && !usedDefault;
+  }
+
+  const std::vector<std::string> supportedEncodings() override {
+    return std::vector<std::string>{"UTF-8", "BIG-5"};
+  }
+
+  bool isEncodingSupported(const std::string& encoding) override {
+    return encoding == "UTF-8" || encoding == "BIG-5";
+  }
+};
+#endif
+
+// a name is either a plain string or a {locale: string} dictionary
+std::string LocalizedString(PVPlistValue* value, const std::string& locale) {
+  if (!value) return std::string();
+  if (value->type() == PVPlistValue::String) return value->stringValue();
+  std::vector<std::string> keys{locale, "en"};
+  for (const std::string& key : value->dictionaryKeys()) keys.push_back(key);
+  for (const std::string& key : keys) {
+    PVPlistValue* localized = value->valueForKey(key);
+    if (localized && localized->type() == PVPlistValue::String) {
+      return localized->stringValue();
+    }
+  }
+  return std::string();
+}
+
+// messages spell a line break as a literal backslash-n
+std::string ExpandLineBreaks(const std::string& text, const char* lineBreak) {
+  return OpenVanilla::OVStringHelper::StringByReplacingOccurrencesOfStringWithString(
+      text, "\\n", lineBreak);
+}
+
+SymbolItem MakeMessageItem(PVPlistValue* message, const std::string& locale) {
+  std::string name;
+  std::string text;
+  if (message->type() == PVPlistValue::String) {
+    name = text = message->stringValue();
+  } else {
+    name = LocalizedString(message->valueForKey("Name"), locale);
+    text = LocalizedString(message->valueForKey("Text"), locale);
+  }
+  SymbolItem item;
+  item.text = ExpandLineBreaks(text, "\n");
+  item.label = ExpandLineBreaks(name.empty() ? text : name, " ");
+  if (item.label == item.text) item.label.clear();
+  return item;
+}
+
+// the same merge as the mac loader's mergeCannedMessagesData
+void AppendSymbolCategories(PVPlistValue* root, const std::string& locale,
+                            const std::string& now,
+                            std::vector<SymbolCategory>* categories) {
+  PVPlistValue* list = root ? root->valueForKey("CannedMessages") : nullptr;
+  if (!list) return;
+  for (std::size_t index = 0; index < list->arraySize(); ++index) {
+    PVPlistValue* entry = list->arrayElementAtIndex(index);
+    if (!entry || entry->type() != PVPlistValue::Dictionary) continue;
+    const std::string notBefore = entry->stringValueForKey("NotBefore");
+    const std::string notAfter = entry->stringValueForKey("NotAfter");
+    if ((!notBefore.empty() && now < notBefore) || (!notAfter.empty() && now > notAfter)) {
+      continue;
+    }
+
+    SymbolCategory category;
+    category.name = LocalizedString(entry->valueForKey("Name"), locale);
+    category.buttons = entry->isKeyTrue("IsSymbolButtonList");
+    if (category.buttons) {
+      PVPlistValue* buttons = entry->valueForKey("Buttons");
+      PVPlistValue* metadata = entry->valueForKey("SymbolMetadata");
+      for (std::size_t at = 0; buttons && at < buttons->arraySize(); ++at) {
+        PVPlistValue* button = buttons->arrayElementAtIndex(at);
+        if (!button || button->type() != PVPlistValue::String) continue;
+        SymbolItem item;
+        item.text = button->stringValue();
+        if (item.text.empty()) continue;
+        // keyed by the raw button string, spaces included
+        PVPlistValue* info = metadata ? metadata->valueForKey(item.text) : nullptr;
+        if (info && info->type() == PVPlistValue::Dictionary) {
+          item.label = info->stringValueForKey("DisplayLabel");
+          item.name = info->stringValueForKey("Name");
+          item.description = info->stringValueForKey("Description");
+        }
+        category.items.push_back(item);
+      }
+    } else {
+      PVPlistValue* messages = entry->valueForKey("Messages");
+      for (std::size_t at = 0; messages && at < messages->arraySize(); ++at) {
+        PVPlistValue* message = messages->arrayElementAtIndex(at);
+        if (!message) continue;
+        SymbolItem item = MakeMessageItem(message, locale);
+        if (!item.text.empty()) category.items.push_back(item);
+      }
+    }
+    if (!category.name.empty() && !category.items.empty()) {
+      categories->push_back(category);
+    }
+  }
 }
 
 // Keeps the plists under the host's writable path, so the core never shares
@@ -325,7 +450,17 @@ class Runtime::Impl {
     }
     writeModuleConfig();
 
-    service.reset(new PVLoaderService(config.locale, nullptr, database.get()));
+    // Tables/Generic/x.cin becomes the Generic-x-cin input method
+    const std::string tablesPath =
+        OVPathHelper::PathCat(paths.writablePath, kTablesDirectoryName);
+    if (OVPathHelper::IsDirectory(tablesPath)) {
+      cinTables.reset(new OVCINDatabaseService(tablesPath, "*.cin", "", 0));
+    }
+#if defined(WIN32)
+    encoding.reset(new CoreEncodingService);
+#endif
+    service.reset(new PVLoaderService(config.locale, cinTables.get(), database.get(),
+                                      nullptr, encoding.get()));
 
     OVPathInfo pathInfo;
     pathInfo.loadedPath = paths.loadedPath;
@@ -340,6 +475,14 @@ class Runtime::Impl {
       delete mandarin;
       if (errorMessage) *errorMessage = "OVIMMandarin package failed to load";
       return false;
+    }
+
+    // Cangjie, Simplex and user tables; none of them is required to type
+    auto* generic = new OVIMGenericPackage;
+    if (!generic->initialize(&pathInfo, service.get()) ||
+        !packages->addInitializedPackage(kGenericPackageName, generic)) {
+      generic->finalize();
+      delete generic;
     }
 
     std::vector<PVModulePackageLoadingSystem*> systems{packages.get()};
@@ -373,6 +516,9 @@ class Runtime::Impl {
   // order matters: the loader tears down its modules before the package
   // system, the service and the database go
   std::unique_ptr<OVSQLiteDatabaseService> database;
+  std::unique_ptr<OVCINDatabaseService> cinTables;
+  // null off Windows, where the loader service falls back to UTF-8 only
+  std::unique_ptr<OpenVanilla::OVEncodingService> encoding;
   std::unique_ptr<CorePolicy> policy;
   std::unique_ptr<PVLoaderService> service;
   std::unique_ptr<PVStaticModulePackageLoadingSystem> packages;
@@ -417,6 +563,13 @@ class Engine::Impl {
     context->readingText()->finishCommit();
   }
 
+  bool isComposing() const {
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    return !context->readingText()->composedText().empty() ||
+           !context->composingText()->composedText().empty() ||
+           context->activePanel()->isVisible();
+  }
+
   EngineState snapshot() const {
     std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
     PVTextBuffer* readingText = context->readingText();
@@ -457,6 +610,13 @@ class Engine::Impl {
         panel->currentHightlightIndexInCandidateList();
     state.candidateState.candidates =
         CandidateListToVector(panel->candidateList());
+    if (state.candidateState.visible) {
+      const std::size_t onPage = panel->currentPageCandidateCount();
+      for (std::size_t index = 0; index < onPage; ++index) {
+        state.candidateState.selectionKeys.push_back(
+            panel->candidateKeyAtIndex(index).receivedString());
+      }
+    }
 
     // other fillers (associated phrases) share this panel, so take the flags
     // only when they still describe a list of exactly this length
@@ -566,6 +726,83 @@ void Runtime::setAssociatedPhrasesEnabled(bool enabled) {
   impl_->loader->syncSandwichConfig();
 }
 
+std::vector<SymbolCategory> Runtime::symbolCategories() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  const std::string locale = impl_->service->locale();
+  const std::string now = OpenVanilla::OVDateTimeHelper::LocalDateTimeString();
+  std::vector<SymbolCategory> categories;
+
+  OpenVanilla::OVSQLiteStatementRef statement = impl_->database->connection()->prepare(
+      "SELECT value FROM prepopulated_service_data WHERE key = %Q", "canned_messages");
+  if (statement && statement->step() == SQLITE_ROW) {
+    const char* value = statement->textOfColumn(0);
+    std::unique_ptr<PVPlistValue> lexicon(
+        value ? PVPropertyList::ParsePlistFromString(value) : nullptr);
+    AppendSymbolCategories(lexicon.get(), locale, now, &categories);
+  }
+
+  const std::string plistPath =
+      OVPathHelper::PathCat(impl_->paths.writablePath, kUserCannedMessagesPlistName);
+  if (OVPathHelper::PathExists(plistPath)) {
+    PVPropertyList user(plistPath);
+    AppendSymbolCategories(user.rootDictionary(), locale, now, &categories);
+  }
+
+  SymbolCategory own;
+  own.name = locale.compare(0, 5, "zh_CN") == 0   ? "我自定的罐头讯息"
+             : locale.compare(0, 2, "zh") == 0 ? "我自定的罐頭訊息"
+                                                : "User Defined";
+  std::ifstream text;
+  OpenVanilla::OVFileHelper::OpenIFStream(
+      text, OVPathHelper::PathCat(impl_->paths.writablePath, kUserCannedMessagesTextName),
+      std::ios::in);
+  std::string line;
+  // the first line is the instructions
+  std::getline(text, line);
+  while (std::getline(text, line)) {
+    if (!line.empty() && line.back() == '\r') line.pop_back();
+    if (line.empty()) continue;
+    SymbolItem item;
+    item.text = line;
+    own.items.push_back(item);
+  }
+  if (!own.items.empty()) categories.push_back(own);
+  return categories;
+}
+
+std::string Runtime::userCannedMessagesPath() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  const std::string path =
+      OVPathHelper::PathCat(impl_->paths.writablePath, kUserCannedMessagesTextName);
+  if (OVPathHelper::PathExists(path)) return path;
+
+  const std::string locale = impl_->service->locale();
+  const char* header =
+      locale.compare(0, 5, "zh_CN") == 0
+          ? "=== 请在本行下方添加自定义信息，每行一条，每行不超过 80 个中文或字母数字字符，并请保留本行 ==="
+      : locale.compare(0, 2, "zh") == 0
+          ? "=== 請從本行以下加入自定訊息，一行一則，每行不超過 80 中文或英數字，並請保留這一行 ==="
+          : "=== Add your own pre-defined texts after this line ===";
+  const char* example = locale.compare(0, 2, "zh") == 0 ? "你好！" : "Hello!";
+  if (std::FILE* stream = OpenVanilla::OVFileHelper::OpenStream(path, "wb")) {
+    // a BOM, so Notepad on older Windows does not read the file as ANSI
+    std::fputs("\xEF\xBB\xBF", stream);
+    std::fputs(header, stream);
+    std::fputs("\n", stream);
+    std::fputs(example, stream);
+    std::fputs("\n", stream);
+    std::fclose(stream);
+  }
+  return path;
+}
+
+void Runtime::reloadUserPhrases() {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  // loadConfig flushes the query cache and reloads the learning caches
+  impl_->loader->forceSyncModuleConfigForNextRound(OVIMSMARTMANDARIN_IDENTIFIER);
+  impl_->loader->syncSandwichConfig();
+}
+
 const char* Runtime::SmartMandarinIdentifier() {
   return OVIMSMARTMANDARIN_IDENTIFIER;
 }
@@ -605,6 +842,8 @@ bool Engine::selectCandidate(std::size_t candidateIndex) {
 void Engine::reset() { impl_->reset(); }
 
 EngineState Engine::snapshot() const { return impl_->snapshot(); }
+
+bool Engine::isComposing() const { return impl_->isComposing(); }
 
 void Engine::acknowledgeCommit() { impl_->acknowledgeCommit(); }
 

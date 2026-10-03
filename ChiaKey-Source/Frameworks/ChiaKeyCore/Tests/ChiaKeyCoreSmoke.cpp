@@ -4,14 +4,20 @@
 
 #include <ChiaKeyCore/ChiaKeyCore.h>
 #include <ChiaKeyCore/ChiaKeyCoreC.h>
+#include <ChiaKeyCore/UserPhraseStore.h>
 
 #include <sqlite3.h>
 #include <sys/stat.h>
 
 #if defined(_WIN32)
 #include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #endif
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -122,6 +128,16 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("expected C++ tab break to force word segments at cursor");
   }
 
+  if (!engine->handleKey(tabKey)) {
+    return Fail("C++ engine did not handle tab break reversal");
+  }
+  state = engine->snapshot();
+  if (state.composingText != "你好" || !state.committedText.empty() ||
+      state.cursorPosition != 1 || state.wordSegments.size() != 1 ||
+      state.wordSegments[0].length != 2) {
+    return Fail("expected a second C++ tab to restore the joined word at the cursor");
+  }
+
   engine->reset();
   if (!engine->handleAsciiKey('1')) {
     return Fail("C++ engine did not handle standalone ㄅ key");
@@ -181,6 +197,7 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
   // reading's own unigram order, so a flag here proves the whole path --
   // per-node previous resolution, the score gate, and list alignment.
   engine->reset();
+  if (engine->isComposing()) return Fail("expected isComposing() to be false after reset");
   const char contextKeys[] = {'a', 'l', '4', 'c', '0', '4'};
   for (char key : contextKeys) {
     if (!engine->handleAsciiKey(key)) {
@@ -188,6 +205,7 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     }
   }
 
+  if (!engine->isComposing()) return Fail("expected isComposing() while 冒汗 is composed");
   state = engine->snapshot();
   if (state.composingText != "冒汗") {
     return Fail("expected C++ context reading to compose 冒汗, got: " +
@@ -205,6 +223,16 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
   if (state.candidateState.contextPicks.size() !=
       state.candidateState.candidates.size()) {
     return Fail("expected contextPicks to align with the candidate list");
+  }
+  {
+    const ChiaKey::CandidateState& panel = state.candidateState;
+    const std::size_t onPage =
+        std::min(panel.candidatesPerPage,
+                 panel.candidates.size() - panel.currentPage * panel.candidatesPerPage);
+    if (panel.selectionKeys.size() != onPage || panel.selectionKeys.empty() ||
+        panel.selectionKeys[0] != "1") {
+      return Fail("expected one selection key per candidate on the page, from 1");
+    }
   }
 
   std::size_t flagged = 0;
@@ -740,6 +768,209 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
   }
   if (!sawSmart || !sawTraditional) {
     return Fail("runtime did not list both Mandarin input methods");
+  }
+
+  {
+    std::vector<ChiaKey::SymbolCategory> symbols = runtime->symbolCategories();
+    if (symbols.empty() || !symbols.front().buttons || symbols.front().items.empty() ||
+        symbols.front().name.empty()) {
+      return Fail("the lexicon's symbol table is missing or does not start with a button grid");
+    }
+    const bool hasMessages =
+        std::any_of(symbols.begin(), symbols.end(),
+                    [](const ChiaKey::SymbolCategory& category) { return !category.buttons; });
+    if (!hasMessages) return Fail("the symbol table has no canned message list");
+
+    const std::string userText = runtime->userCannedMessagesPath();
+    if (!std::ifstream(userText.c_str()).good()) {
+      return Fail("userCannedMessagesPath did not create " + userText);
+    }
+    // the file starts with an example line, which counts as a message
+    std::ofstream(userText.c_str(), std::ios::app) << "chiakey symbol smoke\r\n";
+    symbols = runtime->symbolCategories();
+    std::remove(userText.c_str());
+    const std::vector<ChiaKey::SymbolItem>& own = symbols.back().items;
+    if (symbols.back().buttons || own.size() != 2 || own.back().text != "chiakey symbol smoke") {
+      return Fail("UserCannedMessages.txt did not become the last symbol category");
+    }
+  }
+
+  {
+    std::unique_ptr<ChiaKey::UserPhraseStore> store =
+        ChiaKey::UserPhraseStore::Open(writableDir, lexiconDatabasePath, &errorMessage);
+    if (!store) return Fail("failed to open the user phrase store: " + errorMessage);
+    store->beginEditingSession();
+    const std::string lockPath = writableDir + "/SmartMandarinUserData.editing";
+    if (!std::ifstream(lockPath.c_str()).good()) {
+      return Fail("an editing session did not create the lock file");
+    }
+
+    // an empty reading derives each character's most likely one; removed right
+    // away so the later 你好 compositions stay unaffected by the user phrase
+    ChiaKey::UserPhrase derived;
+    if (!store->add("你好", "", &derived) || derived.reading != "ㄋㄧˇ,ㄏㄠˇ") {
+      return Fail("expected 你好 to read ㄋㄧˇ,ㄏㄠˇ, got " + derived.reading);
+    }
+    store->remove({derived.rowid});
+    ChiaKey::UserPhrase added;
+    if (!store->add("測詞", "ㄘㄜˋ,ㄘˊ", &added) || added.rowid <= 0 ||
+        added.reading != "ㄘㄜˋ,ㄘˊ") {
+      return Fail("could not add a phrase with its own reading");
+    }
+    if (store->add("三字詞", "ㄙㄢ", nullptr)) {
+      return Fail("a reading shorter than the phrase was accepted");
+    }
+    if (store->setReading(added.rowid, "ㄘㄜˋ") ||
+        store->setReading(added.rowid, "ㄘㄜˋ,ㄘˊ,ㄙㄢ") ||
+        store->setReading(-1, "ㄘㄜˋ,ㄘˊ")) {
+      return Fail("setReading accepted a missing row or a syllable count mismatch");
+    }
+    if (store->phrases("測詞", ChiaKey::UserPhraseOrder::Insertion, true, 0, 1)
+            .front().reading != "ㄘㄜˋ,ㄘˊ" ||
+        !store->setReading(added.rowid, "ㄘㄜˋ,ㄘˊ")) {
+      return Fail("setReading did not preserve or accept a matching reading");
+    }
+    // ㄘ and ㄉㄨ encode as A0 and a0, which SQLite LIKE treats as equal.
+    ChiaKey::UserPhrase upper, lower;
+    if (!store->add("甲", "ㄘ", &upper) || !store->add("乙", "ㄉㄨ", &lower) ||
+        store->count("ㄘ") != 1 || store->count("ㄉㄨ") != 1 ||
+        store->phrases("ㄘ", ChiaKey::UserPhraseOrder::Insertion, true, 0, 10).size() != 1) {
+      return Fail("reading prefix search confused ASCII cases in syllable codes");
+    }
+    store->remove({upper.rowid, lower.rowid});
+    if (store->count("測") != 1 || store->count("ㄘㄜˋ") != 1 ||
+        store->phrases("", ChiaKey::UserPhraseOrder::Insertion, false, 0, 1).front().phrase !=
+            "測詞") {
+      return Fail("the added phrase is not found by text or by reading");
+    }
+
+    // while the session holds the lock the engine writes nothing, but it reads
+    store->endEditingSession();
+    if (std::ifstream(lockPath.c_str()).good()) {
+      return Fail("ending the only editing session left the lock file behind");
+    }
+    runtime->reloadUserPhrases();
+    {
+      std::unique_ptr<ChiaKey::Engine> engine = runtime->createEngine();
+      TypeKeys(engine.get(), "hk4h6");
+      const ChiaKey::EngineState state = engine->snapshot();
+      if (state.composingText != "測詞") {
+        return Fail("the engine did not offer a phrase added by the editor, got " +
+                    state.composingText);
+      }
+    }
+
+    const std::string exported = writableDir + "/phrases-export.txt";
+    if (!store->exportTo(exported)) return Fail("exporting the user phrases failed");
+    if (!store->remove({added.rowid}) || store->contains("測詞")) {
+      return Fail("removing the phrase by rowid failed");
+    }
+    bool learningRestored = false;
+    if (!store->importFrom(exported, &learningRestored) || !store->contains("測詞") ||
+        !learningRestored) {
+      return Fail("importing the export did not bring the phrase and learning back");
+    }
+    if (!store->importFrom(exported) || store->count("測詞") != 1) {
+      return Fail("importing the same file twice duplicated the phrase");
+    }
+    store->remove({store->phrases("測詞", ChiaKey::UserPhraseOrder::Insertion, true, 0, 1)
+                       .front()
+                       .rowid});
+    std::remove(exported.c_str());
+    runtime->reloadUserPhrases();
+  }
+
+#if defined(_WIN32)
+  {
+    // Windows is where the core brings its own Big5 check; elsewhere BIG-5 is ignored
+    const auto outsideBig5 = [](const std::vector<std::string>& candidates) {
+      std::size_t count = 0;
+      for (const std::string& candidate : candidates) {
+        wchar_t wide[16] = {};
+        const int length =
+            MultiByteToWideChar(CP_UTF8, 0, candidate.c_str(), -1, wide, 16) - 1;
+        char narrow[32];
+        BOOL usedDefault = FALSE;
+        if (length > 0 && (WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide, length,
+                                               narrow, sizeof(narrow), nullptr,
+                                               &usedDefault) <= 0 ||
+                           usedDefault)) {
+          ++count;
+        }
+      }
+      return count;
+    };
+    const auto candidatesOfYi = [&]() {
+      std::unique_ptr<ChiaKey::Engine> engine = runtime->createEngine();
+      TypeKeys(engine.get(), "u ");
+      engine->handleAsciiKey(' ');
+      return engine->snapshot().candidateState.candidates;
+    };
+
+    const std::vector<std::string> all = candidatesOfYi();
+    if (all.empty() || !outsideBig5(all)) {
+      return Fail("expected ㄧ to offer candidates outside Big5 before filtering");
+    }
+    const std::string plistPath = writableDir + "/Preferences/SmartMandarin.plist";
+    std::ifstream original(plistPath.c_str());
+    std::stringstream content;
+    content << original.rdbuf();
+    original.close();
+    // the module has already saved the key as "", and a second copy would lose to it
+    std::string filtered = content.str();
+    const std::size_t key = filtered.find("<key>UseCharactersSupportedByEncoding</key>");
+    const std::size_t value = filtered.find("<string>", key);
+    const std::size_t end = filtered.find("</string>", value);
+    if (key == std::string::npos || value == std::string::npos || end == std::string::npos) {
+      return Fail("Smart Mandarin did not save UseCharactersSupportedByEncoding");
+    }
+    filtered.replace(value + 8, end - value - 8, "BIG-5");
+    std::ofstream(plistPath.c_str(), std::ios::trunc) << filtered;
+    runtime->setConfig(runtime->config());
+    const std::vector<std::string> big5 = candidatesOfYi();
+    std::ofstream(plistPath.c_str(), std::ios::trunc) << content.str();
+    runtime->setConfig(runtime->config());
+    if (big5.empty() || outsideBig5(big5) || big5.size() >= all.size()) {
+      return Fail("UseCharactersSupportedByEncoding BIG-5 did not filter the candidates");
+    }
+  }
+#endif
+
+  {
+    // a wrong OVIMGENERIC_IDENTIFIER_PREFIX compiles cleanly and finds neither table
+    bool sawCangjie = false;
+    bool sawSimplex = false;
+    for (const auto& entry : runtime->inputMethods()) {
+      if (entry.first == "Generic-cj-cin") sawCangjie = true;
+      if (entry.first == "Generic-simplex-cin") sawSimplex = true;
+    }
+    if (!sawCangjie || !sawSimplex) {
+      return Fail("runtime did not list Cangjie and Simplex");
+    }
+    if (!runtime->setPrimaryInputMethod("Generic-cj-cin")) {
+      return Fail("could not select Cangjie as the primary input method");
+    }
+    std::unique_ptr<ChiaKey::Engine> cangjie = runtime->createEngine(&errorMessage);
+    if (!cangjie) return Fail("failed to create a Cangjie engine: " + errorMessage);
+    if (!TypeKeys(cangjie.get(), "hapi ")) return Fail("Cangjie rejected hapi");
+    ChiaKey::EngineState state = cangjie->snapshot();
+    // committed at once or offered first, depending on how many characters share the code
+    if (state.committedText != "的") {
+      if (!state.candidateState.visible || state.candidateState.candidates.empty() ||
+          state.candidateState.candidates[0] != "的") {
+        return Fail("expected Cangjie hapi to give 的, got: " + state.committedText +
+                    state.composingText);
+      }
+      cangjie->selectCandidate(0);
+      state = cangjie->snapshot();
+      if (state.committedText != "的" && state.composingText != "的") {
+        return Fail("selecting Cangjie's first candidate did not give 的");
+      }
+    }
+    cangjie.reset();
+    if (!runtime->setPrimaryInputMethod(ChiaKey::Runtime::SmartMandarinIdentifier())) {
+      return Fail("could not switch back to Smart Mandarin after Cangjie");
+    }
   }
 
   {
