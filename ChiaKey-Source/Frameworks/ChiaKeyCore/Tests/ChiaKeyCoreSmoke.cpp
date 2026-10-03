@@ -128,6 +128,16 @@ int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
     return Fail("expected C++ tab break to force word segments at cursor");
   }
 
+  if (!engine->handleKey(tabKey)) {
+    return Fail("C++ engine did not handle tab break reversal");
+  }
+  state = engine->snapshot();
+  if (state.composingText != "你好" || !state.committedText.empty() ||
+      state.cursorPosition != 1 || state.wordSegments.size() != 1 ||
+      state.wordSegments[0].length != 2) {
+    return Fail("expected a second C++ tab to restore the joined word at the cursor");
+  }
+
   engine->reset();
   if (!engine->handleAsciiKey('1')) {
     return Fail("C++ engine did not handle standalone ㄅ key");

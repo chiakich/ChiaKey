@@ -595,6 +595,9 @@ ChiaKey::KeyEvent MakeCoreKey(const KeyEvent& event) {
     key.modifiers.numLock = event.numLock && event.virtualKey >= VK_NUMPAD0 &&
                             event.virtualKey <= VK_DIVIDE;
     key.keyCode = SpecialKeyCode(event.virtualKey);
+    // ToUnicodeEx can return text for Tab/Return. Editing keys must keep their
+    // identity rather than being replaced by the keyboard layout's output.
+    if (key.keyCode && event.virtualKey != VK_SPACE) return key;
 
     if (event.control && event.virtualKey >= 'A' && event.virtualKey <= 'Z') {
         key.keyCode = 'a' + static_cast<int>(event.virtualKey - 'A');
@@ -935,6 +938,9 @@ bool EngineSession::hasComposition() const { return engine_ && engine_->isCompos
 bool EngineSession::wantsKey(const KeyEvent& event) const {
     if (!engine_) return false;
     const bool composing = hasComposition();
+    // Idle half-width spaces belong to the host, not the candidate engine.
+    // TextService handles explicit full-width mode before asking wantsKey.
+    if (!composing && event.virtualKey == VK_SPACE) return false;
     // Ctrl+1..9 marks the last N composed characters as a user phrase
     if (IsQuickUserPhraseKey(event)) return composing;
     // punctuation chords always type; Ctrl+0/1 is left to app zoom and tab keys when idle

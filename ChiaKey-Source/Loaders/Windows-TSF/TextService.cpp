@@ -308,6 +308,7 @@ bool IsHostEditingKey(UINT virtualKey) {
         case VK_BACK:
         case VK_DELETE:
         case VK_RETURN:
+        case VK_SPACE:
         case VK_TAB:
         case VK_ESCAPE:
         case VK_LEFT:

@@ -177,6 +177,8 @@ void TestSession() {
     Check(session && session->ready(), "session is ready");
     if (!session || !session->ready()) return;
 
+    Check(!session->wantsKey(Key(VK_SPACE)), "idle space stays with the host");
+    Check(!session->wantsKey(Key(VK_TAB)), "idle Tab stays with the host");
     Check(!session->wantsKey(Key('2', false, true)), "Ctrl+2 without a composition stays with the host");
     Check(session->wantsKey(Key(VK_OEM_COMMA, false, true)),
           "Ctrl+, types punctuation without a composition");
@@ -201,6 +203,25 @@ void TestSession() {
     result = session->handleKey(Key(VK_RETURN));
     Check(result.committedText == L"你好", "Return commits 你好");
     Check(!session->hasComposition(), "nothing left after the commit");
+    Check(!session->wantsKey(Key(VK_SPACE)), "space after a commit stays with the host");
+
+    Check(Type(*session, "su3cl3"), "pre-Tab 你好 keys are handled");
+    result = session->handleKey(Key(VK_LEFT));
+    Check(result.compositionCursor == 1, "cursor moves between 你 and 好");
+    Check(result.focusedSegment.length == 2, "你好 starts as one word");
+    KeyEvent tab = Key(VK_TAB);
+    tab.text = L"\t";  // ToUnicodeEx output from a real Windows Tab key
+    Check(session->wantsKey(tab), "Tab in a composition goes to the engine");
+    result = session->handleKey(tab);
+    Check(result.handled && !result.beep && result.committedText.empty() &&
+              result.compositionText == L"你好" && result.compositionCursor == 1 &&
+              result.focusedSegment.length == 1,
+          "Tab splits the word at the cursor without committing or inserting a tab");
+    result = session->handleKey(tab);
+    Check(result.handled && !result.beep && result.committedText.empty() &&
+              result.compositionText == L"你好" && result.focusedSegment.length == 2,
+          "a second Tab restores the word path");
+    session->reset();
 
     result = session->handleKey(Key(VK_OEM_COMMA, true));
     Check(result.compositionText == L"，", "Shift+, composes a full-width comma");
