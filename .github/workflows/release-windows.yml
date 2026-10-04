@@ -1,9 +1,15 @@
 name: Windows release build
 
 # Build only: joint publication waits for both platforms. Manual runs rebuild the
-# original friend-testing preview; publication is performed separately after checks.
+# requested Windows preview; publication is performed separately after checks.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Windows preview tag (must match the project version)'
+        required: true
+        default: 'win-v0.1.0-beta.2'
+        type: string
   workflow_call:
     inputs:
       tag:
@@ -107,8 +113,9 @@ jobs:
           $version = $Matches[1]
           $tag = $env:TAG
           if ($env:BUILT_SHA -eq '') {
-            if ($version -ne '0.1.0') { throw 'manual preview rebuild requires project version 0.1.0' }
-            $tag = 'win-v0.1.0-beta.1'
+            if ($tag -notmatch '^win-v\d+\.\d+\.\d+-beta\.[1-9][0-9]*$') {
+              throw 'manual Windows builds require an explicit win-vX.Y.Z-beta.N preview tag'
+            }
           }
           $versionTag = $tag -replace '^win-v', 'v'
           if ($versionTag -notmatch "^v$([regex]::Escape($version))(-beta\.[1-9][0-9]*)?$") {

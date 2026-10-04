@@ -16,8 +16,9 @@
 包含 macOS `.pkg`、Windows `Setup.exe`、兩者的 `SHA256SUMS.txt` 及平台 notes。
 Windows 仍標示為預覽版，GitHub release 的 stable／Beta 標記由共同版號決定。
 兩邊成功才公開 release，draft 期間先上傳完整產物，避免舊 mac 更新器看到缺少
-`.pkg` 的版本。Windows workflow 也支援手動重建供朋友測試的
-`win-v0.1.0-beta.1`；僅建置，不自動發布或更新 CDN。
+`.pkg` 的版本。Windows workflow 也支援手動建置測試用的 `win-vX.Y.Z-beta.N`，
+必須提供與 CMake 專案版本相符的 tag（目前預設 `win-v0.1.0-beta.2`）；
+僅建置，檢查完成後另行發布，不自動更新 CDN。
 
 macOS 沿用 `/chiakey/appcast.json` 的 schema 1、頂層 stable／beta 與 `.pkg` URL。
 平台 feed 在 `/chiakey/updates/macos/appcast.json` 與

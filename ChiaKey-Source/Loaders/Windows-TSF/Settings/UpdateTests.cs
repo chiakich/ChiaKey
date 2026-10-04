@@ -47,6 +47,22 @@ namespace ChiaKey.Settings
             try
             {
                 Ui.Language = "zh-TW";
+                string preferenceFile = Path.Combine(root, "save.plist");
+                Plist saved = new Plist(preferenceFile);
+                saved.SetString("UnknownLegacyKey", "preserve");
+                using (FileStream busy = new FileStream(preferenceFile + ".tmp", FileMode.CreateNew,
+                    FileAccess.Write, FileShare.None))
+                {
+                    saved.SetBool("Enabled", true);
+                    saved.Save();
+                    Check(new Plist(preferenceFile).GetBool("Enabled", false), "save avoids another writer's temporary file");
+                    saved.SetBool("Enabled", false);
+                    saved.Save();
+                }
+                Check(new Plist(preferenceFile).GetString("UnknownLegacyKey", "") == "preserve",
+                    "atomic replacement preserves unknown legacy preference keys");
+                Check(Directory.GetFiles(root, "save.plist.*.tmp").Length == 0,
+                    "atomic save cleans its own temporary files");
                 Check(Ui.Text("詞彙設定") == "詞彙設定", "Traditional UI preserves original captions");
                 Check(Ui.Translate("詞彙設定", "en") == "User phrase settings", "English resource is embedded");
                 Check(Ui.Translate("詞彙設定", "zh-CN") == "词汇设定", "Simplified UI uses the native project conversion table");

@@ -58,9 +58,21 @@ namespace ChiaKey.Settings
             if (e.Modifiers == Keys.None && (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter))
             {
                 OnClick(EventArgs.Empty);
-                e.Handled = true;
+                e.SuppressKeyPress = true;
             }
             base.OnKeyDown(e);
+        }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            // Enter must reach this control instead of the form's default OK button.
+            return keyData == Keys.Enter || base.IsInputKey(keyData);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && icon != null) icon.Dispose();
+            base.Dispose(disposing);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -91,8 +103,6 @@ namespace ChiaKey.Settings
     internal sealed class SettingsForm : Form
     {
         private const string WindowTitle = "千秋輸入法 偏好設定";
-        // past the widest caption, 視窗背景顏色：
-        private const int ControlLeft = 140;
         private const int ToolbarHeight = 70;
 
         private static readonly Choice[] Layouts = {
@@ -277,9 +287,14 @@ namespace ChiaKey.Settings
         private static Image LoadIcon(string name)
         {
             if (name.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
-                return PhraseEditorForm.LoadIcon(name).ToBitmap();
-            Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
-            return stream != null ? Image.FromStream(stream) : null;
+            {
+                using (Icon icon = PhraseEditorForm.LoadIcon(name)) return icon.ToBitmap();
+            }
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
+            {
+                if (stream == null) return null;
+                using (Image image = Image.FromStream(stream)) return new Bitmap(image);
+            }
         }
 
         private void BuildToolbar()

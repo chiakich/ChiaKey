@@ -157,15 +157,30 @@ namespace ChiaKey.Settings
             settings.IndentChars = "\t";
             settings.Encoding = new UTF8Encoding(false);
             // a reader in another process must never see half a file
-            string temporary = path + ".tmp";
-            using (XmlWriter writer = XmlWriter.Create(temporary, settings))
+            string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
             {
-                document.Save(writer);
+                using (XmlWriter writer = XmlWriter.Create(temporary, settings))
+                {
+                    document.Save(writer);
+                }
+                if (File.Exists(path))
+                    File.Replace(temporary, path, null);
+                else
+                {
+                    try { File.Move(temporary, path); }
+                    catch (IOException)
+                    {
+                        // Another writer may have created the destination since the check.
+                        if (!File.Exists(path)) throw;
+                        File.Replace(temporary, path, null);
+                    }
+                }
             }
-            if (File.Exists(path))
-                File.Replace(temporary, path, null);
-            else
-                File.Move(temporary, path);
+            finally
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
         }
     }
 }

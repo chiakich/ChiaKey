@@ -54,11 +54,18 @@ internal static class PreferenceLayoutTests
                 int clicks = 0;
                 tab.Click += delegate { clicks++; };
                 MethodInfo keyDown = tabType.GetMethod("OnKeyDown", Fields);
+                MethodInfo inputKey = tabType.GetMethod("IsInputKey", Fields);
+                if (!(bool)inputKey.Invoke(tab, new object[] { Keys.Enter }))
+                    throw new Exception("Toolbar Enter must not activate the form's default OK button");
                 foreach (Keys key in new[] { Keys.Control | Keys.Space, Keys.Shift | Keys.Space })
                     keyDown.Invoke(tab, new object[] { new KeyEventArgs(key) });
                 if (clicks != 0) throw new Exception("Toolbar must not consume modified Space");
                 foreach (Keys key in new[] { Keys.Space, Keys.Enter })
-                    keyDown.Invoke(tab, new object[] { new KeyEventArgs(key) });
+                {
+                    KeyEventArgs activation = new KeyEventArgs(key);
+                    keyDown.Invoke(tab, new object[] { activation });
+                    if (!activation.SuppressKeyPress) throw new Exception("Toolbar activation must suppress the character");
+                }
                 if (clicks != 2) throw new Exception("Toolbar keyboard activation failed");
             }
             var watch = System.Diagnostics.Stopwatch.StartNew();
