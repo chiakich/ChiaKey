@@ -50,7 +50,7 @@
 | 設定的確定／取消／套用 | TakaoPreference | 已有；取消不寫未套用設定。本批新增欄位沿用同一儲存流程 |
 | 關於頁與選單 | BIAboutPanel／BIStatusBarForm | 本批補上設定關於頁、語言列關於入口與詞彙編輯器關於；保留千秋名稱、版本與專案網址 |
 | 獨立浮動狀態列、半透明、最小化到 system tray | BIStatusBarForm／PanelMisc | 第三批補上六操作浮動列、拖曳位置、50% 半透明、雙擊 mini／tray 和還原；使用千秋圖示，原版 bitmap 皮膚與宿主切換／tray 尚待視覺實測 |
-| 字典搜尋與歷史 | BIDictionaryForm 的 Yahoo 網路查詢／內嵌瀏覽器 | 尚缺；舊碼使用 HTTP 網路服務與外部 JS，不直接恢復失效服務或舊瀏覽器容器 |
+| 字典搜尋與歷史 | BIDictionaryForm 的 Yahoo 網路查詢／內嵌瀏覽器 | 第五批補上獨立字典、HTTPS 搜尋、八筆歷史、複製／全選與瀏覽器開啟；內嵌頁面改用 WebView2，舊 XML API／Flash 與將字典文字直接送回宿主的橋接未恢復 |
 | OneKey／Evaluator／其他 around filters | BIStatusBarForm 動態 modules 選單 | OneKey 已在本 repo 明確移除；其餘不是僅補一個選單即可使用，需各自核對模組與資料契約 |
 | 字數統計、今天／本週／總計／清除 | BIAboutPanel 依 WordCount 套件啟用 | 第三批補上可停用的 TSF 成功提交計數與關於頁今日／最近七天／累計／清除；SQLite 跨宿主原子更新，不儲存文字。原 DLL 套件設定尚未遷移 |
 | signed plug-in 管理／移除 | PanelMisc 與 PVDLLLoadingSystem | 尚缺，現行核心使用 static packages；不可直接恢復舊 DLL 載入與簽章機制 |
@@ -137,3 +137,23 @@ Windows.plist 的 UiLanguage 可選 zh-TW、zh-CN 或 en；無效值回到繁中
 
 x64／Win32 完整 CTest 各 5/5 通過（33.76／36.12 秒）。包含 DLL 的簡中轉換、
 英文資源、無效 locale 回退與核心 locale 設定；三語畫面的裁切、DPI 與字型尚未 GUI 驗證。
+
+## 第五批字典與搜尋歷史
+
+原版 BIDictionaryForm 保留八筆不重複的 FIFO 搜尋歷史，並提供複製／全選。
+新字典由語言列／浮動列設定選單的「字典…」或 ChiaKeySettings.exe /dictionary 開啟，
+沿用 SizableToolWindow，可輸入中文／英文、Enter 查詢、重選歷史、複製／全選與瀏覽器開啟。
+歷史只在視窗程序記憶體，不另外落地；WebView2 的網頁 profile 則在 LocalAppData/ChiaKey。
+查詢由使用者操作才送出；使用目前 Yahoo HTTPS 搜尋頁，而非舊 HTTP XML API／Flash。
+
+WebView2 SDK 1.0.3537.50 自 Microsoft 的 NuGet 下載，CMake 固定 SHA-256 驗證。
+SDK 為 net462，沿用系統 C# 5／.NET Framework；組件、對應架構 loader 與授權檔一起打包。
+Evergreen Runtime 為另外維護的系統元件；缺少或初始化失敗仍可用「瀏覽器開啟」。
+不把 host object、WebMessage 或 SendString callback 暴露給外部網頁；舊版直接送回宿主的
+字典功能尚未恢復。沒有擷取／重製第三方詞典內容，網頁內容與版型由 Yahoo 提供。
+
+兩架構完整 CTest 各 5/5（33.23／36.69 秒），包含 Unicode／&／#／? 查詢編碼、
+空／過長輸入拒絕、八筆唯一歷史、重查順序與 HTTPS 導覽限制。
+本機 headless probe 成功載入兩架構 SDK／loader，均找到 Runtime 151.0.4129.78；
+這不代表已建立或目視驗證 WebView2 視窗。安裝 Inno Setup 的指令遭工具政策拒絕，
+尚未編譯修改後的安裝包；桌面顯示、網頁載入、複製與原版外觀仍待 GUI。

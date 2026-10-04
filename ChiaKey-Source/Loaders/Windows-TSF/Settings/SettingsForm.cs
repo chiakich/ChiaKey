@@ -1230,10 +1230,11 @@ namespace ChiaKey.Settings
             // the input menu opens the phrase editor on its own, as Yahoo's separate PhraseEditor.exe
             bool phrases = args.Length > 0 &&
                            string.Equals(args[0], PhraseEditorArgument, StringComparison.OrdinalIgnoreCase);
-            string canonicalTitle = phrases ? PhraseEditorForm.WindowTitle : WindowTitle;
+            bool dictionary = args.Length > 0 && string.Equals(args[0], "/dictionary", StringComparison.OrdinalIgnoreCase);
+            string canonicalTitle = dictionary ? DictionaryForm.WindowTitle : phrases ? PhraseEditorForm.WindowTitle : WindowTitle;
             string title = Ui.Text(canonicalTitle);
             bool created;
-            using (Mutex single = new Mutex(true, phrases ? "ChiaKey.PhraseEditor" : "ChiaKey.Settings",
+            using (Mutex single = new Mutex(true, dictionary ? "ChiaKey.Dictionary" : phrases ? "ChiaKey.PhraseEditor" : "ChiaKey.Settings",
                                             out created))
             {
                 // a second launch from the language bar brings the open window up instead
@@ -1248,6 +1249,11 @@ namespace ChiaKey.Settings
                 }
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                if (dictionary)
+                {
+                    Application.Run(new DictionaryForm());
+                    return;
+                }
                 if (phrases)
                 {
                     Application.Run(new PhraseEditorForm());

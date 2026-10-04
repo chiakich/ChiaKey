@@ -936,4 +936,44 @@ Version </en>
     <source>（自訂）</source>
     <en>(Custom)</en>
   </string>
+  <string>
+    <source>千秋輸入法 字典</source>
+    <en>ChiaKey Dictionary</en>
+  </string>
+  <string>
+    <source>字典…</source>
+    <en>Dictionary…</en>
+  </string>
+  <string>
+    <source>查詢歷史</source>
+    <en>Search history</en>
+  </string>
+  <string>
+    <source>查詢</source>
+    <en>Search</en>
+  </string>
+  <string>
+    <source>瀏覽器開啟</source>
+    <en>Open in browser</en>
+  </string>
+  <string>
+    <source>輸入要查詢的英文或中文。</source>
+    <en>Enter an English or Chinese word to search.</en>
+  </string>
+  <string>
+    <source>Yahoo 字典</source>
+    <en>Yahoo Dictionary</en>
+  </string>
+  <string>
+    <source>查詢頁面無法載入，請重試或使用瀏覽器開啟。</source>
+    <en>Unable to load results. Retry or open in your browser.</en>
+  </string>
+  <string>
+    <source>內嵌字典無法啟動，請使用瀏覽器開啟，或安裝 WebView2 Runtime。</source>
+    <en>The embedded dictionary could not start. Open in your browser or install WebView2 Runtime.</en>
+  </string>
+  <string>
+    <source>正在查詢…</source>
+    <en>Searching…</en>
+  </string>
 </strings>

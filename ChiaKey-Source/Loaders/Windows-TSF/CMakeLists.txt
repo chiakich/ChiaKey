@@ -125,17 +125,25 @@ if(CHIAKEY_CSC)
     else()
         set(CHIAKEY_MANAGED_PLATFORM x86)
     endif()
+    include(WebView2.cmake)
     set(CHIAKEY_SETTINGS_EXE "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeySettings.exe")
     configure_file(Settings/AssemblyInfo.cs.in "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs" @ONLY)
     set(CHIAKEY_SETTINGS_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Ui.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/DictionaryQuery.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/DictionaryForm.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdatePane.cs"
         "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs")
     set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
+    set(CHIAKEY_WEBVIEW2_ARGUMENTS)
+    foreach(assembly Core WinForms)
+        file(TO_NATIVE_PATH "${CHIAKEY_WEBVIEW2_DIR}/lib/net462/Microsoft.Web.WebView2.${assembly}.dll" webview_reference)
+        list(APPEND CHIAKEY_WEBVIEW2_ARGUMENTS "/r:${webview_reference}")
+    endforeach()
     # csc reads forward slashes as option prefixes, so every path goes native
     set(CHIAKEY_SETTINGS_ARGUMENTS)
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UiStrings.xml" ui_resource_path)
@@ -174,13 +182,17 @@ if(CHIAKEY_CSC)
                 "/win32icon:${settings_icon_path}"
                 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml.dll
                 /r:System.Web.Extensions.dll
-                ${CHIAKEY_SETTINGS_ARGUMENTS}
+                ${CHIAKEY_WEBVIEW2_ARGUMENTS} ${CHIAKEY_SETTINGS_ARGUMENTS}
         DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES} Settings/UiStrings.xml
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
                 "${CHIAKEY_ICON_DIR}/app.ico" "${CHIAKEY_ICON_DIR}/phrase-editor.ico"
         COMMENT "Compiling ChiaKeySettings.exe"
         VERBATIM)
     add_custom_target(ChiaKeySettings ALL
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${CHIAKEY_WEBVIEW2_FILES}
+                "$<TARGET_FILE_DIR:ChiaKeyTsf>"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CHIAKEY_WEBVIEW2_DIR}/LICENSE.txt"
+                "$<TARGET_FILE_DIR:ChiaKeyTsf>/WebView2-LICENSE.txt"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CHIAKEY_SETTINGS_EXE}"
                 "$<TARGET_FILE_DIR:ChiaKeyTsf>/ChiaKeySettings.exe"
         DEPENDS "${CHIAKEY_SETTINGS_EXE}"
@@ -192,6 +204,7 @@ if(CHIAKEY_CSC)
         file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs" update_tests_service)
         file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateTests.cs" update_tests_source)
         file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Ui.cs" update_tests_ui)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/DictionaryQuery.cs" update_tests_dictionary)
         add_custom_command(
             OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyUpdateTests.exe"
             COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB "${CHIAKEY_CSC}" /nologo /utf8output
@@ -199,8 +212,8 @@ if(CHIAKEY_CSC)
                     "/platform:${CHIAKEY_MANAGED_PLATFORM}"
                     /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll
                     "/resource:${ui_resource_path},UiStrings.xml" "${update_tests_ui}"
-                    "${update_tests_plist}" "${update_tests_service}" "${update_tests_source}"
-            DEPENDS Settings/Plist.cs Settings/UpdateService.cs Settings/UpdateTests.cs Settings/Ui.cs Settings/UiStrings.xml
+                    "${update_tests_plist}" "${update_tests_service}" "${update_tests_source}" "${update_tests_dictionary}"
+            DEPENDS Settings/Plist.cs Settings/UpdateService.cs Settings/UpdateTests.cs Settings/Ui.cs Settings/UiStrings.xml Settings/DictionaryQuery.cs
             VERBATIM)
         add_custom_target(ChiaKeyUpdateTests ALL
             COMMAND "${CMAKE_COMMAND}" -E copy_if_different

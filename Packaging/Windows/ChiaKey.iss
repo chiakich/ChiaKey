@@ -67,11 +67,20 @@ Source: "{#X86Dir}\ChiaKeyTsf.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreve
 Source: "{#X64Dir}\ChiaKeySource.db"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: LexiconNeeded
 Source: "{#X64Dir}\ChiaKeySettings.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
 Source: "{#X86Dir}\ChiaKeySettings.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
+Source: "{#X64Dir}\Microsoft.Web.WebView2.Core.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
+Source: "{#X64Dir}\Microsoft.Web.WebView2.WinForms.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
+Source: "{#X64Dir}\WebView2Loader.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
+Source: "{#X86Dir}\Microsoft.Web.WebView2.Core.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
+Source: "{#X86Dir}\Microsoft.Web.WebView2.WinForms.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
+Source: "{#X86Dir}\WebView2Loader.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
+Source: "{#X64Dir}\WebView2-LICENSE.txt"; DestDir: "{app}\{#Version}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}\{#Version}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\千秋輸入法\千秋輸入法設定"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"
 Name: "{autoprograms}\千秋輸入法\千秋輸入法詞彙編輯器"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/phrases"
+
+Name: "{autoprograms}\千秋輸入法\千秋輸入法字典"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/dictionary"
 
 [Run]
 ; Preserve update preferences and refresh the per-user startup path after an upgrade. The helper

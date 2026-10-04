@@ -21,6 +21,12 @@ namespace ChiaKey.Settings
             try { action(); } catch (InvalidDataException) { ++checks; return; }
             throw new Exception(message);
         }
+
+        private static void RejectQuery(Action action, string message)
+        {
+            try { action(); } catch (ArgumentException) { ++checks; return; }
+            throw new Exception(message);
+        }
         private static string Manifest(string version, string hash, string date)
         {
             return new JavaScriptSerializer().Serialize(new {
@@ -46,6 +52,22 @@ namespace ChiaKey.Settings
                 Check(Ui.Translate("詞彙設定", "zh-CN") == "词汇设定", "Simplified UI uses the native project conversion table");
                 Check(Ui.Translate("Custom table name", "en") == "Custom table name", "user labels stay unchanged");
                 Check(Ui.Normalize("unexpected") == "zh-TW", "unknown UI language falls back safely");
+                DictionaryQuery dictionary = new DictionaryQuery();
+                Uri encoded = dictionary.Search("  A&B #你好?  ");
+                Check(encoded.Host == "tw.dictionary.search.yahoo.com" && encoded.Scheme == "https", "dictionary uses official HTTPS search");
+                Check(encoded.Query == "?p=A%26B%20%23%E4%BD%A0%E5%A5%BD%3F", "dictionary encodes a query component including Unicode and delimiters");
+                dictionary.Search("A&B #你好?");
+                Check(dictionary.History.Length == 1, "dictionary history suppresses duplicates");
+                for (int i = 0; i < 9; ++i) dictionary.Search("word" + i);
+                Check(dictionary.History.Length == 8 && dictionary.History[0] == "word1" && dictionary.History[7] == "word8", "dictionary history preserves original eight-entry FIFO");
+                dictionary.Search("word1");
+                Check(dictionary.History[0] == "word1", "repeat searches do not reorder original history");
+                RejectQuery(delegate { dictionary.Search(" "); }, "empty dictionary query accepted");
+                RejectQuery(delegate { dictionary.Search(new string('a', 2049)); }, "oversize dictionary query accepted");
+                Check(dictionary.Current == "word1", "rejected query preserves current result");
+                Check(DictionaryQuery.IsWebAddress("https://tw.dictionary.search.yahoo.com/search?p=test"), "HTTPS navigation permitted");
+                foreach (string address in new[] { "file:///C:/Windows/win.ini", "javascript:alert(1)", "http://example.com", "https://user:secret@example.com", "shell:AppsFolder" })
+                    Check(!DictionaryQuery.IsWebAddress(address), "unsafe dictionary navigation blocked");
                 Run(root, args[1]);
                 Console.WriteLine("Passed " + checks + " updater checks (offline).");
                 return 0;

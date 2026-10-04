@@ -220,7 +220,7 @@ iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接�
 
 ## Windows 開發
 
-請安裝 Visual Studio／Build Tools 的「使用 C++ 的桌面開發」工作負載（含 MSVC 與 Windows SDK），以及 CMake 3.21 以上。設定程式使用 .NET Framework 4.x 的 `csc.exe`，不需要另裝 .NET SDK；若 CMake 顯示找不到 `csc.exe`，設定程式與更新測試不會建置，請先補齊環境。
+請安裝 Visual Studio／Build Tools 的「使用 C++ 的桌面開發」工作負載（含 MSVC 與 Windows SDK），以及 CMake 3.21 以上。設定程式使用 .NET Framework 4.x 的 `csc.exe`，不需要另裝 .NET SDK；字典使用 WebView2，CMake 會從 Microsoft NuGet 下載固定版本並校驗 SHA-256 的 SDK（首次 configure 需網路），其授權與 loader 隨安裝包提供。內嵌字典另外需要 Evergreen WebView2 Runtime；未安裝時可使用字典的瀏覽器開啟功能。若 CMake 顯示找不到 `csc.exe`，設定程式與更新測試不會建置，請先補齊環境。
 
 以下指令從 repo 根目錄，在可使用 MSVC 的 PowerShell 執行。先取得詞庫 repo 的 release／本機產出的 `ChiaKeySource.db`，並替換範例路徑；詞庫不在 git 裡，Windows 的 CMake 不會自動下載。
 
