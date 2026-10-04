@@ -12,6 +12,7 @@
 #include "NotificationWindow.h"
 #include <thread>
 #include <OVFileHelper.h>
+#include <sqlite3.h>
 
 using namespace ChiaKey::WindowsTsf;
 
@@ -475,6 +476,9 @@ void TestSharedState(const std::string& writable) {
     Check(AddWordCount(path, L"旧", 94) && AddWordCount(path, L"你好", 100) &&
           AddWordCount(path, L"😀", 101), "persist counts by local calendar day");
     WordCounts counts;
+    Check(ReadWordCounts(path + "-missing", 101, &counts) && counts.total == 0 &&
+          !OpenVanilla::OVPathHelper::PathExists(path + "-missing"),
+          "new profiles read zero counters without creating a database or directory");
     Check(ReadWordCounts(path, 101, &counts) && counts.today == 1 && counts.week == 3 && counts.total == 4,
           "rolling seven-day count excludes older days without dropping the total");
     Check(ReadWordCounts(path, 102, &counts) && counts.today == 0 && counts.week == 3 && counts.total == 4,
@@ -485,6 +489,20 @@ void TestSharedState(const std::string& writable) {
     writerA.join(); writerB.join();
     Check(a && b && ReadWordCounts(path, 102, &counts) && counts.today == 4 && counts.total == 8,
           "simultaneous hosts update counters transactionally");
+    sqlite3* blocked = nullptr;
+    Check(sqlite3_open((path + "/WindowsWordCount.db").c_str(), &blocked) == SQLITE_OK &&
+          sqlite3_exec(blocked, "BEGIN IMMEDIATE", nullptr, nullptr, nullptr) == SQLITE_OK,
+          "hold a writer transaction for the contention fixture");
+    Check(ReadWordCounts(path, 102, &counts) && counts.total == 8,
+          "reading counters does not require a write lock");
+    bool waited = false;
+    std::thread delayedWriter([&] { waited = AddWordCount(path, L"甲", 102); });
+    Sleep(300);
+    sqlite3_exec(blocked, "ROLLBACK", nullptr, nullptr, nullptr);
+    sqlite3_close(blocked);
+    delayedWriter.join();
+    Check(waited && ReadWordCounts(path, 102, &counts) && counts.total == 9,
+          "background and settings writers tolerate a lock longer than 50 ms");
     Check(ClearWordCounts(path) && ReadWordCounts(path, 102, &counts) && counts.total == 0 && counts.week == 0,
           "clear removes all persisted counts");
     Check(NotificationOpacity(999) == 255 && NotificationOpacity(1000) == 204 &&
@@ -510,6 +528,9 @@ void TestSharedState(const std::string& writable) {
     StatusWindowState state{true, -1000, 700};
     WriteStatusWindowState(state);
     const auto restored = ReadStatusWindowState();
+    Check(OpenVanilla::OVPathHelper::PathExists(writable + "/Preferences/StatusWindow.plist") &&
+          CurrentWritablePath() == writable,
+          "status position and counters use the explicitly initialized test runtime");
     Check(restored.hasPosition && restored.left == -1000 && restored.top == 700,
           "floating bar position preserves negative monitor coordinates");
     Check(SetFrontendBool("ShouldShowStatusBar", false) && !CurrentFrontendSettings().showStatusBar &&

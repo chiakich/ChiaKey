@@ -92,7 +92,8 @@ struct StatusWindowState { bool hasPosition = false; LONG left = 0; LONG top = 0
 StatusWindowState ReadStatusWindowState();
 void WriteStatusWindowState(const StatusWindowState& state);
 // rereads the plists if they changed; applying them can rebuild contexts
-void RefreshSettings();
+void RefreshSettings(bool throttled = false);
+std::string CurrentWritablePath();
 ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,
                                        ChiaKey::EngineConfig config);
 FrontendSettings ReadFrontendSettings(const std::string& preferencesPath);

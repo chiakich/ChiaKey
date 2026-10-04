@@ -171,6 +171,9 @@ private:
     bool chineseMode_ = true;
     bool secureMode_ = false;
     SharedCommitHistory commitHistory_;
+    std::wstring historyHostPath_;
+    bool historyHostReady_ = false;
+    ULONGLONG nextHistoryHostAttempt_ = 0;
     std::wstring pendingCommitText_;
     void recordCommittedText(const std::wstring& text);
     bool fullWidthMode_ = false;

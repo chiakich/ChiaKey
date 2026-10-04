@@ -35,7 +35,7 @@ bool StopHistoryHost(const std::wstring& scope = L"");
 struct WordCounts { int64_t today = 0, week = 0, total = 0; };
 size_t CommittedCodePoints(const std::wstring& text);
 // Counts only. SQLite transactions coordinate simultaneous x64 and Win32 hosts.
-bool AddWordCount(const std::string& directory, const std::wstring& text, int localDay);
+bool AddWordCount(const std::string& directory, const std::wstring& text, int localDay, int busyMs = 1000);
 bool ReadWordCounts(const std::string& directory, int localDay, WordCounts* counts);
 bool ClearWordCounts(const std::string& directory);
 int LocalDayNumber();

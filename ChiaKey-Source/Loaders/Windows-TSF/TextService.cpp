@@ -417,6 +417,12 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         categoryManager->RegisterGUID(kFocusedDisplayAttributeGuid, &focusedAttributeAtom_);
     }
     engine_ = EngineSession::Create();
+    const auto settingsApp = SettingsAppPath();
+    const auto separator = settingsApp.find_last_of(L"\\/");
+    historyHostPath_ = separator == std::wstring::npos ? std::wstring()
+        : settingsApp.substr(0, separator) + L"\\ChiaKeyStateHost.exe";
+    historyHostReady_ = false;
+    nextHistoryHostAttempt_ = 0;
     Trace("Activate engineReady=%d", engine_ && engine_->ready());
     const HRESULT langBarResult = initializeLangBar();
     Trace("InitializeLangBar hr=0x%08lX", static_cast<unsigned long>(langBarResult));
@@ -937,7 +943,7 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
 STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lparam,
                                         BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
-    if (!engine_ || !engine_->hasComposition()) RefreshSettings();
+    if (!engine_ || !engine_->hasComposition()) RefreshSettings(true);
     const KeyEvent event = translateKey(wparam, lparam);
     if (!IsShiftKey(event.virtualKey)) {
         shiftTogglePending_ = false;
@@ -1088,7 +1094,7 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eate
 STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
-    if (!engine_ || !engine_->hasComposition()) RefreshSettings();
+    if (!engine_ || !engine_->hasComposition()) RefreshSettings(true);
     if (guid == kSymbolWindowKeyGuid) {
         if (punctuationKeyboard_.isVisible() && context) {
             KeyEvent event;
@@ -1294,14 +1300,14 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
 
 void TextService::recordCommittedText(const std::wstring& text) {
     if (text.empty() || secureMode_) return;
-    const auto settingsApp = SettingsAppPath();
-    const auto separator = settingsApp.find_last_of(L"\\/");
-    if (separator != std::wstring::npos &&
-        !EnsureHistoryHost(settingsApp.substr(0, separator) + L"\\ChiaKeyStateHost.exe"))
-        Trace("History: session host unavailable; retaining TIP-local mapping");
+    if (!historyHostReady_ && !historyHostPath_.empty() && GetTickCount64() >= nextHistoryHostAttempt_) {
+        nextHistoryHostAttempt_ = GetTickCount64() + 10000;
+        historyHostReady_ = EnsureHistoryHost(historyHostPath_);
+        if (!historyHostReady_) Trace("History: session host unavailable; retaining TIP-local mapping");
+    }
     commitHistory_.record(text);
     if (CurrentFrontendSettings().wordCountEnabled &&
-        !AddWordCount(DesktopRuntimePaths().writablePath, text, LocalDayNumber()))
+        !AddWordCount(CurrentWritablePath(), text, LocalDayNumber(), 200))
         Trace("WordCount: write unavailable");
 }
 

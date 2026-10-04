@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <filesystem>
 
 namespace ChiaKey::WindowsTsf {
 namespace {
@@ -48,17 +49,28 @@ struct Security {
 
 struct Database {
     sqlite3* db = nullptr;
-    explicit Database(const std::string& directory) {
+    explicit Database(const std::string& directory, bool readOnly = false, int busyMs = 1000) {
         if (directory.empty()) return;
         const std::string path = directory + "/WindowsWordCount.db";
-        if (sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE |
-                            SQLITE_OPEN_FULLMUTEX, nullptr) != SQLITE_OK) {
+        const int flags = readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+        if (sqlite3_open_v2(path.c_str(), &db, flags | SQLITE_OPEN_FULLMUTEX, nullptr) != SQLITE_OK) {
             if (db) sqlite3_close(db); db = nullptr; return;
         }
-        sqlite3_busy_timeout(db, 50);
-        if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS days(day INTEGER PRIMARY KEY, count INTEGER NOT NULL CHECK(count>=0));"
+        sqlite3_busy_timeout(db, busyMs);
+        if (readOnly) return;
+        // Existing counters need no schema writes on every character. In
+        // particular, a reader must never acquire SQLite's RESERVED lock.
+        sqlite3_stmt* ready = nullptr;
+        const bool initialized = sqlite3_prepare_v2(db,
+            "SELECT count FROM total WHERE id=1 AND EXISTS(SELECT 1 FROM sqlite_master WHERE name='days')",
+            -1, &ready, nullptr) == SQLITE_OK && sqlite3_step(ready) == SQLITE_ROW;
+        sqlite3_finalize(ready);
+        if (initialized) return;
+        if (sqlite3_exec(db, "BEGIN IMMEDIATE;"
+                            "CREATE TABLE IF NOT EXISTS days(day INTEGER PRIMARY KEY, count INTEGER NOT NULL CHECK(count>=0));"
                             "CREATE TABLE IF NOT EXISTS total(id INTEGER PRIMARY KEY CHECK(id=1), count INTEGER NOT NULL CHECK(count>=0));"
-                            "INSERT OR IGNORE INTO total VALUES(1,0);", nullptr, nullptr, nullptr) != SQLITE_OK) {
+                            "INSERT OR IGNORE INTO total VALUES(1,0); COMMIT;", nullptr, nullptr, nullptr) != SQLITE_OK) {
+            sqlite3_exec(db, "ROLLBACK", nullptr, nullptr, nullptr);
             sqlite3_close(db); db = nullptr;
         }
     }
@@ -222,9 +234,9 @@ int LocalDayNumber() {
     return static_cast<int>(ticks.QuadPart / 864000000000ULL);
 }
 
-bool AddWordCount(const std::string& directory, const std::wstring& text, int localDay) {
+bool AddWordCount(const std::string& directory, const std::wstring& text, int localDay, int busyMs) {
     if (text.empty()) return true;
-    Database database(directory);
+    Database database(directory, false, busyMs);
     if (!database.db || !Exec(database.db, "BEGIN IMMEDIATE")) return false;
     sqlite3_stmt* statement = nullptr;
     bool ok = sqlite3_prepare_v2(database.db,
@@ -246,8 +258,11 @@ bool AddWordCount(const std::string& directory, const std::wstring& text, int lo
 }
 
 bool ReadWordCounts(const std::string& directory, int localDay, WordCounts* counts) {
-    if (!counts) return false;
-    Database database(directory);
+    if (!counts || directory.empty()) return false;
+    std::error_code error;
+    const bool exists = std::filesystem::exists(std::filesystem::u8path(directory + "/WindowsWordCount.db"), error);
+    if (!exists && !error) { *counts = {}; return true; }
+    Database database(directory, true);
     if (!database.db) return false;
     sqlite3_stmt* statement = nullptr;
     if (sqlite3_prepare_v2(database.db,

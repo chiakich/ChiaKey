@@ -28,7 +28,7 @@ constexpr char kFrontendPlist[] = "Windows.plist";
 constexpr char kUserPhrasesDirtyFlag[] = "SmartMandarinUserData.dirty";
 // in Preferences but not a module's: the rest are, user tables included
 constexpr const wchar_t* kNonModulePlists[] = {
-    L"SmartMandarin.plist", L"Windows.plist", L"Loader.plist", L"SymbolWindow.plist",
+    L"SmartMandarin.plist", L"Windows.plist", L"Loader.plist", L"SymbolWindow.plist", L"StatusWindow.plist",
 };
 
 bool BoolValue(OVKeyValueMap& map, const char* key, bool fallback) {
@@ -280,6 +280,7 @@ struct RuntimeHolder {
     std::mutex mutex;
     std::shared_ptr<ChiaKey::Runtime> runtime;
     std::string preferencesPath;
+    std::string writablePath;
     FileStamp smartStamp;
     ULONGLONG moduleStamp = 0;
     std::string userPhrasesDirtyFlag;
@@ -385,6 +386,7 @@ void AdoptLocked(RuntimeHolder& holder, std::shared_ptr<ChiaKey::Runtime> runtim
     if (!holder.runtime) return;
     PinModule();
     holder.preferencesPath = PreferencesPath(writablePath);
+    holder.writablePath = writablePath;
     holder.userPhrasesDirtyFlag = OVPathHelper::PathCat(writablePath, kUserPhrasesDirtyFlag);
     holder.privateFallback = privateFallback;
     holder.lexiconCandidates = UpdateLexiconCandidates(RoamingFolder());
@@ -766,7 +768,13 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
     return settings;
 }
 
-void RefreshSettings() { SharedRuntime(); }
+void RefreshSettings(bool throttled) { SharedRuntime(throttled); }
+
+std::string CurrentWritablePath() {
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    return holder.writablePath;
+}
 
 FrontendSettings CurrentFrontendSettings() {
     RuntimeHolder& holder = Holder();
@@ -916,17 +924,22 @@ void WriteSymbolWindowState(const SymbolWindowState& state) {
 
 StatusWindowState ReadStatusWindowState() {
     StatusWindowState state;
-    const auto paths = DesktopRuntimePaths();
-    PVPropertyList plist(OVPathHelper::PathCat(paths.writablePath, "Preferences/StatusWindow.plist"));
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    if (holder.preferencesPath.empty()) return state;
+    const auto path = OVPathHelper::PathCat(holder.preferencesPath, "StatusWindow.plist");
+    if (!OVPathHelper::PathExists(path)) return state;
+    PVPropertyList plist(path);
     auto map = plist.rootDictionary()->keyValueMap();
     state.hasPosition = map.hasKey("Left") && map.hasKey("Top");
     if (state.hasPosition) { state.left = map.intValueForKey("Left"); state.top = map.intValueForKey("Top"); }
     return state;
 }
 void WriteStatusWindowState(const StatusWindowState& state) {
-    const auto paths = DesktopRuntimePaths();
-    if (paths.writablePath.empty() || !state.hasPosition) return;
-    PVPropertyList plist(OVPathHelper::PathCat(paths.writablePath, "Preferences/StatusWindow.plist"));
+    RuntimeHolder& holder = Holder();
+    std::lock_guard<std::mutex> lock(holder.mutex);
+    if (holder.preferencesPath.empty() || !state.hasPosition) return;
+    PVPropertyList plist(OVPathHelper::PathCat(holder.preferencesPath, "StatusWindow.plist"));
     auto map = plist.rootDictionary()->keyValueMap();
     map.setKeyIntValue("Left", state.left); map.setKeyIntValue("Top", state.top);
     plist.write();

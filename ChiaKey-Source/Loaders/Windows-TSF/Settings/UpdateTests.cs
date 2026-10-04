@@ -64,6 +64,7 @@ namespace ChiaKey.Settings
                 Check(Directory.GetFiles(root, "save.plist.*.tmp").Length == 0,
                     "atomic save cleans its own temporary files");
                 Check(Ui.Text("詞彙設定") == "詞彙設定", "Traditional UI preserves original captions");
+                Check(Ui.Translate("完成", "en") == "Completed", "message box title has no mnemonic ampersand");
                 Check(Ui.Translate("詞彙設定", "en") == "User phrase settings", "English resource is embedded");
                 Check(Ui.Translate("詞彙設定", "zh-CN") == "词汇设定", "Simplified UI uses the native project conversion table");
                 Check(Ui.Translate("Custom table name", "en") == "Custom table name", "user labels stay unchanged");
