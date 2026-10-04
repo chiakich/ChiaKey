@@ -744,6 +744,7 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
     settings.soundFilename = StringValue(map, "SoundFilename", settings.soundFilename);
     settings.showNotifications = BoolValue(map, "ShouldUseNotifyWindow", settings.showNotifications);
     settings.keyboardFollowsCursor = BoolValue(map, "KeyboardFormShouldFollowCursor", settings.keyboardFollowsCursor);
+    settings.showStatusBar = BoolValue(map, "ShouldShowStatusBar", true);
     settings.transparentStatusBar = BoolValue(map, "ShouldUseTransparentStatusBar", false);
     settings.statusBarInTray = BoolValue(map, "ShouldUseSystemTray", false);
     settings.miniStatusBar = BoolValue(map, "ShouldUseMiniMode", false);

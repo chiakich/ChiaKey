@@ -512,6 +512,9 @@ void TestSharedState(const std::string& writable) {
     const auto restored = ReadStatusWindowState();
     Check(restored.hasPosition && restored.left == -1000 && restored.top == 700,
           "floating bar position preserves negative monitor coordinates");
+    Check(SetFrontendBool("ShouldShowStatusBar", false) && !CurrentFrontendSettings().showStatusBar &&
+          SetFrontendBool("ShouldShowStatusBar", true) && CurrentFrontendSettings().showStatusBar,
+          "floating bar can be completely disabled independently of mini or tray mode");
     Check(SetFrontendBool("ShouldUseMiniMode", true) && CurrentFrontendSettings().miniStatusBar &&
           SetFrontendBool("ShouldUseMiniMode", false) && !CurrentFrontendSettings().miniStatusBar,
           "mini mode shares the original preference key");

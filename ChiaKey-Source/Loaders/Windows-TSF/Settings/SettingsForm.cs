@@ -184,6 +184,7 @@ namespace ChiaKey.Settings
         private CheckBox backgroundPattern;
         private CheckBox beep;
         private CheckBox keyboardFollowsCursor;
+        private CheckBox showStatusBar;
         private CheckBox transparentStatusBar;
         private CheckBox statusBarInTray;
         private CheckBox wordCountEnabled;
@@ -901,8 +902,9 @@ namespace ChiaKey.Settings
             backgroundPattern = Check(candidate, Ui.Text("使用背景花紋"), 14, 120);
             GroupBox extra = Group(pane, Ui.Text("額外設定"), 204, 162);
             keyboardFollowsCursor = Check(pane, Ui.Text("標點螢幕鍵盤跟隨游標"), 20, 374);
-            transparentStatusBar = Check(pane, Ui.Text("使用半透明狀態列"), 20, 400);
-            statusBarInTray = Check(pane, Ui.Text("狀態列最小化到系統匣（雙擊狀態列收合）"), 20, 426);
+            showStatusBar = Check(pane, Ui.Text("顯示浮動狀態列"), 20, 400);
+            transparentStatusBar = Check(pane, Ui.Text("使用半透明狀態列"), 20, 426);
+            statusBarInTray = Check(pane, Ui.Text("狀態列最小化到系統匣（雙擊狀態列收合）"), 20, 452);
             beep = Check(extra, Ui.Text("錯誤時發出聲響"), 14, 24);
             defaultSound = new RadioButton { Text = Ui.Text("使用系統預設提示聲"), AutoSize = true,
                 Location = new Point(32, 51) };
@@ -1064,6 +1066,7 @@ namespace ChiaKey.Settings
             Select(reverseLookup, new Choice[0], frontend.GetString("ReverseLookupMethod", ""));
             notifications.Checked = frontend.GetBool("ShouldUseNotifyWindow", true);
             keyboardFollowsCursor.Checked = frontend.GetBool("KeyboardFormShouldFollowCursor", false);
+            showStatusBar.Checked = frontend.GetBool("ShouldShowStatusBar", true);
             transparentStatusBar.Checked = frontend.GetBool("ShouldUseTransparentStatusBar", false);
             statusBarInTray.Checked = frontend.GetBool("ShouldUseSystemTray", false);
             wordCountEnabled.Checked = frontend.GetBool("WordCountEnabled", false);
@@ -1146,6 +1149,7 @@ namespace ChiaKey.Settings
             frontend.SetString("ReverseLookupMethod", Selected(reverseLookup));
             frontend.SetBool("ShouldUseNotifyWindow", notifications.Checked);
             frontend.SetBool("KeyboardFormShouldFollowCursor", keyboardFollowsCursor.Checked);
+            frontend.SetBool("ShouldShowStatusBar", showStatusBar.Checked);
             frontend.SetBool("ShouldUseTransparentStatusBar", transparentStatusBar.Checked);
             frontend.SetBool("ShouldUseSystemTray", statusBarInTray.Checked);
             frontend.SetBool("WordCountEnabled", wordCountEnabled.Checked);

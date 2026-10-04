@@ -72,6 +72,7 @@ struct FrontendSettings {
     std::string soundFilename = "Default";
     bool showNotifications = true;
     bool keyboardFollowsCursor = false;
+    bool showStatusBar = true;
     bool transparentStatusBar = false;
     bool statusBarInTray = false;
     bool miniStatusBar = false;

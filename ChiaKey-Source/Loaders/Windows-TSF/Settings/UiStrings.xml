@@ -976,4 +976,8 @@ Version </en>
     <source>正在查詢…</source>
     <en>Searching…</en>
   </string>
+  <string>
+    <source>顯示浮動狀態列</source>
+    <en>Show floating status bar</en>
+  </string>
 </strings>

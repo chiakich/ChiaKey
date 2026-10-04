@@ -186,3 +186,29 @@ Evergreen Runtime 為另外維護的系統元件；缺少或初始化失敗仍�
 新增 fixture 真的啟動 helper、等待 readiness、關閉所有原 mapping 持有者，再從兩個新生命週期
 讀取／更新，最後停止 helper 並確認 mapping 消失；缺少 executable 的失敗也有覆蓋。
 兩架構完整 CTest 各 5/5（35.01／34.35 秒），測試 helper 都已退出，沒有留下常駐測試程序。
+
+## 第八批浮動列開關與斷線建置圖示
+
+新增「其他 → 顯示浮動狀態列」，對應 Windows.plist 的 ShouldShowStatusBar；預設開啟，
+關閉後浮動列與其系統匣圖示一起隱藏，保留模式通知的獨立開關。設定 roundtrip fixture
+覆蓋關閉／重新開啟。本機已關閉此設定，實際偏好設定視窗確認未勾選。
+
+EC2 在 RDP 斷線時曾產生所有 alpha 都為零的 ICO，實際設定視窗出現黑色方塊。
+圖示產生器改用 WPF SoftwareOnly、拒絕全透明影格，並提供符合 alpha 的 AND mask。
+新版設定視窗的標題與關於圖示已目視確認正常；console 移交後重新產生 17 個圖示，105 個 DIB 影格均非全透明且 AND mask 與 alpha 相符。
+浮動列原版外觀復原依使用者指示暫停。記事本已擷取中英與全半形通知，確認紫色標題／黑底白字；完整動畫、堆疊與多螢幕仍待驗證。
+
+兩架構完整 CTest 各 5/5（x64 46.24 秒／Win32 63.99 秒）。目前已註冊
+build/runtime-20261004/x64/Release 與 x86/Release 的 DLL，避免正在執行的宿主
+鎖住舊版檔案。已開啟的應用程式仍需重新開啟才能載入新版。
+
+Administrator session 2 已透過 tscon 移交到 console，RDP 斷線後仍為 Active；
+實際以桌面工具啟動設定、擷取畫面、點擊頁籤並操作記事本，沒有 GetCursorPos 權限錯誤。
+不需使用者保持 RDP 連線；鎖定／登出或重開機會中斷此條件，尚未驗證登入後自動恢復。
+
+記事本已載入新版 x64 DLL，以逐鍵 su3cl3 組出你好、Left 移至中間、兩次 Tab：
+實際 OutputDebugString 記錄 cursor=1、segment=1→2、committedUnits=0，組字保持兩字且
+焦點留在編輯區。Enter 正常提交；半形閒置空白 eaten=0。實際記事本儲存的 UTF-8
+檔案核對為 U+4F60 U+597D U+0020。閒置 Tab eaten=0、由記事本插入 tab。
+Ctrl+Space 與 Shift+Space 顯示對應模式通知。完整候選窗／Esc 設定矩陣、
+有效首聲注音完成、Edge、Win32 宿主、Windows 11 仍需後續實測。

@@ -21,6 +21,7 @@ constexpr int kWidth = kHead + kName + kButton * 5 + kTail;
 
 void StatusWindow::update(const StatusModel& model) {
     model_ = model;
+    if (!CurrentFrontendSettings().showStatusBar) { hide(); return; }
     if (!window_) {
         static std::once_flag once;
         std::call_once(once, [] {
@@ -62,6 +63,7 @@ void StatusWindow::tray(bool visible) {
 
 void StatusWindow::synchronize() {
     if (!window_) return;
+    if (!CurrentFrontendSettings().showStatusBar) { hide(); return; }
     const HWND foreground = GetForegroundWindow();
     if (!foreground || GetWindowThreadProcessId(foreground, nullptr) != GetCurrentThreadId()) {
         // Keep the tray icon while interacting with Explorer's tray flyout. A newly

@@ -7,6 +7,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
+# EC2/RDP builds must not depend on an accelerated, currently connected desktop.
+[Windows.Media.RenderOptions]::ProcessRenderMode = [Windows.Interop.RenderMode]::SoftwareOnly
 $invariant = [Globalization.CultureInfo]::InvariantCulture
 
 # State glyphs follow the taskbar theme; the product glyph stays black and transparent.
@@ -98,12 +100,18 @@ function Render([xml] $svg, [string] $color, [int] $size) {
     return $bitmap
 }
 
-# a 32-bit DIB entry: bottom-up straight-alpha BGRA, then an empty AND mask
+# a 32-bit DIB entry: bottom-up straight-alpha BGRA and a matching AND mask.
+# Older shell/TSF consumers use the mask even when the icon has an alpha channel.
 function DibBytes($bitmap, [int] $size) {
     $straight = New-Object System.Windows.Media.Imaging.FormatConvertedBitmap $bitmap, ([System.Windows.Media.PixelFormats]::Bgra32), $null, 0
     $stride = $size * 4
     $pixels = New-Object byte[] ($stride * $size)
     $straight.CopyPixels($pixels, $stride, 0)
+    $visible = $false
+    for ($at = 3; $at -lt $pixels.Length; $at += 4) {
+        if ($pixels[$at] -ne 0) { $visible = $true; break }
+    }
+    if (-not $visible) { throw "Icon renderer produced a fully transparent ${size}px image" }
     $maskStride = [int]([Math]::Ceiling($size / 32.0) * 4)
     $stream = New-Object IO.MemoryStream
     $writer = New-Object IO.BinaryWriter $stream
@@ -112,7 +120,16 @@ function DibBytes($bitmap, [int] $size) {
     $writer.Write([int]($stride * $size + $maskStride * $size))
     $writer.Write([int]0); $writer.Write([int]0); $writer.Write([int]0); $writer.Write([int]0)
     for ($row = $size - 1; $row -ge 0; $row--) { $writer.Write($pixels, $row * $stride, $stride) }
-    $writer.Write((New-Object byte[] ($maskStride * $size)))
+    $mask = New-Object byte[] ($maskStride * $size)
+    for ($row = 0; $row -lt $size; $row++) {
+        for ($column = 0; $column -lt $size; $column++) {
+            if ($pixels[$row * $stride + $column * 4 + 3] -eq 0) {
+                $index = ($size - 1 - $row) * $maskStride + [int][Math]::Floor($column / 8.0)
+                $mask[$index] = $mask[$index] -bor (128 -shr ($column % 8))
+            }
+        }
+    }
+    $writer.Write($mask)
     $writer.Flush()
     return $stream.ToArray()
 }
