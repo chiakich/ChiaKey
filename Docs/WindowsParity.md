@@ -37,7 +37,7 @@
 | 簡繁切換快捷鍵 | ChineseConverterToggleKey，預設 Ctrl+Alt+S | 本批補上 a-z／無；普通 Ctrl+S 保留給宿主 |
 | 重送最近文字 | RepeatLastCommitTextKey，預設 Ctrl+Alt+G | 本批補上，組字中不重送；保留實際已轉換文字。第三批改為同一登入工作階段的共享記憶體；跨程序測試通過，宿主實測仍待完成 |
 | 字根反查 | ReverseLookup-Generic-cj-cin／Mandarin-bpmf-cin／HanyuPinyin | 本批載入現有反查 package，提供三種選擇與無；實際詞庫測試通過 |
-| 提示視窗開關 | ShouldUseNotifyWindow | 第三批補上獨立通知窗與原版一秒等待／50ms 淡出；關閉通知保留反查 tooltip。堆疊、外觀與宿主仍待對照 |
+| 提示視窗開關 | ShouldUseNotifyWindow | 第三批補上獨立通知窗，第六批補上原版滑入、右上角堆疊、漸層與模式通知；關閉通知保留反查 tooltip。外觀與宿主仍待 GUI |
 | 注音 layout／選字鍵／buffer／空白／Esc／罕用字 | PanelPhonetic | 已有，原有核心與 TSF engine 測試保留 |
 | 倉頡／簡易 auto-compose、clear-on-error、dynamic frequency／標點 | PanelCangjie／PanelSimplex | 已有；既有互斥規則與設定流程保留 |
 | 泛用表設定／萬用字元／最大字根／空白選第一候選 | PanelGenericSettings | 已有；使用者 .cin 仍走現行 Generic 模組 |
@@ -95,7 +95,7 @@ ShouldUseTransparentStatusBar 使用 50% alpha；ShouldUseMiniMode 與 ShouldUse
 其他宿主撤下浮動列／tray；Explorer tray flyout 不應使自己的 icon 消失。實際切換、DPI 與外觀尚待 GUI。
 
 通知與反查 tooltip 分開，不再用候選窗代替通知。一秒後每 50ms 減少 20% opacity；
-目前每個 TIP 的通知替換上一則，原版多視窗堆疊尚未恢復。安全模式不顯示新浮動 UI、不記錄字數或重送文字。
+第六批改為多視窗堆疊與滑入動畫，詳見下節。安全模式不顯示新浮動 UI、不記錄字數或重送文字。
 
 重送歷史使用按使用者 SID 與登入工作階段隔離的共享記憶體，明確 ACL／medium integrity
 可供同一使用者的提升／一般宿主使用；x64 與 Win32 使用固定 layout，不落地文字，也不經系統剪貼簿。
@@ -157,3 +157,18 @@ Evergreen Runtime 為另外維護的系統元件；缺少或初始化失敗仍�
 本機 headless probe 成功載入兩架構 SDK／loader，均找到 Runtime 151.0.4129.78；
 這不代表已建立或目視驗證 WebView2 視窗。安裝 Inno Setup 的指令遭工具政策拒絕，
 尚未編譯修改後的安裝包；桌面顯示、網頁載入、複製與原版外觀仍待 GUI。
+
+## 第六批模式通知與通知堆疊
+
+對照 BINotifyForm／BIStatusBarForm.Notify：通知從目前螢幕右上角堆疊、10px 間隔，
+以 10ms timer 滑入 10px／淡入，100ms 後等待一秒，再每 50ms 減少 20% opacity。
+恢復黑底、兩段紫色漸層標題、白字與矩形邊框。各則訊息保留自己的 timer，最多八則；
+小螢幕放不下時回到頂端並移除遮擋的舊通知。這是每個 TIP 內的堆疊，跨宿主集中佇列尚缺。
+
+中英、全半形、簡繁及輸入法切換重新提供原版通知，沿用三語與通知開關。
+相同狀態不重複通知，初始化與無 thread focus 不產生通知，安全模式也不顯示。
+同批修正已成功 InsertTextAtSelection、後續 caret move 失敗時漏記字數／重送歷史；
+組字 SetText 成功後保留待提交內容，只有真正 EndComposition 成功或宿主終止才記錄。
+
+兩架構完整 CTest 各 5/5（37.95／30.41 秒）。新增滑入／等待／淡出邊界、
+負座標／小 work area 堆疊定位與三語通知 fixture；真正宿主 caret failure、動畫與焦點需 GUI 驗證。

@@ -776,6 +776,13 @@ void TextService::statusAction(StatusAction action, POINT point) {
     updateStatusWindow();
 }
 
+void TextService::notifyMode(const std::wstring& text) {
+    if (secureMode_ || !CurrentFrontendSettings().showNotifications) return;
+    BOOL focused = FALSE;
+    if (threadManager_ && SUCCEEDED(threadManager_->IsThreadFocus(&focused)) && focused)
+        notificationWindow_.show(text);
+}
+
 void TextService::setChineseMode(bool enabled) {
     // ending a composition without clearing its range commits the visible text
     if (!enabled && !requestCommitComposition()) {
@@ -783,6 +790,7 @@ void TextService::setChineseMode(bool enabled) {
         setChineseMode(true);
         return;
     }
+    const bool changed = chineseMode_ != enabled;
     chineseMode_ = enabled;
     shiftTogglePending_ = false;
     shiftPressedAt_ = 0;
@@ -799,11 +807,13 @@ void TextService::setChineseMode(bool enabled) {
         compartment->SetValue(clientId_, &value);
     }
     refreshLangBar();
+    if (changed) notifyMode(UiText(enabled ? L"中文模式" : L"英文模式"));
 }
 
 void TextService::toggleChineseMode() { setChineseMode(!chineseMode_); }
 
 void TextService::setFullWidthMode(bool enabled) {
+    const bool changed = fullWidthMode_ != enabled;
     fullWidthMode_ = enabled;
     ComPtr<ITfCompartmentMgr> manager;
     ComPtr<ITfCompartment> compartment;
@@ -829,6 +839,7 @@ void TextService::setFullWidthMode(bool enabled) {
         compartment->SetValue(clientId_, &value);
     }
     refreshLangBar();
+    if (changed) notifyMode(UiText(enabled ? L"全形英數模式" : L"半形英數模式"));
 }
 
 void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
@@ -836,18 +847,23 @@ void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
 bool TextService::toggleSimplifiedOutput() {
     RefreshSettings();
     const bool changed = SetSimplifiedOutput(!CurrentFrontendSettings().simplifiedOutput);
-    if (changed) refreshLangBar();
+    if (changed) {
+        refreshLangBar();
+        notifyMode(UiText(CurrentFrontendSettings().simplifiedOutput ? L"簡體中文輸出" : L"繁體中文輸出"));
+    }
     return changed;
 }
 
 bool TextService::selectInputMethod(const std::string& identifier) {
-    if (CurrentInputMethod() != identifier) {
+    const bool changed = CurrentInputMethod() != identifier;
+    if (changed) {
         // the switch rebuilds every context, which would drop the composition
         if (!requestCommitComposition()) return false;
         if (!SelectInputMethod(identifier)) return false;
     }
     if (!chineseMode_) setChineseMode(true);
     refreshLangBar();
+    if (changed) notifyMode(UiText(L"選用") + InputMethodName(identifier) + UiText(L"輸入法"));
     return true;
 }
 
@@ -1338,14 +1354,13 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
         if (FAILED(result)) return result;
         result = range->SetText(editCookie, 0, output.data(), static_cast<LONG>(output.size()));
         if (FAILED(result)) return result;
+        pendingCommitText_ = output;
         // not every host moves the caret on SetText; the next word would land in front
         result = range->Collapse(editCookie, TF_ANCHOR_END);
         if (FAILED(result)) return result;
         result = MoveCaret(editCookie, context, range.Get());
         if (FAILED(result)) return result;
-        result = endComposition(editCookie, false);
-        if (SUCCEEDED(result)) recordCommittedText(output);
-        return result;
+        return endComposition(editCookie, false);
     }
 
     ComPtr<ITfInsertAtSelection> insertion;
@@ -1354,12 +1369,12 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
     ComPtr<ITfRange> insertedRange;
     result = insertion->InsertTextAtSelection(editCookie, 0, output.data(),
                                               static_cast<LONG>(output.size()), &insertedRange);
-    if (FAILED(result) || !insertedRange) return result;
+    if (FAILED(result)) return result;
+    recordCommittedText(output);
+    if (!insertedRange) return E_UNEXPECTED;
     result = insertedRange->Collapse(editCookie, TF_ANCHOR_END);
     if (FAILED(result)) return result;
-    result = MoveCaret(editCookie, context, insertedRange.Get());
-    if (SUCCEEDED(result)) recordCommittedText(output);
-    return result;
+    return MoveCaret(editCookie, context, insertedRange.Get());
 }
 
 HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
@@ -1734,8 +1749,8 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
         SUCCEEDED(manager->GetCompartment(guid, &compartment)) &&
         SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
         if (guid == GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION) {
-            fullWidthMode_ = (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_FULLSHAPE)) != 0;
-            refreshLangBar();
+            const bool width = (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_FULLSHAPE)) != 0;
+            if (fullWidthMode_ != width) setFullWidthMode(width);
         } else if (chineseMode_ != (value.lVal != 0)) {
             setChineseMode(value.lVal != 0);
         }

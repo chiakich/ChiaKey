@@ -8,6 +8,8 @@
 #include <limits>
 
 namespace ChiaKey::WindowsTsf {
+std::wstring InputMethodName(const std::string& inputMethod);
+
 
 enum class FrontendShortcut { None, NextInputMethod, ToggleSimplified, RepeatCommit, PunctuationKeyboard };
 

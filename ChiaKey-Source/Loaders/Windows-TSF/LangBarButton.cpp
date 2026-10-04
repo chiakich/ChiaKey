@@ -66,12 +66,6 @@ int ChineseIconFor(const std::string& inputMethod) {
     return IDI_CHINESE;
 }
 
-std::wstring InputMethodName(const std::string& inputMethod) {
-    for (const auto& method : InputMethods()) {
-        if (method.first == inputMethod) return method.second;
-    }
-    return UiText(L"中文");
-}
 
 }  // namespace
 

@@ -137,6 +137,7 @@ private:
     HRESULT initializeLangBar();
     void uninitializeLangBar();
     void refreshLangBar();
+    void notifyMode(const std::wstring& text);
     void setChineseMode(bool enabled);
     void setFullWidthMode(bool enabled);
     KeyEvent translateKey(WPARAM wparam, LPARAM lparam) const;

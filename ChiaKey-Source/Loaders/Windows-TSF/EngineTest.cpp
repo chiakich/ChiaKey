@@ -455,6 +455,23 @@ void TestSharedState(const std::string& writable) {
     Check(NotificationOpacity(999) == 255 && NotificationOpacity(1000) == 204 &&
           NotificationOpacity(1150) == 51 && NotificationOpacity(1200) == 0,
           "notification holds one second and fades by 20 percent every 50 ms");
+    Check(NotificationAnimationOpacity(0) == 128 && NotificationAnimationOpacity(50) == 255 &&
+          NotificationAnimationOpacity(1099) == 255 && NotificationAnimationOpacity(1100) == 204 &&
+          NotificationAnimationOpacity(1300) == 0 && NotificationSlide(0) == -10 &&
+          NotificationSlide(90) == -1 && NotificationSlide(100) == 0,
+          "legacy notification slides in for 100 ms, holds, then fades");
+    const auto firstNotice = NotificationRectangle({-1920, -100, 0, 1000}, 180, 95, 10, LONG_MIN);
+    const auto nextNotice = NotificationRectangle({-1920, -100, 0, 1000}, 180, 95, 10, firstNotice.bottom);
+    Check(firstNotice.left == -190 && firstNotice.top == -90 && nextNotice.top == 15,
+          "notification stack starts at monitor top right and preserves negative coordinates");
+    const auto wrappedNotice = NotificationRectangle({0, 0, 200, 150}, 180, 95, 10, 105);
+    const auto tinyNotice = NotificationRectangle({0, 0, 80, 60}, 180, 95, 10, LONG_MIN);
+    Check(wrappedNotice.top == 10 && tinyNotice.left == 0 && tinyNotice.top == 0 &&
+          tinyNotice.right == 80 && tinyNotice.bottom == 60,
+          "notification stack wraps and clamps to small work areas");
+    Check(UiText(L"中文模式", "en") == L"Switch to Chinese mode." &&
+          UiText(L"半形英數模式", "zh-CN") == L"半形英数模式",
+          "mode notifications use the selected UI language");
     StatusWindowState state{true, -1000, 700};
     WriteStatusWindowState(state);
     const auto restored = ReadStatusWindowState();
