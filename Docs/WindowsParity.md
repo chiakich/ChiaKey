@@ -35,9 +35,9 @@
 | Caps Lock 英文模式 | EnablesCapsLockAsAlphanumericModeToggle、移除大小寫 latch | 本批補上；Caps Lock 開啟時英文小寫、Shift 英文大寫，仍待實機 |
 | Ctrl+Space／Shift+Space | 原版 Ctrl+Space 交 Windows，Shift+Space 切全半形 | 現行 TSF 切中英／全半形保持；Windows 系統層行為待實機 |
 | 簡繁切換快捷鍵 | ChineseConverterToggleKey，預設 Ctrl+Alt+S | 本批補上 a-z／無；普通 Ctrl+S 保留給宿主 |
-| 重送最近文字 | RepeatLastCommitTextKey，預設 Ctrl+Alt+G | 本批補上，組字中不重送；保留實際已轉換文字。歷史目前每個 TIP instance 一份，跨應用程式共用尚未完成 |
+| 重送最近文字 | RepeatLastCommitTextKey，預設 Ctrl+Alt+G | 本批補上，組字中不重送；保留實際已轉換文字。第三批改為同一登入工作階段的共享記憶體；跨程序測試通過，宿主實測仍待完成 |
 | 字根反查 | ReverseLookup-Generic-cj-cin／Mandarin-bpmf-cin／HanyuPinyin | 本批載入現有反查 package，提供三種選擇與無；實際詞庫測試通過 |
-| 提示視窗開關 | ShouldUseNotifyWindow | 本批補上，關閉通知不會關掉反查／候選 tooltip；獨立提示窗外觀與顯示時間仍待對照 |
+| 提示視窗開關 | ShouldUseNotifyWindow | 第三批補上獨立通知窗與原版一秒等待／50ms 淡出；關閉通知保留反查 tooltip。堆疊、外觀與宿主仍待對照 |
 | 注音 layout／選字鍵／buffer／空白／Esc／罕用字 | PanelPhonetic | 已有，原有核心與 TSF engine 測試保留 |
 | 倉頡／簡易 auto-compose、clear-on-error、dynamic frequency／標點 | PanelCangjie／PanelSimplex | 已有；既有互斥規則與設定流程保留 |
 | 泛用表設定／萬用字元／最大字根／空白選第一候選 | PanelGenericSettings | 已有；使用者 .cin 仍走現行 Generic 模組 |
@@ -49,10 +49,10 @@
 | 詞彙增刪／詞文／讀音／匯入匯出 | EditorForm／ReadingForm／PanelPhrases | 已有，前批補上多音字選讀音與原子寫入；本批補上剪下／複製／貼上選單、依焦點操作與整列複製、說明／關於 |
 | 設定的確定／取消／套用 | TakaoPreference | 已有；取消不寫未套用設定。本批新增欄位沿用同一儲存流程 |
 | 關於頁與選單 | BIAboutPanel／BIStatusBarForm | 本批補上設定關於頁、語言列關於入口與詞彙編輯器關於；保留千秋名稱、版本與專案網址 |
-| 獨立浮動狀態列、半透明、最小化到 system tray | BIStatusBarForm／PanelMisc | 尚缺完整原版浮動列，目前是 TSF 語言列／狀態圖示。不能把 tray 圖示視為原版完整狀態列 |
+| 獨立浮動狀態列、半透明、最小化到 system tray | BIStatusBarForm／PanelMisc | 第三批補上六操作浮動列、拖曳位置、50% 半透明、雙擊 mini／tray 和還原；使用千秋圖示，原版 bitmap 皮膚與宿主切換／tray 尚待視覺實測 |
 | 字典搜尋與歷史 | BIDictionaryForm 的 Yahoo 網路查詢／內嵌瀏覽器 | 尚缺；舊碼使用 HTTP 網路服務與外部 JS，不直接恢復失效服務或舊瀏覽器容器 |
 | OneKey／Evaluator／其他 around filters | BIStatusBarForm 動態 modules 選單 | OneKey 已在本 repo 明確移除；其餘不是僅補一個選單即可使用，需各自核對模組與資料契約 |
-| 字數統計、今天／本週／總計／清除 | BIAboutPanel 依 WordCount 套件啟用 | 尚未接上 Windows TSF runtime；原版也在套件不存在時停用 |
+| 字數統計、今天／本週／總計／清除 | BIAboutPanel 依 WordCount 套件啟用 | 第三批補上可停用的 TSF 成功提交計數與關於頁今日／最近七天／累計／清除；SQLite 跨宿主原子更新，不儲存文字。原 DLL 套件設定尚未遷移 |
 | signed plug-in 管理／移除 | PanelMisc 與 PVDLLLoadingSystem | 尚缺，現行核心使用 static packages；不可直接恢復舊 DLL 載入與簽章機制 |
 | 自動更新 | PanelUpdate／FormAskDownload／FormDownload | 現行本體／詞庫雙管道已實作；產品發布與下載契約使用千秋，不復用 Yahoo 舊 endpoint |
 | 繁中／簡中／英文 UI | zh-TW／zh-CN／default resx | 現行偏好設定主要繁中，完整三語 UI 尚缺 |
@@ -87,6 +87,32 @@ Ctrl+Alt+, 透過既有 preserved-key 註冊進入 TSF edit session，候選顯�
 第二批 x64／Win32 完整 CTest 各 5/5 通過（34.35／36.04 秒）。包括以正式詞庫組出「你好」
 再送鍵盤逗號，確認留下「你好，」組字且 committedText 為空。這不是 TSF callback 或 GUI 的實測。
 
+## 第三批浮動列、提示與共享狀態
+
+浮動列依原版六操作順序接到現有 TSF 功能：輸入法、中英、簡繁、全半形、符號、設定。
+ShouldUseTransparentStatusBar 使用 50% alpha；ShouldUseMiniMode 與 ShouldUseSystemTray
+支援雙擊收合／還原，StatusWindow.plist 保留跨螢幕位置。每個前景 TIP 取得共享 owner，
+其他宿主撤下浮動列／tray；Explorer tray flyout 不應使自己的 icon 消失。實際切換、DPI 與外觀尚待 GUI。
+
+通知與反查 tooltip 分開，不再用候選窗代替通知。一秒後每 50ms 減少 20% opacity；
+目前每個 TIP 的通知替換上一則，原版多視窗堆疊尚未恢復。安全模式不顯示新浮動 UI、不記錄字數或重送文字。
+
+重送歷史使用按使用者 SID 與登入工作階段隔離的共享記憶體，明確 ACL／medium integrity
+可供同一使用者的提升／一般宿主使用；x64 與 Win32 使用固定 layout，不落地文字，也不經系統剪貼簿。
+只有實際成功提交才更新歷史；組字轉換的待提交內容延後至 EndComposition 成功。
+共享最多 65,536 UTF-16 units，超長內容僅原 instance 能重送，其他 instance 不重送截斷／舊文字。
+當最後一個持有 mapping 的 TIP 退出時，歷史消失；尚不具原版常駐 RPC server 的持續生命週期。
+
+字數統計沿用原版按 Unicode code point 計數（包括標點與英文），由 TSF 成功提交時更新，
+不是在核心尚未成功送進宿主時先加總。使用 WindowsWordCount.db 的 SQLite transaction，
+資料只含日期／計數。預設關閉；關於頁提供開關、刷新與確認後清除。
+最近七天按本機日曆日期計算，不用固定秒數跨 DST；舊版 YKAFWordCount.plist 未自動匯入。
+SQLite 忙碌超過 50ms 會回報診斷而不阻塞打字更久，這種失敗會少計，尚需 GUI／壓力測試評估。
+
+原生兩架構建置成功；完整 CTest 各 5/5（34.37／36.86 秒），最後共享 owner 變更後
+兩架構 engine fixture 各 2/2 通過（1.00／1.05 秒）。新增真正子程序重送、Unicode code point、
+午夜／七天窗口、並行計數與清除、超長歷史與通知時間測試。這些不等於 GUI 已驗證。
+
 ## 驗證邊界與下一步
 
 本批以原生 MSVC x64／Win32 建置；兩架構 CTest 各 5/5 通過，包括正式詞庫的注音／拼音反查、
@@ -95,7 +121,7 @@ Ctrl+Alt+, 透過既有 preserved-key 註冊進入 TSF edit session，候選顯�
 
 桌面仍受 RDP disconnected／locked 限制，沒有把編譯成功當成 GUI 已一致。待桌面可用時應先驗證
 新快捷鍵在記事本／Edge 的 preserved-key 分派、Caps Lock 中途組字提交、反查提示、剪貼簿焦點、
-設定全部九個頁面的 DPI／捲動／字型與顏色選取，以及標點螢幕鍵盤的滑鼠／一次選鍵／拖曳與跟隨游標。完整浮動狀態列仍待補齊。
+設定全部九個頁面的 DPI／捲動／字型與顏色選取，以及標點螢幕鍵盤的滑鼠／一次選鍵／拖曳與跟隨游標。第三批浮動列／tray 已補程式碼，仍待實際 UI 對照。
 Server 的成功不替代 Windows 11 Store app／非管理員／提升權限宿主與不同 DPI 的驗證。
 
 本批沿用 windows-tsf／PR #16，以獨立 conventional commit 保留功能補齊與先前 review 修正的邊界。

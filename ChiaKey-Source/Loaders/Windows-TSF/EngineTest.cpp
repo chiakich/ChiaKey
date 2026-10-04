@@ -8,6 +8,9 @@
 #include "OutputFilter.h"
 #include "FrontendBehavior.h"
 #include "PunctuationKeyboard.h"
+#include "SharedState.h"
+#include "NotificationWindow.h"
+#include <thread>
 #include <OVFileHelper.h>
 
 using namespace ChiaKey::WindowsTsf;
@@ -401,6 +404,64 @@ void WriteUserTable(const std::string& writableDir) {
 
 }  // namespace
 
+void TestSharedState(const std::string& writable) {
+    const std::wstring scope = L".Test." + std::to_wstring(GetCurrentProcessId());
+    SharedCommitHistory first(scope), second(scope);
+    first.setStatusOwner(reinterpret_cast<HWND>(1234));
+    Check(second.statusOwner() == reinterpret_cast<HWND>(1234), "active status ownership is shared between hosts");
+    first.record(L"你好😀");
+    Check(second.replay(false) == L"你好😀" && second.replay(true).empty(),
+          "different TIP instances share actual output but refuse mid-composition replay");
+    wchar_t executable[MAX_PATH]{};
+    GetModuleFileNameW(nullptr, executable, MAX_PATH);
+    std::wstring command = L"\"" + std::wstring(executable) + L"\" --history-child " + scope;
+    STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION process{};
+    if (CreateProcessW(executable, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
+                       nullptr, nullptr, &startup, &process)) {
+        const DWORD wait = WaitForSingleObject(process.hProcess, 10000);
+        DWORD code = 99; GetExitCodeProcess(process.hProcess, &code);
+        Check(wait == WAIT_OBJECT_0 && code == 0 && first.replay(false) == L"另一個程序",
+              "another process can update the session history");
+        CloseHandle(process.hThread); CloseHandle(process.hProcess);
+    } else Check(false, "launch session history child");
+    const std::wstring huge(65537, L'甲');
+    first.record(huge);
+    Check(first.replay(false) == huge && second.replay(false).empty(),
+          "oversized history cannot replay a truncated or stale commit in another instance");
+    first.record(L"短文");
+    Check(second.replay(false) == L"短文", "a later normal commit restores shared history");
+    const std::string path = writable + "\\word-count-test";
+    CreateDirectoryA(path.c_str(), nullptr);
+    Check(ClearWordCounts(path), "clear independent word-count fixture");
+    Check(CommittedCodePoints(L"你好😀\U00020000") == 4, "counts Unicode scalars, not UTF-16 units");
+    Check(AddWordCount(path, L"旧", 94) && AddWordCount(path, L"你好", 100) &&
+          AddWordCount(path, L"😀", 101), "persist counts by local calendar day");
+    WordCounts counts;
+    Check(ReadWordCounts(path, 101, &counts) && counts.today == 1 && counts.week == 3 && counts.total == 4,
+          "rolling seven-day count excludes older days without dropping the total");
+    Check(ReadWordCounts(path, 102, &counts) && counts.today == 0 && counts.week == 3 && counts.total == 4,
+          "reading after midnight rolls today's count forward");
+    bool a = false, b = false;
+    std::thread writerA([&] { a = AddWordCount(path, L"甲乙", 102); });
+    std::thread writerB([&] { b = AddWordCount(path, L"丙丁", 102); });
+    writerA.join(); writerB.join();
+    Check(a && b && ReadWordCounts(path, 102, &counts) && counts.today == 4 && counts.total == 8,
+          "simultaneous hosts update counters transactionally");
+    Check(ClearWordCounts(path) && ReadWordCounts(path, 102, &counts) && counts.total == 0 && counts.week == 0,
+          "clear removes all persisted counts");
+    Check(NotificationOpacity(999) == 255 && NotificationOpacity(1000) == 204 &&
+          NotificationOpacity(1150) == 51 && NotificationOpacity(1200) == 0,
+          "notification holds one second and fades by 20 percent every 50 ms");
+    StatusWindowState state{true, -1000, 700};
+    WriteStatusWindowState(state);
+    const auto restored = ReadStatusWindowState();
+    Check(restored.hasPosition && restored.left == -1000 && restored.top == 700,
+          "floating bar position preserves negative monitor coordinates");
+    Check(SetFrontendBool("ShouldUseMiniMode", true) && CurrentFrontendSettings().miniStatusBar &&
+          SetFrontendBool("ShouldUseMiniMode", false) && !CurrentFrontendSettings().miniStatusBar,
+          "mini mode shares the original preference key");
+}
+
 void TestPunctuationKeyboard() {
     KeyEvent open = Key(VK_OEM_COMMA, false, true); open.alt = true;
     Check(ShortcutFor(open, FrontendSettings{}) == FrontendShortcut::PunctuationKeyboard,
@@ -501,8 +562,8 @@ void TestLegacyFrontendBehavior() {
     Check(history.replay(false) == L"台湾", "repeat retains actual converted output");
     ChiaKey::EngineState notification;
     notification.notifications = {"saved"};
-    Check(MakeResult(notification, true).message == L"saved" &&
-          MakeResult(notification, false).message.empty(), "notification window can be disabled");
+    Check(MakeResult(notification, true).notification == L"saved" &&
+          MakeResult(notification, false).notification.empty() && MakeResult(notification, true).message.empty(), "notification window can be disabled");
     notification.tooltip = "reading hint";
     Check(MakeResult(notification, false).message == L"reading hint",
           "disabling notifications retains candidate and reverse-lookup hints");
@@ -570,6 +631,12 @@ void TestSymbols() {
 }
 
 int main(int argc, char* argv[]) {
+    if (argc == 3 && std::string(argv[1]) == "--history-child") {
+        const std::string scope(argv[2]);
+        SharedCommitHistory history(std::wstring(scope.begin(), scope.end()));
+        if (history.replay(false) != L"你好😀") return 1;
+        history.record(L"另一個程序"); return 0;
+    }
     if (argc < 4) {
         std::cerr << "usage: chiakey_tsf_engine_test <source-dir> <writable-dir> <lexicon>"
                   << std::endl;
@@ -594,6 +661,7 @@ int main(int argc, char* argv[]) {
               methods[1].second == L"傳統注音" && methods[2].first == "Generic-cj-cin" &&
               methods[3].second == L"簡易",
           "the input methods are listed in the mac menu's order and names");
+    TestSharedState(argv[2]);
     TestLayout();
     TestOutputConversion();
     TestLegacyFrontendBehavior();

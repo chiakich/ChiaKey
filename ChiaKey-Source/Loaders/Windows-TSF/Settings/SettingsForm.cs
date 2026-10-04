@@ -184,6 +184,14 @@ namespace ChiaKey.Settings
         private CheckBox backgroundPattern;
         private CheckBox beep;
         private CheckBox keyboardFollowsCursor;
+        private CheckBox transparentStatusBar;
+        private CheckBox statusBarInTray;
+        private CheckBox wordCountEnabled;
+        private Label wordCounts;
+        [System.Runtime.InteropServices.DllImport("ChiaKeyTsf.dll", CallingConvention = System.Runtime.InteropServices.CallingConvention.StdCall)]
+        private static extern bool ChiaKeyWordCounts(out long today, out long week, out long total);
+        [System.Runtime.InteropServices.DllImport("ChiaKeyTsf.dll", CallingConvention = System.Runtime.InteropServices.CallingConvention.StdCall)]
+        private static extern bool ChiaKeyClearWordCounts();
         private RadioButton defaultSound;
         private RadioButton customSound;
         private TextBox soundPath;
@@ -872,6 +880,8 @@ namespace ChiaKey.Settings
         {
             Panel pane = new Panel();
             Title(pane, "其他設定");
+            pane.AutoScroll = true;
+            pane.AutoScrollMinSize = new Size(470, 458);
             GroupBox candidate = Group(pane, "選字窗設定", 44, 150);
             highlightColor = Combo(candidate, "提示顏色：", 22, HighlightColors);
             backgroundColor = Combo(candidate, "視窗背景顏色：", 54, BackgroundColors);
@@ -882,6 +892,8 @@ namespace ChiaKey.Settings
             backgroundPattern = Check(candidate, "使用背景花紋", 14, 120);
             GroupBox extra = Group(pane, "額外設定", 204, 162);
             keyboardFollowsCursor = Check(pane, "標點螢幕鍵盤跟隨游標", 20, 374);
+            transparentStatusBar = Check(pane, "使用半透明狀態列", 20, 400);
+            statusBarInTray = Check(pane, "狀態列最小化到系統匣（雙擊狀態列收合）", 20, 426);
             beep = Check(extra, "錯誤時發出聲響", 14, 24);
             defaultSound = new RadioButton { Text = "使用系統預設提示聲", AutoSize = true,
                 Location = new Point(32, 51) };
@@ -956,7 +968,29 @@ namespace ChiaKey.Settings
                 Location = new Point(24, 272) };
             project.LinkClicked += delegate { System.Diagnostics.Process.Start("https://github.com/chiakich/ChiaKey"); };
             pane.Controls.AddRange(new Control[] { logo, description, project });
+            wordCountEnabled = Check(pane, "啟用字數統計", 20, 250);
+            wordCounts = new Label { Bounds = new Rectangle(20, 280, 430, 55), Text = "讀取字數統計…" };
+            Button refreshCounts = new Button { Text = "重新整理", Bounds = new Rectangle(20, 344, 100, 26) };
+            Button clearCounts = new Button { Text = "清除統計", Bounds = new Rectangle(130, 344, 100, 26) };
+            refreshCounts.Click += delegate { RefreshWordCounts(); };
+            clearCounts.Click += delegate {
+                if (MessageBox.Show(this, "要清除全部字數統計嗎？", Text, MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question) != DialogResult.Yes) return;
+                try { if (!ChiaKeyClearWordCounts()) throw new IOException("無法清除統計。"); RefreshWordCounts(); }
+                catch (Exception error) { MessageBox.Show(this, error.Message, Text); }
+            };
+            pane.Controls.AddRange(new Control[] { wordCounts, refreshCounts, clearCounts });
             return pane;
+        }
+
+        private void RefreshWordCounts()
+        {
+            try {
+                long today, week, total;
+                if (!ChiaKeyWordCounts(out today, out week, out total)) throw new IOException("無法讀取字數統計。");
+                wordCounts.Text = string.Format("今日：{0:N0}　最近七天：{1:N0}\r\n累計：{2:N0}", today, week, total);
+            }
+            catch (Exception error) { wordCounts.Text = error.Message; }
         }
 
         private void Changed()
@@ -1021,6 +1055,10 @@ namespace ChiaKey.Settings
             Select(reverseLookup, new Choice[0], frontend.GetString("ReverseLookupMethod", ""));
             notifications.Checked = frontend.GetBool("ShouldUseNotifyWindow", true);
             keyboardFollowsCursor.Checked = frontend.GetBool("KeyboardFormShouldFollowCursor", false);
+            transparentStatusBar.Checked = frontend.GetBool("ShouldUseTransparentStatusBar", false);
+            statusBarInTray.Checked = frontend.GetBool("ShouldUseSystemTray", false);
+            wordCountEnabled.Checked = frontend.GetBool("WordCountEnabled", false);
+            RefreshWordCounts();
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
             simplifiedOutput.Checked = frontend.GetBool("SimplifiedOutput", false);
             LoadMenuInputMethods(frontend.GetStringArray("ModulesSuppressedFromUI"));
@@ -1098,6 +1136,9 @@ namespace ChiaKey.Settings
             frontend.SetString("ReverseLookupMethod", Selected(reverseLookup));
             frontend.SetBool("ShouldUseNotifyWindow", notifications.Checked);
             frontend.SetBool("KeyboardFormShouldFollowCursor", keyboardFollowsCursor.Checked);
+            frontend.SetBool("ShouldUseTransparentStatusBar", transparentStatusBar.Checked);
+            frontend.SetBool("ShouldUseSystemTray", statusBarInTray.Checked);
+            frontend.SetBool("WordCountEnabled", wordCountEnabled.Checked);
             frontend.SetString("SoundFilename", customSound.Checked && soundPath.Text.Length > 0 ? soundPath.Text : "Default");
             frontend.SetBool("EnableAssociatedPhrases", associatedPhrases.Checked);
             frontend.SetBool("SimplifiedOutput", simplifiedOutput.Checked);

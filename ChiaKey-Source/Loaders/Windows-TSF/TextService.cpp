@@ -403,10 +403,11 @@ STDMETHODIMP TextService::Activate(ITfThreadMgr* threadManager, TfClientId clien
 }
 
 STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId clientId,
-                                     DWORD) {
+                                     DWORD flags) {
     if (!threadManager || clientId == TF_CLIENTID_NULL) return E_INVALIDARG;
     if (threadManager_) return S_OK;
 
+    secureMode_ = (flags & TF_TMAE_SECUREMODE) != 0;
     threadManager_ = threadManager;
     clientId_ = clientId;
     ComPtr<ITfCategoryMgr> categoryManager;
@@ -459,6 +460,8 @@ STDMETHODIMP TextService::Deactivate() {
     // another input method takes over; the saved state brings the window back with ChiaKey
     symbolWindow_.destroy();
     punctuationKeyboard_.destroy();
+    statusWindow_.destroy();
+    notificationWindow_.destroy();
     // the context saves its learning when it ends; an app closing leaves no other chance
     engine_.reset();
     threadManager_.Reset();
@@ -717,6 +720,7 @@ void TextService::uninitializeLangBar() {
 }
 
 void TextService::refreshLangBar() {
+    updateStatusWindow();
     std::array<LangBarButton*, 3> buttons{};
     {
         std::lock_guard<std::mutex> lock(langBarMutex_);
@@ -730,6 +734,46 @@ void TextService::refreshLangBar() {
         button->update();
         button->Release();
     }
+}
+
+void TextService::updateStatusWindow() {
+    if (!threadManager_ || secureMode_) { statusWindow_.hide(); return; }
+    std::wstring name = L"中文";
+    for (const auto& method : InputMethods()) if (method.first == CurrentInputMethod()) name = method.second;
+    statusWindow_.update({name, isChineseMode(), fullWidthMode_, CurrentFrontendSettings().simplifiedOutput});
+}
+
+void TextService::statusAction(StatusAction action, POINT point) {
+    switch (action) {
+    case StatusAction::Language: toggleChineseMode(); break;
+    case StatusAction::Converter: toggleSimplifiedOutput(); break;
+    case StatusAction::Width: toggleFullWidthMode(); break;
+    case StatusAction::Symbols: toggleSymbolWindow(); break;
+    case StatusAction::Settings: {
+        LangBarButton* button = nullptr;
+        { std::lock_guard<std::mutex> lock(langBarMutex_); button = modeIconButton_; if (button) button->AddRef(); }
+        if (button) { button->OnClick(TF_LBI_CLK_RIGHT, point, nullptr); button->Release(); }
+        break;
+    }
+    case StatusAction::InputMethod: {
+        HMENU menu = CreatePopupMenu();
+        const auto settings = CurrentFrontendSettings();
+        std::vector<std::string> ids;
+        for (const auto& method : InputMethods()) {
+            if (method.first != CurrentInputMethod() && std::find(settings.suppressedInputMethods.begin(),
+                settings.suppressedInputMethods.end(), method.first) != settings.suppressedInputMethods.end()) continue;
+            ids.push_back(method.first);
+            AppendMenuW(menu, MF_STRING | (method.first == CurrentInputMethod() ? MF_CHECKED : 0),
+                        ids.size(), method.second.c_str());
+        }
+        const UINT chosen = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_BOTTOMALIGN,
+                                           point.x, point.y, 0, GetForegroundWindow(), nullptr);
+        DestroyMenu(menu);
+        if (chosen && chosen <= ids.size()) selectInputMethod(ids[chosen - 1]);
+        break;
+    }
+    }
+    updateStatusWindow();
 }
 
 void TextService::setChineseMode(bool enabled) {
@@ -1142,6 +1186,7 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
     }
     if (ShortcutFor(event, settings) == FrontendShortcut::RepeatCommit) {
         *handled = true;
+        if (secureMode_) return S_OK;
         const bool composing = composition_ || (engine_ && engine_->hasComposition());
         if (composing) { PlayTypingErrorSound(settings); return S_OK; }
         // Repeat exactly what was sent, even if the conversion setting has changed.
@@ -1273,9 +1318,18 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
     return MoveCaret(editCookie, context, selection.Get());
 }
 
+void TextService::recordCommittedText(const std::wstring& text) {
+    if (text.empty() || secureMode_) return;
+    commitHistory_.record(text);
+    if (CurrentFrontendSettings().wordCountEnabled &&
+        !AddWordCount(DesktopRuntimePaths().writablePath, text, LocalDayNumber()))
+        Trace("WordCount: write unavailable");
+}
+
 HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
                                 const std::wstring& text, bool filter) {
     if (text.empty()) return S_OK;
+    pendingCommitText_.clear();
     const std::wstring output = filter
         ? FilterCommittedText(text, CurrentFrontendSettings().simplifiedOutput) : text;
     if (composition_ && compositionContext_.Get() == context) {
@@ -1290,7 +1344,7 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
         result = MoveCaret(editCookie, context, range.Get());
         if (FAILED(result)) return result;
         result = endComposition(editCookie, false);
-        if (SUCCEEDED(result)) commitHistory_.record(output);
+        if (SUCCEEDED(result)) recordCommittedText(output);
         return result;
     }
 
@@ -1304,7 +1358,7 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
     result = insertedRange->Collapse(editCookie, TF_ANCHOR_END);
     if (FAILED(result)) return result;
     result = MoveCaret(editCookie, context, insertedRange.Get());
-    if (SUCCEEDED(result)) commitHistory_.record(output);
+    if (SUCCEEDED(result)) recordCommittedText(output);
     return result;
 }
 
@@ -1329,7 +1383,7 @@ HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
         result = range->SetText(editCookie, 0, output.data(), static_cast<LONG>(output.size()));
         if (FAILED(result)) return result;
     }
-    commitHistory_.record(output);
+    pendingCommitText_ = output;
     return S_OK;
 }
 
@@ -1348,6 +1402,8 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
     const HRESULT result = completing->EndComposition(editCookie);
     endingComposition_ = false;
     if (SUCCEEDED(result)) {
+        if (!clearText && !pendingCommitText_.empty()) recordCommittedText(pendingCommitText_);
+        pendingCommitText_.clear();
         composition_.Reset();
         compositionContext_.Reset();
     }
@@ -1432,6 +1488,7 @@ void TextService::abandonComposition() {
     ComPtr<ITfContext> oldContext = compositionContext_;
     composition_.Reset();
     compositionContext_.Reset();
+    pendingCommitText_.clear();
 
     if (!oldComposition || !oldContext || clientId_ == TF_CLIENTID_NULL) return;
     auto* session = new (std::nothrow) TerminateEditSession(oldComposition.Get());
@@ -1455,6 +1512,7 @@ HRESULT TextService::updateComposition(TfEditCookie editCookie, ITfContext* cont
         if (FAILED(status)) return status;
     }
     updateCandidateWindow(editCookie, context, result);
+    if (!secureMode_ && !result.notification.empty()) notificationWindow_.show(result.notification);
     return S_OK;
 }
 
@@ -1561,6 +1619,7 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie, ITfCo
     if (composition_.Get() == composition) {
         if (!endingComposition_) {
             const HRESULT conversion = convertCompositionForCommit(editCookie);
+            if (SUCCEEDED(conversion)) { recordCommittedText(pendingCommitText_); pendingCommitText_.clear(); }
             if (FAILED(conversion)) Trace("Host termination conversion failed: 0x%08lX", conversion);
         }
         composition_.Reset();
@@ -1647,6 +1706,8 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
 // one window per app thread, brought up where the user goes as Yahoo's single window was;
 // the window itself hides when another app comes to the front
 STDMETHODIMP TextService::OnSetThreadFocus() {
+    RefreshSettings();
+    updateStatusWindow();
     if (!symbolWindow_.isVisible() && ReadSymbolWindowState().visible) symbolWindow_.show();
     return S_OK;
 }

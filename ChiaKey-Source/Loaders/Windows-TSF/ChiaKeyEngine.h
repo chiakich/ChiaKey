@@ -38,6 +38,7 @@ struct EngineResult {
     size_t candidatePage = 0;
     size_t candidatePageCount = 0;
     std::wstring message;
+    std::wstring notification;
 };
 
 struct KeyEvent {
@@ -71,6 +72,10 @@ struct FrontendSettings {
     std::string soundFilename = "Default";
     bool showNotifications = true;
     bool keyboardFollowsCursor = false;
+    bool transparentStatusBar = false;
+    bool statusBarInTray = false;
+    bool miniStatusBar = false;
+    bool wordCountEnabled = false;
     std::string reverseLookupMethod;
     bool associatedPhrases = false;
     bool simplifiedOutput = false;
@@ -80,6 +85,10 @@ struct FrontendSettings {
 
 FrontendSettings CurrentFrontendSettings();
 bool SetSimplifiedOutput(bool enabled);
+bool SetFrontendBool(const std::string& key, bool enabled);
+struct StatusWindowState { bool hasPosition = false; LONG left = 0; LONG top = 0; };
+StatusWindowState ReadStatusWindowState();
+void WriteStatusWindowState(const StatusWindowState& state);
 // rereads the plists if they changed; applying them can rebuild contexts
 void RefreshSettings();
 ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,

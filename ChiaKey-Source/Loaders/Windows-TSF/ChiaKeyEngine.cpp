@@ -684,8 +684,8 @@ EngineResult MakeResult(const ChiaKey::EngineState& state, bool showNotification
     }
 
     result.message = Utf8ToWide(state.tooltip);
-    if (showNotifications && result.message.empty() && !state.notifications.empty()) {
-        result.message = Utf8ToWide(state.notifications.back());
+    if (showNotifications && !state.notifications.empty()) {
+        result.notification = Utf8ToWide(state.notifications.back());
     }
     return result;
 }
@@ -741,6 +741,10 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
     settings.soundFilename = StringValue(map, "SoundFilename", settings.soundFilename);
     settings.showNotifications = BoolValue(map, "ShouldUseNotifyWindow", settings.showNotifications);
     settings.keyboardFollowsCursor = BoolValue(map, "KeyboardFormShouldFollowCursor", settings.keyboardFollowsCursor);
+    settings.transparentStatusBar = BoolValue(map, "ShouldUseTransparentStatusBar", false);
+    settings.statusBarInTray = BoolValue(map, "ShouldUseSystemTray", false);
+    settings.miniStatusBar = BoolValue(map, "ShouldUseMiniMode", false);
+    settings.wordCountEnabled = BoolValue(map, "WordCountEnabled", false);
     settings.reverseLookupMethod = StringValue(map, "ReverseLookupMethod", "");
     settings.associatedPhrases =
         BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);
@@ -764,18 +768,20 @@ FrontendSettings CurrentFrontendSettings() {
     return holder.frontend;
 }
 
-bool SetSimplifiedOutput(bool enabled) {
+bool SetSimplifiedOutput(bool enabled) { return SetFrontendBool("SimplifiedOutput", enabled); }
+
+bool SetFrontendBool(const std::string& key, bool enabled) {
     SharedRuntime();
     RuntimeHolder& holder = Holder();
     std::lock_guard<std::mutex> lock(holder.mutex);
     if (holder.preferencesPath.empty()) return false;
     PVPropertyList plist(OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist));
     OVKeyValueMap map = plist.rootDictionary()->keyValueMap();
-    map.setKeyBoolValue("SimplifiedOutput", enabled);
+    map.setKeyBoolValue(key, enabled);
     plist.write();
     holder.frontend = ReadFrontendSettings(holder.preferencesPath);
     holder.frontendStamp = Stamp(OVPathHelper::PathCat(holder.preferencesPath, kFrontendPlist));
-    return holder.frontend.simplifiedOutput == enabled;
+    return BoolValue(map, key.c_str(), !enabled) == enabled;
 }
 
 std::wstring SettingsAppPath() {
@@ -899,6 +905,24 @@ void WriteSymbolWindowState(const SymbolWindowState& state) {
         map.setKeyIntValue("Left", state.left);
         map.setKeyIntValue("Bottom", state.bottom);
     }
+    plist.write();
+}
+
+StatusWindowState ReadStatusWindowState() {
+    StatusWindowState state;
+    const auto paths = DesktopRuntimePaths();
+    PVPropertyList plist(OVPathHelper::PathCat(paths.writablePath, "Preferences/StatusWindow.plist"));
+    auto map = plist.rootDictionary()->keyValueMap();
+    state.hasPosition = map.hasKey("Left") && map.hasKey("Top");
+    if (state.hasPosition) { state.left = map.intValueForKey("Left"); state.top = map.intValueForKey("Top"); }
+    return state;
+}
+void WriteStatusWindowState(const StatusWindowState& state) {
+    const auto paths = DesktopRuntimePaths();
+    if (paths.writablePath.empty() || !state.hasPosition) return;
+    PVPropertyList plist(OVPathHelper::PathCat(paths.writablePath, "Preferences/StatusWindow.plist"));
+    auto map = plist.rootDictionary()->keyValueMap();
+    map.setKeyIntValue("Left", state.left); map.setKeyIntValue("Top", state.top);
     plist.write();
 }
 

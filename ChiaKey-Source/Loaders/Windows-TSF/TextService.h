@@ -15,6 +15,9 @@
 #include "FrontendBehavior.h"
 #include "SymbolWindow.h"
 #include "PunctuationKeyboard.h"
+#include "StatusWindow.h"
+#include "SharedState.h"
+#include "NotificationWindow.h"
 
 namespace ChiaKey::WindowsTsf {
 
@@ -120,6 +123,8 @@ private:
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
     HRESULT handleFrontendShortcut(ITfContext* context, const KeyEvent& event, BOOL* eaten);
     void sendSymbol(const std::wstring& text);
+    void statusAction(StatusAction action, POINT point);
+    void updateStatusWindow();
     // a synchronous request is refused when the document is locked or TSF will
     // not block the caller; the same session is then requested asynchronously
     HRESULT requestEditSession(ITfContext* context, ITfEditSession* session,
@@ -166,7 +171,10 @@ private:
     TfGuidAtom inputAttributeAtom_ = TF_INVALID_GUIDATOM;
     TfGuidAtom focusedAttributeAtom_ = TF_INVALID_GUIDATOM;
     bool chineseMode_ = true;
-    CommitHistory commitHistory_;
+    bool secureMode_ = false;
+    SharedCommitHistory commitHistory_;
+    std::wstring pendingCommitText_;
+    void recordCommittedText(const std::wstring& text);
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;
@@ -181,6 +189,8 @@ private:
     Microsoft::WRL::ComPtr<ITfContext> candidateContext_;
     std::unique_ptr<EngineSession> engine_;
     CandidateWindow candidateWindow_;
+    NotificationWindow notificationWindow_;
+    StatusWindow statusWindow_{[this](StatusAction action, POINT point) { statusAction(action, point); }};
     PunctuationKeyboard punctuationKeyboard_{[this](const std::wstring& text) { sendSymbol(text); }};
     SymbolWindow symbolWindow_{[this](const std::wstring& text) { sendSymbol(text); }};
     std::mutex langBarMutex_;

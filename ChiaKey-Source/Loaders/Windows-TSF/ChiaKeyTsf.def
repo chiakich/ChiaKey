@@ -21,4 +21,6 @@ EXPORTS
     ChiaKeyPhrasesReadings
     ChiaKeyPhrasesExport
     ChiaKeyPhrasesImport
+    ChiaKeyWordCounts
+    ChiaKeyClearWordCounts
     ChiaKeyUpdatesValidateCore

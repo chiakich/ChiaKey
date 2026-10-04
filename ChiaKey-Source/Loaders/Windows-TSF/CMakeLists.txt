@@ -26,6 +26,7 @@ add_library(chiakey_tsf_engine STATIC
     ChiaKeyEngine.cpp
     Diagnostics.cpp
     FrontendBehavior.cpp
+    SharedState.cpp
     OutputFilter.cpp
     "${CHIAKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c"
     UpdateLexicon.cpp
@@ -82,6 +83,8 @@ add_library(ChiaKeyTsf SHARED
     PhraseEditorExports.cpp
     SymbolWindow.cpp
     PunctuationKeyboard.cpp
+    StatusWindow.cpp
+    NotificationWindow.cpp
     TextService.cpp
     ChiaKeyTsf.rc
     "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc"
