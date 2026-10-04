@@ -87,5 +87,9 @@ private:
 };
 
 void PlayTypingErrorSound(const FrontendSettings& settings);
+std::wstring UiText(const std::wstring& text, const std::string& language);
+inline std::wstring UiText(const std::wstring& text) {
+    return UiText(text, CurrentFrontendSettings().uiLanguage);
+}
 
 } // namespace ChiaKey::WindowsTsf

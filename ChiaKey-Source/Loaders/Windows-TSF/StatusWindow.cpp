@@ -1,3 +1,4 @@
+#include "FrontendBehavior.h"
 #include "StatusWindow.h"
 
 #include <shellapi.h>
@@ -32,7 +33,7 @@ void StatusWindow::update(const StatusModel& model) {
             RegisterClassExW(&cls);
         });
         const auto previous = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-        CreateWindowExW(kExStyle, kClass, L"千秋輸入法", WS_POPUP, 0, 0, 1, 1,
+        CreateWindowExW(kExStyle, kClass, UiText(L"千秋輸入法").c_str(), WS_POPUP, 0, 0, 1, 1,
                         nullptr, nullptr, g_module, this);
         if (previous) SetThreadDpiAwarenessContext(previous);
         if (!window_) return;
@@ -55,7 +56,7 @@ void StatusWindow::tray(bool visible) {
     icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     icon.uCallbackMessage = kTrayMessage;
     icon.hIcon = LoadIconW(g_module, MAKEINTRESOURCEW(IDI_CHIAKEY));
-    wcscpy_s(icon.szTip, L"千秋輸入法：按一下還原浮動狀態列");
+    wcscpy_s(icon.szTip, UiText(L"千秋輸入法：按一下還原浮動狀態列").c_str());
     if (Shell_NotifyIconW(visible ? NIM_ADD : NIM_DELETE, &icon)) inTray_ = visible;
 }
 

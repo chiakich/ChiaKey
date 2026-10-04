@@ -1,3 +1,4 @@
+#include "FrontendBehavior.h"
 #include "PunctuationKeyboard.h"
 
 #include <algorithm>
@@ -24,7 +25,7 @@ void PunctuationKeyboard::open(HWND owner, const RECT& caret, bool followCursor)
         RegisterClassExW(&cls);
     });
     const auto previous = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    if (!window_) CreateWindowExW(kExStyle, kClass, L"標點螢幕鍵盤", kStyle,
+    if (!window_) CreateWindowExW(kExStyle, kClass, UiText(L"標點螢幕鍵盤").c_str(), kStyle,
                                   0, 0, 1, 1, owner, nullptr, g_module, this);
     if (previous) SetThreadDpiAwarenessContext(previous);
     if (!window_) return;

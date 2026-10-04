@@ -296,6 +296,7 @@ void TestSettings(const std::string& writableDir) {
                    Entry("SoundFilename", "C:/Windows/Media/notify.wav") +
                    Entry("ShouldUseNotifyWindow", "false") +
                    Entry("KeyboardFormShouldFollowCursor", "true") +
+                   Entry("UiLanguage", "en") +
                    "\t<key>ModulesSuppressedFromUI</key>\n\t<array>\n\t\t<string>Generic-simplex-cin"
                    "</string>\n\t\t<string>TraditionalMandarin</string>\n\t</array>\n");
     // the settings app writes the whole module plist, as the core does
@@ -306,6 +307,8 @@ void TestSettings(const std::string& writableDir) {
     std::unique_ptr<EngineSession> session = EngineSession::Create();
     const FrontendSettings frontend = CurrentFrontendSettings();
     Check(frontend.highlightColor == "Green", "a changed Windows.plist is reread");
+    Check(frontend.uiLanguage == "en" && ReadEngineConfig(preferences, {}).locale == "en",
+          "new runtimes use the selected UI locale, including module notifications");
     Check(!frontend.toggleWithControlBackslash, "boolean settings are read");
     Check(frontend.textColor == "White", "missing keys keep their defaults");
     Check(!frontend.shiftTogglesEnglish, "the Shift tap toggle can be turned off");
@@ -662,6 +665,8 @@ int main(int argc, char* argv[]) {
               methods[3].second == L"簡易",
           "the input methods are listed in the mac menu's order and names");
     TestSharedState(argv[2]);
+    Check(UiText(L"傳統注音", "en") == L"Traditional Phonetic" &&
+          UiText(L"詞彙編輯器…", "zh-CN") == L"词汇编辑器…", "native menu labels follow the selected UI language");
     TestLayout();
     TestOutputConversion();
     TestLegacyFrontendBehavior();

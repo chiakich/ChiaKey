@@ -1,0 +1,939 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings>
+  <string>
+    <source>
+
+源自 Yahoo! KeyKey 詞彙編輯程式。</source>
+    <en>
+
+Based on the Yahoo! KeyKey Phrase Editor.</en>
+  </string>
+  <string>
+    <source>
+
+源自 Yahoo! 奇摩輸入法（KeyKey）。
+Windows 前端依原版設計開發，使用 Windows TSF 與千秋共用核心。</source>
+    <en>
+
+Based on Yahoo! KeyKey.
+The Windows frontend follows its design, using TSF and the shared ChiaKey core.</en>
+  </string>
+  <string>
+    <source> 個詞彙</source>
+    <en> phrases</en>
+  </string>
+  <string>
+    <source> 個詞彙嗎？</source>
+    <en> phrases?</en>
+  </string>
+  <string>
+    <source> 安裝器；完成後重新開啟應用程式</source>
+    <en> installer; restart your apps after installation</en>
+  </string>
+  <string>
+    <source>CIN 字表 (*.cin)|*.cin</source>
+    <en>CIN tables (*.cin)|*.cin</en>
+  </string>
+  <string>
+    <source>」嗎？</source>
+    <en>"?</en>
+  </string>
+  <string>
+    <source>」已經在詞庫裡了，仍要再加一個不同讀音的嗎？</source>
+    <en>" already exists. Add it with another reading?</en>
+  </string>
+  <string>
+    <source>」的讀音。</source>
+    <en>" reading.</en>
+  </string>
+  <string>
+    <source>」與讀音。</source>
+    <en>" and its reading.</en>
+  </string>
+  <string>
+    <source>一般(&amp;G)</source>
+    <en>&amp;General</en>
+  </string>
+  <string>
+    <source>一般設定</source>
+    <en>General settings</en>
+  </string>
+  <string>
+    <source>上次檢查：</source>
+    <en>Last checked: </en>
+  </string>
+  <string>
+    <source>下載安裝</source>
+    <en>Download and install</en>
+  </string>
+  <string>
+    <source>不限長度</source>
+    <en>Unlimited</en>
+  </string>
+  <string>
+    <source>今日：{0:N0}　最近七天：{1:N0}
+
+累計：{2:N0}</source>
+    <en>Today: {0:N0}   Last 7 days: {1:N0}
+
+Total: {2:N0}</en>
+  </string>
+  <string>
+    <source>介面語言：</source>
+    <en>Interface language:</en>
+  </string>
+  <string>
+    <source>以詞彙或注音搜尋</source>
+    <en>Search by phrase or Bopomofo</en>
+  </string>
+  <string>
+    <source>使用 Caps Lock 按鍵切換中英文</source>
+    <en>Use Caps Lock to toggle Chinese / English mode.</en>
+  </string>
+  <string>
+    <source>使用 Ctrl + \ 切換到下一個輸入法</source>
+    <en>Use Control + \ to jump to the next Input Method.</en>
+  </string>
+  <string>
+    <source>使用全字庫罕用字（CNS11643）</source>
+    <en>Include rare CNS11643 characters</en>
+  </string>
+  <string>
+    <source>使用動態字頻調整</source>
+    <en>Put recently chosen candidates in front.</en>
+  </string>
+  <string>
+    <source>使用動態字頻調整（將常用字移動到選字列表前方）</source>
+    <en>Put recently chosen candidates in front.</en>
+  </string>
+  <string>
+    <source>使用半透明狀態列</source>
+    <en>Use transparent status bar.</en>
+  </string>
+  <string>
+    <source>使用單擊 Shift 按鍵切換中英模式</source>
+    <en>Use Shift key to toggle Chinese / English mode.</en>
+  </string>
+  <string>
+    <source>使用提示視窗</source>
+    <en>Use notify window.</en>
+  </string>
+  <string>
+    <source>使用空白鍵選字</source>
+    <en>Show candidate list with Space key.</en>
+  </string>
+  <string>
+    <source>使用系統預設提示聲</source>
+    <en>System alert sound</en>
+  </string>
+  <string>
+    <source>使用背景花紋</source>
+    <en>Use Pattern.</en>
+  </string>
+  <string>
+    <source>使用自訂提示聲：</source>
+    <en>Other sound clip:</en>
+  </string>
+  <string>
+    <source>依鍵盤配置</source>
+    <en>Keyboard layout</en>
+  </string>
+  <string>
+    <source>倉頡</source>
+    <en>Cangjie</en>
+  </string>
+  <string>
+    <source>倉頡(&amp;J)</source>
+    <en>Cang&amp;jie</en>
+  </string>
+  <string>
+    <source>倉頡輸入法設定</source>
+    <en>Cangjie Input Method Settings</en>
+  </string>
+  <string>
+    <source>倚天</source>
+    <en>Eten</en>
+  </string>
+  <string>
+    <source>倚天 26 鍵</source>
+    <en>Eten 26</en>
+  </string>
+  <string>
+    <source>傳統注音</source>
+    <en>Traditional Phonetic</en>
+  </string>
+  <string>
+    <source>全形標點</source>
+    <en>Full-width punctuation</en>
+  </string>
+  <string>
+    <source>全部使用全形標點</source>
+    <en>Use full-width punctuation</en>
+  </string>
+  <string>
+    <source>全部使用半形標點</source>
+    <en>Use half-width punctuation</en>
+  </string>
+  <string>
+    <source>共 </source>
+    <en>Total: </en>
+  </string>
+  <string>
+    <source>其他(&amp;M)</source>
+    <en>&amp;Misc</en>
+  </string>
+  <string>
+    <source>其他設定</source>
+    <en>Miscellaneous Settings</en>
+  </string>
+  <string>
+    <source>刪除(&amp;D)</source>
+    <en>&amp;Delete</en>
+  </string>
+  <string>
+    <source>剪下(&amp;T)</source>
+    <en>Cu&amp;t</en>
+  </string>
+  <string>
+    <source>加入、修改或移除自己的詞彙，也可以匯入或匯出詞彙檔。</source>
+    <en>Add, edit or remove your phrases, or import and export a phrase file.</en>
+  </string>
+  <string>
+    <source>加入新詞</source>
+    <en>Add</en>
+  </string>
+  <string>
+    <source>加入新詞(&amp;N)</source>
+    <en>Add &amp;New Phrase</en>
+  </string>
+  <string>
+    <source>匯入(&amp;I)…</source>
+    <en>&amp;Import</en>
+  </string>
+  <string>
+    <source>匯入…</source>
+    <en>&amp;Import</en>
+  </string>
+  <string>
+    <source>匯入字表</source>
+    <en>Import table</en>
+  </string>
+  <string>
+    <source>匯入詞彙</source>
+    <en>Import phrases</en>
+  </string>
+  <string>
+    <source>匯出(&amp;E)…</source>
+    <en>&amp;Export</en>
+  </string>
+  <string>
+    <source>匯出詞彙</source>
+    <en>Export phrases</en>
+  </string>
+  <string>
+    <source>千秋輸入法
+版本 </source>
+    <en>ChiaKey
+Version </en>
+  </string>
+  <string>
+    <source>千秋輸入法 偏好設定</source>
+    <en>ChiaKey Preferences</en>
+  </string>
+  <string>
+    <source>千秋輸入法詞彙編輯器
+版本 </source>
+    <en>ChiaKey Phrase Editor
+Version </en>
+  </string>
+  <string>
+    <source>千秋輸入法詞彙編輯程式</source>
+    <en>ChiaKey Phrase Editor</en>
+  </string>
+  <string>
+    <source>取消(&amp;C)</source>
+    <en>&amp;Cancel</en>
+  </string>
+  <string>
+    <source>取消勾選的輸入法不會出現在輸入選單中（使用中的除外）。</source>
+    <en>Hide unchecked methods, except the one in use.</en>
+  </string>
+  <string>
+    <source>啟用字數統計</source>
+    <en>Enable word count</en>
+  </string>
+  <string>
+    <source>單一長度</source>
+    <en>Single length</en>
+  </string>
+  <string>
+    <source>基本功能</source>
+    <en>Basic</en>
+  </string>
+  <string>
+    <source>大易、行列、嘸蝦米等字表不隨附，請自行匯入 .cin 檔。
+</source>
+    <en>Dayi, Array and Boshiamy tables are not bundled. Import a .cin file.
+</en>
+  </string>
+  <string>
+    <source>套用(&amp;A)</source>
+    <en>&amp;Apply</en>
+  </string>
+  <string>
+    <source>好打注音</source>
+    <en>Smart Phonetic</en>
+  </string>
+  <string>
+    <source>字根反查功能：</source>
+    <en>Reverse lookup:</en>
+  </string>
+  <string>
+    <source>字根組合最大長度：</source>
+    <en>Maximum radical length:</en>
+  </string>
+  <string>
+    <source>字（最多 20 字）</source>
+    <en>characters (maximum 20)</en>
+  </string>
+  <string>
+    <source>完成</source>
+    <en>&amp;Finish</en>
+  </string>
+  <string>
+    <source>專案網站與原始碼</source>
+    <en>Project website and source code</en>
+  </string>
+  <string>
+    <source>尚未檢查</source>
+    <en>Not checked yet</en>
+  </string>
+  <string>
+    <source>已是最新版本。</source>
+    <en>Up to date.</en>
+  </string>
+  <string>
+    <source>已經有同名的字表，要取代嗎？</source>
+    <en>A table with this name already exists. Replace it?</en>
+  </string>
+  <string>
+    <source>已開啟 </source>
+    <en>Opened </en>
+  </string>
+  <string>
+    <source>已開啟安裝器。</source>
+    <en>Installer opened.</en>
+  </string>
+  <string>
+    <source>快速鍵</source>
+    <en>Shortcut Keys</en>
+  </string>
+  <string>
+    <source>打到字根最大長度時立刻組字</source>
+    <en>Should commit at maximum radical length.</en>
+  </string>
+  <string>
+    <source>打字功能</source>
+    <en>When Typing</en>
+  </string>
+  <string>
+    <source>打字功能：</source>
+    <en>When Typing:</en>
+  </string>
+  <string>
+    <source>打字時同時組字</source>
+    <en>Auto compose on typing.</en>
+  </string>
+  <string>
+    <source>找到 </source>
+    <en>Found </en>
+  </string>
+  <string>
+    <source>按下 ESC 按鍵後清除全部編輯區內容</source>
+    <en>Clear composing text with Esc key.</en>
+  </string>
+  <string>
+    <source>按住 Shift 時輸入大寫英文</source>
+    <en>Hold Shift for uppercase English</en>
+  </string>
+  <string>
+    <source>接受 Beta 版</source>
+    <en>Include beta releases</en>
+  </string>
+  <string>
+    <source>提示聲 (*.wav)|*.wav</source>
+    <en>Alert sounds (*.wav)|*.wav</en>
+  </string>
+  <string>
+    <source>提示顏色：</source>
+    <en>Text Highlight:</en>
+  </string>
+  <string>
+    <source>搜尋：</source>
+    <en>Search: </en>
+  </string>
+  <string>
+    <source>文字顏色：</source>
+    <en>Text color:</en>
+  </string>
+  <string>
+    <source>新增或移除字表後，需要重新開啟正在使用的程式，才會出現在輸入法選單中。</source>
+    <en>Restart your typing apps after adding or removing a table.</en>
+  </string>
+  <string>
+    <source>更新(&amp;U)</source>
+    <en>&amp;Update</en>
+  </string>
+  <string>
+    <source>更新失敗：</source>
+    <en>Update failed: </en>
+  </string>
+  <string>
+    <source>最新版本：</source>
+    <en>Latest version: </en>
+  </string>
+  <string>
+    <source>有新版本可供下載。</source>
+    <en>An update is available.</en>
+  </string>
+  <string>
+    <source>本體已是最新</source>
+    <en>ChiaKey is up to date</en>
+  </string>
+  <string>
+    <source>本體更新失敗：</source>
+    <en>Application update failed: </en>
+  </string>
+  <string>
+    <source>本體等待發布滿三天</source>
+    <en>Waiting until the application release is three days old</en>
+  </string>
+  <string>
+    <source>查詢結果不唯一</source>
+    <en>Query result is not unique</en>
+  </string>
+  <string>
+    <source>標準</source>
+    <en>Standard</en>
+  </string>
+  <string>
+    <source>標點符號</source>
+    <en>Punctuation</en>
+  </string>
+  <string>
+    <source>標點符號樣式：</source>
+    <en>Punctuation Style</en>
+  </string>
+  <string>
+    <source>標點螢幕鍵盤跟隨游標</source>
+    <en>Follow the cursor with the punctuation keyboard</en>
+  </string>
+  <string>
+    <source>檔案(&amp;F)</source>
+    <en>&amp;File</en>
+  </string>
+  <string>
+    <source>檢查失敗：</source>
+    <en>Update check failed: </en>
+  </string>
+  <string>
+    <source>檢查更新</source>
+    <en>Check for updates</en>
+  </string>
+  <string>
+    <source>正在下載更新…</source>
+    <en>Downloading update…</en>
+  </string>
+  <string>
+    <source>正在檢查更新…</source>
+    <en>Checking for updates…</en>
+  </string>
+  <string>
+    <source>泛用(&amp;E)</source>
+    <en>G&amp;eneric</en>
+  </string>
+  <string>
+    <source>泛用輸入法設定</source>
+    <en>Generic Input Methods' Settings</en>
+  </string>
+  <string>
+    <source>注音</source>
+    <en>Bopomofo</en>
+  </string>
+  <string>
+    <source>注音(&amp;P)</source>
+    <en>&amp;Phonetic</en>
+  </string>
+  <string>
+    <source>注音全形標點</source>
+    <en>Bopomofo full-width punctuation</en>
+  </string>
+  <string>
+    <source>注音輸入法設定</source>
+    <en>Phonetic Input Method Settings</en>
+  </string>
+  <string>
+    <source>清除統計</source>
+    <en>Clear statistics</en>
+  </string>
+  <string>
+    <source>測試</source>
+    <en>Test</en>
+  </string>
+  <string>
+    <source>漢語拼音</source>
+    <en>Hanyu Pinyin</en>
+  </string>
+  <string>
+    <source>瀏覽…</source>
+    <en>Browse…</en>
+  </string>
+  <string>
+    <source>無</source>
+    <en>None</en>
+  </string>
+  <string>
+    <source>無法以唯讀模式開啟詞庫。</source>
+    <en>Could not open the lexicon read-only.</en>
+  </string>
+  <string>
+    <source>無法儲存設定：</source>
+    <en>Could not save preferences: </en>
+  </string>
+  <string>
+    <source>無法加入「</source>
+    <en>Could not add "</en>
+  </string>
+  <string>
+    <source>無法匯入字表：</source>
+    <en>Could not import table: </en>
+  </string>
+  <string>
+    <source>無法播放提示聲：</source>
+    <en>Could not play alert sound: </en>
+  </string>
+  <string>
+    <source>無法更新「</source>
+    <en>Could not update "</en>
+  </string>
+  <string>
+    <source>無法清除統計。</source>
+    <en>Could not clear statistics.</en>
+  </string>
+  <string>
+    <source>無法移除字表：</source>
+    <en>Could not remove table: </en>
+  </string>
+  <string>
+    <source>無法讀取字數統計。</source>
+    <en>Could not read statistics.</en>
+  </string>
+  <string>
+    <source>無法讀取詞庫：</source>
+    <en>Could not read lexicon: </en>
+  </string>
+  <string>
+    <source>無法開啟使用者詞庫。</source>
+    <en>Could not open the user phrase database.</en>
+  </string>
+  <string>
+    <source>無法開啟常用語檔案：</source>
+    <en>Could not open canned messages: </en>
+  </string>
+  <string>
+    <source>狀態列最小化到系統匣（雙擊狀態列收合）</source>
+    <en>Minimize status bar to tray (double-click to collapse)</en>
+  </string>
+  <string>
+    <source>白色</source>
+    <en>White</en>
+  </string>
+  <string>
+    <source>目前版本：</source>
+    <en>Current version: </en>
+  </string>
+  <string>
+    <source>確定(&amp;O)</source>
+    <en>&amp;OK</en>
+  </string>
+  <string>
+    <source>確定要移除「</source>
+    <en>Remove "</en>
+  </string>
+  <string>
+    <source>確定要移除選取的 </source>
+    <en>Remove the selected </en>
+  </string>
+  <string>
+    <source>禁止的 OneKey 資料</source>
+    <en>Disallowed OneKey data</en>
+  </string>
+  <string>
+    <source>移除</source>
+    <en>Remove</en>
+  </string>
+  <string>
+    <source>移除詞彙</source>
+    <en>Remove</en>
+  </string>
+  <string>
+    <source>空白鍵選一字，第一選字鍵選第二字</source>
+    <en>Space selects first; first selection key selects second</en>
+  </string>
+  <string>
+    <source>符號表分類</source>
+    <en>Symbol categories</en>
+  </string>
+  <string>
+    <source>符號表常用語</source>
+    <en>Canned messages</en>
+  </string>
+  <string>
+    <source>符號表最後一頁的自訂訊息，一行一則。</source>
+    <en>Custom messages on the last symbol page, one per line.</en>
+  </string>
+  <string>
+    <source>符號表資料</source>
+    <en>Symbol data</en>
+  </string>
+  <string>
+    <source>簡易</source>
+    <en>Simplex</en>
+  </string>
+  <string>
+    <source>簡易(&amp;S)</source>
+    <en>&amp;Simplex</en>
+  </string>
+  <string>
+    <source>簡易輸入法設定</source>
+    <en>Simplex Input Method Settings</en>
+  </string>
+  <string>
+    <source>簡繁中文切換快速鍵：</source>
+    <en>Conversion shortcut:</en>
+  </string>
+  <string>
+    <source>簡繁切換與重送文字不能使用相同的快速鍵。</source>
+    <en>Conversion and repeat cannot share the same shortcut.</en>
+  </string>
+  <string>
+    <source>簡體中文</source>
+    <en>Simplified Chinese</en>
+  </string>
+  <string>
+    <source>簡體輸出</source>
+    <en>Simplified Chinese output</en>
+  </string>
+  <string>
+    <source>紅色</source>
+    <en>Red</en>
+  </string>
+  <string>
+    <source>紫色</source>
+    <en>Purple</en>
+  </string>
+  <string>
+    <source>組字錯誤時清除字根</source>
+    <en>Clear reading buffer at composition error.</en>
+  </string>
+  <string>
+    <source>綠色</source>
+    <en>Green</en>
+  </string>
+  <string>
+    <source>線上說明文件(&amp;H)</source>
+    <en>Online &amp;Help</en>
+  </string>
+  <string>
+    <source>編輯(&amp;E)</source>
+    <en>&amp;Edit</en>
+  </string>
+  <string>
+    <source>編輯常用語…</source>
+    <en>Edit canned messages…</en>
+  </string>
+  <string>
+    <source>編輯注音</source>
+    <en>Edit Reading</en>
+  </string>
+  <string>
+    <source>編輯注音(&amp;R)</source>
+    <en>Edit &amp;Reading</en>
+  </string>
+  <string>
+    <source>編輯詞彙</source>
+    <en>Edit Phrase</en>
+  </string>
+  <string>
+    <source>編輯詞彙(&amp;E)</source>
+    <en>&amp;Edit Phrase</en>
+  </string>
+  <string>
+    <source>繁體中文</source>
+    <en>Traditional Chinese</en>
+  </string>
+  <string>
+    <source>自動更新詞庫</source>
+    <en>Update the lexicon automatically</en>
+  </string>
+  <string>
+    <source>自動更新輸入法</source>
+    <en>Update ChiaKey automatically</en>
+  </string>
+  <string>
+    <source>自訂…</source>
+    <en>Custom…</en>
+  </string>
+  <string>
+    <source>自訂字表（.cin）</source>
+    <en>Custom tables (.cin)</en>
+  </string>
+  <string>
+    <source>自訂詞彙</source>
+    <en>User phrases</en>
+  </string>
+  <string>
+    <source>自訂顏色（</source>
+    <en>Custom color (</en>
+  </string>
+  <string>
+    <source>萬用字元：</source>
+    <en>Wildcard</en>
+  </string>
+  <string>
+    <source>複製(&amp;C)</source>
+    <en>&amp;Copy</en>
+  </string>
+  <string>
+    <source>要清除全部字數統計嗎？</source>
+    <en>Clear all word-count statistics?</en>
+  </string>
+  <string>
+    <source>要移除「</source>
+    <en>Remove "</en>
+  </string>
+  <string>
+    <source>視窗背景顏色：</source>
+    <en>Background:</en>
+  </string>
+  <string>
+    <source>許氏</source>
+    <en>Hsu</en>
+  </string>
+  <string>
+    <source>詞庫已是最新</source>
+    <en>Lexicon is up to date</en>
+  </string>
+  <string>
+    <source>詞庫已更新。</source>
+    <en>Lexicon updated.</en>
+  </string>
+  <string>
+    <source>詞庫已更新至 </source>
+    <en>Lexicon updated to </en>
+  </string>
+  <string>
+    <source>詞庫更新</source>
+    <en>Lexicon updates</en>
+  </string>
+  <string>
+    <source>詞庫更新失敗：</source>
+    <en>Lexicon update failed: </en>
+  </string>
+  <string>
+    <source>詞庫查詢失敗。</source>
+    <en>Lexicon query failed.</en>
+  </string>
+  <string>
+    <source>詞庫無法由輸入引擎載入，保留原詞庫。</source>
+    <en>The engine could not load the lexicon. Keeping the previous lexicon.</en>
+  </string>
+  <string>
+    <source>詞庫版本</source>
+    <en>Lexicon version</en>
+  </string>
+  <string>
+    <source>詞庫等待發布滿三天</source>
+    <en>Waiting until the lexicon release is three days old</en>
+  </string>
+  <string>
+    <source>詞庫缺少必要資料或欄位。</source>
+    <en>Required lexicon data or columns are missing.</en>
+  </string>
+  <string>
+    <source>詞庫資料超過限制。</source>
+    <en>Lexicon data exceeds the size limit.</en>
+  </string>
+  <string>
+    <source>詞庫驗證失敗：</source>
+    <en>Lexicon verification failed: </en>
+  </string>
+  <string>
+    <source>詞彙</source>
+    <en>Phrases</en>
+  </string>
+  <string>
+    <source>詞彙(&amp;H)</source>
+    <en>P&amp;hrases</en>
+  </string>
+  <string>
+    <source>詞彙匯入失敗。</source>
+    <en>Could not import phrases.</en>
+  </string>
+  <string>
+    <source>詞彙匯出失敗。</source>
+    <en>Could not export phrases.</en>
+  </string>
+  <string>
+    <source>詞彙已經匯入，但檔案裡的自動學習資料無法還原。</source>
+    <en>Phrases were imported, but learned data could not be restored.</en>
+  </string>
+  <string>
+    <source>詞彙已經成功匯入。</source>
+    <en>Phrases imported successfully.</en>
+  </string>
+  <string>
+    <source>詞彙已經成功匯出。</source>
+    <en>Phrases exported successfully.</en>
+  </string>
+  <string>
+    <source>詞彙檔 (*.txt)|*.txt|所有檔案 (*.*)|*.*</source>
+    <en>Phrase files (*.txt)|*.txt|All files (*.*)|*.*</en>
+  </string>
+  <string>
+    <source>詞彙檔與 Mac 版千秋輸入法、Yahoo! 奇摩輸入法通用。</source>
+    <en>Phrase files are compatible with ChiaKey for Mac and Yahoo! KeyKey.</en>
+  </string>
+  <string>
+    <source>詞彙設定</source>
+    <en>User phrase settings</en>
+  </string>
+  <string>
+    <source>請注意：不能夠同時勾選「組字錯誤時清除字根」與「打字時同時組字」這兩個選項。</source>
+    <en>Note: "Clear reading buffer at composition error" and "Auto compose on typing" can not be set simultaneously.</en>
+  </string>
+  <string>
+    <source>請輸入新的詞彙：</source>
+    <en>Enter the new phrase:</en>
+  </string>
+  <string>
+    <source>請輸入要加入的詞彙：</source>
+    <en>Enter a phrase to add:</en>
+  </string>
+  <string>
+    <source>讀取字數統計…</source>
+    <en>Reading statistics…</en>
+  </string>
+  <string>
+    <source>貼上(&amp;P)</source>
+    <en>&amp;Paste</en>
+  </string>
+  <string>
+    <source>輔助說明(&amp;H)</source>
+    <en>&amp;Help</en>
+  </string>
+  <string>
+    <source>輸入後顯示聯想詞</source>
+    <en>Show associated phrases after committing</en>
+  </string>
+  <string>
+    <source>輸入法更新</source>
+    <en>Application updates</en>
+  </string>
+  <string>
+    <source>輸入法選單管理</source>
+    <en>Module Management</en>
+  </string>
+  <string>
+    <source>輸入緩衝區：</source>
+    <en>Buffer Size:</en>
+  </string>
+  <string>
+    <source>送出最近一次輸入的文字：</source>
+    <en>Repeat last committed text:</en>
+  </string>
+  <string>
+    <source>選取字表的設定</source>
+    <en>Selected table settings</en>
+  </string>
+  <string>
+    <source>選字時游標放在詞尾</source>
+    <en>Place the cursor after the selected phrase</en>
+  </string>
+  <string>
+    <source>選字窗設定</source>
+    <en>Candidate Window</en>
+  </string>
+  <string>
+    <source>選字鍵設定：</source>
+    <en>Selection Keys:</en>
+  </string>
+  <string>
+    <source>重新整理</source>
+    <en>Refresh</en>
+  </string>
+  <string>
+    <source>重新開啟設定與使用中的應用程式後生效。</source>
+    <en>Reopen preferences and your typing apps to apply the language.</en>
+  </string>
+  <string>
+    <source>錯誤</source>
+    <en>Error</en>
+  </string>
+  <string>
+    <source>錯誤時發出聲響</source>
+    <en>Beep on errors</en>
+  </string>
+  <string>
+    <source>鍵盤配置：</source>
+    <en>Keyboard Layout:</en>
+  </string>
+  <string>
+    <source>開啟詞彙編輯器…</source>
+    <en>Open Phrase Editor…</en>
+  </string>
+  <string>
+    <source>開啟資料夾</source>
+    <en>Open folder</en>
+  </string>
+  <string>
+    <source>關於</source>
+    <en>About</en>
+  </string>
+  <string>
+    <source>關於(&amp;A)</source>
+    <en>&amp;About</en>
+  </string>
+  <string>
+    <source>關於(&amp;B)</source>
+    <en>A&amp;bout</en>
+  </string>
+  <string>
+    <source>關於千秋輸入法</source>
+    <en>About ChiaKey</en>
+  </string>
+  <string>
+    <source>關閉(&amp;X)</source>
+    <en>E&amp;xit</en>
+  </string>
+  <string>
+    <source>除了逗號與句號外，使用半形標點</source>
+    <en>Half-width except comma and period</en>
+  </string>
+  <string>
+    <source>額外設定</source>
+    <en>Extra</en>
+  </string>
+  <string>
+    <source>黃色</source>
+    <en>Yellow</en>
+  </string>
+  <string>
+    <source>黑色</source>
+    <en>Black</en>
+  </string>
+  <string>
+    <source>（自訂）</source>
+    <en>(Custom)</en>
+  </string>
+</strings>

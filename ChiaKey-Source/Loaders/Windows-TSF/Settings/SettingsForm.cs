@@ -84,14 +84,14 @@ namespace ChiaKey.Settings
         private const int ToolbarHeight = 50;
 
         private static readonly Choice[] Layouts = {
-            new Choice("Standard", "標準"),
-            new Choice("ETen", "倚天"),
-            new Choice("Hsu", "許氏"),
-            new Choice("ETen26", "倚天 26 鍵"),
-            new Choice("HanyuPinyin", "漢語拼音"),
+            new Choice("Standard", Ui.Text("標準")),
+            new Choice("ETen", Ui.Text("倚天")),
+            new Choice("Hsu", Ui.Text("許氏")),
+            new Choice("ETen26", Ui.Text("倚天 26 鍵")),
+            new Choice("HanyuPinyin", Ui.Text("漢語拼音")),
         };
         private static readonly Choice[] SelectionKeys = {
-            new Choice("", "依鍵盤配置"),
+            new Choice("", Ui.Text("依鍵盤配置")),
             new Choice("12345678", "12345678"),
             new Choice("asdfghjk", "asdfghjk"),
             new Choice("asdfzxcv", "asdfzxcv"),
@@ -99,18 +99,18 @@ namespace ChiaKey.Settings
             new Choice("aoeu;qjk", "aoeu;qjk"),
         };
         private static readonly Choice[] HighlightColors = {
-            new Choice("Purple", "紫色"),
-            new Choice("Green", "綠色"),
-            new Choice("Yellow", "黃色"),
-            new Choice("Red", "紅色"),
+            new Choice("Purple", Ui.Text("紫色")),
+            new Choice("Green", Ui.Text("綠色")),
+            new Choice("Yellow", Ui.Text("黃色")),
+            new Choice("Red", Ui.Text("紅色")),
         };
         private static readonly Choice[] BackgroundColors = {
-            new Choice("Black", "黑色"),
-            new Choice("White", "白色"),
+            new Choice("Black", Ui.Text("黑色")),
+            new Choice("White", Ui.Text("白色")),
         };
         private static readonly Choice[] TextColors = {
-            new Choice("White", "白色"),
-            new Choice("Black", "黑色"),
+            new Choice("White", Ui.Text("白色")),
+            new Choice("Black", Ui.Text("黑色")),
         };
 
         private readonly Plist frontend;
@@ -129,16 +129,16 @@ namespace ChiaKey.Settings
         private UpdatePane updates;
 
         private static readonly Choice[] CangjiePunctuations = {
-            new Choice("", "全部使用全形標點"),
-            new Choice("Punctuations-cj-mixedwidth-cin", "除了逗號與句號外，使用半形標點"),
-            new Choice("Punctuations-cj-halfwidth-cin", "全部使用半形標點"),
+            new Choice("", Ui.Text("全部使用全形標點")),
+            new Choice("Punctuations-cj-mixedwidth-cin", Ui.Text("除了逗號與句號外，使用半形標點")),
+            new Choice("Punctuations-cj-halfwidth-cin", Ui.Text("全部使用半形標點")),
         };
         // the menu order, as InputMethods() in ChiaKeyEngine.cpp lists them
         private static readonly Choice[] BuiltInInputMethods = {
-            new Choice("SmartMandarin", "好打注音"),
-            new Choice("TraditionalMandarin", "傳統注音"),
-            new Choice("Generic-cj-cin", "倉頡"),
-            new Choice("Generic-simplex-cin", "簡易"),
+            new Choice("SmartMandarin", Ui.Text("好打注音")),
+            new Choice("TraditionalMandarin", Ui.Text("傳統注音")),
+            new Choice("Generic-cj-cin", Ui.Text("倉頡")),
+            new Choice("Generic-simplex-cin", Ui.Text("簡易")),
         };
         private const string AllCharacters = "使用全字庫罕用字（CNS11643）";
 
@@ -187,6 +187,10 @@ namespace ChiaKey.Settings
         private CheckBox transparentStatusBar;
         private CheckBox statusBarInTray;
         private CheckBox wordCountEnabled;
+        private ComboBox uiLanguage;
+        private static readonly Choice[] UiLanguages = {
+            new Choice("zh-TW", Ui.Text("繁體中文")), new Choice("zh-CN", Ui.Text("簡體中文")),
+            new Choice("en", "English") };
         private Label wordCounts;
         [System.Runtime.InteropServices.DllImport("ChiaKeyTsf.dll", CallingConvention = System.Runtime.InteropServices.CallingConvention.StdCall)]
         private static extern bool ChiaKeyWordCounts(out long today, out long week, out long total);
@@ -218,7 +222,7 @@ namespace ChiaKey.Settings
             SuspendLayout();
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
-            Text = WindowTitle;
+            Text = Ui.Text(WindowTitle);
             Font = new Font("Microsoft JhengHei UI", 9F);
             Icon = PhraseEditorForm.LoadIcon("app.ico");
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -234,16 +238,16 @@ namespace ChiaKey.Settings
             content.Size = new Size(500, 470 - ToolbarHeight);
             Controls.Add(content);
 
-            AddPane("一般(&G)", "general.tiff", BuildGeneralPane());
-            AddPane("注音(&P)", "phonetic.tiff", BuildPhoneticPane());
-            AddPane("倉頡(&J)", "cangjie.tiff", BuildCangjiePane());
-            AddPane("簡易(&S)", "simplex.tiff", BuildSimplexPane());
-            AddPane("泛用(&E)", "generic.tiff", BuildGenericPane());
-            AddPane("詞彙(&H)", "phrase.tiff", BuildPhrasePane());
-            AddPane("其他(&M)", "plugin.tiff", BuildMiscPane());
+            AddPane(Ui.Text("一般(&G)"), "general.tiff", BuildGeneralPane());
+            AddPane(Ui.Text("注音(&P)"), "phonetic.tiff", BuildPhoneticPane());
+            AddPane(Ui.Text("倉頡(&J)"), "cangjie.tiff", BuildCangjiePane());
+            AddPane(Ui.Text("簡易(&S)"), "simplex.tiff", BuildSimplexPane());
+            AddPane(Ui.Text("泛用(&E)"), "generic.tiff", BuildGenericPane());
+            AddPane(Ui.Text("詞彙(&H)"), "phrase.tiff", BuildPhrasePane());
+            AddPane(Ui.Text("其他(&M)"), "plugin.tiff", BuildMiscPane());
             updates = new UpdatePane(Changed);
-            AddPane("更新(&U)", "update.tiff", updates);
-            AddPane("關於(&B)", "app.ico", BuildAboutPane());
+            AddPane(Ui.Text("更新(&U)"), "update.tiff", updates);
+            AddPane(Ui.Text("關於(&B)"), "app.ico", BuildAboutPane());
 
             LoadSettings();
             ShowPane(Math.Max(0, Math.Min(initialPane, panes.Count - 1)));
@@ -280,14 +284,14 @@ namespace ChiaKey.Settings
         private void BuildButtons()
         {
             Button okButton = new Button();
-            okButton.Text = "確定(&O)";
+            okButton.Text = Ui.Text("確定(&O)");
             okButton.Bounds = new Rectangle(232, 482, 82, 26);
             okButton.Click += delegate { if (SaveSettings()) Close(); };
             Button cancelButton = new Button();
-            cancelButton.Text = "取消(&C)";
+            cancelButton.Text = Ui.Text("取消(&C)");
             cancelButton.Bounds = new Rectangle(322, 482, 82, 26);
             cancelButton.Click += delegate { Close(); };
-            applyButton.Text = "套用(&A)";
+            applyButton.Text = Ui.Text("套用(&A)");
             applyButton.Bounds = new Rectangle(412, 482, 82, 26);
             applyButton.Enabled = false;
             applyButton.Click += delegate { if (SaveSettings()) applyButton.Enabled = false; };
@@ -337,7 +341,7 @@ namespace ChiaKey.Settings
         private static Label Title(Control parent, string text)
         {
             Label label = new Label();
-            label.Text = text;
+            label.Text = Ui.Text(text);
             label.Font = new Font("Microsoft JhengHei UI", 11F, FontStyle.Bold);
             label.AutoSize = true;
             label.Location = new Point(16, 10);
@@ -357,7 +361,7 @@ namespace ChiaKey.Settings
         private CheckBox Check(Control parent, string text, int left, int top)
         {
             CheckBox box = new CheckBox();
-            box.Text = text;
+            box.Text = Ui.Text(text);
             box.AutoSize = true;
             box.Location = new Point(left, top);
             box.CheckedChanged += delegate { Changed(); };
@@ -384,37 +388,37 @@ namespace ChiaKey.Settings
         private Control BuildGeneralPane()
         {
             Panel pane = new Panel { AutoScroll = true };
-            Title(pane, "一般設定");
-            GroupBox basic = Group(pane, "基本功能", 44, 162);
-            controlBackslash = Check(basic, "使用 Ctrl + \\ 切換到下一個輸入法", 14, 24);
-            shiftTogglesEnglish = Check(basic, "使用單擊 Shift 按鍵切換中英模式", 14, 50);
-            capsLockTogglesEnglish = Check(basic, "使用 Caps Lock 按鍵切換中英文", 14, 76);
+            Title(pane, Ui.Text("一般設定"));
+            GroupBox basic = Group(pane, Ui.Text("基本功能"), 44, 162);
+            controlBackslash = Check(basic, Ui.Text("使用 Ctrl + \\ 切換到下一個輸入法"), 14, 24);
+            shiftTogglesEnglish = Check(basic, Ui.Text("使用單擊 Shift 按鍵切換中英模式"), 14, 50);
+            capsLockTogglesEnglish = Check(basic, Ui.Text("使用 Caps Lock 按鍵切換中英文"), 14, 76);
             capsLockTogglesEnglish.CheckedChanged += delegate
             {
                 shiftTogglesEnglish.Enabled = !capsLockTogglesEnglish.Checked;
             };
-            associatedPhrases = Check(basic, "輸入後顯示聯想詞", 14, 102);
-            simplifiedOutput = Check(basic, "簡體輸出", 14, 128);
-            notifications = Check(basic, "使用提示視窗", 250, 128);
+            associatedPhrases = Check(basic, Ui.Text("輸入後顯示聯想詞"), 14, 102);
+            simplifiedOutput = Check(basic, Ui.Text("簡體輸出"), 14, 128);
+            notifications = Check(basic, Ui.Text("使用提示視窗"), 250, 128);
 
             Choice[] shortcuts = new Choice[27];
-            shortcuts[0] = new Choice("", "無");
+            shortcuts[0] = new Choice("", Ui.Text("無"));
             for (int index = 0; index < 26; ++index)
                 shortcuts[index + 1] = new Choice(((char)('a' + index)).ToString(),
                     "Ctrl + Alt + " + (char)('A' + index));
-            GroupBox keys = Group(pane, "快速鍵", 216, 124);
-            converterShortcut = Combo(keys, "簡繁中文切換快速鍵：", 22, shortcuts);
-            repeatShortcut = Combo(keys, "送出最近一次輸入的文字：", 54, shortcuts);
+            GroupBox keys = Group(pane, Ui.Text("快速鍵"), 216, 124);
+            converterShortcut = Combo(keys, Ui.Text("簡繁中文切換快速鍵："), 22, shortcuts);
+            repeatShortcut = Combo(keys, Ui.Text("送出最近一次輸入的文字："), 54, shortcuts);
             converterShortcut.Left = repeatShortcut.Left = 205;
-            reverseLookup = Combo(keys, "字根反查功能：", 86, new Choice[] {
-                new Choice("", "無"), new Choice("ReverseLookup-Generic-cj-cin", "倉頡"),
-                new Choice("ReverseLookup-Mandarin-bpmf-cin", "注音"),
-                new Choice("ReverseLookup-Mandarin-bpmf-cin-HanyuPinyin", "漢語拼音") });
+            reverseLookup = Combo(keys, Ui.Text("字根反查功能："), 86, new Choice[] {
+                new Choice("", Ui.Text("無")), new Choice("ReverseLookup-Generic-cj-cin", Ui.Text("倉頡")),
+                new Choice("ReverseLookup-Mandarin-bpmf-cin", Ui.Text("注音")),
+                new Choice("ReverseLookup-Mandarin-bpmf-cin-HanyuPinyin", Ui.Text("漢語拼音")) });
             reverseLookup.Left = 205;
 
-            GroupBox menu = Group(pane, "輸入法選單管理", 350, 130);
+            GroupBox menu = Group(pane, Ui.Text("輸入法選單管理"), 350, 130);
             Label hint = new Label();
-            hint.Text = "取消勾選的輸入法不會出現在輸入選單中（使用中的除外）。";
+            hint.Text = Ui.Text("取消勾選的輸入法不會出現在輸入選單中（使用中的除外）。");
             hint.AutoSize = true;
             hint.Location = new Point(12, 24);
             menu.Controls.Add(hint);
@@ -429,6 +433,11 @@ namespace ChiaKey.Settings
                 menuInputMethods.Height = menu.ClientSize.Height - menuInputMethods.Top -
                                           menuInputMethods.Left;
             };
+            GroupBox language = Group(pane, Ui.Text("介面語言："), 490, 86);
+            uiLanguage = Combo(language, Ui.Text("介面語言："), 22, UiLanguages);
+            Label languageHint = new Label { Text = Ui.Text("重新開啟設定與使用中的應用程式後生效。"),
+                Bounds = new Rectangle(14, 53, 435, 30) };
+            language.Controls.Add(languageHint);
             return pane;
         }
 
@@ -475,13 +484,13 @@ namespace ChiaKey.Settings
         private Control BuildPhoneticPane()
         {
             Panel pane = new Panel();
-            Title(pane, "注音輸入法設定");
-            GroupBox smart = Group(pane, "好打注音", 44, 254);
-            smartLayout = Combo(smart, "鍵盤配置：", 22, Layouts);
-            selectionKeys = Combo(smart, "選字鍵設定：", 54, SelectionKeys);
+            Title(pane, Ui.Text("注音輸入法設定"));
+            GroupBox smart = Group(pane, Ui.Text("好打注音"), 44, 254);
+            smartLayout = Combo(smart, Ui.Text("鍵盤配置："), 22, Layouts);
+            selectionKeys = Combo(smart, Ui.Text("選字鍵設定："), 54, SelectionKeys);
 
             Label bufferLabel = new Label();
-            bufferLabel.Text = "輸入緩衝區：";
+            bufferLabel.Text = Ui.Text("輸入緩衝區：");
             bufferLabel.AutoSize = true;
             bufferLabel.Location = new Point(14, 90);
             smart.Controls.Add(bufferLabel);
@@ -492,24 +501,24 @@ namespace ChiaKey.Settings
             bufferSize.ValueChanged += delegate { Changed(); };
             smart.Controls.Add(bufferSize);
             Label bufferUnit = new Label();
-            bufferUnit.Text = "字（最多 20 字）";
+            bufferUnit.Text = Ui.Text("字（最多 20 字）");
             bufferUnit.AutoSize = true;
             bufferUnit.Location = new Point(ControlLeft + 66, 90);
             smart.Controls.Add(bufferUnit);
 
             Label typing = new Label();
-            typing.Text = "打字功能：";
+            typing.Text = Ui.Text("打字功能：");
             typing.AutoSize = true;
             typing.Location = new Point(14, 122);
             smart.Controls.Add(typing);
-            spaceShowsCandidates = Check(smart, "使用空白鍵選字", ControlLeft, 120);
-            escClears = Check(smart, "按下 ESC 按鍵後清除全部編輯區內容", ControlLeft, 146);
-            cursorAtEnd = Check(smart, "選字時游標放在詞尾", ControlLeft, 172);
-            shiftUppercase = Check(smart, "按住 Shift 時輸入大寫英文", ControlLeft, 198);
+            spaceShowsCandidates = Check(smart, Ui.Text("使用空白鍵選字"), ControlLeft, 120);
+            escClears = Check(smart, Ui.Text("按下 ESC 按鍵後清除全部編輯區內容"), ControlLeft, 146);
+            cursorAtEnd = Check(smart, Ui.Text("選字時游標放在詞尾"), ControlLeft, 172);
+            shiftUppercase = Check(smart, Ui.Text("按住 Shift 時輸入大寫英文"), ControlLeft, 198);
             smartAllCharacters = Check(smart, AllCharacters, ControlLeft, 224);
 
-            GroupBox traditional = Group(pane, "傳統注音", 306, 86);
-            traditionalLayout = Combo(traditional, "鍵盤配置：", 22, Layouts);
+            GroupBox traditional = Group(pane, Ui.Text("傳統注音"), 306, 86);
+            traditionalLayout = Combo(traditional, Ui.Text("鍵盤配置："), 22, Layouts);
             traditionalAllCharacters = Check(traditional, AllCharacters, ControlLeft, 54);
             return pane;
         }
@@ -520,7 +529,7 @@ namespace ChiaKey.Settings
         private static Label Note(Control parent, string text, int top)
         {
             Label label = new Label();
-            label.Text = text;
+            label.Text = Ui.Text(text);
             label.ForeColor = Color.DimGray;
             label.Bounds = new Rectangle(16, top, 468, 40);
             parent.Controls.Add(label);
@@ -537,16 +546,16 @@ namespace ChiaKey.Settings
         private Control BuildCangjiePane()
         {
             Panel pane = new Panel();
-            Title(pane, "倉頡輸入法設定");
-            GroupBox typing = Group(pane, "打字功能", 44, 162);
-            cangjieCommitAtMaximum = Check(typing, "打到字根最大長度時立刻組字", 14, 24);
-            cangjieComposeWhileTyping = Check(typing, "打字時同時組字", 14, 50);
-            cangjieClearOnError = Check(typing, "組字錯誤時清除字根", 14, 76);
-            cangjieDynamicFrequency = Check(typing, "使用動態字頻調整（將常用字移動到選字列表前方）", 14, 102);
+            Title(pane, Ui.Text("倉頡輸入法設定"));
+            GroupBox typing = Group(pane, Ui.Text("打字功能"), 44, 162);
+            cangjieCommitAtMaximum = Check(typing, Ui.Text("打到字根最大長度時立刻組字"), 14, 24);
+            cangjieComposeWhileTyping = Check(typing, Ui.Text("打字時同時組字"), 14, 50);
+            cangjieClearOnError = Check(typing, Ui.Text("組字錯誤時清除字根"), 14, 76);
+            cangjieDynamicFrequency = Check(typing, Ui.Text("使用動態字頻調整（將常用字移動到選字列表前方）"), 14, 102);
             cangjieAllCharacters = Check(typing, AllCharacters, 14, 128);
             Exclusive(cangjieComposeWhileTyping, cangjieClearOnError);
-            GroupBox punctuation = Group(pane, "標點符號", 214, 60);
-            cangjiePunctuation = Combo(punctuation, "標點符號樣式：", 22, CangjiePunctuations);
+            GroupBox punctuation = Group(pane, Ui.Text("標點符號"), 214, 60);
+            cangjiePunctuation = Combo(punctuation, Ui.Text("標點符號樣式："), 22, CangjiePunctuations);
             cangjiePunctuation.Width = 300;
             Note(pane, ExclusiveNote, 284);
             return pane;
@@ -555,10 +564,10 @@ namespace ChiaKey.Settings
         private Control BuildSimplexPane()
         {
             Panel pane = new Panel();
-            Title(pane, "簡易輸入法設定");
-            GroupBox typing = Group(pane, "打字功能", 44, 110);
-            simplexComposeWhileTyping = Check(typing, "打字時同時組字", 14, 24);
-            simplexClearOnError = Check(typing, "組字錯誤時清除字根", 14, 50);
+            Title(pane, Ui.Text("簡易輸入法設定"));
+            GroupBox typing = Group(pane, Ui.Text("打字功能"), 44, 110);
+            simplexComposeWhileTyping = Check(typing, Ui.Text("打字時同時組字"), 14, 24);
+            simplexClearOnError = Check(typing, Ui.Text("組字錯誤時清除字根"), 14, 50);
             simplexAllCharacters = Check(typing, AllCharacters, 14, 76);
             Exclusive(simplexComposeWhileTyping, simplexClearOnError);
             Note(pane, ExclusiveNote, 164);
@@ -568,8 +577,8 @@ namespace ChiaKey.Settings
         private Control BuildGenericPane()
         {
             Panel pane = new Panel();
-            Title(pane, "泛用輸入法設定");
-            GroupBox tables = Group(pane, "自訂字表（.cin）", 44, 150);
+            Title(pane, Ui.Text("泛用輸入法設定"));
+            GroupBox tables = Group(pane, Ui.Text("自訂字表（.cin）"), 44, 150);
             userTables = new ListBox();
             userTables.Bounds = new Rectangle(14, 24, 330, 110);
             userTables.IntegralHeight = false;
@@ -582,17 +591,17 @@ namespace ChiaKey.Settings
             };
 
             Button import = new Button();
-            import.Text = "匯入…";
+            import.Text = Ui.Text("匯入…");
             import.Bounds = new Rectangle(356, 24, 98, 26);
             import.Click += delegate { ImportTable(); };
             tables.Controls.Add(import);
             Button remove = new Button();
-            remove.Text = "移除";
+            remove.Text = Ui.Text("移除");
             remove.Bounds = new Rectangle(356, 56, 98, 26);
             remove.Click += delegate { RemoveTable(); };
             tables.Controls.Add(remove);
             Button open = new Button();
-            open.Text = "開啟資料夾";
+            open.Text = Ui.Text("開啟資料夾");
             open.Bounds = new Rectangle(356, 88, 98, 26);
             open.Click += delegate
             {
@@ -602,10 +611,10 @@ namespace ChiaKey.Settings
             tables.Controls.Add(open);
 
             // TakaoGenericSettings, one table at a time
-            tableSettings = Group(pane, "選取字表的設定", 202, 164);
+            tableSettings = Group(pane, Ui.Text("選取字表的設定"), 202, 164);
             tableSettings.Enabled = false;
             Label lengthLabel = new Label();
-            lengthLabel.Text = "字根組合最大長度：";
+            lengthLabel.Text = Ui.Text("字根組合最大長度：");
             lengthLabel.AutoSize = true;
             lengthLabel.Location = new Point(14, 26);
             tableSettings.Controls.Add(lengthLabel);
@@ -617,22 +626,22 @@ namespace ChiaKey.Settings
             tableSettings.Controls.Add(tableMaximumLength);
 
             Label wildcardLabel = new Label();
-            wildcardLabel.Text = "萬用字元：";
+            wildcardLabel.Text = Ui.Text("萬用字元：");
             wildcardLabel.AutoSize = true;
             wildcardLabel.Location = new Point(14, 56);
             tableSettings.Controls.Add(wildcardLabel);
-            tableMatchOne = Wildcard(tableSettings, "單一長度", ControlLeft, 52);
-            tableMatchMany = Wildcard(tableSettings, "不限長度", ControlLeft + 120, 52);
+            tableMatchOne = Wildcard(tableSettings, Ui.Text("單一長度"), ControlLeft, 52);
+            tableMatchMany = Wildcard(tableSettings, Ui.Text("不限長度"), ControlLeft + 120, 52);
 
-            tableCommitAtMaximum = Check(tableSettings, "打到字根最大長度時立刻組字", 14, 82);
-            tableClearOnError = Check(tableSettings, "組字錯誤時清除字根", 250, 82);
-            tableComposeWhileTyping = Check(tableSettings, "打字時同時組字", 14, 108);
-            tableDynamicFrequency = Check(tableSettings, "使用動態字頻調整", 250, 108);
-            tableSpaceFirst = Check(tableSettings, "空白鍵選一字，第一選字鍵選第二字", 14, 134);
+            tableCommitAtMaximum = Check(tableSettings, Ui.Text("打到字根最大長度時立刻組字"), 14, 82);
+            tableClearOnError = Check(tableSettings, Ui.Text("組字錯誤時清除字根"), 250, 82);
+            tableComposeWhileTyping = Check(tableSettings, Ui.Text("打字時同時組字"), 14, 108);
+            tableDynamicFrequency = Check(tableSettings, Ui.Text("使用動態字頻調整"), 250, 108);
+            tableSpaceFirst = Check(tableSettings, Ui.Text("空白鍵選一字，第一選字鍵選第二字"), 14, 134);
             Exclusive(tableComposeWhileTyping, tableClearOnError);
 
-            Label note = Note(pane, "大易、行列、嘸蝦米等字表不隨附，請自行匯入 .cin 檔。\n" +
-                                    "新增或移除字表後，需要重新開啟正在使用的程式，才會出現在輸入法選單中。",
+            Label note = Note(pane, Ui.Text("大易、行列、嘸蝦米等字表不隨附，請自行匯入 .cin 檔。\n") +
+                                    Ui.Text("新增或移除字表後，需要重新開啟正在使用的程式，才會出現在輸入法選單中。"),
                               374);
             note.AutoSize = true;
             return pane;
@@ -765,13 +774,13 @@ namespace ChiaKey.Settings
         {
             using (OpenFileDialog dialog = new OpenFileDialog())
             {
-                dialog.Filter = "CIN 字表 (*.cin)|*.cin";
-                dialog.Title = "匯入字表";
+                dialog.Filter = Ui.Text("CIN 字表 (*.cin)|*.cin");
+                dialog.Title = Ui.Text("匯入字表");
                 if (dialog.ShowDialog(this) != DialogResult.OK)
                     return;
                 string target = Path.Combine(tablesPath, Path.GetFileName(dialog.FileName));
                 if (File.Exists(target) &&
-                    MessageBox.Show(this, "已經有同名的字表，要取代嗎？", Text, MessageBoxButtons.YesNo,
+                    MessageBox.Show(this, Ui.Text("已經有同名的字表，要取代嗎？"), Text, MessageBoxButtons.YesNo,
                                     MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
                 try
@@ -781,7 +790,7 @@ namespace ChiaKey.Settings
                 }
                 catch (Exception error)
                 {
-                    MessageBox.Show(this, "無法匯入字表：" + error.Message, Text, MessageBoxButtons.OK,
+                    MessageBox.Show(this, Ui.Text("無法匯入字表：") + error.Message, Text, MessageBoxButtons.OK,
                                     MessageBoxIcon.Error);
                 }
                 LoadTables();
@@ -793,7 +802,7 @@ namespace ChiaKey.Settings
             TableEntry entry = userTables.SelectedItem as TableEntry;
             if (entry == null)
                 return;
-            if (MessageBox.Show(this, "要移除「" + entry.Label + "」嗎？", Text, MessageBoxButtons.YesNo,
+            if (MessageBox.Show(this, Ui.Text("要移除「") + entry.Label + Ui.Text("」嗎？"), Text, MessageBoxButtons.YesNo,
                                 MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
             try
@@ -809,7 +818,7 @@ namespace ChiaKey.Settings
             }
             catch (Exception error)
             {
-                MessageBox.Show(this, "無法移除字表：" + error.Message, Text, MessageBoxButtons.OK,
+                MessageBox.Show(this, Ui.Text("無法移除字表：") + error.Message, Text, MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
             }
             LoadTables();
@@ -819,21 +828,21 @@ namespace ChiaKey.Settings
         private Control BuildPhrasePane()
         {
             Panel pane = new Panel();
-            Title(pane, "詞彙設定");
-            GroupBox phrases = Group(pane, "自訂詞彙", 44, 120);
+            Title(pane, Ui.Text("詞彙設定"));
+            GroupBox phrases = Group(pane, Ui.Text("自訂詞彙"), 44, 120);
             Label about = new Label();
-            about.Text = "加入、修改或移除自己的詞彙，也可以匯入或匯出詞彙檔。";
+            about.Text = Ui.Text("加入、修改或移除自己的詞彙，也可以匯入或匯出詞彙檔。");
             about.AutoSize = true;
             about.Location = new Point(12, 26);
             phrases.Controls.Add(about);
             Label format = new Label();
-            format.Text = "詞彙檔與 Mac 版千秋輸入法、Yahoo! 奇摩輸入法通用。";
+            format.Text = Ui.Text("詞彙檔與 Mac 版千秋輸入法、Yahoo! 奇摩輸入法通用。");
             format.ForeColor = Color.DimGray;
             format.AutoSize = true;
             format.Location = new Point(12, 48);
             phrases.Controls.Add(format);
             Button editor = new Button();
-            editor.Text = "開啟詞彙編輯器…";
+            editor.Text = Ui.Text("開啟詞彙編輯器…");
             editor.Bounds = new Rectangle(14, 78, 160, 28);
             editor.Click += delegate
             {
@@ -841,14 +850,14 @@ namespace ChiaKey.Settings
             };
             phrases.Controls.Add(editor);
 
-            GroupBox messages = Group(pane, "符號表常用語", 174, 98);
+            GroupBox messages = Group(pane, Ui.Text("符號表常用語"), 174, 98);
             Label messagesAbout = new Label();
-            messagesAbout.Text = "符號表最後一頁的自訂訊息，一行一則。";
+            messagesAbout.Text = Ui.Text("符號表最後一頁的自訂訊息，一行一則。");
             messagesAbout.AutoSize = true;
             messagesAbout.Location = new Point(12, 26);
             messages.Controls.Add(messagesAbout);
             Button edit = new Button();
-            edit.Text = "編輯常用語…";
+            edit.Text = Ui.Text("編輯常用語…");
             edit.Bounds = new Rectangle(14, 56, 160, 28);
             edit.Click += delegate { EditCannedMessages(); };
             messages.Controls.Add(edit);
@@ -871,7 +880,7 @@ namespace ChiaKey.Settings
             }
             catch (Exception error)
             {
-                MessageBox.Show(this, "無法開啟常用語檔案：" + error.Message, Text, MessageBoxButtons.OK,
+                MessageBox.Show(this, Ui.Text("無法開啟常用語檔案：") + error.Message, Text, MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
             }
         }
@@ -879,29 +888,29 @@ namespace ChiaKey.Settings
         private Control BuildMiscPane()
         {
             Panel pane = new Panel();
-            Title(pane, "其他設定");
+            Title(pane, Ui.Text("其他設定"));
             pane.AutoScroll = true;
             pane.AutoScrollMinSize = new Size(470, 458);
-            GroupBox candidate = Group(pane, "選字窗設定", 44, 150);
-            highlightColor = Combo(candidate, "提示顏色：", 22, HighlightColors);
-            backgroundColor = Combo(candidate, "視窗背景顏色：", 54, BackgroundColors);
-            textColor = Combo(candidate, "文字顏色：", 86, TextColors);
+            GroupBox candidate = Group(pane, Ui.Text("選字窗設定"), 44, 150);
+            highlightColor = Combo(candidate, Ui.Text("提示顏色："), 22, HighlightColors);
+            backgroundColor = Combo(candidate, Ui.Text("視窗背景顏色："), 54, BackgroundColors);
+            textColor = Combo(candidate, Ui.Text("文字顏色："), 86, TextColors);
             EnableCustomColor(highlightColor);
             EnableCustomColor(backgroundColor);
             EnableCustomColor(textColor);
-            backgroundPattern = Check(candidate, "使用背景花紋", 14, 120);
-            GroupBox extra = Group(pane, "額外設定", 204, 162);
-            keyboardFollowsCursor = Check(pane, "標點螢幕鍵盤跟隨游標", 20, 374);
-            transparentStatusBar = Check(pane, "使用半透明狀態列", 20, 400);
-            statusBarInTray = Check(pane, "狀態列最小化到系統匣（雙擊狀態列收合）", 20, 426);
-            beep = Check(extra, "錯誤時發出聲響", 14, 24);
-            defaultSound = new RadioButton { Text = "使用系統預設提示聲", AutoSize = true,
+            backgroundPattern = Check(candidate, Ui.Text("使用背景花紋"), 14, 120);
+            GroupBox extra = Group(pane, Ui.Text("額外設定"), 204, 162);
+            keyboardFollowsCursor = Check(pane, Ui.Text("標點螢幕鍵盤跟隨游標"), 20, 374);
+            transparentStatusBar = Check(pane, Ui.Text("使用半透明狀態列"), 20, 400);
+            statusBarInTray = Check(pane, Ui.Text("狀態列最小化到系統匣（雙擊狀態列收合）"), 20, 426);
+            beep = Check(extra, Ui.Text("錯誤時發出聲響"), 14, 24);
+            defaultSound = new RadioButton { Text = Ui.Text("使用系統預設提示聲"), AutoSize = true,
                 Location = new Point(32, 51) };
-            customSound = new RadioButton { Text = "使用自訂提示聲：", AutoSize = true,
+            customSound = new RadioButton { Text = Ui.Text("使用自訂提示聲："), AutoSize = true,
                 Location = new Point(32, 78) };
             soundPath = new TextBox { ReadOnly = true, Bounds = new Rectangle(32, 105, 322, 24) };
-            Button browse = new Button { Text = "瀏覽…", Bounds = new Rectangle(364, 105, 82, 25) };
-            Button test = new Button { Text = "測試", Bounds = new Rectangle(364, 24, 82, 25) };
+            Button browse = new Button { Text = Ui.Text("瀏覽…"), Bounds = new Rectangle(364, 105, 82, 25) };
+            Button test = new Button { Text = Ui.Text("測試"), Bounds = new Rectangle(364, 24, 82, 25) };
             extra.Controls.AddRange(new Control[] { defaultSound, customSound, soundPath, browse, test });
             defaultSound.CheckedChanged += delegate { Changed(); };
             customSound.CheckedChanged += delegate { Changed(); };
@@ -909,7 +918,7 @@ namespace ChiaKey.Settings
             {
                 using (OpenFileDialog dialog = new OpenFileDialog())
                 {
-                    dialog.Filter = "提示聲 (*.wav)|*.wav";
+                    dialog.Filter = Ui.Text("提示聲 (*.wav)|*.wav");
                     dialog.InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media");
                     if (dialog.ShowDialog(this) != DialogResult.OK) return;
                     soundPath.Text = dialog.FileName;
@@ -924,7 +933,7 @@ namespace ChiaKey.Settings
                     if (defaultSound.Checked || soundPath.Text.Length == 0) System.Media.SystemSounds.Beep.Play();
                     else new System.Media.SoundPlayer(soundPath.Text).Play();
                 }
-                catch (Exception error) { MessageBox.Show(this, "無法播放提示聲：" + error.Message, Text); }
+                catch (Exception error) { MessageBox.Show(this, Ui.Text("無法播放提示聲：") + error.Message, Text); }
             };
             beep.CheckedChanged += delegate
             {
@@ -935,7 +944,7 @@ namespace ChiaKey.Settings
 
         private void EnableCustomColor(ComboBox box)
         {
-            box.Items.Add(new Choice("Custom", "自訂…"));
+            box.Items.Add(new Choice("Custom", Ui.Text("自訂…")));
             box.SelectedIndexChanged += delegate
             {
                 if (Selected(box) != "Custom") { box.Tag = box.SelectedItem; return; }
@@ -949,7 +958,7 @@ namespace ChiaKey.Settings
                         return;
                     }
                     string value = "Color " + dialog.Color.ToArgb().ToString(CultureInfo.InvariantCulture);
-                    int index = box.Items.Add(new Choice(value, "自訂顏色（" + dialog.Color.Name + "）"));
+                    int index = box.Items.Add(new Choice(value, Ui.Text("自訂顏色（") + dialog.Color.Name + "）"));
                     box.SelectedIndex = index;
                 }
             };
@@ -958,25 +967,25 @@ namespace ChiaKey.Settings
         private Control BuildAboutPane()
         {
             Panel pane = new Panel();
-            Title(pane, "關於千秋輸入法");
+            Title(pane, Ui.Text("關於千秋輸入法"));
             PictureBox logo = new PictureBox { Image = Icon.ToBitmap(), SizeMode = PictureBoxSizeMode.Zoom,
                 Bounds = new Rectangle(24, 56, 72, 72) };
             Label description = new Label { Bounds = new Rectangle(116, 58, 360, 190),
-                Text = "千秋輸入法\n版本 " + UpdateService.Default().AppReleaseVersion +
-                    "\n\n源自 Yahoo! 奇摩輸入法（KeyKey）。\nWindows 前端依原版設計開發，使用 Windows TSF 與千秋共用核心。" };
-            LinkLabel project = new LinkLabel { Text = "專案網站與原始碼", AutoSize = true,
+                Text = Ui.Text("千秋輸入法\n版本 ") + UpdateService.Default().AppReleaseVersion +
+                    Ui.Text("\n\n源自 Yahoo! 奇摩輸入法（KeyKey）。\nWindows 前端依原版設計開發，使用 Windows TSF 與千秋共用核心。") };
+            LinkLabel project = new LinkLabel { Text = Ui.Text("專案網站與原始碼"), AutoSize = true,
                 Location = new Point(24, 272) };
             project.LinkClicked += delegate { System.Diagnostics.Process.Start("https://github.com/chiakich/ChiaKey"); };
             pane.Controls.AddRange(new Control[] { logo, description, project });
-            wordCountEnabled = Check(pane, "啟用字數統計", 20, 250);
-            wordCounts = new Label { Bounds = new Rectangle(20, 280, 430, 55), Text = "讀取字數統計…" };
-            Button refreshCounts = new Button { Text = "重新整理", Bounds = new Rectangle(20, 344, 100, 26) };
-            Button clearCounts = new Button { Text = "清除統計", Bounds = new Rectangle(130, 344, 100, 26) };
+            wordCountEnabled = Check(pane, Ui.Text("啟用字數統計"), 20, 250);
+            wordCounts = new Label { Bounds = new Rectangle(20, 280, 430, 55), Text = Ui.Text("讀取字數統計…") };
+            Button refreshCounts = new Button { Text = Ui.Text("重新整理"), Bounds = new Rectangle(20, 344, 100, 26) };
+            Button clearCounts = new Button { Text = Ui.Text("清除統計"), Bounds = new Rectangle(130, 344, 100, 26) };
             refreshCounts.Click += delegate { RefreshWordCounts(); };
             clearCounts.Click += delegate {
-                if (MessageBox.Show(this, "要清除全部字數統計嗎？", Text, MessageBoxButtons.YesNo,
+                if (MessageBox.Show(this, Ui.Text("要清除全部字數統計嗎？"), Text, MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question) != DialogResult.Yes) return;
-                try { if (!ChiaKeyClearWordCounts()) throw new IOException("無法清除統計。"); RefreshWordCounts(); }
+                try { if (!ChiaKeyClearWordCounts()) throw new IOException(Ui.Text("無法清除統計。")); RefreshWordCounts(); }
                 catch (Exception error) { MessageBox.Show(this, error.Message, Text); }
             };
             pane.Controls.AddRange(new Control[] { wordCounts, refreshCounts, clearCounts });
@@ -987,8 +996,8 @@ namespace ChiaKey.Settings
         {
             try {
                 long today, week, total;
-                if (!ChiaKeyWordCounts(out today, out week, out total)) throw new IOException("無法讀取字數統計。");
-                wordCounts.Text = string.Format("今日：{0:N0}　最近七天：{1:N0}\r\n累計：{2:N0}", today, week, total);
+                if (!ChiaKeyWordCounts(out today, out week, out total)) throw new IOException(Ui.Text("無法讀取字數統計。"));
+                wordCounts.Text = string.Format(Ui.Text("今日：{0:N0}　最近七天：{1:N0}\r\n累計：{2:N0}"), today, week, total);
             }
             catch (Exception error) { wordCounts.Text = error.Message; }
         }
@@ -1016,7 +1025,7 @@ namespace ChiaKey.Settings
                 box.SelectedIndex = 0;
                 return;
             }
-            box.SelectedIndex = box.Items.Add(new Choice(value, value + "（自訂）"));
+            box.SelectedIndex = box.Items.Add(new Choice(value, value + Ui.Text("（自訂）")));
         }
 
         // other spellings BopomofoKeyboardLayout::LayoutForName accepts; the mac preferences write some
@@ -1058,6 +1067,7 @@ namespace ChiaKey.Settings
             transparentStatusBar.Checked = frontend.GetBool("ShouldUseTransparentStatusBar", false);
             statusBarInTray.Checked = frontend.GetBool("ShouldUseSystemTray", false);
             wordCountEnabled.Checked = frontend.GetBool("WordCountEnabled", false);
+            Select(uiLanguage, UiLanguages, Ui.Normalize(frontend.GetString("UiLanguage", "zh-TW")));
             RefreshWordCounts();
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
             simplifiedOutput.Checked = frontend.GetBool("SimplifiedOutput", false);
@@ -1124,7 +1134,7 @@ namespace ChiaKey.Settings
         {
             if (Selected(converterShortcut).Length > 0 && Selected(converterShortcut) == Selected(repeatShortcut))
             {
-                MessageBox.Show(this, "簡繁切換與重送文字不能使用相同的快速鍵。", Text, MessageBoxButtons.OK,
+                MessageBox.Show(this, Ui.Text("簡繁切換與重送文字不能使用相同的快速鍵。"), Text, MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
                 return false;
             }
@@ -1139,6 +1149,7 @@ namespace ChiaKey.Settings
             frontend.SetBool("ShouldUseTransparentStatusBar", transparentStatusBar.Checked);
             frontend.SetBool("ShouldUseSystemTray", statusBarInTray.Checked);
             frontend.SetBool("WordCountEnabled", wordCountEnabled.Checked);
+            frontend.SetString("UiLanguage", Selected(uiLanguage));
             frontend.SetString("SoundFilename", customSound.Checked && soundPath.Text.Length > 0 ? soundPath.Text : "Default");
             frontend.SetBool("EnableAssociatedPhrases", associatedPhrases.Checked);
             frontend.SetBool("SimplifiedOutput", simplifiedOutput.Checked);
@@ -1186,7 +1197,7 @@ namespace ChiaKey.Settings
             }
             catch (Exception error)
             {
-                MessageBox.Show(this, "無法儲存設定：" + error.Message, Text, MessageBoxButtons.OK,
+                MessageBox.Show(this, Ui.Text("無法儲存設定：") + error.Message, Text, MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
                 return false;
             }
@@ -1219,7 +1230,8 @@ namespace ChiaKey.Settings
             // the input menu opens the phrase editor on its own, as Yahoo's separate PhraseEditor.exe
             bool phrases = args.Length > 0 &&
                            string.Equals(args[0], PhraseEditorArgument, StringComparison.OrdinalIgnoreCase);
-            string title = phrases ? PhraseEditorForm.WindowTitle : WindowTitle;
+            string canonicalTitle = phrases ? PhraseEditorForm.WindowTitle : WindowTitle;
+            string title = Ui.Text(canonicalTitle);
             bool created;
             using (Mutex single = new Mutex(true, phrases ? "ChiaKey.PhraseEditor" : "ChiaKey.Settings",
                                             out created))
@@ -1228,6 +1240,8 @@ namespace ChiaKey.Settings
                 if (!created)
                 {
                     IntPtr existing = FindWindow(null, title);
+                    foreach (string locale in new[] { "zh-TW", "zh-CN", "en" })
+                        if (existing == IntPtr.Zero) existing = FindWindow(null, Ui.Translate(canonicalTitle, locale));
                     if (existing != IntPtr.Zero)
                         SetForegroundWindow(existing);
                     return;

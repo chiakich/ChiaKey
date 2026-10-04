@@ -69,7 +69,7 @@ std::wstring InputMethodName(const std::string& inputMethod) {
     for (const auto& method : InputMethods()) {
         if (method.first == inputMethod) return method.second;
     }
-    return L"中文";
+    return UiText(L"中文");
 }
 
 }  // namespace
@@ -134,12 +134,12 @@ STDMETHODIMP LangBarButton::GetTooltipString(BSTR* tooltip) {
     if (!tooltip) return E_INVALIDARG;
     std::wstring value;
     if (kind_ == Kind::FullHalf) {
-        value = service_->isFullWidthMode() ? L"全形（Shift+Space 切換）"
-                                            : L"半形（Shift+Space 切換）";
+        value = service_->isFullWidthMode() ? UiText(L"全形（Shift+Space 切換）")
+                                            : UiText(L"半形（Shift+Space 切換）");
     } else {
         const std::wstring name = InputMethodName(CurrentInputMethod());
-        value = service_->isChineseMode() ? name + L"（按一下切換英文）"
-                                          : L"英文（按一下切換" + name + L"）";
+        value = service_->isChineseMode() ? name + UiText(L"（按一下切換英文）")
+                                          : UiText(L"英文（按一下切換") + name + UiText(L"）");
     }
     *tooltip = SysAllocString(value.c_str());
     return *tooltip ? S_OK : E_OUTOFMEMORY;
@@ -149,7 +149,7 @@ STDMETHODIMP LangBarButton::GetTooltipString(BSTR* tooltip) {
 std::vector<LangBarButton::MenuItem> LangBarButton::menuItems() {
     std::vector<MenuItem> items;
     items.push_back({kMenuToggleLanguage,
-                     service_->isChineseMode() ? L"切換至英文" : L"切換至" + InputMethodName(CurrentInputMethod()), false});
+                     service_->isChineseMode() ? UiText(L"切換至英文") : UiText(L"切換至") + InputMethodName(CurrentInputMethod()), false});
     items.push_back({0, L"", false});
     const std::string selected = CurrentInputMethod();
     menuInputMethods_.clear();
@@ -160,15 +160,15 @@ std::vector<LangBarButton::MenuItem> LangBarButton::menuItems() {
     }
     items.push_back({0, L"", false});
     RefreshSettings();
-    items.push_back({kMenuSimplifiedOutput, kSimplifiedOutputLabel,
+    items.push_back({kMenuSimplifiedOutput, UiText(kSimplifiedOutputLabel),
                      CurrentFrontendSettings().simplifiedOutput});
-    items.push_back({kMenuHalfWidth, L"半形", !service_->isFullWidthMode()});
-    items.push_back({kMenuFullWidth, L"全形", service_->isFullWidthMode()});
+    items.push_back({kMenuHalfWidth, UiText(L"半形"), !service_->isFullWidthMode()});
+    items.push_back({kMenuFullWidth, UiText(L"全形"), service_->isFullWidthMode()});
     items.push_back({0, L"", false});
-    items.push_back({kMenuSymbols, kSymbolsLabel, service_->isSymbolWindowVisible()});
-    items.push_back({kMenuPhraseEditor, kPhraseEditorLabel, false});
-    items.push_back({kMenuSettings, L"輸入法設定…", false});
-    items.push_back({kMenuAbout, L"關於…", false});
+    items.push_back({kMenuSymbols, UiText(kSymbolsLabel), service_->isSymbolWindowVisible()});
+    items.push_back({kMenuPhraseEditor, UiText(kPhraseEditorLabel), false});
+    items.push_back({kMenuSettings, UiText(L"輸入法設定…"), false});
+    items.push_back({kMenuAbout, UiText(L"關於…"), false});
     return items;
 }
 

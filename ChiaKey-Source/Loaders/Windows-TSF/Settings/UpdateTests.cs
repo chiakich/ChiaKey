@@ -40,6 +40,12 @@ namespace ChiaKey.Settings
             Directory.CreateDirectory(root);
             try
             {
+                Ui.Language = "zh-TW";
+                Check(Ui.Text("詞彙設定") == "詞彙設定", "Traditional UI preserves original captions");
+                Check(Ui.Translate("詞彙設定", "en") == "User phrase settings", "English resource is embedded");
+                Check(Ui.Translate("詞彙設定", "zh-CN") == "词汇设定", "Simplified UI uses the native project conversion table");
+                Check(Ui.Translate("Custom table name", "en") == "Custom table name", "user labels stay unchanged");
+                Check(Ui.Normalize("unexpected") == "zh-TW", "unknown UI language falls back safely");
                 Run(root, args[1]);
                 Console.WriteLine("Passed " + checks + " updater checks (offline).");
                 return 0;

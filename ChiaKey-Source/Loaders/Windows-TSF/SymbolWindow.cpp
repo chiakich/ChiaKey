@@ -1,3 +1,4 @@
+#include "FrontendBehavior.h"
 #include "SymbolWindow.h"
 
 #include <CommCtrl.h>
@@ -109,7 +110,7 @@ bool SymbolWindow::ensureWindow() {
     // which would not match the position another app saved
     const DPI_AWARENESS_CONTEXT previous =
         SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    CreateWindowExW(kWindowExStyle, kSymbolWindowClass, L"符號表", kWindowStyle, 0, 0, 1, 1,
+    CreateWindowExW(kWindowExStyle, kSymbolWindowClass, UiText(L"符號表").c_str(), kWindowStyle, 0, 0, 1, 1,
                     nullptr, nullptr, g_module, this);
     if (window_) {
         CreateWindowExW(WS_EX_CLIENTEDGE, kSymbolListClass, L"", WS_CHILD | WS_VSCROLL, 0, 0, 1,
@@ -704,8 +705,8 @@ void SymbolWindow::paint() {
                        DisplayText(page->entries[index]), symbolFont_);
         }
     } else if (page) {
-        if (showsEditButton()) drawButton(dc, editButton_, stateFor(kHitEdit), L"編輯", font_);
-        drawButton(dc, sendButton_, stateFor(kHitSend), L"送出", font_);
+        if (showsEditButton()) drawButton(dc, editButton_, stateFor(kHitEdit), UiText(L"編輯"), font_);
+        drawButton(dc, sendButton_, stateFor(kHitSend), UiText(L"送出"), font_);
     }
 
     BitBlt(target, 0, 0, client.right, client.bottom, dc, 0, 0, SRCCOPY);

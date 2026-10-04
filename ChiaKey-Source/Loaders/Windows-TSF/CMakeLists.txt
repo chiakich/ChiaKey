@@ -129,6 +129,7 @@ if(CHIAKEY_CSC)
     configure_file(Settings/AssemblyInfo.cs.in "${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs" @ONLY)
     set(CHIAKEY_SETTINGS_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Ui.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs"
@@ -137,6 +138,8 @@ if(CHIAKEY_CSC)
     set(CHIAKEY_SETTINGS_ICONS "${CHIAKEY_SOURCE}/PreferenceApplications/OSX/Images")
     # csc reads forward slashes as option prefixes, so every path goes native
     set(CHIAKEY_SETTINGS_ARGUMENTS)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UiStrings.xml" ui_resource_path)
+    list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${ui_resource_path},UiStrings.xml")
     foreach(icon general phonetic cangjie simplex generic phrase plugin update)
         file(TO_NATIVE_PATH "${CHIAKEY_SETTINGS_ICONS}/${icon}.tiff" icon_path)
         list(APPEND CHIAKEY_SETTINGS_ARGUMENTS "/resource:${icon_path},${icon}.tiff")
@@ -172,7 +175,7 @@ if(CHIAKEY_CSC)
                 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml.dll
                 /r:System.Web.Extensions.dll
                 ${CHIAKEY_SETTINGS_ARGUMENTS}
-        DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES}
+        DEPENDS ${CHIAKEY_SETTINGS_SOURCES} ${CHIAKEY_SETTINGS_IMAGES} Settings/UiStrings.xml
                 "${CMAKE_CURRENT_SOURCE_DIR}/Settings/ChiaKeySettings.manifest"
                 "${CHIAKEY_ICON_DIR}/app.ico" "${CHIAKEY_ICON_DIR}/phrase-editor.ico"
         COMMENT "Compiling ChiaKeySettings.exe"
@@ -188,14 +191,16 @@ if(CHIAKEY_CSC)
         file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Plist.cs" update_tests_plist)
         file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs" update_tests_service)
         file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateTests.cs" update_tests_source)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/Ui.cs" update_tests_ui)
         add_custom_command(
             OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyUpdateTests.exe"
             COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB "${CHIAKEY_CSC}" /nologo /utf8output
                     /target:exe "/out:${update_tests_exe}" /r:System.dll /r:System.Xml.dll
                     "/platform:${CHIAKEY_MANAGED_PLATFORM}"
                     /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll
+                    "/resource:${ui_resource_path},UiStrings.xml" "${update_tests_ui}"
                     "${update_tests_plist}" "${update_tests_service}" "${update_tests_source}"
-            DEPENDS Settings/Plist.cs Settings/UpdateService.cs Settings/UpdateTests.cs
+            DEPENDS Settings/Plist.cs Settings/UpdateService.cs Settings/UpdateTests.cs Settings/Ui.cs Settings/UiStrings.xml
             VERBATIM)
         add_custom_target(ChiaKeyUpdateTests ALL
             COMMAND "${CMAKE_COMMAND}" -E copy_if_different

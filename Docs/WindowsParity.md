@@ -55,7 +55,7 @@
 | 字數統計、今天／本週／總計／清除 | BIAboutPanel 依 WordCount 套件啟用 | 第三批補上可停用的 TSF 成功提交計數與關於頁今日／最近七天／累計／清除；SQLite 跨宿主原子更新，不儲存文字。原 DLL 套件設定尚未遷移 |
 | signed plug-in 管理／移除 | PanelMisc 與 PVDLLLoadingSystem | 尚缺，現行核心使用 static packages；不可直接恢復舊 DLL 載入與簽章機制 |
 | 自動更新 | PanelUpdate／FormAskDownload／FormDownload | 現行本體／詞庫雙管道已實作；產品發布與下載契約使用千秋，不復用 Yahoo 舊 endpoint |
-| 繁中／簡中／英文 UI | zh-TW／zh-CN／default resx | 現行偏好設定主要繁中，完整三語 UI 尚缺 |
+| 繁中／簡中／英文 UI | zh-TW／zh-CN／default resx | 第四批補上繁中／簡中／英文偏好設定、詞彙編輯器、更新頁、原生選單與核心 locale；字典頁尚未加入，字串裁切與字型仍待 GUI |
 
 ## 本批按鍵與設定實作
 
@@ -126,3 +126,14 @@ Server 的成功不替代 Windows 11 Store app／非管理員／提升權限宿�
 
 本批沿用 windows-tsf／PR #16，以獨立 conventional commit 保留功能補齊與先前 review 修正的邊界。
 依目前約定，push 前先提供驗證結果；未發表任何 GitHub comments。
+
+## 第四批三語介面
+
+Windows.plist 的 UiLanguage 可選 zh-TW、zh-CN 或 en；無效值回到繁中。
+偏好設定、詞彙編輯器與更新訊息共用翻譯資源，簡中使用現有 HanConvert 轉換表。
+原生選單、浮動列、符號表與通知標題也使用此設定；使用者詞彙、罐頭訊息與自訂表名稱不翻譯。
+新建核心 runtime 使用相同 locale，讓反查與核心訊息一致。核心 locale 在建立後固定，
+因此變更語言後需重新開啟設定與使用中的打字應用程式。
+
+x64／Win32 完整 CTest 各 5/5 通過（33.76／36.12 秒）。包含 DLL 的簡中轉換、
+英文資源、無效 locale 回退與核心 locale 設定；三語畫面的裁切、DPI 與字型尚未 GUI 驗證。

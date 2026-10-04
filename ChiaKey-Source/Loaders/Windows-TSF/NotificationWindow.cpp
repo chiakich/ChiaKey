@@ -1,3 +1,4 @@
+#include "FrontendBehavior.h"
 #include "NotificationWindow.h"
 #include "GdiText.h"
 #include "ModuleState.h"
@@ -62,7 +63,7 @@ void NotificationWindow::paint() {
     RECT title = rect; title.left += MulDiv(10, dpi_, 96); title.top += MulDiv(3, dpi_, 96);
     title.bottom = MulDiv(20, dpi_, 96);
     SetTextColor(dc, RGB(148, 0, 211));
-    DrawTextW(dc, L"千秋輸入法", -1, &title, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+    DrawTextW(dc, UiText(L"千秋輸入法").c_str(), -1, &title, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
     RECT body = rect; body.left += MulDiv(10, dpi_, 96); body.right -= MulDiv(10, dpi_, 96);
     body.top = title.bottom; body.bottom -= MulDiv(4, dpi_, 96);
     SetTextColor(dc, RGB(255, 255, 255));

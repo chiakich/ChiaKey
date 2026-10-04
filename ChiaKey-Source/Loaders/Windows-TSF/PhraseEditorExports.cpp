@@ -11,6 +11,8 @@
 
 #include "ChiaKeyEngine.h"
 #include "SharedState.h"
+#include "OutputFilter.h"
+#include <algorithm>
 
 namespace {
 
@@ -40,6 +42,14 @@ UserPhraseStore* Store(void* handle) { return static_cast<UserPhraseStore*>(hand
 }  // namespace
 
 extern "C" {
+int __stdcall ChiaKeySimplifyText(const wchar_t* source, wchar_t* output, int capacity) {
+    if (!source || !output || capacity <= 0) return 0;
+    const auto text = ChiaKey::WindowsTsf::FilterCommittedText(source, true);
+    if (text.size() >= static_cast<size_t>(capacity)) return 0;
+    std::copy(text.begin(), text.end(), output); output[text.size()] = 0;
+    return static_cast<int>(text.size() + 1);
+}
+
 
 BOOL __stdcall ChiaKeyWordCounts(long long* today, long long* week, long long* total) {
     if (!today || !week || !total) return FALSE;

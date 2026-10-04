@@ -1,4 +1,5 @@
 #include "ChiaKeyEngine.h"
+#include "FrontendBehavior.h"
 
 #include <AclAPI.h>
 #include <ShlObj.h>
@@ -692,6 +693,8 @@ EngineResult MakeResult(const ChiaKey::EngineState& state, bool showNotification
 
 ChiaKey::EngineConfig ReadEngineConfig(const std::string& preferencesPath,
                                        ChiaKey::EngineConfig config) {
+    const auto frontend = ReadFrontendSettings(preferencesPath);
+    config.locale = frontend.uiLanguage == "en" ? "en" : frontend.uiLanguage == "zh-CN" ? "zh_CN" : "zh_TW";
     const std::string path = OVPathHelper::PathCat(preferencesPath, kSmartMandarinPlist);
     if (!OVPathHelper::PathExists(path)) return config;
     // the map points into the plist's own dictionary, so the plist has to outlive it
@@ -745,6 +748,8 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
     settings.statusBarInTray = BoolValue(map, "ShouldUseSystemTray", false);
     settings.miniStatusBar = BoolValue(map, "ShouldUseMiniMode", false);
     settings.wordCountEnabled = BoolValue(map, "WordCountEnabled", false);
+    settings.uiLanguage = StringValue(map, "UiLanguage", "zh-TW");
+    if (settings.uiLanguage != "en" && settings.uiLanguage != "zh-CN") settings.uiLanguage = "zh-TW";
     settings.reverseLookupMethod = StringValue(map, "ReverseLookupMethod", "");
     settings.associatedPhrases =
         BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);
@@ -950,7 +955,7 @@ std::vector<std::pair<std::string, std::wstring>> InputMethods() {
     const auto available = runtime->inputMethods();
     for (const auto& known : kKnown) {
         for (const auto& entry : available) {
-            if (entry.first == known.first) result.emplace_back(entry.first, known.second);
+            if (entry.first == known.first) result.emplace_back(entry.first, UiText(known.second));
         }
     }
     for (const auto& entry : available) {

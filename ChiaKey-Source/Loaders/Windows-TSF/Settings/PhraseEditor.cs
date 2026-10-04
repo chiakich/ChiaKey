@@ -123,12 +123,12 @@ namespace ChiaKey.Settings
             Controls.Add(box);
 
             Button ok = new Button();
-            ok.Text = "確定(&O)";
+            ok.Text = Ui.Text("確定(&O)");
             ok.DialogResult = DialogResult.OK;
             ok.Bounds = new Rectangle(160, 74, 82, 26);
             Controls.Add(ok);
             Button cancel = new Button();
-            cancel.Text = "取消(&C)";
+            cancel.Text = Ui.Text("取消(&C)");
             cancel.DialogResult = DialogResult.Cancel;
             cancel.Bounds = new Rectangle(246, 74, 82, 26);
             Controls.Add(cancel);
@@ -153,7 +153,7 @@ namespace ChiaKey.Settings
             SuspendLayout();
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
-            Text = "編輯注音";
+            Text = Ui.Text("編輯注音");
             Font = new Font("Microsoft JhengHei UI", 9F);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -197,7 +197,7 @@ namespace ChiaKey.Settings
             int buttonTop = preferred.Height + 24;
 
             Button ok = new Button();
-            ok.Text = "確定(&O)";
+            ok.Text = Ui.Text("確定(&O)");
             ok.DialogResult = DialogResult.OK;
             ok.Enabled = syllables.Count > 0 && syllables.TrueForAll(box => box.SelectedIndex >= 0);
             foreach (ComboBox box in syllables)
@@ -207,7 +207,7 @@ namespace ChiaKey.Settings
             ok.Bounds = new Rectangle(width - 184, buttonTop, 82, 26);
             Controls.Add(ok);
             Button cancel = new Button();
-            cancel.Text = "取消(&C)";
+            cancel.Text = Ui.Text("取消(&C)");
             cancel.DialogResult = DialogResult.Cancel;
             cancel.Bounds = new Rectangle(width - 96, buttonTop, 82, 26);
             Controls.Add(cancel);
@@ -273,7 +273,7 @@ namespace ChiaKey.Settings
             SuspendLayout();
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
-            Text = WindowTitle;
+            Text = Ui.Text(WindowTitle);
             Font = new Font("Microsoft JhengHei UI", 9F);
             Icon = LoadIcon("phrase-editor.ico");
             StartPosition = FormStartPosition.CenterScreen;
@@ -294,8 +294,8 @@ namespace ChiaKey.Settings
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             // the fixed default header height does not follow the DPI
             grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            grid.Columns.Add(Column("詞彙", 1));
-            grid.Columns.Add(Column("注音", 2));
+            grid.Columns.Add(Column(Ui.Text("詞彙"), 1));
+            grid.Columns.Add(Column(Ui.Text("注音"), 2));
             grid.CellValueNeeded += GridCellValueNeeded;
             grid.ColumnHeaderMouseClick += GridColumnHeaderMouseClick;
             grid.CellDoubleClick += delegate(object sender, DataGridViewCellEventArgs e)
@@ -315,41 +315,41 @@ namespace ChiaKey.Settings
 
             ToolStrip tools = new ToolStrip();
             tools.GripStyle = ToolStripGripStyle.Hidden;
-            tools.Items.Add(Tool("加入新詞", "add.ico", delegate { AddPhrase(); }));
-            tools.Items.Add(Tool("移除詞彙", "remove.ico", delegate { RemoveSelected(); }));
-            tools.Items.Add(Tool("編輯詞彙", "editPhrase.ico", delegate { EditPhrase(); }));
-            tools.Items.Add(Tool("編輯注音", "editReading.ico", delegate { EditReading(); }));
+            tools.Items.Add(Tool(Ui.Text("加入新詞"), "add.ico", delegate { AddPhrase(); }));
+            tools.Items.Add(Tool(Ui.Text("移除詞彙"), "remove.ico", delegate { RemoveSelected(); }));
+            tools.Items.Add(Tool(Ui.Text("編輯詞彙"), "editPhrase.ico", delegate { EditPhrase(); }));
+            tools.Items.Add(Tool(Ui.Text("編輯注音"), "editReading.ico", delegate { EditReading(); }));
             search.Alignment = ToolStripItemAlignment.Right;
             search.Width = 110;
             search.BorderStyle = BorderStyle.FixedSingle;
-            search.ToolTipText = "以詞彙或注音搜尋";
+            search.ToolTipText = Ui.Text("以詞彙或注音搜尋");
             search.TextChanged += delegate
             {
                 searchTimer.Stop();
                 searchTimer.Start();
             };
             tools.Items.Add(search);
-            ToolStripLabel searchLabel = new ToolStripLabel("搜尋：");
+            ToolStripLabel searchLabel = new ToolStripLabel(Ui.Text("搜尋："));
             searchLabel.Alignment = ToolStripItemAlignment.Right;
             tools.Items.Add(searchLabel);
             Controls.Add(tools);
 
             MenuStrip menu = new MenuStrip();
-            ToolStripMenuItem file = new ToolStripMenuItem("檔案(&F)");
-            file.DropDownItems.Add(MenuItem("加入新詞(&N)", Keys.Control | Keys.N, delegate { AddPhrase(); }));
+            ToolStripMenuItem file = new ToolStripMenuItem(Ui.Text("檔案(&F)"));
+            file.DropDownItems.Add(MenuItem(Ui.Text("加入新詞(&N)"), Keys.Control | Keys.N, delegate { AddPhrase(); }));
             file.DropDownItems.Add(new ToolStripSeparator());
-            file.DropDownItems.Add(MenuItem("匯入(&I)…", Keys.None, delegate { Import(); }));
-            file.DropDownItems.Add(MenuItem("匯出(&E)…", Keys.None, delegate { Export(); }));
+            file.DropDownItems.Add(MenuItem(Ui.Text("匯入(&I)…"), Keys.None, delegate { Import(); }));
+            file.DropDownItems.Add(MenuItem(Ui.Text("匯出(&E)…"), Keys.None, delegate { Export(); }));
             file.DropDownItems.Add(new ToolStripSeparator());
-            file.DropDownItems.Add(MenuItem("關閉(&X)", Keys.None, delegate { Close(); }));
-            ToolStripMenuItem edit = new ToolStripMenuItem("編輯(&E)");
+            file.DropDownItems.Add(MenuItem(Ui.Text("關閉(&X)"), Keys.None, delegate { Close(); }));
+            ToolStripMenuItem edit = new ToolStripMenuItem(Ui.Text("編輯(&E)"));
             // Menu activation temporarily takes focus from the hosted textbox.
             search.TextBox.Enter += delegate { clipboardTarget = search.TextBox; };
             grid.Enter += delegate { clipboardTarget = null; };
-            ToolStripMenuItem cut = MenuItem("剪下(&T)", Keys.Control | Keys.X, delegate {
+            ToolStripMenuItem cut = MenuItem(Ui.Text("剪下(&T)"), Keys.Control | Keys.X, delegate {
                 TextBoxBase text = FocusedTextBox(); if (text != null) text.Cut(); });
-            ToolStripMenuItem copy = MenuItem("複製(&C)", Keys.Control | Keys.C, delegate { CopySelection(); });
-            ToolStripMenuItem paste = MenuItem("貼上(&P)", Keys.Control | Keys.V, delegate {
+            ToolStripMenuItem copy = MenuItem(Ui.Text("複製(&C)"), Keys.Control | Keys.C, delegate { CopySelection(); });
+            ToolStripMenuItem paste = MenuItem(Ui.Text("貼上(&P)"), Keys.Control | Keys.V, delegate {
                 TextBoxBase text = FocusedTextBox(); if (text != null) text.Paste(); });
             edit.DropDownItems.AddRange(new ToolStripItem[] { cut, copy, paste, new ToolStripSeparator() });
             edit.DropDownOpening += delegate
@@ -359,20 +359,20 @@ namespace ChiaKey.Settings
                 paste.Enabled = text != null && !text.ReadOnly;
                 copy.Enabled = text != null ? text.SelectionLength > 0 : grid.SelectedRows.Count > 0;
             };
-            edit.DropDownItems.Add(MenuItem("刪除(&D)", Keys.None, delegate {
+            edit.DropDownItems.Add(MenuItem(Ui.Text("刪除(&D)"), Keys.None, delegate {
                 TextBoxBase text = FocusedTextBox();
                 if (text != null) text.SelectedText = ""; else RemoveSelected(); }));
             edit.DropDownItems.Add(new ToolStripSeparator());
-            edit.DropDownItems.Add(MenuItem("編輯詞彙(&E)", Keys.F2, delegate { EditPhrase(); }));
-            edit.DropDownItems.Add(MenuItem("編輯注音(&R)", Keys.Control | Keys.R, delegate { EditReading(); }));
+            edit.DropDownItems.Add(MenuItem(Ui.Text("編輯詞彙(&E)"), Keys.F2, delegate { EditPhrase(); }));
+            edit.DropDownItems.Add(MenuItem(Ui.Text("編輯注音(&R)"), Keys.Control | Keys.R, delegate { EditReading(); }));
             menu.Items.Add(file);
             menu.Items.Add(edit);
-            ToolStripMenuItem help = new ToolStripMenuItem("輔助說明(&H)");
-            help.DropDownItems.Add(MenuItem("線上說明文件(&H)", Keys.None, delegate {
+            ToolStripMenuItem help = new ToolStripMenuItem(Ui.Text("輔助說明(&H)"));
+            help.DropDownItems.Add(MenuItem(Ui.Text("線上說明文件(&H)"), Keys.None, delegate {
                 System.Diagnostics.Process.Start("https://github.com/chiakich/ChiaKey/blob/windows-tsf/Docs/WindowsImplementation.md"); }));
-            help.DropDownItems.Add(MenuItem("關於(&A)", Keys.None, delegate {
-                MessageBox.Show(this, "千秋輸入法詞彙編輯器\n版本 " + UpdateService.Default().AppReleaseVersion +
-                    "\n\n源自 Yahoo! KeyKey 詞彙編輯程式。", "關於", MessageBoxButtons.OK, MessageBoxIcon.Information); }));
+            help.DropDownItems.Add(MenuItem(Ui.Text("關於(&A)"), Keys.None, delegate {
+                MessageBox.Show(this, Ui.Text("千秋輸入法詞彙編輯器\n版本 ") + UpdateService.Default().AppReleaseVersion +
+                    Ui.Text("\n\n源自 Yahoo! KeyKey 詞彙編輯程式。"), Ui.Text("關於"), MessageBoxButtons.OK, MessageBoxIcon.Information); }));
             menu.Items.Add(help);
             Controls.Add(menu);
             MainMenuStrip = menu;
@@ -406,7 +406,7 @@ namespace ChiaKey.Settings
             base.OnShown(e);
             if (store == IntPtr.Zero)
             {
-                MessageBox.Show(this, "無法開啟使用者詞庫。", Text, MessageBoxButtons.OK,
+                MessageBox.Show(this, Ui.Text("無法開啟使用者詞庫。"), Text, MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
                 Close();
             }
@@ -459,7 +459,7 @@ namespace ChiaKey.Settings
             int count = store != IntPtr.Zero ? PhraseStore.ChiaKeyPhrasesCount(store, filter) : 0;
             grid.RowCount = count;
             grid.Invalidate();
-            status.Text = filter.Length > 0 ? "找到 " + count + " 個詞彙" : "共 " + count + " 個詞彙";
+            status.Text = filter.Length > 0 ? Ui.Text("找到 ") + count + Ui.Text(" 個詞彙") : Ui.Text("共 ") + count + Ui.Text(" 個詞彙");
         }
 
         private PhraseRow RowAt(int index)
@@ -514,14 +514,14 @@ namespace ChiaKey.Settings
         private void AddPhrase()
         {
             string phrase;
-            using (TextDialog dialog = new TextDialog("加入新詞", "請輸入要加入的詞彙：", ""))
+            using (TextDialog dialog = new TextDialog(Ui.Text("加入新詞"), Ui.Text("請輸入要加入的詞彙："), ""))
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Value.Length == 0)
                     return;
                 phrase = dialog.Value;
             }
             if (PhraseStore.ChiaKeyPhrasesContains(store, phrase) != 0 &&
-                MessageBox.Show(this, "「" + phrase + "」已經在詞庫裡了，仍要再加一個不同讀音的嗎？", Text,
+                MessageBox.Show(this, "「" + phrase + Ui.Text("」已經在詞庫裡了，仍要再加一個不同讀音的嗎？"), Text,
                                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
             // a character with several readings is the user's to pick
@@ -531,7 +531,7 @@ namespace ChiaKey.Settings
                     return;
                 if (PhraseStore.ChiaKeyPhrasesAdd(store, phrase, dialog.Reading) == 0)
                 {
-                    MessageBox.Show(this, "無法加入「" + phrase + "」。", Text, MessageBoxButtons.OK,
+                    MessageBox.Show(this, Ui.Text("無法加入「") + phrase + "」。", Text, MessageBoxButtons.OK,
                                     MessageBoxIcon.Error);
                     return;
                 }
@@ -545,7 +545,7 @@ namespace ChiaKey.Settings
             if (row == null)
                 return;
             string phrase;
-            using (TextDialog dialog = new TextDialog("編輯詞彙", "請輸入新的詞彙：", row.Phrase))
+            using (TextDialog dialog = new TextDialog(Ui.Text("編輯詞彙"), Ui.Text("請輸入新的詞彙："), row.Phrase))
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Value.Length == 0 ||
                     dialog.Value == row.Phrase)
@@ -560,7 +560,7 @@ namespace ChiaKey.Settings
                     return;
                 if (PhraseStore.ChiaKeyPhrasesSetPhraseAndReading(store, row.Rowid, phrase, dialog.Reading) == 0)
                 {
-                    MessageBox.Show(this, "無法更新「" + phrase + "」與讀音。", Text, MessageBoxButtons.OK,
+                    MessageBox.Show(this, Ui.Text("無法更新「") + phrase + Ui.Text("」與讀音。"), Text, MessageBoxButtons.OK,
                                     MessageBoxIcon.Error);
                     return;
                 }
@@ -579,7 +579,7 @@ namespace ChiaKey.Settings
                     return;
                 if (PhraseStore.ChiaKeyPhrasesSetReading(store, row.Rowid, dialog.Reading) == 0)
                 {
-                    MessageBox.Show(this, "無法更新「" + row.Phrase + "」的讀音。", Text, MessageBoxButtons.OK,
+                    MessageBox.Show(this, Ui.Text("無法更新「") + row.Phrase + Ui.Text("」的讀音。"), Text, MessageBoxButtons.OK,
                                     MessageBoxIcon.Error);
                     return;
                 }
@@ -618,8 +618,8 @@ namespace ChiaKey.Settings
             if (rowids.Count == 0)
                 return;
             string question = rowids.Count == 1
-                ? "確定要移除「" + RowAt(grid.SelectedRows[0].Index).Phrase + "」嗎？"
-                : "確定要移除選取的 " + rowids.Count + " 個詞彙嗎？";
+                ? Ui.Text("確定要移除「") + RowAt(grid.SelectedRows[0].Index).Phrase + Ui.Text("」嗎？")
+                : Ui.Text("確定要移除選取的 ") + rowids.Count + Ui.Text(" 個詞彙嗎？");
             if (MessageBox.Show(this, question, Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) !=
                 DialogResult.Yes)
                 return;
@@ -634,20 +634,20 @@ namespace ChiaKey.Settings
         {
             using (OpenFileDialog dialog = new OpenFileDialog())
             {
-                dialog.Filter = FileFilter;
-                dialog.Title = "匯入詞彙";
+                dialog.Filter = Ui.Text(FileFilter);
+                dialog.Title = Ui.Text("匯入詞彙");
                 if (dialog.ShowDialog(this) != DialogResult.OK)
                     return;
                 int result = PhraseStore.ChiaKeyPhrasesImport(store, dialog.FileName);
                 Reload();
                 if (result == 1)
-                    MessageBox.Show(this, "詞彙已經成功匯入。", "完成", MessageBoxButtons.OK,
+                    MessageBox.Show(this, Ui.Text("詞彙已經成功匯入。"), Ui.Text("完成"), MessageBoxButtons.OK,
                                     MessageBoxIcon.Information);
                 else if (result == 2)
-                    MessageBox.Show(this, "詞彙已經匯入，但檔案裡的自動學習資料無法還原。", "完成",
+                    MessageBox.Show(this, Ui.Text("詞彙已經匯入，但檔案裡的自動學習資料無法還原。"), Ui.Text("完成"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 else
-                    MessageBox.Show(this, "詞彙匯入失敗。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, Ui.Text("詞彙匯入失敗。"), Ui.Text("錯誤"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -655,16 +655,16 @@ namespace ChiaKey.Settings
         {
             using (SaveFileDialog dialog = new SaveFileDialog())
             {
-                dialog.Filter = FileFilter;
-                dialog.Title = "匯出詞彙";
+                dialog.Filter = Ui.Text(FileFilter);
+                dialog.Title = Ui.Text("匯出詞彙");
                 dialog.FileName = "ChiaKeyPhrases.txt";
                 if (dialog.ShowDialog(this) != DialogResult.OK)
                     return;
                 if (PhraseStore.ChiaKeyPhrasesExport(store, dialog.FileName) != 0)
-                    MessageBox.Show(this, "詞彙已經成功匯出。", "完成", MessageBoxButtons.OK,
+                    MessageBox.Show(this, Ui.Text("詞彙已經成功匯出。"), Ui.Text("完成"), MessageBoxButtons.OK,
                                     MessageBoxIcon.Information);
                 else
-                    MessageBox.Show(this, "詞彙匯出失敗。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, Ui.Text("詞彙匯出失敗。"), Ui.Text("錯誤"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

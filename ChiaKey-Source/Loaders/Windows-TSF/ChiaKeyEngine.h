@@ -76,6 +76,7 @@ struct FrontendSettings {
     bool statusBarInTray = false;
     bool miniStatusBar = false;
     bool wordCountEnabled = false;
+    std::string uiLanguage = "zh-TW";
     std::string reverseLookupMethod;
     bool associatedPhrases = false;
     bool simplifiedOutput = false;

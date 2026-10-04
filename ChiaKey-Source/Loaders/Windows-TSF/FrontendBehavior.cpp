@@ -1,7 +1,28 @@
 #include "FrontendBehavior.h"
+#include "OutputFilter.h"
 #include <mmsystem.h>
 
 namespace ChiaKey::WindowsTsf {
+
+std::wstring UiText(const std::wstring& text, const std::string& language) {
+    if (language == "zh-CN") return FilterCommittedText(text, true);
+    if (language != "en") return text;
+    const std::pair<const wchar_t*, const wchar_t*> labels[]{
+        {L"千秋輸入法", L"ChiaKey"}, {L"中文", L"Chinese"}, {L"好打注音", L"Smart Phonetic"},
+        {L"傳統注音", L"Traditional Phonetic"}, {L"倉頡", L"Cangjie"}, {L"簡易", L"Simplex"},
+        {L"簡體輸出", L"Simplified Chinese output"}, {L"半形", L"Half-width"}, {L"全形", L"Full-width"},
+        {L"符號表（Ctrl+Alt+.）", L"Symbols (Ctrl+Alt+.)"}, {L"符號表", L"Symbols"},
+        {L"詞彙編輯器…", L"Phrase Editor…"}, {L"輸入法設定…", L"Preferences…"}, {L"關於…", L"About…"},
+        {L"編輯", L"Edit"}, {L"送出", L"Send"}, {L"標點螢幕鍵盤", L"Punctuation keyboard"},
+        {L"切換至英文", L"Switch to English"}, {L"切換至", L"Switch to "},
+        {L"（按一下切換英文）", L" (click for English)"}, {L"英文（按一下切換", L"English (click for "},
+        {L"）", L")"}, {L"全形（Shift+Space 切換）", L"Full-width (Shift+Space)"},
+        {L"半形（Shift+Space 切換）", L"Half-width (Shift+Space)"},
+        {L"千秋輸入法：按一下還原浮動狀態列", L"ChiaKey: click to restore the floating status bar"}
+    };
+    for (const auto& label : labels) if (text == label.first) return label.second;
+    return text;
+}
 
 void PlayTypingErrorSound(const FrontendSettings& settings) {
     if (!settings.playSoundOnTypingError) return;

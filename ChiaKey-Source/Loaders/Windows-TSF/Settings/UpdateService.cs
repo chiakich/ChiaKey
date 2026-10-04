@@ -580,12 +580,12 @@ namespace ChiaKey.Settings
                         UpdateOffer offer = CheckLexicon();
                         if (offer != null && DateTime.UtcNow - offer.Published >= TimeSpan.FromDays(3))
                         {
-                            InstallLexicon(offer); results.Add("詞庫已更新至 " + offer.Version);
+                            InstallLexicon(offer); results.Add(Ui.Text("詞庫已更新至 ") + offer.Version);
                         }
-                        else results.Add(offer == null ? "詞庫已是最新" : "詞庫等待發布滿三天");
+                        else results.Add(offer == null ? Ui.Text("詞庫已是最新") : Ui.Text("詞庫等待發布滿三天"));
                     }
-                    catch (WebException error) { networkFailed = true; results.Add("詞庫更新失敗：" + error.Message); }
-                    catch (Exception error) { results.Add("詞庫更新失敗：" + error.Message); }
+                    catch (WebException error) { networkFailed = true; results.Add(Ui.Text("詞庫更新失敗：") + error.Message); }
+                    catch (Exception error) { results.Add(Ui.Text("詞庫更新失敗：") + error.Message); }
                 }
                 if (app)
                 {
@@ -596,12 +596,12 @@ namespace ChiaKey.Settings
                         {
                             string installer = DownloadApp(offer);
                             InstallApp(installer, offer.Sha256);
-                            results.Add("已開啟 " + offer.Version + " 安裝器；完成後重新開啟應用程式");
+                            results.Add(Ui.Text("已開啟 ") + offer.Version + Ui.Text(" 安裝器；完成後重新開啟應用程式"));
                         }
-                        else results.Add(offer == null ? "本體已是最新" : "本體等待發布滿三天");
+                        else results.Add(offer == null ? Ui.Text("本體已是最新") : Ui.Text("本體等待發布滿三天"));
                     }
-                    catch (WebException error) { networkFailed = true; results.Add("本體更新失敗：" + error.Message); }
-                    catch (Exception error) { results.Add("本體更新失敗：" + error.Message); }
+                    catch (WebException error) { networkFailed = true; results.Add(Ui.Text("本體更新失敗：") + error.Message); }
+                    catch (Exception error) { results.Add(Ui.Text("本體更新失敗：") + error.Message); }
                 }
                 // A failed connection must not consume the daily check, even if
                 // the other update channel succeeded. The next tick can retry.
@@ -634,7 +634,7 @@ namespace ChiaKey.Settings
                     Plist options = service.Preferences;
                     if (!options.GetBool("AutoUpdateApp", true) && !options.GetBool("AutoUpdateLexicon", true)) return;
                     try { service.AutomaticPass(); }
-                    catch (Exception error) { try { service.Status("更新失敗：" + error.Message); } catch (IOException) { } }
+                    catch (Exception error) { try { service.Status(Ui.Text("更新失敗：") + error.Message); } catch (IOException) { } }
                     // A one-minute tick notices uninstall/upgrade/opt-out without another network request.
                     Thread.Sleep(60000);
                 }
@@ -650,7 +650,7 @@ namespace ChiaKey.Settings
             try
             {
                 if (ChiaKeyUpdatesValidateCore(path, temporary) == 0)
-                    throw new InvalidDataException("詞庫無法由輸入引擎載入，保留原詞庫。");
+                    throw new InvalidDataException(Ui.Text("詞庫無法由輸入引擎載入，保留原詞庫。"));
             }
             finally { Directory.Delete(temporary, true); }
         }
@@ -663,7 +663,7 @@ namespace ChiaKey.Settings
                 foreach (string table in new[] { "cooked_information", "prepopulated_service_data", "unigrams", "bigrams", "Mandarin-bpmf-cin", "chiaki_db_metadata", "chiaki_db_sources" })
                     Require(db.Scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='" + table + "';") == "1", table);
                 Require(db.Scalar("SELECT value FROM chiaki_db_metadata WHERE key='schema_version';") == "1", "schema_version");
-                Require(db.Scalar("SELECT COUNT(*) FROM cooked_information WHERE key='version' AND value!='';") == "1", "詞庫版本");
+                Require(db.Scalar("SELECT COUNT(*) FROM cooked_information WHERE key='version' AND value!='';") == "1", Ui.Text("詞庫版本"));
                 Minimum(db, "SELECT COUNT(*) FROM unigrams;", 1000);
                 Minimum(db, "SELECT COUNT(*) FROM 'Mandarin-bpmf-cin';", 1000);
                 Minimum(db, "SELECT COUNT(*) FROM unigrams WHERE qstring='_punctuation_list';", 50);
@@ -671,21 +671,21 @@ namespace ChiaKey.Settings
                 Minimum(db, "SELECT COUNT(*) FROM prepopulated_service_data WHERE key='canned_messages_timestamp' AND CAST(value AS INTEGER)>0;", 1);
                 foreach (string key in new[] { "_punctuation_<", "_punctuation_Standard_<" })
                 {
-                    Require(db.Scalar("SELECT current FROM unigrams WHERE qstring='" + key + "' ORDER BY probability DESC,current LIMIT 1;") == "，", "全形標點");
-                    Require(db.Scalar("SELECT value FROM 'Mandarin-bpmf-cin' WHERE key='" + key + "' ORDER BY rowid LIMIT 1;") == "，", "注音全形標點");
+                    Require(db.Scalar("SELECT current FROM unigrams WHERE qstring='" + key + "' ORDER BY probability DESC,current LIMIT 1;") == "，", Ui.Text("全形標點"));
+                    Require(db.Scalar("SELECT value FROM 'Mandarin-bpmf-cin' WHERE key='" + key + "' ORDER BY rowid LIMIT 1;") == "，", Ui.Text("注音全形標點"));
                 }
-                Require(db.Scalar("SELECT COUNT(*) FROM prepopulated_service_data WHERE key IN ('onekey_services','onekey_services_timestamp');") == "0", "禁止的 OneKey 資料");
+                Require(db.Scalar("SELECT COUNT(*) FROM prepopulated_service_data WHERE key IN ('onekey_services','onekey_services_timestamp');") == "0", Ui.Text("禁止的 OneKey 資料"));
                 string canned = db.Scalar("SELECT value FROM prepopulated_service_data WHERE key='canned_messages' LIMIT 1;");
-                Require(canned != null && canned.Length > 1000, "符號表資料");
+                Require(canned != null && canned.Length > 1000, Ui.Text("符號表資料"));
                 XmlDocument document = new XmlDocument(); document.XmlResolver = null;
                 XmlReaderSettings settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null };
                 using (XmlReader reader = XmlReader.Create(new StringReader(canned), settings)) document.Load(reader);
-                Require(document.SelectNodes("/plist/dict/key[.='CannedMessages']/following-sibling::*[1][self::array]/dict").Count > 0, "符號表分類");
+                Require(document.SelectNodes("/plist/dict/key[.='CannedMessages']/following-sibling::*[1][self::array]/dict").Count > 0, Ui.Text("符號表分類"));
             }
         }
         private static void Require(bool condition, string name)
         {
-            if (!condition) throw new InvalidDataException("詞庫驗證失敗：" + name);
+            if (!condition) throw new InvalidDataException(Ui.Text("詞庫驗證失敗：") + name);
         }
         private static void Minimum(Sqlite db, string sql, long minimum)
         {
@@ -706,24 +706,24 @@ namespace ChiaKey.Settings
             internal Sqlite(string path)
             {
                 if (sqlite3_open_v2(Utf8.GetBytes(path + "\0"), out database, 1, IntPtr.Zero) != 0)
-                { Dispose(); throw new InvalidDataException("無法以唯讀模式開啟詞庫。"); }
+                { Dispose(); throw new InvalidDataException(Ui.Text("無法以唯讀模式開啟詞庫。")); }
             }
             internal string Scalar(string sql)
             {
                 IntPtr statement;
                 if (sqlite3_prepare_v2(database, Utf8.GetBytes(sql + "\0"), -1, out statement, IntPtr.Zero) != 0)
-                    throw new InvalidDataException("詞庫缺少必要資料或欄位。");
+                    throw new InvalidDataException(Ui.Text("詞庫缺少必要資料或欄位。"));
                 try
                 {
                     int step = sqlite3_step(statement);
                     if (step == 101) return null;
-                    if (step != 100) throw new InvalidDataException("詞庫查詢失敗。");
+                    if (step != 100) throw new InvalidDataException(Ui.Text("詞庫查詢失敗。"));
                     IntPtr value = sqlite3_column_text(statement, 0);
                     int size = sqlite3_column_bytes(statement, 0);
-                    if (size > 8 * 1024 * 1024) throw new InvalidDataException("詞庫資料超過限制。");
+                    if (size > 8 * 1024 * 1024) throw new InvalidDataException(Ui.Text("詞庫資料超過限制。"));
                     byte[] bytes = new byte[size]; if (size > 0) Marshal.Copy(value, bytes, 0, size);
                     string result = Utf8.GetString(bytes);
-                    Require(sqlite3_step(statement) == 101, "查詢結果不唯一");
+                    Require(sqlite3_step(statement) == 101, Ui.Text("查詢結果不唯一"));
                     return result;
                 }
                 finally { sqlite3_finalize(statement); }

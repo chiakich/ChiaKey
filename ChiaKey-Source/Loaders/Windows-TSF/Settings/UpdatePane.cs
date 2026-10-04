@@ -36,10 +36,10 @@ namespace ChiaKey.Settings
                 rows.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
                 rows.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
                 for (int i = 0; i < 5; ++i) rows.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                Row(rows, "最新版本：", latest, 0);
-                Row(rows, "目前版本：", current, 1);
-                Row(rows, "上次檢查：", checkedAt, 2);
-                latest.Text = "尚未檢查"; checkedAt.Text = "尚未檢查";
+                Row(rows, Ui.Text("最新版本："), latest, 0);
+                Row(rows, Ui.Text("目前版本："), current, 1);
+                Row(rows, Ui.Text("上次檢查："), checkedAt, 2);
+                latest.Text = Ui.Text("尚未檢查"); checkedAt.Text = Ui.Text("尚未檢查");
                 automatic.Text = option; automatic.AutoSize = true;
                 automatic.UseCompatibleTextRendering = true;
                 automatic.Margin = new Padding(0, 8, 0, 4);
@@ -47,8 +47,8 @@ namespace ChiaKey.Settings
                 options.Margin = Padding.Empty;
                 options.Controls.Add(automatic);
                 rows.Controls.Add(options, 0, 3); rows.SetColumnSpan(options, 3);
-                check.Text = "檢查更新";
-                install.Text = "下載安裝";
+                check.Text = Ui.Text("檢查更新");
+                install.Text = Ui.Text("下載安裝");
                 foreach (Button button in new[] { check, install })
                 {
                     button.FlatStyle = FlatStyle.System;
@@ -91,7 +91,7 @@ namespace ChiaKey.Settings
 
         private readonly Section app;
         private readonly Section lexicon;
-        private readonly CheckBox beta = new CheckBox { Text = "接受 Beta 版", AutoSize = true,
+        private readonly CheckBox beta = new CheckBox { Text = Ui.Text("接受 Beta 版"), AutoSize = true,
             UseCompatibleTextRendering = true, Margin = new Padding(16, 8, 0, 4) };
 
         internal UpdatePane(Action changed)
@@ -99,8 +99,8 @@ namespace ChiaKey.Settings
             SuspendLayout();
             DoubleBuffered = true;
             AutoScroll = true;
-            app = new Section("輸入法更新", "自動更新輸入法");
-            lexicon = new Section("詞庫更新", "自動更新詞庫");
+            app = new Section(Ui.Text("輸入法更新"), Ui.Text("自動更新輸入法"));
+            lexicon = new Section(Ui.Text("詞庫更新"), Ui.Text("自動更新詞庫"));
             TableLayoutPanel sections = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true,
                 ColumnCount = 1, RowCount = 2, Padding = new Padding(16), Margin = Padding.Empty };
             sections.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -138,7 +138,7 @@ namespace ChiaKey.Settings
         {
             app.current.Text = service.AppReleaseVersion;
             try { lexicon.current.Text = service.CurrentLexiconVersion(); }
-            catch (Exception error) { lexicon.status.Text = "無法讀取詞庫：" + error.Message; }
+            catch (Exception error) { lexicon.status.Text = Ui.Text("無法讀取詞庫：") + error.Message; }
         }
 
         private void SetBusy(Section section, bool isLexicon, bool busy)
@@ -157,7 +157,7 @@ namespace ChiaKey.Settings
             bool includeBeta = beta.Checked;
             section.offer = null;
             SetBusy(section, isLexicon, true);
-            section.status.Text = "正在檢查更新…";
+            section.status.Text = Ui.Text("正在檢查更新…");
             try
             {
                 UpdateOffer offer = await Task.Run(delegate
@@ -169,9 +169,9 @@ namespace ChiaKey.Settings
                 section.offer = offer;
                 section.latest.Text = offer == null ? section.current.Text : offer.Version;
                 section.checkedAt.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-                section.status.Text = offer == null ? "已是最新版本。" : "有新版本可供下載。";
+                section.status.Text = offer == null ? Ui.Text("已是最新版本。") : Ui.Text("有新版本可供下載。");
             }
-            catch (Exception error) { if (!IsDisposed) section.status.Text = "檢查失敗：" + error.Message; }
+            catch (Exception error) { if (!IsDisposed) section.status.Text = Ui.Text("檢查失敗：") + error.Message; }
             finally { SetBusy(section, isLexicon, false); }
         }
 
@@ -180,7 +180,7 @@ namespace ChiaKey.Settings
             UpdateOffer offer = section.offer;
             if (offer == null) return;
             SetBusy(section, isLexicon, true);
-            section.status.Text = "正在下載更新…";
+            section.status.Text = Ui.Text("正在下載更新…");
             try
             {
                 string installer = null;
@@ -192,9 +192,9 @@ namespace ChiaKey.Settings
                 if (IsDisposed) return;
                 if (!isLexicon) UpdateService.InstallApp(installer, offer.Sha256);
                 else { section.offer = null; RefreshCurrent(); }
-                section.status.Text = isLexicon ? "詞庫已更新。" : "已開啟安裝器。";
+                section.status.Text = isLexicon ? Ui.Text("詞庫已更新。") : Ui.Text("已開啟安裝器。");
             }
-            catch (Exception error) { if (!IsDisposed) section.status.Text = "更新失敗：" + error.Message; }
+            catch (Exception error) { if (!IsDisposed) section.status.Text = Ui.Text("更新失敗：") + error.Message; }
             finally { SetBusy(section, isLexicon, false); }
         }
 
