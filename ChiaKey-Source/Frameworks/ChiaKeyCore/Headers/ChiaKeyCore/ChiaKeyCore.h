@@ -139,6 +139,10 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
   bool associatedPhrasesEnabled() const;
   // Rebuilds every Engine's context: any composition in progress is dropped.
   void setAssociatedPhrasesEnabled(bool enabled);
+  std::vector<std::pair<std::string, std::string>> reverseLookupMethods() const;
+  std::string reverseLookupMethod() const;
+  // Empty disables lookup. A change rebuilds contexts and drops active compositions.
+  bool setReverseLookupMethod(const std::string& identifier);
 
   // The symbol table: the lexicon's canned_messages, then UserCannedMessages.plist
   // and UserCannedMessages.txt under writablePath, read afresh on every call.

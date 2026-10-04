@@ -372,6 +372,8 @@ void RefreshSettingsLocked(RuntimeHolder& holder, bool force) {
         if (holder.runtime->associatedPhrasesEnabled() != holder.frontend.associatedPhrases) {
             holder.runtime->setAssociatedPhrasesEnabled(holder.frontend.associatedPhrases);
         }
+        if (holder.runtime->reverseLookupMethod() != holder.frontend.reverseLookupMethod)
+            holder.runtime->setReverseLookupMethod(holder.frontend.reverseLookupMethod);
         holder.frontendStamp = frontendStamp;
     }
 }
@@ -615,7 +617,7 @@ ChiaKey::KeyEvent MakeCoreKey(const KeyEvent& event) {
     return key;
 }
 
-EngineResult MakeResult(const ChiaKey::EngineState& state) {
+EngineResult MakeResult(const ChiaKey::EngineState& state, bool showNotifications) {
     EngineResult result;
     result.beep = state.beeped;
     result.committedText = Utf8ToWide(state.committedText);
@@ -680,7 +682,7 @@ EngineResult MakeResult(const ChiaKey::EngineState& state) {
     }
 
     result.message = Utf8ToWide(state.tooltip);
-    if (result.message.empty() && !state.notifications.empty()) {
+    if (showNotifications && result.message.empty() && !state.notifications.empty()) {
         result.message = Utf8ToWide(state.notifications.back());
     }
     return result;
@@ -728,6 +730,15 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
         map, "ToggleInputMethodWithControlBackslash", settings.toggleWithControlBackslash);
     settings.shiftTogglesEnglish =
         BoolValue(map, "ShiftTogglesTemporaryEnglish", settings.shiftTogglesEnglish);
+    settings.capsLockTogglesEnglish = BoolValue(
+        map, "EnablesCapsLockAsAlphanumericModeToggle", settings.capsLockTogglesEnglish);
+    settings.chineseConverterToggleKey =
+        StringValue(map, "ChineseConverterToggleKey", settings.chineseConverterToggleKey);
+    settings.repeatLastCommitTextKey =
+        StringValue(map, "RepeatLastCommitTextKey", settings.repeatLastCommitTextKey);
+    settings.soundFilename = StringValue(map, "SoundFilename", settings.soundFilename);
+    settings.showNotifications = BoolValue(map, "ShouldUseNotifyWindow", settings.showNotifications);
+    settings.reverseLookupMethod = StringValue(map, "ReverseLookupMethod", "");
     settings.associatedPhrases =
         BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);
     settings.simplifiedOutput = BoolValue(map, "SimplifiedOutput", settings.simplifiedOutput);
@@ -966,7 +977,7 @@ EngineResult EngineSession::handleKey(const KeyEvent& event) {
         }
     }
     const bool handled = engine_->handleKey(MakeCoreKey(event));
-    EngineResult result = MakeResult(engine_->snapshot());
+    EngineResult result = MakeResult(engine_->snapshot(), CurrentFrontendSettings().showNotifications);
     result.handled = handled;
     if (!result.committedText.empty()) engine_->acknowledgeCommit();
     return result;

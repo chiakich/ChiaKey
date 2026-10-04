@@ -12,6 +12,7 @@
 
 #include "CandidateWindow.h"
 #include "ChiaKeyEngine.h"
+#include "FrontendBehavior.h"
 #include "SymbolWindow.h"
 
 namespace ChiaKey::WindowsTsf {
@@ -91,7 +92,10 @@ public:
     HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie, ITfContext* context,
                                            bool moveCaret);
     void commitSessionDropped(ITfContext* context, unsigned generation);
-    bool isChineseMode() const noexcept { return chineseMode_; }
+    bool isChineseMode() const {
+        return chineseMode_ && !(CurrentFrontendSettings().capsLockTogglesEnglish &&
+                                  (GetKeyState(VK_CAPITAL) & 1));
+    }
     bool isFullWidthMode() const noexcept { return fullWidthMode_; }
     void toggleChineseMode();
     void toggleFullWidthMode();
@@ -113,6 +117,7 @@ private:
     bool isWidthToggleKey(const KeyEvent& event) const;
     bool isShiftToggleKey(const KeyEvent& event) const;
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
+    HRESULT handleFrontendShortcut(ITfContext* context, const KeyEvent& event, BOOL* eaten);
     void sendSymbol(const std::wstring& text);
     // a synchronous request is refused when the document is locked or TSF will
     // not block the caller; the same session is then requested asynchronously
@@ -139,7 +144,7 @@ private:
     void applyDisplayAttributes(TfEditCookie editCookie, ITfContext* context,
                                 ITfRange* range, const EngineResult& result);
     HRESULT commitText(TfEditCookie editCookie, ITfContext* context,
-                       const std::wstring& text);
+                       const std::wstring& text, bool filter = true);
     HRESULT endComposition(TfEditCookie editCookie, bool clearText);
     HRESULT convertCompositionForCommit(TfEditCookie editCookie);
     bool requestCommitComposition(bool moveCaret = true);
@@ -160,6 +165,7 @@ private:
     TfGuidAtom inputAttributeAtom_ = TF_INVALID_GUIDATOM;
     TfGuidAtom focusedAttributeAtom_ = TF_INVALID_GUIDATOM;
     bool chineseMode_ = true;
+    CommitHistory commitHistory_;
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;

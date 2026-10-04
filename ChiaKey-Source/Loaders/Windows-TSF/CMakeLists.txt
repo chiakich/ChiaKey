@@ -25,12 +25,13 @@ add_subdirectory("${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore" core)
 add_library(chiakey_tsf_engine STATIC
     ChiaKeyEngine.cpp
     Diagnostics.cpp
+    FrontendBehavior.cpp
     OutputFilter.cpp
     "${CHIAKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c"
     UpdateLexicon.cpp
 )
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32)
+target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32 user32 winmm)
 
 # TIP icons use Icons/*.svg; the settings/installer icon uses the Mac app artwork.
 set(CHIAKEY_ICON_DIR "${CMAKE_CURRENT_BINARY_DIR}/icons")

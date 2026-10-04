@@ -13,6 +13,9 @@
 #endif
 
 #include "OVIMGenericPackage.h"
+#if defined(WIN32)
+#include "OVAFReverseLookupPackage.h"
+#endif
 #include "OVIMMandarinPackage.h"
 #include "OVIMSmartMandarin.h"
 
@@ -485,6 +488,14 @@ class Runtime::Impl {
       delete generic;
     }
 
+#if defined(WIN32)
+    auto* reverse = new OpenVanilla::OVAFReverseLookupPackage;
+    if (!reverse->initialize(&pathInfo, service.get()) ||
+        !packages->addInitializedPackage("OVAFReverseLookup", reverse)) {
+      reverse->finalize();
+      delete reverse;
+    }
+#endif
     std::vector<PVModulePackageLoadingSystem*> systems{packages.get()};
     loader.reset(new PVLoader(policy.get(), service.get(), systems));
 
@@ -724,6 +735,39 @@ void Runtime::setAssociatedPhrasesEnabled(bool enabled) {
   if (associatedPhrasesEnabled() == enabled) return;
   impl_->loader->toggleAroundFilter(OVAFASSOCIATEDPHRASE_IDENTIFIER);
   impl_->loader->syncSandwichConfig();
+}
+
+std::vector<std::pair<std::string, std::string>> Runtime::reverseLookupMethods() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  std::vector<std::pair<std::string, std::string>> result;
+  for (const auto& method : impl_->loader->allAroundFilterIdentifiersAndNames())
+    if (method.first.compare(0, 14, "ReverseLookup-") == 0) result.push_back(method);
+  return result;
+}
+
+std::string Runtime::reverseLookupMethod() const {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  for (const auto& method : reverseLookupMethods())
+    if (impl_->loader->isAroundFilterActivated(method.first)) return method.first;
+  return {};
+}
+
+bool Runtime::setReverseLookupMethod(const std::string& identifier) {
+  std::lock_guard<std::recursive_mutex> lock(impl_->mutex);
+  const auto methods = reverseLookupMethods();
+  bool known = identifier.empty();
+  for (const auto& method : methods) if (method.first == identifier) known = true;
+  if (!known) return false;
+  bool changed = false;
+  for (const auto& method : methods) {
+    const bool wanted = method.first == identifier;
+    if (impl_->loader->isAroundFilterActivated(method.first) != wanted) {
+      impl_->loader->toggleAroundFilter(method.first);
+      changed = true;
+    }
+  }
+  if (changed) impl_->loader->syncSandwichConfig();
+  return true;
 }
 
 std::vector<SymbolCategory> Runtime::symbolCategories() const {

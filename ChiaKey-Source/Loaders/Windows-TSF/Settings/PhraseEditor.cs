@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -238,6 +239,7 @@ namespace ChiaKey.Settings
         private readonly IntPtr store;
         private readonly DataGridView grid = new DataGridView();
         private readonly ToolStripTextBox search = new ToolStripTextBox();
+        private TextBoxBase clipboardTarget;
         private readonly ToolStripStatusLabel status = new ToolStripStatusLabel();
         private readonly Timer sessionTimer = new Timer();
         private readonly Timer searchTimer = new Timer();
@@ -341,12 +343,37 @@ namespace ChiaKey.Settings
             file.DropDownItems.Add(new ToolStripSeparator());
             file.DropDownItems.Add(MenuItem("關閉(&X)", Keys.None, delegate { Close(); }));
             ToolStripMenuItem edit = new ToolStripMenuItem("編輯(&E)");
-            edit.DropDownItems.Add(MenuItem("刪除(&D)", Keys.None, delegate { RemoveSelected(); }));
+            // Menu activation temporarily takes focus from the hosted textbox.
+            search.TextBox.Enter += delegate { clipboardTarget = search.TextBox; };
+            grid.Enter += delegate { clipboardTarget = null; };
+            ToolStripMenuItem cut = MenuItem("剪下(&T)", Keys.Control | Keys.X, delegate {
+                TextBoxBase text = FocusedTextBox(); if (text != null) text.Cut(); });
+            ToolStripMenuItem copy = MenuItem("複製(&C)", Keys.Control | Keys.C, delegate { CopySelection(); });
+            ToolStripMenuItem paste = MenuItem("貼上(&P)", Keys.Control | Keys.V, delegate {
+                TextBoxBase text = FocusedTextBox(); if (text != null) text.Paste(); });
+            edit.DropDownItems.AddRange(new ToolStripItem[] { cut, copy, paste, new ToolStripSeparator() });
+            edit.DropDownOpening += delegate
+            {
+                TextBoxBase text = FocusedTextBox();
+                cut.Enabled = text != null && !text.ReadOnly && text.SelectionLength > 0;
+                paste.Enabled = text != null && !text.ReadOnly;
+                copy.Enabled = text != null ? text.SelectionLength > 0 : grid.SelectedRows.Count > 0;
+            };
+            edit.DropDownItems.Add(MenuItem("刪除(&D)", Keys.None, delegate {
+                TextBoxBase text = FocusedTextBox();
+                if (text != null) text.SelectedText = ""; else RemoveSelected(); }));
             edit.DropDownItems.Add(new ToolStripSeparator());
             edit.DropDownItems.Add(MenuItem("編輯詞彙(&E)", Keys.F2, delegate { EditPhrase(); }));
             edit.DropDownItems.Add(MenuItem("編輯注音(&R)", Keys.Control | Keys.R, delegate { EditReading(); }));
             menu.Items.Add(file);
             menu.Items.Add(edit);
+            ToolStripMenuItem help = new ToolStripMenuItem("輔助說明(&H)");
+            help.DropDownItems.Add(MenuItem("線上說明文件(&H)", Keys.None, delegate {
+                System.Diagnostics.Process.Start("https://github.com/chiakich/ChiaKey/blob/windows-tsf/Docs/WindowsImplementation.md"); }));
+            help.DropDownItems.Add(MenuItem("關於(&A)", Keys.None, delegate {
+                MessageBox.Show(this, "千秋輸入法詞彙編輯器\n版本 " + UpdateService.Default().AppReleaseVersion +
+                    "\n\n源自 Yahoo! KeyKey 詞彙編輯程式。", "關於", MessageBoxButtons.OK, MessageBoxIcon.Information); }));
+            menu.Items.Add(help);
             Controls.Add(menu);
             MainMenuStrip = menu;
 
@@ -558,6 +585,25 @@ namespace ChiaKey.Settings
                 }
             }
             Reload();
+        }
+
+        private TextBoxBase FocusedTextBox()
+        {
+            if (search.TextBox.Focused) return search.TextBox;
+            return (ActiveControl as TextBoxBase) ?? clipboardTarget;
+        }
+
+        private void CopySelection()
+        {
+            TextBoxBase text = FocusedTextBox();
+            if (text != null) { text.Copy(); return; }
+            StringBuilder result = new StringBuilder();
+            foreach (DataGridViewRow selected in grid.SelectedRows)
+            {
+                PhraseRow row = RowAt(selected.Index);
+                if (row != null) result.Append(row.Phrase).Append(' ').Append(row.Reading).Append("\r\n");
+            }
+            if (result.Length > 0) Clipboard.SetText(result.ToString());
         }
 
         private void RemoveSelected()

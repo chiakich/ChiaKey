@@ -1,6 +1,8 @@
 # Windows 實作指南
 
-最後更新：2026-10-03
+最後更新：2026-10-04
+
+功能與 UI 的歷史來源、已補齊項目及尚缺差異見 [原版 Windows KeyKey 對照](WindowsParity.md)。
 
 這份文件說明已接入 `ChiaKeyCore` 的 Windows TSF 前端架構、移植限制與更新機制。
 開發環境、完整建置／測試、本機註冊及 commit message 規則集中在

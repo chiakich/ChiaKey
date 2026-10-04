@@ -828,8 +828,10 @@ KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
 }
 
 bool TextService::isPotentialKey(const KeyEvent& event) const {
+    if (CapsLockAlphanumeric(event, CurrentFrontendSettings()) &&
+        AlphanumericCharacter(event, CurrentFrontendSettings())) return true;
     if (isFullWidthCharacterKey(event)) return true;
-    if (!chineseMode_ || !engine_ || !engine_->ready()) return false;
+    if (!isChineseMode() || !engine_ || !engine_->ready()) return false;
     // some hosts lose a key once it is claimed here, even if OnKeyDown declines
     if (!composition_ && !candidateActive_ && IsHostEditingKey(event.virtualKey)) {
         return false;
@@ -839,14 +841,13 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
 
 bool TextService::isModeToggleKey(const KeyEvent& event) const {
     if (!event.control || event.alt) return false;
-    return event.virtualKey == VK_SPACE ||
-           (event.virtualKey == VK_OEM_5 && !event.shift &&
-            CurrentFrontendSettings().toggleWithControlBackslash);
+    return event.virtualKey == VK_SPACE;
 }
 
 bool TextService::isShiftToggleKey(const KeyEvent& event) const {
     return IsShiftKey(event.virtualKey) && !event.control && !event.alt &&
-           CurrentFrontendSettings().shiftTogglesEnglish;
+           CurrentFrontendSettings().shiftTogglesEnglish &&
+           !CurrentFrontendSettings().capsLockTogglesEnglish;
 }
 
 bool TextService::isWidthToggleKey(const KeyEvent& event) const {
@@ -915,6 +916,7 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
 STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lparam,
                                         BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    if (!engine_ || !engine_->hasComposition()) RefreshSettings();
     const KeyEvent event = translateKey(wparam, lparam);
     if (!IsShiftKey(event.virtualKey)) {
         shiftTogglePending_ = false;
@@ -925,7 +927,8 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
         *eaten = TRUE;
         return S_OK;
     }
-    *eaten = isModeToggleKey(event) || isWidthToggleKey(event) || isPotentialKey(event);
+    *eaten = isModeToggleKey(event) || isWidthToggleKey(event) || isPotentialKey(event) ||
+             ShortcutFor(event, CurrentFrontendSettings()) != FrontendShortcut::None;
     if (event.virtualKey == VK_SPACE || event.virtualKey == VK_TAB) {
         Trace("TestKey vk=%u ctrl=%d shift=%d alt=%d chinese=%d full=%d composition=%d engineComposition=%d candidates=%d eaten=%d",
               event.virtualKey, event.control, event.shift, event.alt, chineseMode_, fullWidthMode_,
@@ -936,6 +939,10 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
 
 STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    if (wparam == VK_CAPITAL && CurrentFrontendSettings().capsLockTogglesEnglish) {
+        *eaten = TRUE; // Observe the new latch state, then pass the key up to Windows.
+        return S_OK;
+    }
     *eaten = IsShiftKey(static_cast<UINT>(wparam)) && shiftTogglePending_ &&
              !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU) &&
              GetTickCount() - shiftPressedAt_ <= kShiftTapTimeoutMilliseconds;
@@ -957,6 +964,8 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
         return S_OK;
     }
     shiftTogglePending_ = false;
+    const HRESULT shortcutResult = handleFrontendShortcut(context, event, eaten);
+    if (shortcutResult != S_FALSE) return shortcutResult;
     if (isModeToggleKey(event)) {
         toggleChineseMode();
         *eaten = TRUE;
@@ -987,6 +996,24 @@ HRESULT TextService::requestEditSession(ITfContext* context, ITfEditSession* ses
     return requestResult;
 }
 
+HRESULT TextService::handleFrontendShortcut(ITfContext* context, const KeyEvent& event, BOOL* eaten) {
+    const auto settings = CurrentFrontendSettings();
+    switch (ShortcutFor(event, settings)) {
+    case FrontendShortcut::NextInputMethod:
+        selectInputMethod(NextInputMethod(CurrentInputMethod(), InputMethods(), settings));
+        *eaten = TRUE;
+        return S_OK;
+    case FrontendShortcut::ToggleSimplified:
+        toggleSimplifiedOutput();
+        *eaten = TRUE;
+        return S_OK;
+    case FrontendShortcut::RepeatCommit:
+        return context ? runKeySession(context, event, eaten) : S_OK;
+    default:
+        return S_FALSE;
+    }
+}
+
 HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten) {
     auto* session = new (std::nothrow) KeyEditSession(this, context, std::move(event));
     if (!session) return E_OUTOFMEMORY;
@@ -1011,6 +1038,11 @@ HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* ea
 STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (wparam == VK_CAPITAL && CurrentFrontendSettings().capsLockTogglesEnglish) {
+        if (GetKeyState(VK_CAPITAL) & 1) requestCommitComposition();
+        refreshLangBar();
+        return S_OK;
+    }
     if (IsShiftKey(static_cast<UINT>(wparam)) && shiftTogglePending_ &&
         !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU) &&
         GetTickCount() - shiftPressedAt_ <= kShiftTapTimeoutMilliseconds) {
@@ -1028,6 +1060,7 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eate
 STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (!engine_ || !engine_->hasComposition()) RefreshSettings();
     if (guid == kSymbolWindowKeyGuid) {
         toggleSymbolWindow();
         *eaten = TRUE;
@@ -1041,6 +1074,8 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
         event.alt = true;
         event.capsLock = (GetKeyState(VK_CAPITAL) & 1) != 0;
         event.numLock = (GetKeyState(VK_NUMLOCK) & 1) != 0;
+        const HRESULT shortcutResult = handleFrontendShortcut(context, event, eaten);
+        if (shortcutResult != S_FALSE) return shortcutResult;
         // an unclaimed chord goes on to the app, as in English mode
         if (!context || !isPotentialKey(event)) return S_OK;
         return runKeySession(context, std::move(event), eaten);
@@ -1051,6 +1086,14 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
 HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
                                 const KeyEvent& event, bool* handled) {
     if (!context || !handled) return E_INVALIDARG;
+    const auto settings = CurrentFrontendSettings();
+    if (ShortcutFor(event, settings) == FrontendShortcut::RepeatCommit) {
+        *handled = true;
+        const bool composing = composition_ || (engine_ && engine_->hasComposition());
+        if (composing) { PlayTypingErrorSound(settings); return S_OK; }
+        // Repeat exactly what was sent, even if the conversion setting has changed.
+        return commitText(editCookie, context, commitHistory_.replay(false), false);
+    }
     if (composition_ && compositionContext_.Get() != context) {
         if (pendingModeCommit_) {
             *handled = false;
@@ -1060,7 +1103,17 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         abandonComposition();
     }
     EngineResult result;
-    if (!chineseMode_ && isFullWidthCharacterKey(event)) {
+    if (CapsLockAlphanumeric(event, settings)) {
+        if (composition_) {
+            const HRESULT commit = commitCompositionForModeSwitch(editCookie, context, true);
+            if (FAILED(commit)) { *handled = false; return commit; }
+        }
+        const wchar_t character = AlphanumericCharacter(event, settings);
+        if (!character) { *handled = false; return S_OK; }
+        result.handled = true;
+        result.committedText.assign(1, character);
+        if (fullWidthMode_) result.committedText = ToFullWidth(std::move(result.committedText));
+    } else if (!isChineseMode() && isFullWidthCharacterKey(event)) {
         result.handled = true;
         result.committedText = ToFullWidth(std::wstring(1, PrintableCharacter(event)));
     } else {
@@ -1080,11 +1133,11 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
     if (!result.handled) {
         // a filter can close its panel while passing the key on to the host
         updateCandidateWindow(editCookie, context, result);
-        if (!chineseMode_ || !isFullWidthCharacterKey(event) ||
+        if (!isChineseMode() || !isFullWidthCharacterKey(event) ||
             !ApplyFullWidthFallback(PrintableCharacter(event), result)) return S_OK;
         *handled = true;
     }
-    if (result.beep && CurrentFrontendSettings().playSoundOnTypingError) MessageBeep(MB_OK);
+    if (result.beep) PlayTypingErrorSound(settings);
     const HRESULT status = updateComposition(editCookie, context, result);
     if (FAILED(status)) {
         Trace("UpdateComposition hr=0x%08lX", static_cast<unsigned long>(status));
@@ -1168,9 +1221,10 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
 }
 
 HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
-                                const std::wstring& text) {
+                                const std::wstring& text, bool filter) {
     if (text.empty()) return S_OK;
-    const std::wstring output = FilterCommittedText(text, CurrentFrontendSettings().simplifiedOutput);
+    const std::wstring output = filter
+        ? FilterCommittedText(text, CurrentFrontendSettings().simplifiedOutput) : text;
     if (composition_ && compositionContext_.Get() == context) {
         ComPtr<ITfRange> range;
         HRESULT result = composition_->GetRange(&range);
@@ -1182,7 +1236,9 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
         if (FAILED(result)) return result;
         result = MoveCaret(editCookie, context, range.Get());
         if (FAILED(result)) return result;
-        return endComposition(editCookie, false);
+        result = endComposition(editCookie, false);
+        if (SUCCEEDED(result)) commitHistory_.record(output);
+        return result;
     }
 
     ComPtr<ITfInsertAtSelection> insertion;
@@ -1194,11 +1250,13 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
     if (FAILED(result) || !insertedRange) return result;
     result = insertedRange->Collapse(editCookie, TF_ANCHOR_END);
     if (FAILED(result)) return result;
-    return MoveCaret(editCookie, context, insertedRange.Get());
+    result = MoveCaret(editCookie, context, insertedRange.Get());
+    if (SUCCEEDED(result)) commitHistory_.record(output);
+    return result;
 }
 
 HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
-    if (!composition_ || !CurrentFrontendSettings().simplifiedOutput) return S_OK;
+    if (!composition_) return S_OK;
     ComPtr<ITfRange> range, reader;
     HRESULT result = composition_->GetRange(&range);
     if (FAILED(result)) return result;
@@ -1213,9 +1271,13 @@ HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
         if (FAILED(result)) return result;
         text.append(buffer.data(), fetched);
     } while (fetched != 0);
-    const std::wstring output = FilterCommittedText(text, true);
-    if (output == text) return S_OK;
-    return range->SetText(editCookie, 0, output.data(), static_cast<LONG>(output.size()));
+    const std::wstring output = FilterCommittedText(text, CurrentFrontendSettings().simplifiedOutput);
+    if (output != text) {
+        result = range->SetText(editCookie, 0, output.data(), static_cast<LONG>(output.size()));
+        if (FAILED(result)) return result;
+    }
+    commitHistory_.record(output);
+    return S_OK;
 }
 
 HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {

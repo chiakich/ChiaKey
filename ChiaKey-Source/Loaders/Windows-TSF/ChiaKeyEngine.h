@@ -53,7 +53,7 @@ struct KeyEvent {
 // only chords in bpmf-punctuations.cin; other shortcuts belong to the host
 bool IsInputMethodControlKey(const KeyEvent& event);
 ChiaKey::KeyEvent MakeCoreKey(const KeyEvent& event);
-EngineResult MakeResult(const ChiaKey::EngineState& state);
+EngineResult MakeResult(const ChiaKey::EngineState& state, bool showNotifications = true);
 
 // Preferences/Windows.plist, with the original KeyKey key names
 struct FrontendSettings {
@@ -64,6 +64,12 @@ struct FrontendSettings {
     bool playSoundOnTypingError = true;
     bool toggleWithControlBackslash = true;
     bool shiftTogglesEnglish = true;
+    bool capsLockTogglesEnglish = false;
+    std::string chineseConverterToggleKey = "s";
+    std::string repeatLastCommitTextKey = "g";
+    std::string soundFilename = "Default";
+    bool showNotifications = true;
+    std::string reverseLookupMethod;
     bool associatedPhrases = false;
     bool simplifiedOutput = false;
     // input method identifiers left out of the menus

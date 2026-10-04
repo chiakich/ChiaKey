@@ -6,6 +6,7 @@
 #include "ChiaKeyEngine.h"
 #include "UpdateLexicon.h"
 #include "OutputFilter.h"
+#include "FrontendBehavior.h"
 #include <OVFileHelper.h>
 
 using namespace ChiaKey::WindowsTsf;
@@ -285,6 +286,11 @@ void TestSettings(const std::string& writableDir) {
                Entry("HighlightColor", "Green") +
                    Entry("ToggleInputMethodWithControlBackslash", "false") +
                    Entry("ShiftTogglesTemporaryEnglish", "false") +
+                   Entry("EnablesCapsLockAsAlphanumericModeToggle", "true") +
+                   Entry("ChineseConverterToggleKey", "k") +
+                   Entry("RepeatLastCommitTextKey", "r") +
+                   Entry("SoundFilename", "C:/Windows/Media/notify.wav") +
+                   Entry("ShouldUseNotifyWindow", "false") +
                    "\t<key>ModulesSuppressedFromUI</key>\n\t<array>\n\t\t<string>Generic-simplex-cin"
                    "</string>\n\t\t<string>TraditionalMandarin</string>\n\t</array>\n");
     // the settings app writes the whole module plist, as the core does
@@ -298,6 +304,10 @@ void TestSettings(const std::string& writableDir) {
     Check(!frontend.toggleWithControlBackslash, "boolean settings are read");
     Check(frontend.textColor == "White", "missing keys keep their defaults");
     Check(!frontend.shiftTogglesEnglish, "the Shift tap toggle can be turned off");
+    Check(frontend.capsLockTogglesEnglish && frontend.chineseConverterToggleKey == "k" &&
+              frontend.repeatLastCommitTextKey == "r" && !frontend.showNotifications &&
+              frontend.soundFilename == "C:/Windows/Media/notify.wav",
+          "legacy general and sound settings load from the same plist");
     Check(!frontend.simplifiedOutput, "simplified output defaults off");
     Check(frontend.suppressedInputMethods.size() == 2 &&
               frontend.suppressedInputMethods[0] == "Generic-simplex-cin",
@@ -389,6 +399,123 @@ void WriteUserTable(const std::string& writableDir) {
 
 }  // namespace
 
+void TestLegacyFrontendBehavior() {
+    FrontendSettings settings;
+    KeyEvent chord = Key(VK_OEM_5, false, true);
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::NextInputMethod,
+          "legacy Ctrl+backslash cycles input methods, not language mode");
+    settings.toggleWithControlBackslash = false;
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::None,
+          "disabled cycling shortcut belongs to host");
+    chord = Key('S', false, true); chord.alt = true;
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::ToggleSimplified,
+          "legacy Ctrl+Alt+S toggles Chinese output conversion");
+    chord.virtualKey = 'G';
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::RepeatCommit,
+          "legacy Ctrl+Alt+G repeats last commit");
+    settings.repeatLastCommitTextKey = "r";
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::None,
+          "changing repeat shortcut releases the old chord");
+    chord.virtualKey = 'R';
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::RepeatCommit,
+          "custom repeat letter is recognized by virtual key identity");
+    chord.shift = true;
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::None, "shifted host chord is not intercepted");
+    chord.shift = false; settings.repeatLastCommitTextKey.clear();
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::None, "empty repeat letter disables shortcut");
+    chord.virtualKey = 'S'; chord.alt = false;
+    Check(ShortcutFor(chord, settings) == FrontendShortcut::None, "Ctrl+S remains Save in the host");
+
+    const std::vector<std::pair<std::string, std::wstring>> methods = {
+        {"SmartMandarin", L"好打注音"}, {"TraditionalMandarin", L"傳統注音"},
+        {"Generic-cj-cin", L"倉頡"}, {"Generic-simplex-cin", L"簡易"}};
+    settings.suppressedInputMethods = {"TraditionalMandarin"};
+    Check(NextInputMethod("SmartMandarin", methods, settings) == "Generic-cj-cin",
+          "cycling skips suppressed methods");
+    Check(NextInputMethod("Generic-simplex-cin", methods, settings) == "SmartMandarin",
+          "cycling wraps around in menu order");
+    Check(NextInputMethod("removed", methods, settings) == "SmartMandarin",
+          "missing selected method recovers to first visible method");
+    settings.suppressedInputMethods = {"TraditionalMandarin", "SmartMandarin", "Generic-cj-cin", "Generic-simplex-cin"};
+    Check(NextInputMethod("SmartMandarin", methods, settings) == "SmartMandarin" &&
+          NextInputMethod("SmartMandarin", {}, settings) == "SmartMandarin",
+          "empty and fully hidden menus preserve the current method");
+
+    KeyEvent latin = Key('A'); latin.capsLock = true; latin.text = L"A";
+    Check(!CapsLockAlphanumeric(latin, settings), "Caps Lock mode is opt in");
+    settings.capsLockTogglesEnglish = true;
+    Check(CapsLockAlphanumeric(latin, settings) && AlphanumericCharacter(latin, settings) == L'a',
+          "Caps Lock English mode removes uppercase latch");
+    latin.shift = true; latin.text = L"a";
+    Check(AlphanumericCharacter(latin, settings) == L'A', "Shift still produces uppercase in Caps Lock English mode");
+    latin.text = L" ";
+    Check(AlphanumericCharacter(latin, settings) == L' ', "Caps Lock preserves halfwidth space");
+    latin.text = L"\t";
+    Check(AlphanumericCharacter(latin, settings) == 0, "Caps Lock does not insert an editing key as text");
+    latin.text = L"A"; latin.control = true;
+    Check(AlphanumericCharacter(latin, settings) == 0, "Caps Lock preserves host Ctrl shortcuts");
+
+    const COLORREF fallback = RGB(140, 91, 156);
+    Check(CustomColor("Color -15584170", fallback) == RGB(0x12, 0x34, 0x56),
+          "legacy signed ARGB custom color keeps RGB channel order");
+    for (const char* bad : {"Color ", "Color nope", "Color 2147483648", "Color -2147483649", "Color 42junk", "Color +42"})
+        Check(CustomColor(bad, fallback) == fallback, "malformed custom color retains default");
+
+    CommitHistory history;
+    Check(history.replay(false).empty(), "no history produces no text");
+    history.record(L"你好"); history.record(L"");
+    Check(history.replay(false) == L"你好" && history.replay(true).empty(),
+          "repeat preserves last nonempty commit and refuses a live composition");
+    history.record(L"台湾");
+    Check(history.replay(false) == L"台湾", "repeat retains actual converted output");
+    ChiaKey::EngineState notification;
+    notification.notifications = {"saved"};
+    Check(MakeResult(notification, true).message == L"saved" &&
+          MakeResult(notification, false).message.empty(), "notification window can be disabled");
+    notification.tooltip = "reading hint";
+    Check(MakeResult(notification, false).message == L"reading hint",
+          "disabling notifications retains candidate and reverse-lookup hints");
+}
+
+void TestReverseLookup(const ChiaKey::RuntimePaths& initialPaths) {
+    auto paths = initialPaths;
+    paths.writablePath += "\\reverse-lookup";
+    CreateDirectoryA(paths.writablePath.c_str(), nullptr);
+    std::string error;
+    auto runtime = ChiaKey::Runtime::Create(paths, ChiaKey::EngineConfig(), &error);
+    Check(runtime != nullptr, "reverse lookup runtime loads official lexicon");
+    if (!runtime) { std::cerr << error << std::endl; return; }
+    const auto methods = runtime->reverseLookupMethods();
+    for (const char* method : {"ReverseLookup-Generic-cj-cin", "ReverseLookup-Mandarin-bpmf-cin",
+                             "ReverseLookup-Mandarin-bpmf-cin-HanyuPinyin"}) {
+        Check(std::any_of(methods.begin(), methods.end(), [method](const auto& item) {
+            return item.first == method;
+        }), "legacy reverse lookup choice is backed by an initialized module");
+    }
+    runtime->setAssociatedPhrasesEnabled(true);
+    Check(runtime->setReverseLookupMethod("ReverseLookup-Mandarin-bpmf-cin"), "Bopomofo lookup can be enabled");
+    Check(!runtime->setReverseLookupMethod("ReverseLookup-nonexistent") &&
+          runtime->reverseLookupMethod() == "ReverseLookup-Mandarin-bpmf-cin",
+          "unknown lookup does not destroy the selected filter");
+    auto engine = runtime->createEngine(&error);
+    Check(engine != nullptr, "lookup engine can be created");
+    if (!engine) return;
+    for (char character : std::string("su3cl3")) engine->handleAsciiKey(character);
+    engine->handleKey(MakeCoreKey(Key(VK_RETURN)));
+    auto state = engine->snapshot();
+    Check(state.committedText == "你好" && state.tooltip.find("ㄋ") != std::string::npos,
+          "committed Chinese text reports Bopomofo without changing output");
+    engine->acknowledgeCommit();
+    Check(runtime->setReverseLookupMethod("ReverseLookup-Mandarin-bpmf-cin-HanyuPinyin"), "Pinyin lookup replaces Bopomofo");
+    for (char character : std::string("su3cl3")) engine->handleAsciiKey(character);
+    engine->handleKey(MakeCoreKey(Key(VK_RETURN)));
+    state = engine->snapshot();
+    Check(state.committedText == "你好" && state.tooltip.find("ni") != std::string::npos,
+          "Pinyin lookup reports Latin readings without changing output");
+    Check(runtime->setReverseLookupMethod("") && runtime->reverseLookupMethod().empty() &&
+          runtime->associatedPhrasesEnabled(), "disabling lookup preserves unrelated associated-phrase filter");
+}
+
 void TestSymbols() {
     const std::vector<SymbolPage> pages = SymbolPages();
     Check(!pages.empty() && pages.front().buttons && !pages.front().entries.empty(),
@@ -438,6 +565,7 @@ int main(int argc, char* argv[]) {
           "the input methods are listed in the mac menu's order and names");
     TestLayout();
     TestOutputConversion();
+    TestLegacyFrontendBehavior();
     TestKeys();
     TestUpdatePointers(argv[2]);
     TestFileTimestamps(argv[2]);
@@ -445,6 +573,7 @@ int main(int argc, char* argv[]) {
     TestSettings(argv[2]);
     TestGenericInputMethods();
     TestSymbols();
+    TestReverseLookup(paths);
     if (failures) return 1;
     std::cout << "chiakey_tsf_engine_test: OK" << std::endl;
     return 0;

@@ -118,6 +118,13 @@ if(WIN32)
         NOMINMAX
         _CRT_SECURE_NO_WARNINGS
     )
+    target_sources(chiakey_core PRIVATE
+        "${CHIAKEY_SOURCE}/ModulePackages/OVAFReverseLookup/OVAFReverseLookup.cpp"
+        "${CHIAKEY_SOURCE}/ModulePackages/OVAFReverseLookup/OVAFReverseLookupPackage.cpp")
+    target_include_directories(chiakey_core PRIVATE "${CHIAKEY_SOURCE}/ModulePackages/OVAFReverseLookup")
+    target_compile_definitions(chiakey_core PRIVATE
+        OVAFREVERSELOOKUP_IDENTIFIER_PREFIX="ReverseLookup"
+        "OVAFREVERSELOOKUP_SOURCE_TABLE_PATTERNS_SEMICOLON_SEPARATED=\"Generic-*\;Mandarin-bpmf-cin\"")
     # SHGetFolderPathW, used by OVDirectoryHelper for the user data directory.
     target_link_libraries(chiakey_core PUBLIC shell32)
 elseif(APPLE)

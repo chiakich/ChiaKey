@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -144,6 +145,11 @@ namespace ChiaKey.Settings
         private readonly string preferencesPath;
         private CheckBox controlBackslash;
         private CheckBox shiftTogglesEnglish;
+        private CheckBox capsLockTogglesEnglish;
+        private ComboBox converterShortcut;
+        private ComboBox repeatShortcut;
+        private ComboBox reverseLookup;
+        private CheckBox notifications;
         private CheckBox associatedPhrases;
         private CheckBox simplifiedOutput;
         private CheckedListBox menuInputMethods;
@@ -177,6 +183,9 @@ namespace ChiaKey.Settings
         private ComboBox textColor;
         private CheckBox backgroundPattern;
         private CheckBox beep;
+        private RadioButton defaultSound;
+        private RadioButton customSound;
+        private TextBox soundPath;
         private CheckBox cangjieCommitAtMaximum;
         private CheckBox cangjieComposeWhileTyping;
         private CheckBox cangjieClearOnError;
@@ -185,7 +194,7 @@ namespace ChiaKey.Settings
         private CheckBox simplexClearOnError;
         private ListBox userTables;
 
-        public SettingsForm(string dataPath)
+        public SettingsForm(string dataPath, int initialPane = 0)
         {
             preferencesPath = Path.Combine(dataPath, "Preferences");
             // the engine names Tables\Generic\x.cin the Generic-x-cin input method
@@ -221,19 +230,22 @@ namespace ChiaKey.Settings
             AddPane("倉頡(&J)", "cangjie.tiff", BuildCangjiePane());
             AddPane("簡易(&S)", "simplex.tiff", BuildSimplexPane());
             AddPane("泛用(&E)", "generic.tiff", BuildGenericPane());
-            AddPane("詞彙(&W)", "phrase.tiff", BuildPhrasePane());
+            AddPane("詞彙(&H)", "phrase.tiff", BuildPhrasePane());
             AddPane("其他(&M)", "plugin.tiff", BuildMiscPane());
             updates = new UpdatePane(Changed);
             AddPane("更新(&U)", "update.tiff", updates);
+            AddPane("關於(&B)", "app.ico", BuildAboutPane());
 
             LoadSettings();
-            ShowPane(0);
+            ShowPane(Math.Max(0, Math.Min(initialPane, panes.Count - 1)));
             ResumeLayout(false);
             PerformLayout();
         }
 
         private static Image LoadIcon(string name)
         {
+            if (name.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+                return PhraseEditorForm.LoadIcon(name).ToBitmap();
             Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
             return stream != null ? Image.FromStream(stream) : null;
         }
@@ -281,7 +293,7 @@ namespace ChiaKey.Settings
         {
             int index = toolbarItems.Count;
             ToolbarItem item = new ToolbarItem(title, LoadIcon(icon));
-            item.Bounds = new Rectangle(2 + index * 62, 2, 60, ToolbarHeight - 4);
+            item.Bounds = new Rectangle(2 + index * 55, 2, 53, ToolbarHeight - 4);
             item.Click += delegate { ShowPane(index); };
             toolbar.Controls.Add(item);
             toolbarItems.Add(item);
@@ -362,15 +374,36 @@ namespace ChiaKey.Settings
 
         private Control BuildGeneralPane()
         {
-            Panel pane = new Panel();
+            Panel pane = new Panel { AutoScroll = true };
             Title(pane, "一般設定");
-            GroupBox basic = Group(pane, "基本功能", 44, 136);
-            controlBackslash = Check(basic, "使用 Ctrl + \\ 切換中英模式", 14, 24);
-            shiftTogglesEnglish = Check(basic, "輕點 Shift 切換英文", 14, 50);
-            associatedPhrases = Check(basic, "輸入後顯示聯想詞", 14, 76);
-            simplifiedOutput = Check(basic, "簡體輸出", 14, 102);
+            GroupBox basic = Group(pane, "基本功能", 44, 162);
+            controlBackslash = Check(basic, "使用 Ctrl + \\ 切換到下一個輸入法", 14, 24);
+            shiftTogglesEnglish = Check(basic, "使用單擊 Shift 按鍵切換中英模式", 14, 50);
+            capsLockTogglesEnglish = Check(basic, "使用 Caps Lock 按鍵切換中英文", 14, 76);
+            capsLockTogglesEnglish.CheckedChanged += delegate
+            {
+                shiftTogglesEnglish.Enabled = !capsLockTogglesEnglish.Checked;
+            };
+            associatedPhrases = Check(basic, "輸入後顯示聯想詞", 14, 102);
+            simplifiedOutput = Check(basic, "簡體輸出", 14, 128);
+            notifications = Check(basic, "使用提示視窗", 250, 128);
 
-            GroupBox menu = Group(pane, "輸入法選單", 190, 210);
+            Choice[] shortcuts = new Choice[27];
+            shortcuts[0] = new Choice("", "無");
+            for (int index = 0; index < 26; ++index)
+                shortcuts[index + 1] = new Choice(((char)('a' + index)).ToString(),
+                    "Ctrl + Alt + " + (char)('A' + index));
+            GroupBox keys = Group(pane, "快速鍵", 216, 124);
+            converterShortcut = Combo(keys, "簡繁中文切換快速鍵：", 22, shortcuts);
+            repeatShortcut = Combo(keys, "送出最近一次輸入的文字：", 54, shortcuts);
+            converterShortcut.Left = repeatShortcut.Left = 205;
+            reverseLookup = Combo(keys, "字根反查功能：", 86, new Choice[] {
+                new Choice("", "無"), new Choice("ReverseLookup-Generic-cj-cin", "倉頡"),
+                new Choice("ReverseLookup-Mandarin-bpmf-cin", "注音"),
+                new Choice("ReverseLookup-Mandarin-bpmf-cin-HanyuPinyin", "漢語拼音") });
+            reverseLookup.Left = 205;
+
+            GroupBox menu = Group(pane, "輸入法選單管理", 350, 130);
             Label hint = new Label();
             hint.Text = "取消勾選的輸入法不會出現在輸入選單中（使用中的除外）。";
             hint.AutoSize = true;
@@ -842,9 +875,85 @@ namespace ChiaKey.Settings
             highlightColor = Combo(candidate, "提示顏色：", 22, HighlightColors);
             backgroundColor = Combo(candidate, "視窗背景顏色：", 54, BackgroundColors);
             textColor = Combo(candidate, "文字顏色：", 86, TextColors);
+            EnableCustomColor(highlightColor);
+            EnableCustomColor(backgroundColor);
+            EnableCustomColor(textColor);
             backgroundPattern = Check(candidate, "使用背景花紋", 14, 120);
-            GroupBox extra = Group(pane, "額外設定", 204, 60);
+            GroupBox extra = Group(pane, "額外設定", 204, 162);
             beep = Check(extra, "錯誤時發出聲響", 14, 24);
+            defaultSound = new RadioButton { Text = "使用系統預設提示聲", AutoSize = true,
+                Location = new Point(32, 51) };
+            customSound = new RadioButton { Text = "使用自訂提示聲：", AutoSize = true,
+                Location = new Point(32, 78) };
+            soundPath = new TextBox { ReadOnly = true, Bounds = new Rectangle(32, 105, 322, 24) };
+            Button browse = new Button { Text = "瀏覽…", Bounds = new Rectangle(364, 105, 82, 25) };
+            Button test = new Button { Text = "測試", Bounds = new Rectangle(364, 24, 82, 25) };
+            extra.Controls.AddRange(new Control[] { defaultSound, customSound, soundPath, browse, test });
+            defaultSound.CheckedChanged += delegate { Changed(); };
+            customSound.CheckedChanged += delegate { Changed(); };
+            browse.Click += delegate
+            {
+                using (OpenFileDialog dialog = new OpenFileDialog())
+                {
+                    dialog.Filter = "提示聲 (*.wav)|*.wav";
+                    dialog.InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media");
+                    if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                    soundPath.Text = dialog.FileName;
+                    customSound.Checked = true;
+                    Changed();
+                }
+            };
+            test.Click += delegate
+            {
+                try
+                {
+                    if (defaultSound.Checked || soundPath.Text.Length == 0) System.Media.SystemSounds.Beep.Play();
+                    else new System.Media.SoundPlayer(soundPath.Text).Play();
+                }
+                catch (Exception error) { MessageBox.Show(this, "無法播放提示聲：" + error.Message, Text); }
+            };
+            beep.CheckedChanged += delegate
+            {
+                defaultSound.Enabled = customSound.Enabled = browse.Enabled = test.Enabled = beep.Checked;
+            };
+            return pane;
+        }
+
+        private void EnableCustomColor(ComboBox box)
+        {
+            box.Items.Add(new Choice("Custom", "自訂…"));
+            box.SelectedIndexChanged += delegate
+            {
+                if (Selected(box) != "Custom") { box.Tag = box.SelectedItem; return; }
+                if (loading) return;
+                using (ColorDialog dialog = new ColorDialog())
+                {
+                    dialog.FullOpen = true;
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                    {
+                        box.SelectedItem = box.Tag ?? box.Items[0];
+                        return;
+                    }
+                    string value = "Color " + dialog.Color.ToArgb().ToString(CultureInfo.InvariantCulture);
+                    int index = box.Items.Add(new Choice(value, "自訂顏色（" + dialog.Color.Name + "）"));
+                    box.SelectedIndex = index;
+                }
+            };
+        }
+
+        private Control BuildAboutPane()
+        {
+            Panel pane = new Panel();
+            Title(pane, "關於千秋輸入法");
+            PictureBox logo = new PictureBox { Image = Icon.ToBitmap(), SizeMode = PictureBoxSizeMode.Zoom,
+                Bounds = new Rectangle(24, 56, 72, 72) };
+            Label description = new Label { Bounds = new Rectangle(116, 58, 360, 190),
+                Text = "千秋輸入法\n版本 " + UpdateService.Default().AppReleaseVersion +
+                    "\n\n源自 Yahoo! 奇摩輸入法（KeyKey）。\nWindows 前端依原版設計開發，使用 Windows TSF 與千秋共用核心。" };
+            LinkLabel project = new LinkLabel { Text = "專案網站與原始碼", AutoSize = true,
+                Location = new Point(24, 272) };
+            project.LinkClicked += delegate { System.Diagnostics.Process.Start("https://github.com/chiakich/ChiaKey"); };
+            pane.Controls.AddRange(new Control[] { logo, description, project });
             return pane;
         }
 
@@ -857,9 +966,10 @@ namespace ChiaKey.Settings
         // a value the list lacks stays selectable, so saving another setting keeps it
         private static void Select(ComboBox box, Choice[] choices, string value)
         {
-            for (int i = 0; i < choices.Length; ++i)
+            for (int i = 0; i < box.Items.Count; ++i)
             {
-                if (string.Equals(choices[i].Value, value, StringComparison.OrdinalIgnoreCase))
+                Choice choice = box.Items[i] as Choice;
+                if (choice != null && string.Equals(choice.Value, value, StringComparison.OrdinalIgnoreCase))
                 {
                     box.SelectedIndex = i;
                     return;
@@ -903,6 +1013,11 @@ namespace ChiaKey.Settings
             loading = true;
             controlBackslash.Checked = frontend.GetBool("ToggleInputMethodWithControlBackslash", true);
             shiftTogglesEnglish.Checked = frontend.GetBool("ShiftTogglesTemporaryEnglish", true);
+            capsLockTogglesEnglish.Checked = frontend.GetBool("EnablesCapsLockAsAlphanumericModeToggle", false);
+            Select(converterShortcut, new Choice[0], frontend.GetString("ChineseConverterToggleKey", "s"));
+            Select(repeatShortcut, new Choice[0], frontend.GetString("RepeatLastCommitTextKey", "g"));
+            Select(reverseLookup, new Choice[0], frontend.GetString("ReverseLookupMethod", ""));
+            notifications.Checked = frontend.GetBool("ShouldUseNotifyWindow", true);
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
             simplifiedOutput.Checked = frontend.GetBool("SimplifiedOutput", false);
             LoadMenuInputMethods(frontend.GetStringArray("ModulesSuppressedFromUI"));
@@ -933,6 +1048,10 @@ namespace ChiaKey.Settings
             Select(textColor, TextColors, frontend.GetString("TextColor", "White"));
             backgroundPattern.Checked = frontend.GetBool("BackgroundPattern", false);
             beep.Checked = frontend.GetBool("ShouldPlaySoundOnTypingError", true);
+            string sound = frontend.GetString("SoundFilename", "Default");
+            defaultSound.Checked = sound == "Default" || sound.Length == 0;
+            customSound.Checked = !defaultSound.Checked;
+            soundPath.Text = defaultSound.Checked ? "" : sound;
 
             // OVIMGeneric's per-table defaults for cj and simplex
             cangjieCommitAtMaximum.Checked = cangjie.GetBool("ShouldCommitAtMaximumRadicalLength", false);
@@ -962,8 +1081,20 @@ namespace ChiaKey.Settings
 
         private bool SaveSettings()
         {
+            if (Selected(converterShortcut).Length > 0 && Selected(converterShortcut) == Selected(repeatShortcut))
+            {
+                MessageBox.Show(this, "簡繁切換與重送文字不能使用相同的快速鍵。", Text, MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
+            }
             frontend.SetBool("ToggleInputMethodWithControlBackslash", controlBackslash.Checked);
             frontend.SetBool("ShiftTogglesTemporaryEnglish", shiftTogglesEnglish.Checked);
+            frontend.SetBool("EnablesCapsLockAsAlphanumericModeToggle", capsLockTogglesEnglish.Checked);
+            frontend.SetString("ChineseConverterToggleKey", Selected(converterShortcut));
+            frontend.SetString("RepeatLastCommitTextKey", Selected(repeatShortcut));
+            frontend.SetString("ReverseLookupMethod", Selected(reverseLookup));
+            frontend.SetBool("ShouldUseNotifyWindow", notifications.Checked);
+            frontend.SetString("SoundFilename", customSound.Checked && soundPath.Text.Length > 0 ? soundPath.Text : "Default");
             frontend.SetBool("EnableAssociatedPhrases", associatedPhrases.Checked);
             frontend.SetBool("SimplifiedOutput", simplifiedOutput.Checked);
             frontend.SetStringArray("ModulesSuppressedFromUI", HiddenInputMethods());
@@ -1065,7 +1196,8 @@ namespace ChiaKey.Settings
                 }
                 string data = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChiaKey");
-                Application.Run(new SettingsForm(data));
+                bool about = args.Length > 0 && string.Equals(args[0], "/about", StringComparison.OrdinalIgnoreCase);
+                Application.Run(new SettingsForm(data, about ? 8 : 0));
             }
         }
     }

@@ -21,6 +21,7 @@ constexpr UINT kMenuSymbols = 5;
 constexpr wchar_t kSymbolsLabel[] = L"符號表（Ctrl+Alt+.）";
 constexpr UINT kMenuPhraseEditor = 6;
 constexpr UINT kMenuSimplifiedOutput = 7;
+constexpr UINT kMenuAbout = 8;
 constexpr wchar_t kSimplifiedOutputLabel[] = L"簡體輸出";
 constexpr wchar_t kPhraseEditorLabel[] = L"詞彙編輯器…";
 constexpr UINT kMenuFirstInputMethod = 100;
@@ -167,6 +168,7 @@ std::vector<LangBarButton::MenuItem> LangBarButton::menuItems() {
     items.push_back({kMenuSymbols, kSymbolsLabel, service_->isSymbolWindowVisible()});
     items.push_back({kMenuPhraseEditor, kPhraseEditorLabel, false});
     items.push_back({kMenuSettings, L"輸入法設定…", false});
+    items.push_back({kMenuAbout, L"關於…", false});
     return items;
 }
 
@@ -225,6 +227,7 @@ STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
     if (id == kMenuFullWidth && !service_->isFullWidthMode()) service_->toggleFullWidthMode();
     if (id == kMenuSettings) return service_->openSettings();
     if (id == kMenuPhraseEditor) return service_->openSettings(nullptr, L"/phrases");
+    if (id == kMenuAbout) return service_->openSettings(nullptr, L"/about");
     if (id == kMenuSymbols) service_->toggleSymbolWindow();
     if (id >= kMenuFirstInputMethod &&
         id - kMenuFirstInputMethod < menuInputMethods_.size()) {

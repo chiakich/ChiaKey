@@ -5,6 +5,7 @@
 #include <string>
 
 #include "GdiText.h"
+#include "FrontendBehavior.h"
 #include "ModuleState.h"
 
 namespace ChiaKey::WindowsTsf {
@@ -80,6 +81,10 @@ CandidatePalette PaletteFor(const FrontendSettings& settings) {
         palette.pattern = RGB(211, 211, 211);
     }
     if (settings.textColor == "Black") palette.foreground = RGB(0, 0, 0);
+    palette.highlight = CustomColor(settings.highlightColor, palette.highlight);
+    palette.highlightEnd = CustomColor(settings.highlightColor, palette.highlightEnd);
+    palette.background = CustomColor(settings.backgroundColor, palette.background);
+    palette.foreground = CustomColor(settings.textColor, palette.foreground);
     palette.usePattern = settings.backgroundPattern;
     return palette;
 }
