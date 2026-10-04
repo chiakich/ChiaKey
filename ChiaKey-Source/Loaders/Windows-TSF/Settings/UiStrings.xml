@@ -107,10 +107,6 @@ Total: {2:N0}</en>
     <en>Put recently chosen candidates in front.</en>
   </string>
   <string>
-    <source>使用半透明狀態列</source>
-    <en>Use transparent status bar.</en>
-  </string>
-  <string>
     <source>使用單擊 Shift 按鍵切換中英模式</source>
     <en>Use Shift key to toggle Chinese / English mode.</en>
   </string>
@@ -539,10 +535,6 @@ Version </en>
   <string>
     <source>無法開啟常用語檔案：</source>
     <en>Could not open canned messages: </en>
-  </string>
-  <string>
-    <source>狀態列最小化到系統匣（雙擊狀態列收合）</source>
-    <en>Minimize status bar to tray (double-click to collapse)</en>
   </string>
   <string>
     <source>白色</source>
@@ -975,9 +967,5 @@ Version </en>
   <string>
     <source>正在查詢…</source>
     <en>Searching…</en>
-  </string>
-  <string>
-    <source>顯示浮動狀態列</source>
-    <en>Show floating status bar</en>
   </string>
 </strings>

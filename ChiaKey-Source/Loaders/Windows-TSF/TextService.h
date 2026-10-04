@@ -15,7 +15,6 @@
 #include "FrontendBehavior.h"
 #include "SymbolWindow.h"
 #include "PunctuationKeyboard.h"
-#include "StatusWindow.h"
 #include "SharedState.h"
 #include "NotificationWindow.h"
 
@@ -123,8 +122,6 @@ private:
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
     HRESULT handleFrontendShortcut(ITfContext* context, const KeyEvent& event, BOOL* eaten);
     void sendSymbol(const std::wstring& text);
-    void statusAction(StatusAction action, POINT point);
-    void updateStatusWindow();
     // a synchronous request is refused when the document is locked or TSF will
     // not block the caller; the same session is then requested asynchronously
     HRESULT requestEditSession(ITfContext* context, ITfEditSession* session,
@@ -191,7 +188,6 @@ private:
     std::unique_ptr<EngineSession> engine_;
     CandidateWindow candidateWindow_;
     NotificationWindow notificationWindow_;
-    StatusWindow statusWindow_{[this](StatusAction action, POINT point) { statusAction(action, point); }};
     PunctuationKeyboard punctuationKeyboard_{[this](const std::wstring& text) { sendSymbol(text); }};
     SymbolWindow symbolWindow_{[this](const std::wstring& text) { sendSymbol(text); }};
     std::mutex langBarMutex_;

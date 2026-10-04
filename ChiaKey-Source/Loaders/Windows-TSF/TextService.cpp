@@ -460,7 +460,6 @@ STDMETHODIMP TextService::Deactivate() {
     // another input method takes over; the saved state brings the window back with ChiaKey
     symbolWindow_.destroy();
     punctuationKeyboard_.destroy();
-    statusWindow_.destroy();
     notificationWindow_.destroy();
     // the context saves its learning when it ends; an app closing leaves no other chance
     engine_.reset();
@@ -720,7 +719,6 @@ void TextService::uninitializeLangBar() {
 }
 
 void TextService::refreshLangBar() {
-    updateStatusWindow();
     std::array<LangBarButton*, 3> buttons{};
     {
         std::lock_guard<std::mutex> lock(langBarMutex_);
@@ -734,46 +732,6 @@ void TextService::refreshLangBar() {
         button->update();
         button->Release();
     }
-}
-
-void TextService::updateStatusWindow() {
-    if (!threadManager_ || secureMode_) { statusWindow_.hide(); return; }
-    std::wstring name = L"中文";
-    for (const auto& method : InputMethods()) if (method.first == CurrentInputMethod()) name = method.second;
-    statusWindow_.update({name, isChineseMode(), fullWidthMode_, CurrentFrontendSettings().simplifiedOutput});
-}
-
-void TextService::statusAction(StatusAction action, POINT point) {
-    switch (action) {
-    case StatusAction::Language: toggleChineseMode(); break;
-    case StatusAction::Converter: toggleSimplifiedOutput(); break;
-    case StatusAction::Width: toggleFullWidthMode(); break;
-    case StatusAction::Symbols: toggleSymbolWindow(); break;
-    case StatusAction::Settings: {
-        LangBarButton* button = nullptr;
-        { std::lock_guard<std::mutex> lock(langBarMutex_); button = modeIconButton_; if (button) button->AddRef(); }
-        if (button) { button->OnClick(TF_LBI_CLK_RIGHT, point, nullptr); button->Release(); }
-        break;
-    }
-    case StatusAction::InputMethod: {
-        HMENU menu = CreatePopupMenu();
-        const auto settings = CurrentFrontendSettings();
-        std::vector<std::string> ids;
-        for (const auto& method : InputMethods()) {
-            if (method.first != CurrentInputMethod() && std::find(settings.suppressedInputMethods.begin(),
-                settings.suppressedInputMethods.end(), method.first) != settings.suppressedInputMethods.end()) continue;
-            ids.push_back(method.first);
-            AppendMenuW(menu, MF_STRING | (method.first == CurrentInputMethod() ? MF_CHECKED : 0),
-                        ids.size(), method.second.c_str());
-        }
-        const UINT chosen = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_BOTTOMALIGN,
-                                           point.x, point.y, 0, GetForegroundWindow(), nullptr);
-        DestroyMenu(menu);
-        if (chosen && chosen <= ids.size()) selectInputMethod(ids[chosen - 1]);
-        break;
-    }
-    }
-    updateStatusWindow();
 }
 
 void TextService::notifyMode(const std::wstring& text) {
@@ -1727,7 +1685,6 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
 // the window itself hides when another app comes to the front
 STDMETHODIMP TextService::OnSetThreadFocus() {
     RefreshSettings();
-    updateStatusWindow();
     if (!symbolWindow_.isVisible() && ReadSymbolWindowState().visible) symbolWindow_.show();
     return S_OK;
 }

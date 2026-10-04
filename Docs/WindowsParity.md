@@ -49,7 +49,7 @@
 | 詞彙增刪／詞文／讀音／匯入匯出 | EditorForm／ReadingForm／PanelPhrases | 已有，前批補上多音字選讀音與原子寫入；本批補上剪下／複製／貼上選單、依焦點操作與整列複製、說明／關於 |
 | 設定的確定／取消／套用 | TakaoPreference | 已有；取消不寫未套用設定。本批新增欄位沿用同一儲存流程 |
 | 關於頁與選單 | BIAboutPanel／BIStatusBarForm | 本批補上設定關於頁、語言列關於入口與詞彙編輯器關於；保留千秋名稱、版本與專案網址 |
-| 獨立浮動狀態列、半透明、最小化到 system tray | BIStatusBarForm／PanelMisc | 第三批補上六操作浮動列、拖曳位置、50% 半透明、雙擊 mini／tray 和還原；使用千秋圖示，原版 bitmap 皮膚與宿主切換／tray 尚待視覺實測 |
+| 獨立浮動狀態列、半透明、最小化到 system tray | BIStatusBarForm／PanelMisc | 目前暫停：TSF 不建立或連結浮動列元件，設定中不提供浮動列、半透明或 tray 選項；模式通知仍獨立保留 |
 | 字典搜尋與歷史 | BIDictionaryForm 的 Yahoo 網路查詢／內嵌瀏覽器 | 第五批補上獨立字典、HTTPS 搜尋、八筆歷史、複製／全選與瀏覽器開啟；內嵌頁面改用 WebView2，舊 XML API／Flash 與將字典文字直接送回宿主的橋接未恢復 |
 | OneKey／Evaluator／其他 around filters | BIStatusBarForm 動態 modules 選單 | OneKey 已在本 repo 明確移除；其餘不是僅補一個選單即可使用，需各自核對模組與資料契約 |
 | 字數統計、今天／本週／總計／清除 | BIAboutPanel 依 WordCount 套件啟用 | 第三批補上可停用的 TSF 成功提交計數與關於頁今日／最近七天／累計／清除；SQLite 跨宿主原子更新，不儲存文字。原 DLL 套件設定尚未遷移 |
@@ -187,7 +187,7 @@ Evergreen Runtime 為另外維護的系統元件；缺少或初始化失敗仍�
 讀取／更新，最後停止 helper 並確認 mapping 消失；缺少 executable 的失敗也有覆蓋。
 兩架構完整 CTest 各 5/5（35.01／34.35 秒），測試 helper 都已退出，沒有留下常駐測試程序。
 
-## 第八批浮動列開關與斷線建置圖示
+## 第八批浮動列開關與斷線建置圖示（第九批已移除浮動列選項）
 
 新增「其他 → 顯示浮動狀態列」，對應 Windows.plist 的 ShouldShowStatusBar；預設開啟，
 關閉後浮動列與其系統匣圖示一起隱藏，保留模式通知的獨立開關。設定 roundtrip fixture
@@ -212,3 +212,28 @@ Administrator session 2 已透過 tscon 移交到 console，RDP 斷線後仍為 
 檔案核對為 U+4F60 U+597D U+0020。閒置 Tab eaten=0、由記事本插入 tab。
 Ctrl+Space 與 Shift+Space 顯示對應模式通知。完整候選窗／Esc 設定矩陣、
 有效首聲注音完成、Edge、Win32 宿主、Windows 11 仍需後續實測。
+## 第九批偏好設定排版與停用浮動列
+
+對照原版 Windows 的 TakaoPreference、PanelGeneral／PanelPhonetic／PanelMisc 與繁體 resx，
+以及 macOS 的 MainMenu.xib、TakaoPreference.m／TakaoPreference_Toolbar.m：保留圖示在上、
+文字在下的九類工具列、基本功能／快速鍵等分組與 Windows 的確定／取消／套用操作。
+原 500×520 視窗與固定座標無法容納新增功能，捲軸再縮窄內容，造成水平捲動、裁切，
+關於頁的網站連結與字數統計也曾重疊。現改為可調整大小的視窗、獨立工具列與按鈕列、
+以 TableLayoutPanel 自動量測的分組與可換行文字；較小 work area 僅需垂直捲動。
+保留泛用字表萬用字元的單字元限制、既有偏好值與互斥選項。
+
+浮動列暫停載入：CMake 不再連結 StatusWindow.cpp，TextService 移除浮動列物件、
+初始化／更新及相關操作回呼。偏好設定與翻譯資源移除顯示浮動列、半透明、系統匣三項，
+舊 plist 欄位仍保留，但不能啟動新版浮動列。模式提示與 Windows TSF 語言列維持獨立。
+兩架構 DLL 均不再包含 ChiaKey.TSF.StatusWindow 類別字串。
+
+新增三語排版 CTest，實際建立偏好控制項但不顯示視窗或保存偏好；保留產品字型，
+檢查八個頁面於 600／720／900 邏輯寬度與 100%／150%／200% 字型及尺寸縮放下，
+是否有水平溢位、文字裁切、浮動列選項，並驗證單字元限制與工具列快速鍵。
+更新頁有非同步網路行為，沿用更新測試並以桌面工具目視檢查。
+這些是模擬縮放，不能替代 Windows 11 實際 DPI／多螢幕切換。
+
+完整 CTest：x64 8/8（81.60 秒），Win32 8/8（87.32 秒）；最後 UI 微調後再覆驗各架構三語。
+console 桌面已目視檢查一般、注音、其他、關於與更新頁，更新完成後資訊／按鈕仍不重疊。
+本機註冊 build/runtime-20261004-layout/x64/Release 與 x86/Release 的新版 DLL；
+同步更新舊 runtime 路徑的設定程式，已開啟的打字宿主仍需重開才能載入新版 DLL。

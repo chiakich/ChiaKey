@@ -87,7 +87,6 @@ add_library(ChiaKeyTsf SHARED
     PhraseEditorExports.cpp
     SymbolWindow.cpp
     PunctuationKeyboard.cpp
-    StatusWindow.cpp
     NotificationWindow.cpp
     TextService.cpp
     ChiaKeyTsf.rc
@@ -138,6 +137,7 @@ if(CHIAKEY_CSC)
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/DictionaryQuery.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/DictionaryForm.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/SettingsForm.cs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PreferenceLayout.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PhraseEditor.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdateService.cs"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/UpdatePane.cs"
@@ -228,6 +228,25 @@ if(CHIAKEY_CSC)
         add_test(NAME chiakey_windows_updates
             COMMAND "$<TARGET_FILE_DIR:ChiaKeyTsf>/ChiaKeyUpdateTests.exe"
                     "${CMAKE_CURRENT_BINARY_DIR}" "${CHIAKEY_LEXICON_DATABASE}")
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/PreferenceLayoutTests.exe" layout_tests_exe)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Settings/PreferenceLayoutTests.cs" layout_tests_source)
+        add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/PreferenceLayoutTests.exe"
+            COMMAND "${CMAKE_COMMAND}" -E env --unset=LIB
+                "${CHIAKEY_CSC}" /nologo /target:exe /utf8output "/platform:${CHIAKEY_MANAGED_PLATFORM}"
+                "/out:${layout_tests_exe}" /r:System.dll /r:System.Drawing.dll
+                /r:System.Windows.Forms.dll "${layout_tests_source}"
+            DEPENDS Settings/PreferenceLayoutTests.cs VERBATIM)
+        add_custom_target(ChiaKeyPreferenceLayoutTests ALL
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${CMAKE_CURRENT_BINARY_DIR}/PreferenceLayoutTests.exe"
+                "$<TARGET_FILE_DIR:ChiaKeyTsf>/PreferenceLayoutTests.exe"
+            DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/PreferenceLayoutTests.exe" ChiaKeySettings VERBATIM)
+        foreach(language zh-TW zh-CN en)
+            add_test(NAME "chiakey_preferences_layout_${language}"
+                COMMAND "$<TARGET_FILE_DIR:ChiaKeyTsf>/PreferenceLayoutTests.exe"
+                    "$<TARGET_FILE_DIR:ChiaKeyTsf>/ChiaKeySettings.exe" "${language}")
+            set_tests_properties("chiakey_preferences_layout_${language}" PROPERTIES TIMEOUT 180)
+        endforeach()
     endif()
 else()
     message(WARNING "csc.exe from .NET Framework 4 not found: ChiaKeySettings.exe is not built.")

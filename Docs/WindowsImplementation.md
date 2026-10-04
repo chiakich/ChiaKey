@@ -46,6 +46,10 @@ TSF 前端在 `ChiaKey-Source/Loaders/Windows-TSF`：inline 組字、仿 KeyKey 
 
 設定程式與安裝器使用 Mac 的 `ChiaKey.icns` 角色圖示；建置時從該檔的 PNG
 representation 產生 `app.ico`，同時嵌入設定程式的 Win32 圖示與 managed resource。
+偏好設定採用可調整大小的視窗與自動量測分組，依現有 Windows／macOS 偏好設定的
+圖示分類整理；小螢幕只做垂直捲動。三語排版與縮放 fixture 已接入 CTest。
+浮動狀態列目前不編入 TSF，設定中不提供浮動列、半透明與系統匣選項。
+模式通知與 Windows TSF 語言列保留；已開啟的宿主需重新開啟才會載入新版 DLL。
 偏好設定視窗直接讀取內嵌的橘色角色圖示；詞彙編輯器使用 Mac 的
 `PhraseEditor.icns` 紫色角色圖示，轉成內嵌的 `phrase-editor.ico`。
 TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
