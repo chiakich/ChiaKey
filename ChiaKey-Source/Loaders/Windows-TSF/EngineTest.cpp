@@ -7,6 +7,7 @@
 #include "UpdateLexicon.h"
 #include "OutputFilter.h"
 #include "FrontendBehavior.h"
+#include "PunctuationKeyboard.h"
 #include <OVFileHelper.h>
 
 using namespace ChiaKey::WindowsTsf;
@@ -291,6 +292,7 @@ void TestSettings(const std::string& writableDir) {
                    Entry("RepeatLastCommitTextKey", "r") +
                    Entry("SoundFilename", "C:/Windows/Media/notify.wav") +
                    Entry("ShouldUseNotifyWindow", "false") +
+                   Entry("KeyboardFormShouldFollowCursor", "true") +
                    "\t<key>ModulesSuppressedFromUI</key>\n\t<array>\n\t\t<string>Generic-simplex-cin"
                    "</string>\n\t\t<string>TraditionalMandarin</string>\n\t</array>\n");
     // the settings app writes the whole module plist, as the core does
@@ -305,7 +307,7 @@ void TestSettings(const std::string& writableDir) {
     Check(frontend.textColor == "White", "missing keys keep their defaults");
     Check(!frontend.shiftTogglesEnglish, "the Shift tap toggle can be turned off");
     Check(frontend.capsLockTogglesEnglish && frontend.chineseConverterToggleKey == "k" &&
-              frontend.repeatLastCommitTextKey == "r" && !frontend.showNotifications &&
+              frontend.repeatLastCommitTextKey == "r" && !frontend.showNotifications && frontend.keyboardFollowsCursor &&
               frontend.soundFilename == "C:/Windows/Media/notify.wav",
           "legacy general and sound settings load from the same plist");
     Check(!frontend.simplifiedOutput, "simplified output defaults off");
@@ -398,6 +400,35 @@ void WriteUserTable(const std::string& writableDir) {
 }
 
 }  // namespace
+
+void TestPunctuationKeyboard() {
+    KeyEvent open = Key(VK_OEM_COMMA, false, true); open.alt = true;
+    Check(ShortcutFor(open, FrontendSettings{}) == FrontendShortcut::PunctuationKeyboard,
+          "Ctrl+Alt+, opens the punctuation keyboard rather than a candidate list");
+    open.shift = true;
+    Check(ShortcutFor(open, FrontendSettings{}) == FrontendShortcut::None,
+          "modified comma is not the keyboard command");
+    Check(std::size(kPunctuationKeys) == 46 && PunctuationSymbol('1') == L'┌' &&
+          PunctuationSymbol('Q') == L'├' && PunctuationSymbol('A') == L'└' &&
+          PunctuationSymbol('Z') == L'─' && PunctuationSymbol(VK_OEM_PERIOD) == 0x2027 &&
+          PunctuationSymbol(VK_OEM_COMMA) == 0xff0c && PunctuationSymbol(VK_OEM_5) == 0x300d,
+          "keyboard keeps the historical four-row symbol map");
+    Check(!PunctuationSymbol(VK_TAB) && !PunctuationSymbol(VK_RETURN) &&
+          !PunctuationSymbol(VK_SPACE) && !PunctuationSymbol(VK_ESCAPE),
+          "unmapped editing keys cannot insert host control characters");
+    Check(PunctuationModifier(VK_SHIFT) && PunctuationModifier(VK_RCONTROL) &&
+          !PunctuationModifier('A'), "releasing shortcut modifiers does not choose a symbol");
+    KeyEvent direct; direct.directText = true; direct.text = L"，";
+    Check(MakeCoreKey(direct).modifiers.directText && MakeCoreKey(direct).receivedString == "，",
+          "keyboard symbol uses the original DirectText core path");
+    SelectInputMethod("SmartMandarin");
+    auto session = EngineSession::Create();
+    Check(Type(*session, "su3cl3"), "compose nihao before keyboard symbol");
+    const auto result = session->handleKey(direct);
+    Check(result.handled && result.committedText.empty() && result.compositionText == L"你好，",
+          "a physical keyboard symbol stays in the original sentence composition");
+    session->reset();
+}
 
 void TestLegacyFrontendBehavior() {
     FrontendSettings settings;
@@ -566,6 +597,7 @@ int main(int argc, char* argv[]) {
     TestLayout();
     TestOutputConversion();
     TestLegacyFrontendBehavior();
+    TestPunctuationKeyboard();
     TestKeys();
     TestUpdatePointers(argv[2]);
     TestFileTimestamps(argv[2]);

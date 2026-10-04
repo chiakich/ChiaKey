@@ -458,6 +458,7 @@ STDMETHODIMP TextService::Deactivate() {
     uninitializeLangBar();
     // another input method takes over; the saved state brings the window back with ChiaKey
     symbolWindow_.destroy();
+    punctuationKeyboard_.destroy();
     // the context saves its learning when it ends; an app closing leaves no other chance
     engine_.reset();
     threadManager_.Reset();
@@ -905,6 +906,8 @@ HRESULT TextService::insertSymbol(TfEditCookie editCookie, ITfContext* context,
 
 STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     if (!foreground) {
+        if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId())
+            punctuationKeyboard_.close();
         shiftTogglePending_ = false;
         if (!requestCommitComposition()) {
             Trace("Input focus lost: composition could not be committed");
@@ -927,7 +930,8 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
         *eaten = TRUE;
         return S_OK;
     }
-    *eaten = isModeToggleKey(event) || isWidthToggleKey(event) || isPotentialKey(event) ||
+    *eaten = (punctuationKeyboard_.isVisible() && !PunctuationModifier(event.virtualKey)) ||
+             isModeToggleKey(event) || isWidthToggleKey(event) || isPotentialKey(event) ||
              ShortcutFor(event, CurrentFrontendSettings()) != FrontendShortcut::None;
     if (event.virtualKey == VK_SPACE || event.virtualKey == VK_TAB) {
         Trace("TestKey vk=%u ctrl=%d shift=%d alt=%d chinese=%d full=%d composition=%d engineComposition=%d candidates=%d eaten=%d",
@@ -958,6 +962,11 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     if (!context || !eaten) return E_INVALIDARG;
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
+    if (punctuationKeyboard_.isVisible()) {
+        shiftTogglePending_ = false;
+        if (!PunctuationModifier(event.virtualKey)) return runKeySession(context, std::move(event), eaten);
+        return S_OK;
+    }
     if (isShiftToggleKey(event)) {
         if (!shiftTogglePending_) shiftPressedAt_ = GetTickCount();
         shiftTogglePending_ = true;
@@ -1007,6 +1016,7 @@ HRESULT TextService::handleFrontendShortcut(ITfContext* context, const KeyEvent&
         toggleSimplifiedOutput();
         *eaten = TRUE;
         return S_OK;
+    case FrontendShortcut::PunctuationKeyboard:
     case FrontendShortcut::RepeatCommit:
         return context ? runKeySession(context, event, eaten) : S_OK;
     default:
@@ -1062,6 +1072,12 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
     *eaten = FALSE;
     if (!engine_ || !engine_->hasComposition()) RefreshSettings();
     if (guid == kSymbolWindowKeyGuid) {
+        if (punctuationKeyboard_.isVisible() && context) {
+            KeyEvent event;
+            event.virtualKey = VK_OEM_PERIOD;
+            event.control = event.alt = true;
+            return runKeySession(context, event, eaten);
+        }
         toggleSymbolWindow();
         *eaten = TRUE;
         return S_OK;
@@ -1074,6 +1090,7 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
         event.alt = true;
         event.capsLock = (GetKeyState(VK_CAPITAL) & 1) != 0;
         event.numLock = (GetKeyState(VK_NUMLOCK) & 1) != 0;
+        if (punctuationKeyboard_.isVisible() && context) return runKeySession(context, event, eaten);
         const HRESULT shortcutResult = handleFrontendShortcut(context, event, eaten);
         if (shortcutResult != S_FALSE) return shortcutResult;
         // an unclaimed chord goes on to the app, as in English mode
@@ -1087,6 +1104,42 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
                                 const KeyEvent& event, bool* handled) {
     if (!context || !handled) return E_INVALIDARG;
     const auto settings = CurrentFrontendSettings();
+    if (punctuationKeyboard_.isVisible() && !PunctuationModifier(event.virtualKey)) {
+        punctuationKeyboard_.close();
+        *handled = true;
+        const bool shiftedLetter = event.virtualKey >= 'A' && event.virtualKey <= 'Z';
+        const wchar_t symbol = !event.control && !event.alt && (!event.shift || shiftedLetter)
+                                   ? PunctuationSymbol(event.virtualKey) : 0;
+        if (!symbol) {
+            if (event.virtualKey != VK_ESCAPE) PlayTypingErrorSound(settings);
+            return S_OK;
+        }
+        if (!engine_ || !isChineseMode()) return insertSymbol(editCookie, context, std::wstring(1, symbol));
+        KeyEvent direct;
+        direct.text.assign(1, symbol);
+        direct.directText = true;
+        const auto result = engine_->handleKey(direct);
+        if (!result.handled) { PlayTypingErrorSound(settings); return S_OK; }
+        return updateComposition(editCookie, context, result);
+    }
+    if (ShortcutFor(event, settings) == FrontendShortcut::PunctuationKeyboard) {
+        *handled = true;
+        if (candidateActive_) { PlayTypingErrorSound(settings); return S_OK; }
+        ComPtr<ITfRange> range;
+        TF_SELECTION selection{};
+        ULONG fetched = 0;
+        if (SUCCEEDED(context->GetSelection(editCookie, TF_DEFAULT_SELECTION, 1, &selection, &fetched)) && fetched)
+            range.Attach(selection.range);
+        ComPtr<ITfContextView> view;
+        RECT caret{};
+        HWND owner = nullptr;
+        BOOL clipped = FALSE;
+        if (!range || FAILED(context->GetActiveView(&view)) ||
+            FAILED(view->GetTextExt(editCookie, range.Get(), &caret, &clipped)) ||
+            FAILED(view->GetWnd(&owner))) { PlayTypingErrorSound(settings); return S_OK; }
+        punctuationKeyboard_.open(owner, caret, settings.keyboardFollowsCursor);
+        return S_OK;
+    }
     if (ShortcutFor(event, settings) == FrontendShortcut::RepeatCommit) {
         *handled = true;
         const bool composing = composition_ || (engine_ && engine_->hasComposition());
@@ -1544,6 +1597,7 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
+    if (focusedContext.Get() != textEditContext_.Get()) punctuationKeyboard_.close();
     if ((composition_ || candidateActive_) &&
         textEditContext_.Get() != focusedContext.Get() && !pendingModeCommit_) {
         if (!requestCommitComposition()) {
@@ -1597,7 +1651,12 @@ STDMETHODIMP TextService::OnSetThreadFocus() {
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnKillThreadFocus() { return S_OK; }
+STDMETHODIMP TextService::OnKillThreadFocus() {
+    // Showing nonactivating IME UI can itself trigger this callback in some hosts.
+    if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId())
+        punctuationKeyboard_.close();
+    return S_OK;
+}
 
 STDMETHODIMP TextService::OnChange(REFGUID guid) {
     if (!threadManager_) return S_OK;

@@ -48,6 +48,7 @@ struct KeyEvent {
     bool alt = false;
     bool capsLock = false;
     bool numLock = false;
+    bool directText = false;
 };
 
 // only chords in bpmf-punctuations.cin; other shortcuts belong to the host
@@ -69,6 +70,7 @@ struct FrontendSettings {
     std::string repeatLastCommitTextKey = "g";
     std::string soundFilename = "Default";
     bool showNotifications = true;
+    bool keyboardFollowsCursor = false;
     std::string reverseLookupMethod;
     bool associatedPhrases = false;
     bool simplifiedOutput = false;

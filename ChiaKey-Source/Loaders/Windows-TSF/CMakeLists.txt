@@ -81,6 +81,7 @@ add_library(ChiaKeyTsf SHARED
     LangBarButton.cpp
     PhraseEditorExports.cpp
     SymbolWindow.cpp
+    PunctuationKeyboard.cpp
     TextService.cpp
     ChiaKeyTsf.rc
     "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc"

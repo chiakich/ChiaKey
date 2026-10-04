@@ -44,8 +44,8 @@
 | 候選窗版型與顏色 | BICandidateForm 的色彩／版型常數 | 已有原版主要版型；本批補上 ColorDialog 與 Color signed-ARGB 設定。DPI／字型／定位仍須目視對照 |
 | 自訂提示音／測試 | SoundFilename＝Default 或 WAV；PanelMisc | 本批補上自訂 WAV、測試、停用狀態與非同步播放，無效檔案回到系統音；音訊仍待實機 |
 | 符號表與罐頭訊息 | BISymbolForm／BISmileyPanel | 已有資料、分類、送出與編輯；原版完整分類排序／按鈕密度仍待視覺對照 |
-| 標點螢幕鍵盤 | BIKeyboardForm，Ctrl+Alt+, 開啟後選一鍵送符號 | 尚缺；不能把現有 Ctrl+Alt+, 標點候選列表視為相同功能 |
-| 螢幕鍵盤跟隨游標 | KeyboardFormShouldFollowCursor | 尚缺，依附上列螢幕鍵盤 |
+| 標點螢幕鍵盤 | BIKeyboardForm，Ctrl+Alt+, 開啟後選一鍵送符號 | 第二批補上 46 鍵、原版 420×127 版面／停用鍵／綠色鍵名、一次選鍵與滑鼠點選；物理按鍵走 DirectText，保留句子組字。焦點／外觀仍待實機 |
+| 螢幕鍵盤跟隨游標 | KeyboardFormShouldFollowCursor | 第二批補上；預設停用，開啟時由 TSF selection 取得游標位置，跨螢幕邊界限制與 DPI scaling 尚待實機 |
 | 詞彙增刪／詞文／讀音／匯入匯出 | EditorForm／ReadingForm／PanelPhrases | 已有，前批補上多音字選讀音與原子寫入；本批補上剪下／複製／貼上選單、依焦點操作與整列複製、說明／關於 |
 | 設定的確定／取消／套用 | TakaoPreference | 已有；取消不寫未套用設定。本批新增欄位沿用同一儲存流程 |
 | 關於頁與選單 | BIAboutPanel／BIStatusBarForm | 本批補上設定關於頁、語言列關於入口與詞彙編輯器關於；保留千秋名稱、版本與專案網址 |
@@ -71,6 +71,22 @@ filter；只接受已初始化的模組，停用反查保留聯想詞 filter。�
 自訂顏色沿用 `Color <signed Int32 ARGB>`，GDI 使用 RGB channel，壞值回退預設色。聲音使用
 PlaySound 的非同步檔案播放，避免在宿主 UI thread 等待整段音檔。
 
+## 第二批標點螢幕鍵盤
+
+原版 `BaseIMEServer.cpp` 的 PPK 表與 `BIKeyboardForm.cs` 含相同 46 個符號；
+`BIKeyboardForm.Designer.cs` 的按鈕矩形、停用的 Tab／Enter／Shift 等鍵與 420×127 client size
+作為版面基準。`CustomizedControls/BIKeyboardButton.cs` 的 Arial 6pt 綠色鍵名與 PMingLiU 11pt
+黑色符號也沿用。現代系統的字型 fallback／DPI 與 GDI rendering 仍需視覺核對。
+
+Ctrl+Alt+, 透過既有 preserved-key 註冊進入 TSF edit session，候選顯示期間不開啟。
+鍵盤視窗不取得宿主焦點；物理選鍵使用原版 DirectText path，可將標點保留在好打句子組字中；
+滑鼠點選沿用符號表的送出流程。一次選鍵後隱藏，Esc 關閉且不提交、不送出控制字元；
+無效鍵關閉並依提示音設定發聲。切換輸入欄位／應用程式也關閉等待狀態。
+新增 KeyboardFormShouldFollowCursor 設定，沿用原版預設 false。
+
+第二批 x64／Win32 完整 CTest 各 5/5 通過（34.35／36.04 秒）。包括以正式詞庫組出「你好」
+再送鍵盤逗號，確認留下「你好，」組字且 committedText 為空。這不是 TSF callback 或 GUI 的實測。
+
 ## 驗證邊界與下一步
 
 本批以原生 MSVC x64／Win32 建置；兩架構 CTest 各 5/5 通過，包括正式詞庫的注音／拼音反查、
@@ -79,7 +95,7 @@ PlaySound 的非同步檔案播放，避免在宿主 UI thread 等待整段音�
 
 桌面仍受 RDP disconnected／locked 限制，沒有把編譯成功當成 GUI 已一致。待桌面可用時應先驗證
 新快捷鍵在記事本／Edge 的 preserved-key 分派、Caps Lock 中途組字提交、反查提示、剪貼簿焦點、
-設定全部九個頁面的 DPI／捲動／字型與顏色選取，再繼續標點螢幕鍵盤與完整狀態列的 UI 對照。
+設定全部九個頁面的 DPI／捲動／字型與顏色選取，以及標點螢幕鍵盤的滑鼠／一次選鍵／拖曳與跟隨游標。完整浮動狀態列仍待補齊。
 Server 的成功不替代 Windows 11 Store app／非管理員／提升權限宿主與不同 DPI 的驗證。
 
 本批沿用 windows-tsf／PR #16，以獨立 conventional commit 保留功能補齊與先前 review 修正的邊界。

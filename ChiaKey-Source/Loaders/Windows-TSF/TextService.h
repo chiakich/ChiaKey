@@ -14,6 +14,7 @@
 #include "ChiaKeyEngine.h"
 #include "FrontendBehavior.h"
 #include "SymbolWindow.h"
+#include "PunctuationKeyboard.h"
 
 namespace ChiaKey::WindowsTsf {
 
@@ -180,6 +181,7 @@ private:
     Microsoft::WRL::ComPtr<ITfContext> candidateContext_;
     std::unique_ptr<EngineSession> engine_;
     CandidateWindow candidateWindow_;
+    PunctuationKeyboard punctuationKeyboard_{[this](const std::wstring& text) { sendSymbol(text); }};
     SymbolWindow symbolWindow_{[this](const std::wstring& text) { sendSymbol(text); }};
     std::mutex langBarMutex_;
     LangBarButton* modeIconButton_ = nullptr;

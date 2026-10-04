@@ -589,6 +589,8 @@ bool IsInputMethodControlKey(const KeyEvent& event) {
 
 ChiaKey::KeyEvent MakeCoreKey(const KeyEvent& event) {
     ChiaKey::KeyEvent key;
+    key.modifiers.directText = event.directText;
+    if (event.directText) { key.receivedString = WideToUtf8(event.text); return key; }
     key.modifiers.alt = event.alt;
     key.modifiers.ctrl = event.control;
     key.modifiers.shift = event.shift;
@@ -738,6 +740,7 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
         StringValue(map, "RepeatLastCommitTextKey", settings.repeatLastCommitTextKey);
     settings.soundFilename = StringValue(map, "SoundFilename", settings.soundFilename);
     settings.showNotifications = BoolValue(map, "ShouldUseNotifyWindow", settings.showNotifications);
+    settings.keyboardFollowsCursor = BoolValue(map, "KeyboardFormShouldFollowCursor", settings.keyboardFollowsCursor);
     settings.reverseLookupMethod = StringValue(map, "ReverseLookupMethod", "");
     settings.associatedPhrases =
         BoolValue(map, "EnableAssociatedPhrases", settings.associatedPhrases);

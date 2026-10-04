@@ -9,7 +9,7 @@
 
 namespace ChiaKey::WindowsTsf {
 
-enum class FrontendShortcut { None, NextInputMethod, ToggleSimplified, RepeatCommit };
+enum class FrontendShortcut { None, NextInputMethod, ToggleSimplified, RepeatCommit, PunctuationKeyboard };
 
 inline bool MatchesLetterShortcut(const KeyEvent& event, const std::string& letter) {
     return event.control && event.alt && !event.shift && letter.size() == 1 &&
@@ -20,6 +20,8 @@ inline bool MatchesLetterShortcut(const KeyEvent& event, const std::string& lett
 inline FrontendShortcut ShortcutFor(const KeyEvent& event, const FrontendSettings& settings) {
     if (event.virtualKey == VK_OEM_5 && event.control && !event.alt && !event.shift &&
         settings.toggleWithControlBackslash) return FrontendShortcut::NextInputMethod;
+    if (event.virtualKey == VK_OEM_COMMA && event.control && event.alt && !event.shift)
+        return FrontendShortcut::PunctuationKeyboard;
     // Same precedence as the legacy RPCService. Empty values disable the chords.
     if (MatchesLetterShortcut(event, settings.chineseConverterToggleKey))
         return FrontendShortcut::ToggleSimplified;

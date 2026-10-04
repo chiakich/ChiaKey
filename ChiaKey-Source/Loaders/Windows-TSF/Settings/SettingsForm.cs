@@ -183,6 +183,7 @@ namespace ChiaKey.Settings
         private ComboBox textColor;
         private CheckBox backgroundPattern;
         private CheckBox beep;
+        private CheckBox keyboardFollowsCursor;
         private RadioButton defaultSound;
         private RadioButton customSound;
         private TextBox soundPath;
@@ -880,6 +881,7 @@ namespace ChiaKey.Settings
             EnableCustomColor(textColor);
             backgroundPattern = Check(candidate, "使用背景花紋", 14, 120);
             GroupBox extra = Group(pane, "額外設定", 204, 162);
+            keyboardFollowsCursor = Check(pane, "標點螢幕鍵盤跟隨游標", 20, 374);
             beep = Check(extra, "錯誤時發出聲響", 14, 24);
             defaultSound = new RadioButton { Text = "使用系統預設提示聲", AutoSize = true,
                 Location = new Point(32, 51) };
@@ -1018,6 +1020,7 @@ namespace ChiaKey.Settings
             Select(repeatShortcut, new Choice[0], frontend.GetString("RepeatLastCommitTextKey", "g"));
             Select(reverseLookup, new Choice[0], frontend.GetString("ReverseLookupMethod", ""));
             notifications.Checked = frontend.GetBool("ShouldUseNotifyWindow", true);
+            keyboardFollowsCursor.Checked = frontend.GetBool("KeyboardFormShouldFollowCursor", false);
             associatedPhrases.Checked = frontend.GetBool("EnableAssociatedPhrases", false);
             simplifiedOutput.Checked = frontend.GetBool("SimplifiedOutput", false);
             LoadMenuInputMethods(frontend.GetStringArray("ModulesSuppressedFromUI"));
@@ -1094,6 +1097,7 @@ namespace ChiaKey.Settings
             frontend.SetString("RepeatLastCommitTextKey", Selected(repeatShortcut));
             frontend.SetString("ReverseLookupMethod", Selected(reverseLookup));
             frontend.SetBool("ShouldUseNotifyWindow", notifications.Checked);
+            frontend.SetBool("KeyboardFormShouldFollowCursor", keyboardFollowsCursor.Checked);
             frontend.SetString("SoundFilename", customSound.Checked && soundPath.Text.Length > 0 ? soundPath.Text : "Default");
             frontend.SetBool("EnableAssociatedPhrases", associatedPhrases.Checked);
             frontend.SetBool("SimplifiedOutput", simplifiedOutput.Checked);
