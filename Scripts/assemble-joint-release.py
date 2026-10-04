@@ -21,27 +21,27 @@ def assemble(directory, tag):
         raise ValueError("macOS package does not match the release version")
     checksums = "".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n"
                         for p in sorted([packages[0], windows]))
-    (root / "SHA256SUMS.txt").write_text(checksums)
+    (root / "SHA256SUMS.txt").write_text(checksums, encoding="utf-8")
     sections = []
     if "-beta." in version:
         sections.append("> 此版本為 Beta 預覽版。\n")
     for platform, label in [("macos", "macOS"), ("windows", "Windows（預覽版）")]:
-        raw = (root / f"notes-{platform}.md").read_text().strip()
+        raw = (root / f"notes-{platform}.md").read_text(encoding="utf-8").strip()
         summary_path = root / f"summary-{platform}.md"
-        summary = summary_path.read_text().strip() if summary_path.exists() else ""
+        summary = summary_path.read_text(encoding="utf-8").strip() if summary_path.exists() else ""
         notes = summary or raw or "- 此平台沒有額外的使用者可見變更。"
         if summary and raw:
             notes += f"\n\n<details>\n<summary>完整變更</summary>\n\n{raw}\n\n</details>"
         extra_path = root / f"extra-{platform}.md"
-        extra = extra_path.read_text().strip() if extra_path.exists() else ""
+        extra = extra_path.read_text(encoding="utf-8").strip() if extra_path.exists() else ""
         if extra:
             notes += "\n\n" + extra
         if platform == "windows":
             notes += "\n\nWindows 安裝檔目前尚未簽章；ARM64 尚未支援。同名重發的 win-v0.1.0-beta.1 測試預覽可直接追蹤 v* 更新；重發前的原建置需手動安裝一次新版。"
-        (root / f"release-notes-{platform}.md").write_text(notes + "\n")
+        (root / f"release-notes-{platform}.md").write_text(notes + "\n", encoding="utf-8")
         sections.append(f"## {label}\n\n{notes}\n")
     sections.append("macOS 請下載 `.pkg`；Windows 請下載 `ChiaKey-Windows-" + version + "-Setup.exe`。\n")
-    (root / "RELEASE_NOTES.md").write_text("\n".join(sections))
+    (root / "RELEASE_NOTES.md").write_text("\n".join(sections), encoding="utf-8")
 
 
 if __name__ == "__main__":

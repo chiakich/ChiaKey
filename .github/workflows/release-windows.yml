@@ -24,11 +24,11 @@ jobs:
   lexicon:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         if: inputs.built_sha != ''
         with:
           name: joint-source
@@ -58,7 +58,7 @@ jobs:
           fi
           cp "$found" lexicon/ChiaKeySource.db
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: lexicon
           path: lexicon/ChiaKeySource.db
@@ -68,11 +68,11 @@ jobs:
     runs-on: windows-latest
     needs: lexicon
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         if: inputs.built_sha != ''
         with:
           name: joint-source
@@ -88,7 +88,7 @@ jobs:
           git checkout --detach "$BUILT_SHA"
           test "$(git rev-parse HEAD)" = "$BUILT_SHA"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: lexicon
           path: lexicon
@@ -96,14 +96,17 @@ jobs:
       - name: Check the tag against the project version
         id: version
         shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+          BUILT_SHA: ${{ inputs.built_sha }}
         run: |
           $cmake = Get-Content ChiaKey-Source/Loaders/Windows-TSF/CMakeLists.txt -Raw
           if ($cmake -notmatch 'project\(ChiaKeyWindowsTsf VERSION (\d+\.\d+\.\d+)') {
             throw 'no project version in Loaders/Windows-TSF/CMakeLists.txt'
           }
           $version = $Matches[1]
-          $tag = '${{ inputs.tag }}'
-          if ('${{ inputs.built_sha }}' -eq '') {
+          $tag = $env:TAG
+          if ($env:BUILT_SHA -eq '') {
             if ($version -ne '0.1.0') { throw 'manual preview rebuild requires project version 0.1.0' }
             $tag = 'win-v0.1.0-beta.1'
           }
@@ -156,7 +159,7 @@ jobs:
           } | Out-File -Encoding ascii SHA256SUMS.txt
           Pop-Location
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-installer
           path: dist/*

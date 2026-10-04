@@ -62,7 +62,7 @@ jobs:
             exit 1
           fi
       - name: Checkout (full history for tags)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
@@ -350,20 +350,20 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           git bundle create source.bundle HEAD "${SOURCE_SHA}^"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: joint-source
           path: source.bundle
           retention-days: 7
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-installer
           path: artifacts/release/*.pkg
           if-no-files-found: error
           retention-days: 7
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: joint-notes
           path: release-notes/*.md
@@ -381,11 +381,11 @@ jobs:
     needs: [macos, windows]
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.macos.outputs.source_sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: joint-source
           path: source-snapshot
@@ -396,15 +396,15 @@ jobs:
           git fetch source-snapshot/source.bundle HEAD
           git checkout --detach "$BUILT_SHA"
           test "$(git rev-parse HEAD)" = "$BUILT_SHA"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: macos-installer
           path: joint-release
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: windows-installer
           path: joint-release
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: joint-notes
           path: joint-release
@@ -413,7 +413,7 @@ jobs:
           TAG: ${{ needs.macos.outputs.tag }}
         run: python3 Scripts/assemble-joint-release.py --directory joint-release --tag "$TAG"
       - name: Upload complete dry-run result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: joint-release
           path: joint-release/*

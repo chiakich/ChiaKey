@@ -43,6 +43,8 @@ namespace ChiaKey.Settings
         [DllImport(Library, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         public static extern int ChiaKeyPhrasesSetPhrase(IntPtr store, long rowid, string phrase);
         [DllImport(Library, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        public static extern int ChiaKeyPhrasesSetPhraseAndReading(IntPtr store, long rowid, string phrase, string reading);
+        [DllImport(Library, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         public static extern int ChiaKeyPhrasesSetReading(IntPtr store, long rowid, string reading);
         [DllImport(Library, CallingConvention = CallingConvention.StdCall)]
         public static extern int ChiaKeyPhrasesRemove(IntPtr store, long[] rowids, int count);
@@ -515,12 +517,26 @@ namespace ChiaKey.Settings
             PhraseRow row = CurrentRow();
             if (row == null)
                 return;
+            string phrase;
             using (TextDialog dialog = new TextDialog("編輯詞彙", "請輸入新的詞彙：", row.Phrase))
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Value.Length == 0 ||
                     dialog.Value == row.Phrase)
                     return;
-                PhraseStore.ChiaKeyPhrasesSetPhrase(store, row.Rowid, dialog.Value);
+                phrase = dialog.Value;
+            }
+            // Choose the reading before writing, so Cancel preserves the old
+            // phrase. One native update saves both fields or neither of them.
+            using (ReadingDialog dialog = new ReadingDialog(store, phrase, ""))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+                if (PhraseStore.ChiaKeyPhrasesSetPhraseAndReading(store, row.Rowid, phrase, dialog.Reading) == 0)
+                {
+                    MessageBox.Show(this, "無法更新「" + phrase + "」與讀音。", Text, MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error);
+                    return;
+                }
             }
             Reload();
         }
@@ -534,7 +550,12 @@ namespace ChiaKey.Settings
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Reading == row.Reading)
                     return;
-                PhraseStore.ChiaKeyPhrasesSetReading(store, row.Rowid, dialog.Reading);
+                if (PhraseStore.ChiaKeyPhrasesSetReading(store, row.Rowid, dialog.Reading) == 0)
+                {
+                    MessageBox.Show(this, "無法更新「" + row.Phrase + "」的讀音。", Text, MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error);
+                    return;
+                }
             }
             Reload();
         }

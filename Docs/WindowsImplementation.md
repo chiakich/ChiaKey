@@ -148,6 +148,25 @@ CMake 與詞庫，建置 x64／Win32 前端並執行 CTest。該指南也包含
 4. 在 Store app（AppContainer）與以系統管理員身分執行的記事本裡打字。這一項連
    RIME 都沒有看得到的處理，值得先確認。
 
+### 空白鍵與 Tab 診斷
+
+`OutputDebugString` 的 `ChiaKeyTsf` 日誌會記錄空白鍵／Tab 的 TSF 測試與引擎處理
+狀態：修飾鍵、中英文／全半形模式、TSF 與引擎是否組字、候選窗、是否吃鍵、組字與
+提交文字的 UTF-16 長度、游標與詞段長度；不記錄輸入文字內容。可用 Sysinternals
+DebugView 的 Win32 capture 觀察實際宿主與引擎是否一致。
+
+半形且沒有組字時，空白鍵應由宿主輸入 U+0020；中文全形模式則輸入 U+3000。
+組字時空白鍵仍由引擎完成注音／開啟選字。好打注音輸入「你好」（標準鍵盤
+`su3cl3`），按左方向鍵移到兩字之間，Tab 應切開詞段，再按一次還原；兩次都不
+提交文字、不插入 tab、不移走欄位焦點。沒有組字時 Tab 交回宿主。並檢查方向鍵、
+Enter、Esc、候選窗、Ctrl+Space 和 Shift+Space。
+
+Windows Server 的原生 x64／Win32 CTest 可驗證引擎與更新／詞彙編輯邏輯，但無法
+替代宿主的 TSF focus、候選窗定位與組字底線實測。RDP 中斷或桌面鎖定時也無法
+驗證 GUI；仍須在 Windows 11 的記事本、Edge、Store app 與提升權限宿主確認。
+從 Mac 遠端手測時，Mac 切到 ABC，Windows App 使用 Scancode，遠端 Windows
+啟用千秋，以免客戶端輸入法或 Unicode 傳送繞過 TSF 的實體按鍵路徑。
+
 ## 尚未解決
 
 - `Scripts/test-learning-store.sh` 裡的學習並發測試只在 macOS 跑，沒有進 Windows CI。

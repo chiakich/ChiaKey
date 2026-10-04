@@ -1,4 +1,5 @@
 #include "OutputFilter.h"
+#include "ChiaKeyEngine.h"
 
 #include <iterator>
 
@@ -6,6 +7,26 @@
 extern "C" unsigned short vxTC2SCTable[3059 * 2];
 
 namespace ChiaKey::WindowsTsf {
+
+std::wstring ToFullWidth(std::wstring text) {
+    for (wchar_t& character : text) {
+        if (character == L' ') {
+            character = L'　';
+        } else if (character >= L'!' && character <= L'~') {
+            character = static_cast<wchar_t>(character - L'!' + L'！');
+        }
+    }
+    return text;
+}
+
+bool ApplyFullWidthFallback(wchar_t character, EngineResult& result) {
+    if (result.handled || !result.compositionText.empty() || !result.committedText.empty() ||
+        character < L' ' || character > L'~') return false;
+    result = {};
+    result.handled = true;
+    result.committedText = ToFullWidth(std::wstring(1, character));
+    return true;
+}
 
 std::wstring FilterCommittedText(std::wstring text, bool simplified) {
     if (!simplified) return text;

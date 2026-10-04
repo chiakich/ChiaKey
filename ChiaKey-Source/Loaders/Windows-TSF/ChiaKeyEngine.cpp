@@ -938,9 +938,9 @@ bool EngineSession::hasComposition() const { return engine_ && engine_->isCompos
 bool EngineSession::wantsKey(const KeyEvent& event) const {
     if (!engine_) return false;
     const bool composing = hasComposition();
-    // Idle half-width spaces belong to the host, not the candidate engine.
+    // Idle editing keys belong to the host, even when ToUnicodeEx returned text.
     // TextService handles explicit full-width mode before asking wantsKey.
-    if (!composing && event.virtualKey == VK_SPACE) return false;
+    if (!composing && IsNavigationOrEditingKey(event.virtualKey)) return false;
     // Ctrl+1..9 marks the last N composed characters as a user phrase
     if (IsQuickUserPhraseKey(event)) return composing;
     // punctuation chords always type; Ctrl+0/1 is left to app zoom and tab keys when idle

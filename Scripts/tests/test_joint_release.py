@@ -85,13 +85,17 @@ class JointReleaseTests(unittest.TestCase):
             (root / 'ChiaKey-Windows-1.2.7-Setup.exe').write_bytes(b'MZwin')
             (root / 'extra-macos.md').write_text('- Manual Mac reminder')
             (root / 'summary-macos.md').write_text('- AI summary')
-            assembly.assemble(root, 'v1.2.7')
-            self.assertIn('Manual Mac reminder', (root / 'release-notes-macos.md').read_text())
-            self.assertNotIn('Manual Mac reminder', (root / 'release-notes-windows.md').read_text())
-            self.assertIn('macOS', (root / 'RELEASE_NOTES.md').read_text())
-            self.assertIn('Windows', (root / 'RELEASE_NOTES.md').read_text())
-            self.assertNotIn('- windows', (root / 'release-notes-macos.md').read_text())
-            self.assertEqual(len((root / 'SHA256SUMS.txt').read_text().splitlines()), 2)
+            env = dict(os.environ, PYTHONUTF8='0', PYTHONCOERCECLOCALE='0',
+                       PYTHONWARNDEFAULTENCODING='1', PYTHONWARNINGS='error::EncodingWarning')
+            subprocess.run([sys.executable, str(ROOT / 'Scripts/assemble-joint-release.py'),
+                            '--directory', str(root), '--tag', 'v1.2.7'], env=env, check=True)
+            self.assertIn('Manual Mac reminder', (root / 'release-notes-macos.md').read_text(encoding='utf-8'))
+            self.assertNotIn('Manual Mac reminder', (root / 'release-notes-windows.md').read_text(encoding='utf-8'))
+            self.assertIn('macOS', (root / 'RELEASE_NOTES.md').read_text(encoding='utf-8'))
+            self.assertIn('Windows', (root / 'RELEASE_NOTES.md').read_text(encoding='utf-8'))
+            self.assertIn('Windows 安裝檔', (root / 'release-notes-windows.md').read_text(encoding='utf-8'))
+            self.assertNotIn('- windows', (root / 'release-notes-macos.md').read_text(encoding='utf-8'))
+            self.assertEqual(len((root / 'SHA256SUMS.txt').read_text(encoding='utf-8').splitlines()), 2)
 
 
 if __name__ == '__main__':

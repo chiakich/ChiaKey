@@ -336,17 +336,6 @@ wchar_t PrintableCharacter(const KeyEvent& event) {
                : 0;
 }
 
-std::wstring ToFullWidth(std::wstring text) {
-    for (wchar_t& character : text) {
-        if (character == L' ') {
-            character = L'　';
-        } else if (character >= L'!' && character <= L'~') {
-            character = static_cast<wchar_t>(character - L'!' + L'！');
-        }
-    }
-    return text;
-}
-
 HRESULT MoveCaret(TfEditCookie editCookie, ITfContext* context, ITfRange* range) {
     TF_SELECTION selection{};
     selection.range = range;
@@ -937,6 +926,11 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
         return S_OK;
     }
     *eaten = isModeToggleKey(event) || isWidthToggleKey(event) || isPotentialKey(event);
+    if (event.virtualKey == VK_SPACE || event.virtualKey == VK_TAB) {
+        Trace("TestKey vk=%u ctrl=%d shift=%d alt=%d chinese=%d full=%d composition=%d engineComposition=%d candidates=%d eaten=%d",
+              event.virtualKey, event.control, event.shift, event.alt, chineseMode_, fullWidthMode_,
+              composition_.Get() != nullptr, engine_ && engine_->hasComposition(), candidateActive_, *eaten);
+    }
     return S_OK;
 }
 
@@ -1077,10 +1071,18 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         }
     }
     *handled = result.handled;
+    if (event.virtualKey == VK_SPACE || event.virtualKey == VK_TAB) {
+        Trace("ProcessKey vk=%u core=%d handled=%d compositionUnits=%zu committedUnits=%zu cursor=%ld segment=%ld candidates=%d",
+              event.virtualKey, MakeCoreKey(event).keyCode, result.handled, result.compositionText.size(),
+              result.committedText.size(), result.compositionCursor, result.focusedSegment.length,
+              result.candidatesVisible);
+    }
     if (!result.handled) {
         // a filter can close its panel while passing the key on to the host
         updateCandidateWindow(editCookie, context, result);
-        return S_OK;
+        if (!chineseMode_ || !isFullWidthCharacterKey(event) ||
+            !ApplyFullWidthFallback(PrintableCharacter(event), result)) return S_OK;
+        *handled = true;
     }
     if (result.beep && CurrentFrontendSettings().playSoundOnTypingError) MessageBeep(MB_OK);
     const HRESULT status = updateComposition(editCookie, context, result);

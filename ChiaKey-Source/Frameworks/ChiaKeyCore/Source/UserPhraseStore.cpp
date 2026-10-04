@@ -656,15 +656,22 @@ bool UserPhraseStore::add(const std::string& phrase, const std::string& reading,
 }
 
 bool UserPhraseStore::setPhrase(long long rowid, const std::string& phrase) {
+  return setPhraseAndReading(rowid, phrase, impl_->defaultReading(phrase));
+}
+
+bool UserPhraseStore::setPhraseAndReading(long long rowid, const std::string& phrase,
+                                         const std::string& reading) {
   if (phrase.empty()) return false;
+  const std::string qstring = QstringFromComposed(reading);
+  if (qstring.empty() || qstring.size() / 2 != CodePoints(phrase).size()) return false;
   Statement statement(impl_->user,
                       "UPDATE user_unigrams SET qstring = ?, current = ? WHERE rowid = ?");
   if (!statement) return false;
-  statement.bind(1, QstringFromComposed(impl_->defaultReading(phrase)));
+  statement.bind(1, qstring);
   statement.bind(2, phrase);
   statement.bind(3, rowid);
-  const bool ok = statement.step() == SQLITE_DONE;
-  impl_->markDirty();
+  const bool ok = statement.step() == SQLITE_DONE && sqlite3_changes(impl_->user) == 1;
+  if (ok) impl_->markDirty();
   return ok;
 }
 

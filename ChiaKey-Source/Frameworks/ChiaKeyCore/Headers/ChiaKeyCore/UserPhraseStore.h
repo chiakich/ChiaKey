@@ -58,6 +58,8 @@ class UserPhraseStore {
            UserPhrase* added = nullptr);
   // the reading is derived again for the new text
   bool setPhrase(long long rowid, const std::string& phrase);
+  bool setPhraseAndReading(long long rowid, const std::string& phrase,
+                           const std::string& reading);
   bool setReading(long long rowid, const std::string& reading);
   bool remove(const std::vector<long long>& rowids);
 

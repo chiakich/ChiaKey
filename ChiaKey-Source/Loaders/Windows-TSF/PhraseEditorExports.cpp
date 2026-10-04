@@ -95,6 +95,11 @@ int __stdcall ChiaKeyPhrasesSetPhrase(void* handle, long long rowid, const wchar
     return handle && Store(handle)->setPhrase(rowid, ToUtf8(phrase)) ? 1 : 0;
 }
 
+int __stdcall ChiaKeyPhrasesSetPhraseAndReading(void* handle, long long rowid,
+                                               const wchar_t* phrase, const wchar_t* reading) {
+    return handle && Store(handle)->setPhraseAndReading(rowid, ToUtf8(phrase), ToUtf8(reading)) ? 1 : 0;
+}
+
 int __stdcall ChiaKeyPhrasesSetReading(void* handle, long long rowid, const wchar_t* reading) {
     return handle && Store(handle)->setReading(rowid, ToUtf8(reading)) ? 1 : 0;
 }

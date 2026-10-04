@@ -812,6 +812,22 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
       return Fail("expected 你好 to read ㄋㄧˇ,ㄏㄠˇ, got " + derived.reading);
     }
     store->remove({derived.rowid});
+    ChiaKey::UserPhrase edited;
+    if (!store->add("行", "ㄒㄧㄥˊ", &edited) ||
+        !store->setPhraseAndReading(edited.rowid, "重行", "ㄔㄨㄥˊ,ㄏㄤˊ")) {
+      return Fail("could not edit a phrase together with its selected readings");
+    }
+    if (store->setPhraseAndReading(edited.rowid, "三字詞", "ㄙㄢ") ||
+        store->setPhraseAndReading(-1, "重行", "ㄓㄨㄥˋ,ㄒㄧㄥˊ") ||
+        store->setPhrase(-1, "你好")) {
+      return Fail("phrase editing accepted a missing row or a reading mismatch");
+    }
+    const auto editedRows = store->phrases("重行", ChiaKey::UserPhraseOrder::Insertion, true, 0, 1);
+    if (editedRows.size() != 1 || editedRows.front().reading != "ㄔㄨㄥˊ,ㄏㄤˊ" ||
+        store->contains("三字詞")) {
+      return Fail("failed phrase editing changed the phrase or its selected reading");
+    }
+    store->remove({edited.rowid});
     ChiaKey::UserPhrase added;
     if (!store->add("測詞", "ㄘㄜˋ,ㄘˊ", &added) || added.rowid <= 0 ||
         added.reading != "ㄘㄜˋ,ㄘˊ") {

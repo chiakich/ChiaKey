@@ -84,6 +84,25 @@ void TestLayout() {
 }
 
 void TestOutputConversion() {
+    EngineResult direct;
+    Check(ApplyFullWidthFallback(L' ', direct) && direct.handled && direct.committedText == L"　",
+          "unhandled idle space becomes U+3000 in full-width mode");
+    direct = {};
+    Check(ApplyFullWidthFallback(L'A', direct) && direct.committedText == L"Ａ",
+          "unhandled ASCII has a full-width fallback");
+    direct = {};
+    Check(!ApplyFullWidthFallback(L'\t', direct) && !ApplyFullWidthFallback(L'\r', direct) &&
+              !direct.handled && direct.committedText.empty(),
+          "editing keys cannot become direct full-width text");
+    direct.compositionText = L"你好";
+    Check(!ApplyFullWidthFallback(L' ', direct) && direct.compositionText == L"你好" &&
+              direct.committedText.empty(),
+          "fallback preserves a live composition");
+    direct = {};
+    direct.handled = true;
+    direct.committedText = L"你好";
+    Check(!ApplyFullWidthFallback(L' ', direct) && direct.committedText == L"你好",
+          "fallback preserves engine selection and commits");
     const std::wstring traditional = L"千秋輸入法，臺灣測試繁體龍門";
     Check(FilterCommittedText(traditional, true) == L"千秋输入法，台湾测试繁体龙门",
           "simplified output uses the Mac conversion table");
@@ -179,11 +198,24 @@ void TestSession() {
 
     Check(!session->wantsKey(Key(VK_SPACE)), "idle space stays with the host");
     Check(!session->wantsKey(Key(VK_TAB)), "idle Tab stays with the host");
+    for (const auto& editing : std::vector<std::pair<UINT, std::wstring>>{
+             {VK_TAB, L"\t"}, {VK_RETURN, L"\r"}, {VK_BACK, L"\b"}, {VK_ESCAPE, L"\x1b"}}) {
+        KeyEvent event = Key(editing.first);
+        event.text = editing.second;
+        Check(!session->wantsKey(event), "idle editing text from ToUnicodeEx stays with the host");
+        Check(MakeCoreKey(event).receivedString.empty(), "editing keys retain their core identity");
+    }
     Check(!session->wantsKey(Key('2', false, true)), "Ctrl+2 without a composition stays with the host");
     Check(session->wantsKey(Key(VK_OEM_COMMA, false, true)),
           "Ctrl+, types punctuation without a composition");
     Check(!session->wantsKey(Key('0', false, true)), "Ctrl+0 without a composition stays with the host");
     Check(!session->wantsKey(Key('1', false, true)), "Ctrl+1 without a composition stays with the host");
+    Check(Type(*session, "su"), "pre-space reading keys are handled");
+    Check(session->wantsKey(Key(VK_SPACE)), "space while reading goes to the engine");
+    EngineResult reading = session->handleKey(Key(VK_SPACE));
+    Check(reading.handled && reading.committedText.empty() && !reading.compositionText.empty(),
+          "space finishes a reading without inserting host whitespace");
+    session->reset();
     Check(Type(*session, "su3cl3"), "你好 keys are handled");
     EngineResult result = session->handleKey(Key(VK_RIGHT));
     Check(result.compositionText == L"你好", "composes 你好");

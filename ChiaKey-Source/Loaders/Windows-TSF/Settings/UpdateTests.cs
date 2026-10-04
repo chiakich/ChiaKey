@@ -50,6 +50,7 @@ namespace ChiaKey.Settings
 
         private static void Run(string root, string databasePath)
         {
+            TestNetworkRetry(root);
             foreach (string bad in new[] { "../escape", "..", "a\\b", "CON.db", "version.", "a:b", "a\nsecond" })
                 Reject(delegate { UpdateService.Component(bad); }, "unsafe component accepted: " + bad);
             Check(UpdateService.Component("2026.10.2-abc") == "2026.10.2-abc", "safe component");
@@ -173,6 +174,31 @@ namespace ChiaKey.Settings
                 "new installer download prunes old download directories");
             File.AppendAllText(installer, "tamper");
             Reject(delegate { UpdateService.InstallApp(installer, app.Sha256); }, "modified cached installer executed");
+            File.WriteAllBytes(installer, appBytes);
+            string replacement = Path.Combine(root, "replacement.exe");
+            File.WriteAllBytes(replacement, Encoding.ASCII.GetBytes("MZreplacement fixture"));
+            bool launched = false;
+            UpdateService.InstallApp(installer, appHash, delegate(System.Diagnostics.ProcessStartInfo start)
+            {
+                launched = true;
+                Check(start.Verb == "runas" && start.UseShellExecute && start.FileName == installer,
+                    "verified installer is handed to elevation");
+                try { File.WriteAllBytes(installer, appBytes); throw new Exception("installer write allowed during launch"); }
+                catch (IOException) { ++checks; }
+                try { File.Replace(replacement, installer, null); throw new Exception("installer replacement allowed during launch"); }
+                catch (IOException) { ++checks; }
+            });
+            Check(launched && UpdateService.Hash(File.ReadAllBytes(installer)) == appHash,
+                "locked handoff preserves verified bytes without launching a real installer");
+            try
+            {
+                UpdateService.InstallApp(installer, appHash, delegate { throw new System.ComponentModel.Win32Exception(1223); });
+                throw new Exception("fixture cancellation was swallowed");
+            }
+            catch (System.ComponentModel.Win32Exception) { ++checks; }
+            File.WriteAllBytes(installer, appBytes);
+            Check(UpdateService.Hash(File.ReadAllBytes(installer)) == appHash,
+                "cancelled elevation releases the installer handle");
             app.Sha256 = new string('0', 64);
             Reject(delegate { service.DownloadApp(app); }, "app checksum ignored");
 
@@ -260,6 +286,54 @@ namespace ChiaKey.Settings
             service.AutomaticPass(); Check(autoFetches == 1, "new release waits three days");
             service.AutomaticPass(); Check(autoFetches == 1, "automatic checks throttled for one day");
             Check(File.ReadAllText(Path.Combine(service.Root, "status.txt")).Contains("三天"), "age gate status persisted");
+        }
+
+        private static void TestNetworkRetry(string root)
+        {
+            // Cover each channel failing alone and both failing during login.
+            for (int failures = 1; failures <= 3; ++failures)
+            {
+                bool failLexicon = (failures & 1) != 0, failApp = (failures & 2) != 0;
+                int requests = 0;
+                var service = new UpdateService(Path.Combine(root, "network-retry-" + failures),
+                    Path.Combine(root, "ChiaKeySettings.exe"), new Version("0.1.0"));
+                string manifest = Manifest("9999.1.1", new string('a', 64), DateTime.UtcNow.ToString("o"));
+                service.Fetch = delegate(string url, long limit)
+                {
+                    ++requests;
+                    if (url.EndsWith("lexicon-manifest.json"))
+                    {
+                        if (failLexicon) throw new WebException("fixture lexicon offline");
+                        return Encoding.UTF8.GetBytes(manifest);
+                    }
+                    if (url == UpdateService.AppCdn + "appcast.json") throw new WebException("fixture CDN offline");
+                    if (url.StartsWith("https://api.github.com/"))
+                    {
+                        if (failApp) throw new WebException("fixture app offline");
+                        return Encoding.UTF8.GetBytes("[]");
+                    }
+                    throw new Exception("Unexpected retry URL: " + url);
+                };
+                service.AutomaticPass();
+                string stamp = Path.Combine(service.Root, "last-check.txt");
+                Check(!File.Exists(stamp), "network failure does not consume the daily check");
+                Check(File.ReadAllText(Path.Combine(service.Root, "status.txt")).Contains("失敗"),
+                    "network failure remains visible in status");
+                string expired = DateTime.UtcNow.AddDays(-2).ToString("o");
+                File.WriteAllText(stamp, expired);
+                int before = requests;
+                service.AutomaticPass();
+                Check(requests > before && File.ReadAllText(stamp) == expired,
+                    "failed retry preserves an expired daily timestamp");
+                failLexicon = false; failApp = false;
+                before = requests;
+                service.AutomaticPass();
+                Check(requests > before && File.ReadAllText(stamp) != expired,
+                    "next tick retries and records successful checks, including CDN fallback");
+                before = requests;
+                service.AutomaticPass();
+                Check(requests == before, "successful retry restores daily throttling");
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise platform filtering against a temporary Git history."""
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -33,7 +34,7 @@ class ReleaseChangelogTests(unittest.TestCase):
 
     def notes(self, *args):
         return subprocess.check_output(
-            ["python3", str(ROOT / "Scripts/generate-release-notes.py"), "--platform", "macos", *args],
+            [sys.executable, str(ROOT / "Scripts/generate-release-notes.py"), "--platform", "macos", *args],
             cwd=self.repo, text=True,
         )
 
@@ -55,7 +56,7 @@ class ReleaseChangelogTests(unittest.TestCase):
                         'build both', 'explain updates', 'internals']:
             self.assertNotIn(omitted, notes)
         windows = subprocess.check_output(
-            ['python3', str(ROOT / 'Scripts/generate-release-notes.py'), '--platform', 'windows', '--since', 'v1.2.6'],
+            [sys.executable, str(ROOT / 'Scripts/generate-release-notes.py'), '--platform', 'windows', '--since', 'v1.2.6'],
             cwd=self.repo, text=True)
         self.assertIn('Windows update', windows)
         self.assertIn('Shared fix', windows)
@@ -70,7 +71,7 @@ class ReleaseChangelogTests(unittest.TestCase):
         self.commit('fix: Unknown path fallback', 'unknown.txt')
         for platform in ['macos', 'windows']:
             notes = subprocess.check_output(
-                ['python3', str(ROOT / 'Scripts/generate-release-notes.py'), '--platform', platform, '--since', 'v1.2.6'],
+                [sys.executable, str(ROOT / 'Scripts/generate-release-notes.py'), '--platform', platform, '--since', 'v1.2.6'],
                 cwd=self.repo, text=True)
             self.assertIn('Windows and macOS shared input', notes)
             self.assertIn('Unknown path fallback', notes)
@@ -95,7 +96,7 @@ class ReleaseChangelogTests(unittest.TestCase):
         self.commit("fix(mac): future work", "mac.m")
         self.git("tag", "v99.0.0")
         self.git("checkout", "-q", original)
-        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
         selection = next(line.strip() for line in workflow.splitlines() if line.strip().startswith('latest="'))
         latest = subprocess.check_output(
             ["bash", "-c", selection + '\n printf "%s" "$latest"'],

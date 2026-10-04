@@ -508,11 +508,20 @@ namespace ChiaKey.Settings
             return path;
         }
 
-        internal static void InstallApp(string path, string expectedHash)
+        internal static void InstallApp(string path, string expectedHash, Action<ProcessStartInfo> launch = null)
         {
-            // Recheck immediately before elevation, including cached downloads.
-            if (Hash(File.ReadAllBytes(path)) != expectedHash) throw new InvalidDataException("安裝檔已改變，請重新下載。");
-            Process.Start(new ProcessStartInfo(path, "/SP- /NORESTART") { UseShellExecute = true, Verb = "runas" });
+            // Keep the verified file open without write/delete sharing through
+            // UAC and process creation, preventing replacement after hashing.
+            using (FileStream installer = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                string actualHash;
+                using (SHA256 sha = SHA256.Create())
+                    actualHash = BitConverter.ToString(sha.ComputeHash(installer)).Replace("-", "").ToLowerInvariant();
+                if (actualHash != expectedHash) throw new InvalidDataException("安裝檔已改變，請重新下載。");
+                var start = new ProcessStartInfo(path, "/SP- /NORESTART") { UseShellExecute = true, Verb = "runas" };
+                if (launch != null) launch(start);
+                else Process.Start(start);
+            }
         }
 
         internal static void StartBackgroundUpdater(string executable)
@@ -561,7 +570,7 @@ namespace ChiaKey.Settings
                 string stamp = Path.Combine(Root, "last-check.txt"); DateTime checkedAt;
                 if (File.Exists(stamp) && DateTime.TryParse(File.ReadAllText(stamp), CultureInfo.InvariantCulture,
                     DateTimeStyles.RoundtripKind, out checkedAt) && DateTime.UtcNow - checkedAt < TimeSpan.FromDays(1)) return;
-                AtomicText(stamp, DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
+                bool networkFailed = false;
                 List<string> results = new List<string>();
                 if (lexicon)
                 {
@@ -575,6 +584,7 @@ namespace ChiaKey.Settings
                         }
                         else results.Add(offer == null ? "詞庫已是最新" : "詞庫等待發布滿三天");
                     }
+                    catch (WebException error) { networkFailed = true; results.Add("詞庫更新失敗：" + error.Message); }
                     catch (Exception error) { results.Add("詞庫更新失敗：" + error.Message); }
                 }
                 if (app)
@@ -590,8 +600,12 @@ namespace ChiaKey.Settings
                         }
                         else results.Add(offer == null ? "本體已是最新" : "本體等待發布滿三天");
                     }
+                    catch (WebException error) { networkFailed = true; results.Add("本體更新失敗：" + error.Message); }
                     catch (Exception error) { results.Add("本體更新失敗：" + error.Message); }
                 }
+                // A failed connection must not consume the daily check, even if
+                // the other update channel succeeded. The next tick can retry.
+                if (!networkFailed) AtomicText(stamp, DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
                 Status(string.Join("；", results.ToArray()));
             }
         }
