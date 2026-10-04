@@ -1336,6 +1336,11 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
 
 void TextService::recordCommittedText(const std::wstring& text) {
     if (text.empty() || secureMode_) return;
+    const auto settingsApp = SettingsAppPath();
+    const auto separator = settingsApp.find_last_of(L"\\/");
+    if (separator != std::wstring::npos &&
+        !EnsureHistoryHost(settingsApp.substr(0, separator) + L"\\ChiaKeyStateHost.exe"))
+        Trace("History: session host unavailable; retaining TIP-local mapping");
     commitHistory_.record(text);
     if (CurrentFrontendSettings().wordCountEnabled &&
         !AddWordCount(DesktopRuntimePaths().writablePath, text, LocalDayNumber()))

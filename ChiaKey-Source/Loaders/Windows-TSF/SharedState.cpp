@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 namespace ChiaKey::WindowsTsf {
 namespace {
@@ -27,6 +28,24 @@ std::wstring UserSid() {
     return result;
 }
 
+std::wstring HistoryName(const std::wstring& scope) {
+    const auto sid = UserSid();
+    return sid.empty() ? std::wstring() : L"Local\\ChiaKey.CommitHistory." + sid + L".v3" + scope;
+}
+struct Security {
+    PSECURITY_DESCRIPTOR descriptor = nullptr;
+    SECURITY_ATTRIBUTES attributes{};
+    Security() {
+        const auto sid = UserSid();
+        if (sid.empty()) return;
+        const std::wstring sddl = L"D:P(A;;GA;;;" + sid + L")(A;;GA;;;SY)S:(ML;;NW;;;ME)";
+        if (ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(), SDDL_REVISION_1,
+                                                                &descriptor, nullptr))
+            attributes = {sizeof(attributes), descriptor, FALSE};
+    }
+    ~Security() { if (descriptor) LocalFree(descriptor); }
+};
+
 struct Database {
     sqlite3* db = nullptr;
     explicit Database(const std::string& directory) {
@@ -46,6 +65,74 @@ struct Database {
     ~Database() { if (db) sqlite3_close(db); }
 };
 bool Exec(sqlite3* db, const char* sql) { return sqlite3_exec(db, sql, nullptr, nullptr, nullptr) == SQLITE_OK; }
+}
+
+bool EnsureHistoryHost(const std::wstring& executable, const std::wstring& scope, DWORD waitMs) {
+    const auto prefix = HistoryName(scope);
+    if (prefix.empty()) return false;
+    HANDLE ready = OpenEventW(SYNCHRONIZE, FALSE, (prefix + L".HostReady").c_str());
+    if (ready) {
+        const bool running = WaitForSingleObject(ready, 0) == WAIT_OBJECT_0;
+        CloseHandle(ready);
+        if (running) return true;
+    }
+    // A blocked process launch must not be retried for every committed character.
+    static std::mutex launchMutex;
+    static ULONGLONG lastAttempt = 0;
+    std::lock_guard<std::mutex> lock(launchMutex);
+    const auto now = GetTickCount64();
+    if (scope.empty() && lastAttempt && now - lastAttempt < 10000) return false;
+    lastAttempt = now;
+    Security security;
+    if (!security.descriptor) return false;
+    ready = CreateEventW(&security.attributes, TRUE, FALSE, (prefix + L".HostReady").c_str());
+    if (!ready) return false;
+    std::wstring command = L"\"" + executable + L"\"";
+    if (!scope.empty()) command += L" /test " + scope;
+    STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION process{};
+    const BOOL launched = CreateProcessW(executable.c_str(), command.data(), nullptr, nullptr, FALSE,
+                                        CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process);
+    bool running = false;
+    if (launched) {
+        CloseHandle(process.hThread);
+        running = WaitForSingleObject(ready, waitMs) == WAIT_OBJECT_0;
+        CloseHandle(process.hProcess);
+    }
+    CloseHandle(ready);
+    return running;
+}
+
+int RunHistoryHost(const std::wstring& scope) {
+    const auto prefix = HistoryName(scope);
+    Security security;
+    if (prefix.empty() || !security.descriptor) return 1;
+    HANDLE instance = CreateMutexW(&security.attributes, TRUE, (prefix + L".HostInstance").c_str());
+    if (!instance) return 1;
+    if (GetLastError() == ERROR_ALREADY_EXISTS) { CloseHandle(instance); return 0; }
+    SharedCommitHistory history(scope);
+    HANDLE ready = CreateEventW(&security.attributes, TRUE, FALSE, (prefix + L".HostReady").c_str());
+    HANDLE stop = CreateEventW(&security.attributes, TRUE, FALSE, (prefix + L".HostStop").c_str());
+    int result = 1;
+    if (history.available() && ready && stop) {
+        ResetEvent(stop);
+        SetEvent(ready);
+        result = WaitForSingleObject(stop, scope.empty() ? INFINITE : 30000) == WAIT_OBJECT_0 ? 0 : 1;
+        ResetEvent(ready);
+    }
+    if (ready) CloseHandle(ready);
+    if (stop) CloseHandle(stop);
+    ReleaseMutex(instance); CloseHandle(instance);
+    return result;
+}
+
+bool StopHistoryHost(const std::wstring& scope) {
+    const auto prefix = HistoryName(scope);
+    if (prefix.empty()) return false;
+    HANDLE stop = OpenEventW(EVENT_MODIFY_STATE, FALSE, (prefix + L".HostStop").c_str());
+    if (!stop) return false;
+    const bool ok = SetEvent(stop) != FALSE;
+    CloseHandle(stop);
+    return ok;
 }
 
 SharedCommitHistory::SharedCommitHistory(const std::wstring& testScope) {

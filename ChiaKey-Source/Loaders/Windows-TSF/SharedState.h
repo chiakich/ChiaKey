@@ -17,6 +17,7 @@ public:
     std::wstring replay(bool composing) const;
     void setStatusOwner(HWND window);
     HWND statusOwner() const;
+    bool available() const { return memory_ && mutex_; }
 private:
     HANDLE mutex_ = nullptr;
     HANDLE mapping_ = nullptr;
@@ -24,6 +25,12 @@ private:
     std::wstring fallback_;
     DWORD fallbackGeneration_ = 0;
 };
+
+// A small session process keeps the mapping alive after all typing hosts close.
+// Scope is empty in production; test fixtures use isolated object names.
+bool EnsureHistoryHost(const std::wstring& executable, const std::wstring& scope = L"", DWORD waitMs = 50);
+int RunHistoryHost(const std::wstring& scope = L"");
+bool StopHistoryHost(const std::wstring& scope = L"");
 
 struct WordCounts { int64_t today = 0, week = 0, total = 0; };
 size_t CommittedCodePoints(const std::wstring& text);

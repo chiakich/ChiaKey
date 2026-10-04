@@ -407,6 +407,41 @@ void WriteUserTable(const std::string& writableDir) {
 
 }  // namespace
 
+void TestHistoryHost() {
+    const std::wstring scope = L".Test.Host." + std::to_wstring(GetCurrentProcessId());
+    wchar_t executable[MAX_PATH]{};
+    GetModuleFileNameW(nullptr, executable, MAX_PATH);
+    const std::wstring module(executable);
+    const auto separator = module.find_last_of(L"\\/");
+    const auto host = module.substr(0, separator) + L"\\ChiaKeyStateHost.exe";
+    Check(!EnsureHistoryHost(host + L".missing", scope, 20), "missing history helper fails without replacing memory");
+    {
+        SharedCommitHistory writer(scope);
+        writer.record(L"原宿主已關閉😀");
+        Check(EnsureHistoryHost(host, scope, 10000), "real session host signals readiness");
+        Check(EnsureHistoryHost(host, scope, 1000), "second launch reuses the existing session host");
+    }
+    // There are now no TIP instances holding the mapping; only the real helper remains.
+    {
+        SharedCommitHistory later(scope);
+        Check(later.replay(false) == L"原宿主已關閉😀", "later typing host retains text after all original hosts exit");
+        later.record(L"後來的宿主");
+    }
+    {
+        SharedCommitHistory third(scope);
+        Check(third.replay(false) == L"後來的宿主", "session host preserves a second mapping lifetime");
+    }
+    Check(StopHistoryHost(scope), "history helper accepts a session-scoped stop signal");
+    // Wait for the helper to release its mapping, without leaving a fixture resident.
+    bool gone = false;
+    for (int attempt = 0; attempt < 200; ++attempt) {
+        SharedCommitHistory afterStop(scope);
+        if (afterStop.replay(false).empty()) { gone = true; break; }
+        Sleep(10);
+    }
+    Check(gone, "stopped helper releases session history rather than persisting plaintext");
+}
+
 void TestSharedState(const std::string& writable) {
     const std::wstring scope = L".Test." + std::to_wstring(GetCurrentProcessId());
     SharedCommitHistory first(scope), second(scope);
@@ -682,6 +717,7 @@ int main(int argc, char* argv[]) {
               methods[3].second == L"簡易",
           "the input methods are listed in the mac menu's order and names");
     TestSharedState(argv[2]);
+    TestHistoryHost();
     Check(UiText(L"傳統注音", "en") == L"Traditional Phonetic" &&
           UiText(L"詞彙編輯器…", "zh-CN") == L"词汇编辑器…", "native menu labels follow the selected UI language");
     TestLayout();

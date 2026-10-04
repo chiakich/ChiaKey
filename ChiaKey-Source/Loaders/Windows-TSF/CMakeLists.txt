@@ -34,6 +34,10 @@ add_library(chiakey_tsf_engine STATIC
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32 user32 winmm)
 
+add_executable(ChiaKeyStateHost WIN32 StateHost.cpp)
+target_compile_options(ChiaKeyStateHost PRIVATE /W4 /permissive-)
+target_link_libraries(ChiaKeyStateHost PRIVATE chiakey_tsf_engine)
+
 # TIP icons use Icons/*.svg; the settings/installer icon uses the Mac app artwork.
 set(CHIAKEY_ICON_DIR "${CMAKE_CURRENT_BINARY_DIR}/icons")
 set(CHIAKEY_ICON_RESOURCES
@@ -233,6 +237,7 @@ if(BUILD_TESTING AND EXISTS "${CHIAKEY_LEXICON_DATABASE}")
     add_executable(chiakey_tsf_engine_test EngineTest.cpp)
     target_compile_options(chiakey_tsf_engine_test PRIVATE /W4 /permissive-)
     target_link_libraries(chiakey_tsf_engine_test PRIVATE chiakey_tsf_engine)
+    add_dependencies(chiakey_tsf_engine_test ChiaKeyStateHost)
 
     add_test(NAME chiakey_tsf_engine_reset
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_CURRENT_BINARY_DIR}/tsf-writable")

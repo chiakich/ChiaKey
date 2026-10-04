@@ -101,7 +101,7 @@ ShouldUseTransparentStatusBar 使用 50% alpha；ShouldUseMiniMode 與 ShouldUse
 可供同一使用者的提升／一般宿主使用；x64 與 Win32 使用固定 layout，不落地文字，也不經系統剪貼簿。
 只有實際成功提交才更新歷史；組字轉換的待提交內容延後至 EndComposition 成功。
 共享最多 65,536 UTF-16 units，超長內容僅原 instance 能重送，其他 instance 不重送截斷／舊文字。
-當最後一個持有 mapping 的 TIP 退出時，歷史消失；尚不具原版常駐 RPC server 的持續生命週期。
+第七批由 ChiaKeyStateHost 持有工作階段 mapping，讓所有 TIP 退出後的新宿主仍可重送；啟動被 sandbox 阻擋時回退至原有 TIP 持有生命週期。
 
 字數統計沿用原版按 Unicode code point 計數（包括標點與英文），由 TSF 成功提交時更新，
 不是在核心尚未成功送進宿主時先加總。使用 WindowsWordCount.db 的 SQLite transaction，
@@ -172,3 +172,17 @@ Evergreen Runtime 為另外維護的系統元件；缺少或初始化失敗仍�
 
 兩架構完整 CTest 各 5/5（37.95／30.41 秒）。新增滑入／等待／淡出邊界、
 負座標／小 work area 堆疊定位與三語通知 fixture；真正宿主 caret failure、動畫與焦點需 GUI 驗證。
+
+## 第七批重送歷史的工作階段生命週期
+
+原版 RPC server 在使用者登入期間保留上次提交。新 ChiaKeyStateHost.exe 為無視窗原生程序，
+只持有 SID／工作階段隔離的共享記憶體與同步事件，不載入詞庫、初始化輸入引擎或寫入文字檔。
+首次成功提交時嘗試啟動；同一工作階段只允許一個，x64／Win32 使用同一固定 mapping layout。
+一般 TIP 最多等待 readiness 50ms，啟動失敗後十秒內不重複建立程序；仍保留 TIP 內的共享 mapping。
+所有原打字宿主關閉後，新的宿主可讀到最後內容；登出或 /stop 終止後清除記憶體。
+安裝包提供對應架構 helper，解除安裝嘗試以 /stop 關閉目前使用者的 helper。
+跨使用者解除安裝、AppContainer／低完整性啟動、提升／一般宿主切換與登入登出仍需 Windows 11 實機。
+
+新增 fixture 真的啟動 helper、等待 readiness、關閉所有原 mapping 持有者，再從兩個新生命週期
+讀取／更新，最後停止 helper 並確認 mapping 消失；缺少 executable 的失敗也有覆蓋。
+兩架構完整 CTest 各 5/5（35.01／34.35 秒），測試 helper 都已退出，沒有留下常駐測試程序。

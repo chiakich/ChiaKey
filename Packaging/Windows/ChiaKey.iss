@@ -73,6 +73,8 @@ Source: "{#X64Dir}\WebView2Loader.dll"; DestDir: "{app}\{#Version}"; Flags: igno
 Source: "{#X86Dir}\Microsoft.Web.WebView2.Core.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
 Source: "{#X86Dir}\Microsoft.Web.WebView2.WinForms.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
 Source: "{#X86Dir}\WebView2Loader.dll"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
+Source: "{#X64Dir}\ChiaKeyStateHost.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
+Source: "{#X86Dir}\ChiaKeyStateHost.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
 Source: "{#X64Dir}\WebView2-LICENSE.txt"; DestDir: "{app}\{#Version}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}\{#Version}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
@@ -86,6 +88,9 @@ Name: "{autoprograms}\千秋輸入法\千秋輸入法字典"; Filename: "{app}\{
 ; Preserve update preferences and refresh the per-user startup path after an upgrade. The helper
 ; must run as the original desktop user, never with the installer's elevated token.
 Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/update-register"; Flags: runasoriginaluser nowait runhidden
+
+[UninstallRun]
+Filename: "{app}\{#Version}\ChiaKeyStateHost.exe"; Parameters: "/stop"; Flags: runhidden waituntilterminated skipifdoesntexist
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "ChiaKeyUpdates"; Flags: uninsdeletevalue
