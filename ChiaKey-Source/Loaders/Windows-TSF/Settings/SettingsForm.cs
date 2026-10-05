@@ -288,7 +288,7 @@ namespace ChiaKey.Settings
         {
             if (name.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
             {
-                using (Icon icon = PhraseEditorForm.LoadIcon(name)) return icon.ToBitmap();
+                return PhraseEditorForm.LoadIconImage(name);
             }
             using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
             {
@@ -878,7 +878,7 @@ namespace ChiaKey.Settings
         {
             Panel pane = Page("關於千秋輸入法");
             GroupBox about = Group(pane, Ui.Text("關於千秋輸入法"));
-            PictureBox logo = new PictureBox { Image = Icon.ToBitmap(), SizeMode = PictureBoxSizeMode.Zoom,
+            PictureBox logo = new PictureBox { Image = LoadIcon("app.ico"), SizeMode = PictureBoxSizeMode.Zoom,
                 Size = new Size(72, 72), MaximumSize = new Size(72, 72) };
             Label description = PreferenceLayout.Label(Ui.Text("千秋輸入法\n版本 ") + UpdateService.Default().AppReleaseVersion +
                 Ui.Text("\n\n源自 Yahoo! 奇摩輸入法（KeyKey）。\nWindows 前端依原版設計開發，使用 Windows TSF 與千秋共用核心。"));

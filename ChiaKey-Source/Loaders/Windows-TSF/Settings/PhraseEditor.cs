@@ -259,6 +259,48 @@ namespace ChiaKey.Settings
             }
         }
 
+        // Decode the largest embedded image directly: .NET Framework Icon can
+        // fall back to a small DIB even when the ICO includes a 256px PNG.
+        public static Bitmap LoadIconImage(string name)
+        {
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
+            {
+                if (stream == null) return null;
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    reader.ReadUInt16();
+                    reader.ReadUInt16();
+                    int count = reader.ReadUInt16();
+                    int largest = 0, length = 0, offset = 0;
+                    for (int i = 0; i < count; i++)
+                    {
+                        int width = reader.ReadByte();
+                        reader.ReadByte(); // height; embedded icon images are square
+                        reader.ReadUInt16();
+                        reader.ReadUInt16();
+                        reader.ReadUInt16();
+                        int bytes = reader.ReadInt32();
+                        int start = reader.ReadInt32();
+                        int dimension = width == 0 ? 256 : width;
+                        if (dimension > largest)
+                        {
+                            largest = dimension; length = bytes; offset = start;
+                        }
+                    }
+                    stream.Position = offset;
+                    byte[] imageBytes = reader.ReadBytes(length);
+                    if (imageBytes.Length >= 8 && imageBytes[0] == 137 &&
+                        imageBytes[1] == 80 && imageBytes[2] == 78 && imageBytes[3] == 71)
+                    {
+                        using (MemoryStream png = new MemoryStream(imageBytes))
+                        using (Image image = Image.FromStream(png)) return new Bitmap(image);
+                    }
+                    stream.Position = 0;
+                    using (Icon icon = new Icon(stream, largest, largest)) return icon.ToBitmap();
+                }
+            }
+        }
+
         public PhraseEditorForm()
         {
             try
