@@ -21,6 +21,11 @@ class RejectWisdom : public StringFilter {
   bool shouldPass(const string& text) { return text != "人工智慧"; }
 };
 
+class OnlyAlgorithm : public StringFilter {
+ public:
+  bool shouldPass(const string& text) { return text == "演算法"; }
+};
+
 int main() {
   auto db = OVSQLiteConnection::Open(":memory:");
   CHECK(db);
@@ -122,6 +127,12 @@ int main() {
     for (int i = 0; i < 40; ++i)
       db->execute("INSERT INTO unigrams VALUES(%Q, '演出', %f, 0)",
                   (yan + Reading("ㄔㄨ")).c_str(), -0.1 - i * 0.01);
+    OnlyAlgorithm outputFilter;
+    auto filtered = composer.phraseCompletions(&outputFilter);
+    CHECK(filtered.size() == 1);
+    CHECK(filtered.front().phrase.current == "演算法");
+    // Repeated calls use fresh predicate data after statements are finalized.
+    CHECK(composer.phraseCompletions(&outputFilter).size() == 1);
     auto partial = composer.phraseCompletions(0, BPMF::FromComposedString("ㄙ"));
     CHECK(partial.size() == 1);
     CHECK(partial.front().phrase.current == "演算法");

@@ -1576,6 +1576,35 @@ inline UnigramVector LanguageModel::findPhraseCompletions(
   UnigramVector results;
   if (readingPrefix.empty() || textPrefix.empty()) return results;
 
+  // Query-local functions apply the exact existing predicates before SQL
+  // sorts or limits rows. Their data remains alive until the statement dies.
+  struct CompletionFilters {
+    sqlite3* db;
+    StringFilter* text;
+    StringFilter* reading;
+    static void pass(sqlite3_context* context, int, sqlite3_value** values) {
+      StringFilter* filter = static_cast<StringFilter*>(sqlite3_user_data(context));
+      const unsigned char* value = sqlite3_value_text(values[0]);
+      sqlite3_result_int(context, value && filter->shouldPass(
+          reinterpret_cast<const char*>(value)));
+    }
+    ~CompletionFilters() {
+      if (text) sqlite3_create_function(db, "completion_text_pass", 1,
+                                       SQLITE_UTF8, 0, 0, 0, 0);
+      if (reading) sqlite3_create_function(db, "completion_reading_pass", 1,
+                                          SQLITE_UTF8, 0, 0, 0, 0);
+    }
+  } predicates = {m_connection->connection(), filter, nextReadingFilter};
+  if (filter && sqlite3_create_function(predicates.db, "completion_text_pass", 1,
+      SQLITE_UTF8, filter, CompletionFilters::pass, 0, 0) != SQLITE_OK) return results;
+  if (nextReadingFilter && sqlite3_create_function(predicates.db,
+      "completion_reading_pass", 1, SQLITE_UTF8, nextReadingFilter,
+      CompletionFilters::pass, 0, 0) != SQLITE_OK) return results;
+  string predicatesSQL;
+  if (filter) predicatesSQL += " AND completion_text_pass(current)";
+  if (nextReadingFilter)
+    predicatesSQL += " AND completion_reading_pass(substr(qstring, length(?1) + 1, 2))";
+
   string upper = readingPrefix;
   ++upper[upper.size() - 1];  // absolute-order reading bytes are ASCII 48..126
   string textMatch = allowHomophones ? "" :
@@ -1584,33 +1613,24 @@ inline UnigramVector LanguageModel::findPhraseCompletions(
       m_unigramTableName +
       " WHERE qstring >= ?1 AND qstring < ?2 AND " + textMatch +
       "length(current) > length(?3) "
-      "AND length(current) <= 8";
+      "AND length(current) <= 8" + predicatesSQL;
   if (m_cfgUseUserTable) {
     sql += " UNION SELECT qstring, current, probability, backoff FROM "
         "userdb.user_unigrams WHERE qstring >= ?1 AND qstring < ?2 AND " +
         textMatch + "length(current) > length(?3) "
-        "AND length(current) <= 8";
+        "AND length(current) <= 8" + predicatesSQL;
   }
-  sql += " ORDER BY probability DESC, current, qstring";
-  // Filter the next syllable before limiting; a matching word may be far
-  // below the unfiltered top 32 for a common single-character prefix.
-  if (!nextReadingFilter) sql += " LIMIT 32";
+  sql += " ORDER BY probability DESC, current, qstring LIMIT 32";
   OVSQLiteStatementRef statement = m_connection->prepare(sql.c_str());
   if (!statement) return results;
   statement->bindTextToColumn(readingPrefix, 1);
   statement->bindTextToColumn(upper, 2);
   statement->bindTextToColumn(textPrefix, 3);
   while (statement->step() == SQLITE_ROW) {
-    string query = SafeColumnText(statement.get(), 0);
-    if (nextReadingFilter &&
-        !nextReadingFilter->shouldPass(query.substr(readingPrefix.size(), 2)))
-      continue;
-    string text = SafeColumnText(statement.get(), 1);
-    if (!filter || filter->shouldPass(text))
-      results.push_back(Unigram(SafeColumnText(statement.get(), 0), text,
-                               statement->doubleOfColumn(2),
-                               statement->doubleOfColumn(3)));
-    if (results.size() == 32) break;
+    results.push_back(Unigram(SafeColumnText(statement.get(), 0),
+                              SafeColumnText(statement.get(), 1),
+                              statement->doubleOfColumn(2),
+                              statement->doubleOfColumn(3)));
   }
   return results;
 }

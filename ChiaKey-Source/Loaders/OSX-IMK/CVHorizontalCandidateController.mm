@@ -182,22 +182,35 @@
       NSRect screenFrame = [screen frame];
 
       if (newPosition.x >= NSMinX(screenFrame) &&
-          newPosition.x <= NSMaxX(screenFrame)) {
+          newPosition.x <= NSMaxX(screenFrame) &&
+          newPosition.y >= NSMinY(screenFrame) &&
+          newPosition.y <= NSMaxY(screenFrame)) {
         frame = [screen visibleFrame];
         break;
       }
     }
   }
 
-  if (newPosition.y < NSMinY(frame))
-    newPosition.y = NSMinY(frame);
-  else if (newPosition.y - windowFrame.size.height < NSMinY(frame))
-    newPosition.y = newPosition.y + _fontHeight;
-  //	else if (newPosition.y + windowFrame.size.height > NSMaxY(frame))
-  else if (newPosition.y > NSMaxY(frame))
-    newPosition.y = NSMaxY(frame) - windowFrame.size.height;
-  else
-    newPosition.y = newPosition.y - windowFrame.size.height;
+  // Completion panels prefer the space above the current text line.
+  // Cocoa screen coordinates grow upwards; position is the line's bottom.
+  BOOL completion = panel->candidateKeyAtIndex(0).receivedString().empty() &&
+                    panel->selectionKeyAtIndex(0).keyCode() == OVKeyCode::Tab;
+  if (completion) {
+    newPosition.y = position.y + _fontHeight + 4;
+    if (newPosition.y + windowFrame.size.height > NSMaxY(frame))
+      newPosition.y = position.y - windowFrame.size.height - 4;
+    newPosition.y = MAX(NSMinY(frame), MIN(newPosition.y,
+                                         NSMaxY(frame) - windowFrame.size.height));
+  } else {
+    if (newPosition.y < NSMinY(frame))
+      newPosition.y = NSMinY(frame);
+    else if (newPosition.y - windowFrame.size.height < NSMinY(frame))
+      newPosition.y = newPosition.y + _fontHeight;
+    else if (newPosition.y > NSMaxY(frame))
+      newPosition.y = NSMaxY(frame) - windowFrame.size.height;
+    else
+      newPosition.y = newPosition.y - windowFrame.size.height;
+  }
 
   if (newPosition.x < NSMinX(frame))
     newPosition.x = NSMinX(frame);

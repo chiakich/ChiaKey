@@ -211,13 +211,18 @@ void CandidateWindow::place(HWND owner, const RECT& textRect) {
     const SIZE size = measure();
 
     int x = textRect.left;
-    int y = textRect.bottom + scale(kAnchorGap);
+    int y = horizontal_ ? textRect.top - size.cy - scale(kAnchorGap)
+                        : textRect.bottom + scale(kAnchorGap);
     HMONITOR monitor = MonitorFromRect(&textRect, MONITOR_DEFAULTTONEAREST);
     MONITORINFO monitorInfo{sizeof(monitorInfo)};
     if (GetMonitorInfoW(monitor, &monitorInfo)) {
         const RECT& work = monitorInfo.rcWork;
         if (x + size.cx > work.right) x = work.right - size.cx;
-        if (y + size.cy > work.bottom) y = textRect.top - size.cy - scale(kAnchorGap);
+        if (horizontal_ && y < work.top)
+            y = textRect.bottom + scale(kAnchorGap);
+        else if (!horizontal_ && y + size.cy > work.bottom)
+            y = textRect.top - size.cy - scale(kAnchorGap);
+        y = std::min(y, static_cast<int>(work.bottom) - size.cy);
         x = std::max(x, static_cast<int>(work.left));
         y = std::max(y, static_cast<int>(work.top));
     }
