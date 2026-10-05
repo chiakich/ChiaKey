@@ -240,6 +240,8 @@ namespace ChiaKey.Settings
 
             // laid out at 96 DPI and scaled on ResumeLayout; the manifest makes the process DPI aware
             SuspendLayout();
+            content.SuspendLayout();
+            toolbar.SuspendLayout();
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = Ui.Text(WindowTitle);
@@ -271,6 +273,9 @@ namespace ChiaKey.Settings
             AddPane(Ui.Text("關於(&B)"), "app.ico", BuildAboutPane());
 
             LoadSettings();
+            foreach (Control pane in panes) PreferenceLayout.Finish(pane);
+            toolbar.ResumeLayout(false);
+            content.ResumeLayout(false);
             ShowPane(Math.Max(0, Math.Min(initialPane, panes.Count - 1)));
             ResumeLayout(false);
             PerformLayout();
@@ -363,7 +368,7 @@ namespace ChiaKey.Settings
             pane.Visible = false;
             content.Controls.Add(pane);
             panes.Add(pane);
-            PreferenceLayout.Finish(pane);
+            // Keep nested layouts suspended until preference values are populated.
         }
 
         protected override bool ProcessMnemonic(char charCode)
@@ -1116,6 +1121,9 @@ namespace ChiaKey.Settings
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr window);
 
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
+
         public const string PhraseEditorArgument = "/phrases";
 
         [STAThread]
@@ -1138,6 +1146,10 @@ namespace ChiaKey.Settings
             bool phrases = args.Length > 0 &&
                            string.Equals(args[0], PhraseEditorArgument, StringComparison.OrdinalIgnoreCase);
             bool dictionary = args.Length > 0 && string.Equals(args[0], "/dictionary", StringComparison.OrdinalIgnoreCase);
+            // These windows share an EXE, but the shell must match each to its own
+            // shortcut/icon instead of grouping the phrase editor with settings.
+            SetCurrentProcessExplicitAppUserModelID(dictionary ? "ChiaKey.Dictionary" :
+                phrases ? "ChiaKey.PhraseEditor" : "ChiaKey.Settings");
             string canonicalTitle = dictionary ? DictionaryForm.WindowTitle : phrases ? PhraseEditorForm.WindowTitle : WindowTitle;
             string title = Ui.Text(canonicalTitle);
             bool created;

@@ -145,6 +145,8 @@ namespace ChiaKey.Settings
             string pointer = Path.Combine(service.Root, "Lexicons", "active.txt");
             string firstPointer = File.ReadAllText(pointer);
             Check(service.CurrentLexiconVersion() == version, "installed version is visible");
+            Check(service.CheckLexicon() == null, "installed lexicon is not offered again");
+            Check(service.CheckLexicon(false).Version == version, "latest lexicon remains visible when already installed");
             int before = downloads; service.InstallLexicon(offer);
             Check(downloads == before, "same version does not redownload");
 
@@ -315,6 +317,24 @@ namespace ChiaKey.Settings
             currentService.Fetch = service.Fetch;
             apiRequests = 0;
             Check(currentService.CheckApp(false) == null && apiRequests == 0, "up-to-date CDN avoids GitHub fallback");
+            Check(currentService.CheckApp(false, false).Version == "1.2.7", "latest app remains visible when already installed");
+            var localService = new UpdateService(Path.Combine(root, "local-state"), executable,
+                new Version("0.1.0"), "0.1.0-beta.2.pr18.20261005");
+            localService.Fetch = service.Fetch;
+            Check(localService.AppReleaseVersion == "0.1.0-beta.2.pr18.20261005" &&
+                localService.AppUpdateVersion == "0.1.0-beta.2", "local build keeps its display label and canonical comparison version");
+            Check(localService.CheckApp(false).Version == "1.2.7", "local build label does not break CDN update checks");
+            appFeed = null;
+            Check(localService.CheckApp(false).Version == "1.2.7", "local build label does not break GitHub update checks");
+            appFeed = validAppFeed;
+            var aheadService = new UpdateService(Path.Combine(root, "ahead-state"), executable,
+                new Version("2.0.0"), "2.0.0-beta.1");
+            aheadService.Fetch = service.Fetch;
+            Check(aheadService.CheckApp(false) == null, "newer installed beta must not be downgraded");
+            Check(aheadService.CheckApp(false, false).Version == "1.2.7", "latest stable displays the feed version rather than installed beta");
+            appFeed = null;
+            Check(aheadService.CheckApp(false, false).Version == "1.2.7", "GitHub fallback also reports the actual latest release");
+            appFeed = validAppFeed;
 
             // Automatic age gate and daily throttle; never invokes an installer.
             int autoFetches = 0;

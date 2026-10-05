@@ -305,6 +305,10 @@ Version </en>
     <en>Not checked yet</en>
   </string>
   <string>
+    <source>無可用版本</source>
+    <en>No release available</en>
+  </string>
+  <string>
     <source>已是最新版本。</source>
     <en>Up to date.</en>
   </string>

@@ -194,6 +194,8 @@ if(CHIAKEY_CSC)
         COMMENT "Compiling ChiaKeySettings.exe"
         VERBATIM)
     add_custom_target(ChiaKeySettings ALL
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CHIAKEY_ICON_DIR}/phrase-editor.ico"
+                "$<TARGET_FILE_DIR:ChiaKeyTsf>/phrase-editor.ico"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${CHIAKEY_WEBVIEW2_FILES}
                 "$<TARGET_FILE_DIR:ChiaKeyTsf>"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CHIAKEY_WEBVIEW2_DIR}/LICENSE.txt"
