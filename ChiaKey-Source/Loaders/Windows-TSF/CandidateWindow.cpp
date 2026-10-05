@@ -222,7 +222,7 @@ void CandidateWindow::place(HWND owner, const RECT& textRect) {
             y = textRect.bottom + scale(kAnchorGap);
         else if (!horizontal_ && y + size.cy > work.bottom)
             y = textRect.top - size.cy - scale(kAnchorGap);
-        y = std::min(y, static_cast<int>(work.bottom) - size.cy);
+        y = std::min(y, static_cast<int>(work.bottom - size.cy));
         x = std::max(x, static_cast<int>(work.left));
         y = std::max(y, static_cast<int>(work.top));
     }
