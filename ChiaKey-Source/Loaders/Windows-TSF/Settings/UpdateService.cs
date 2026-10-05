@@ -36,6 +36,7 @@ namespace ChiaKey.Settings
         internal readonly string Root, Executable;
         internal readonly Version AppVersion;
         internal readonly string AppReleaseVersion;
+        internal readonly string AppUpdateVersion;
         internal Func<string, long, byte[]> Fetch;
         internal Action<string> CoreValidator;
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false, true);
@@ -45,6 +46,11 @@ namespace ChiaKey.Settings
         {
             Root = root; Executable = executable; AppVersion = version;
             AppReleaseVersion = releaseVersion ?? version.ToString(3);
+            // Local builds retain their full display label (e.g. beta.2.pr18.20261005),
+            // but compare updates against the underlying release. Remote tags stay strict.
+            Match installed = Regex.Match(AppReleaseVersion,
+                @"\A(\d+\.\d+\.\d+(?:-beta\.[1-9][0-9]*)?)(?=$|[.+-])");
+            AppUpdateVersion = installed.Success ? installed.Groups[1].Value : version.ToString(3);
             Fetch = Download;
             CoreValidator = ValidateCore;
         }
@@ -244,7 +250,7 @@ namespace ChiaKey.Settings
             }
         }
 
-        internal UpdateOffer CheckLexicon()
+        internal UpdateOffer CheckLexicon(bool onlyNewer = true)
         {
             string manifest;
             try { manifest = Utf8.GetString(Fetch(LexiconCdn + "lexicon-manifest.json", 1024 * 1024)); }
@@ -267,7 +273,7 @@ namespace ChiaKey.Settings
                 Url = AllowedUrl(Text(db, "url"), LexiconCdn, LexiconRepository + version + "/"),
                 Filename = filename, Sha256 = Digest(Text(db, "sha256")),
                 Published = Date(Text(data, "generated_at")) };
-            return CompareVersions(version, CurrentLexiconVersion()) > 0 ? offer : null;
+            return !onlyNewer || CompareVersions(version, CurrentLexiconVersion()) > 0 ? offer : null;
         }
 
         internal UpdateOffer CheckApp()
@@ -275,10 +281,12 @@ namespace ChiaKey.Settings
             return CheckApp(Preferences.GetBool("IncludeBetaReleases", false));
         }
 
-        internal UpdateOffer CheckApp(bool includeBeta)
+        internal UpdateOffer CheckApp(bool includeBeta, bool onlyNewer = true)
         {
             UpdateOffer cdnOffer;
-            if (TryCheckAppCdn(includeBeta, out cdnOffer)) return cdnOffer;
+            if (TryCheckAppCdn(includeBeta, onlyNewer, out cdnOffer))
+                return cdnOffer != null && (!onlyNewer || CompareAppVersions(cdnOffer.Version, AppUpdateVersion) > 0)
+                    ? cdnOffer : null;
             // Joint v* releases carry both platforms; legacy win-v* remains readable.
             UpdateOffer newest = null;
             for (int page = 1; page <= 5; ++page)
@@ -295,7 +303,7 @@ namespace ChiaKey.Settings
                     string version = tag.Substring(tag.StartsWith("win-v", StringComparison.Ordinal) ? 5 : 1);
                     if (!includeBeta && (version.Contains("-beta.") ||
                         Convert.ToBoolean(release["prerelease"], CultureInfo.InvariantCulture))) continue;
-                    if (CompareAppVersions(version, AppReleaseVersion) <= 0 ||
+                    if ((onlyNewer && CompareAppVersions(version, AppUpdateVersion) <= 0) ||
                         (newest != null && CompareAppVersions(version, newest.Version) <= 0)) continue;
                     string name = "ChiaKey-Windows-" + version + "-Setup.exe";
                     string url = null, checksum = null;
@@ -313,10 +321,11 @@ namespace ChiaKey.Settings
                 }
                 if (count < 100) break;
             }
-            return newest;
+            return newest != null && (!onlyNewer || CompareAppVersions(newest.Version, AppUpdateVersion) > 0)
+                ? newest : null;
         }
 
-        private bool TryCheckAppCdn(bool includeBeta, out UpdateOffer offer)
+        private bool TryCheckAppCdn(bool includeBeta, bool onlyNewer, out UpdateOffer offer)
         {
             offer = null;
             try
@@ -342,7 +351,7 @@ namespace ChiaKey.Settings
                     string url = AllowedUrl(Text(entry, "package_url"), AppCdn + "releases/" + tag + "/", AppRepository + tag + "/");
                     string digest = Digest(Text(entry, "sha256"));
                     if (!includeBeta && prerelease) continue;
-                    if (CompareAppVersions(version, AppReleaseVersion) <= 0 ||
+                    if ((onlyNewer && CompareAppVersions(version, AppUpdateVersion) <= 0) ||
                         (offer != null && CompareAppVersions(version, offer.Version) <= 0)) continue;
                     offer = new UpdateOffer { Version = version, Filename = name, Url = url,
                         Sha256 = digest, Published = Date(Text(entry, "published_at")) };

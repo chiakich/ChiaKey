@@ -127,10 +127,10 @@ namespace ChiaKey.Settings
             VisibleChanged += async delegate
             {
                 if (!Visible) return;
-                RefreshCurrent();
                 await Task.WhenAll(Check(app, false), Check(lexicon, true));
             };
-            RefreshCurrent();
+            app.current.Text = service.AppReleaseVersion;
+            lexicon.current.Text = Ui.Text("尚未檢查");
             ResumeLayout(true);
         }
 
@@ -160,16 +160,31 @@ namespace ChiaKey.Settings
             section.status.Text = Ui.Text("正在檢查更新…");
             try
             {
+                string currentVersion = service.AppReleaseVersion;
+                if (isLexicon)
+                {
+                    currentVersion = await Task.Run(delegate
+                    {
+                        service.RecoverLexicon();
+                        return service.CurrentLexiconVersion();
+                    });
+                }
+                if (IsDisposed) return;
+                section.current.Text = currentVersion;
                 UpdateOffer offer = await Task.Run(delegate
                 {
-                    if (isLexicon) { service.RecoverLexicon(); return service.CheckLexicon(); }
-                    return service.CheckApp(includeBeta);
+                    if (isLexicon) return service.CheckLexicon(false);
+                    return service.CheckApp(includeBeta, false);
                 });
                 if (IsDisposed) return;
-                section.offer = offer;
-                section.latest.Text = offer == null ? section.current.Text : offer.Version;
+                section.latest.Text = offer == null ? Ui.Text("無可用版本") : offer.Version;
+                bool newer = offer != null && (isLexicon
+                    ? UpdateService.CompareVersions(offer.Version, currentVersion)
+                    : UpdateService.CompareAppVersions(offer.Version, service.AppUpdateVersion)) > 0;
+                section.offer = newer ? offer : null;
                 section.checkedAt.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-                section.status.Text = offer == null ? Ui.Text("已是最新版本。") : Ui.Text("有新版本可供下載。");
+                section.status.Text = offer == null ? Ui.Text("無可用版本") :
+                    newer ? Ui.Text("有新版本可供下載。") : Ui.Text("已是最新版本。");
             }
             catch (Exception error) { if (!IsDisposed) section.status.Text = Ui.Text("檢查失敗：") + error.Message; }
             finally { SetBusy(section, isLexicon, false); }

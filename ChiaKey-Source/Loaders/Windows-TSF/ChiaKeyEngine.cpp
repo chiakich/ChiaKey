@@ -814,6 +814,11 @@ std::wstring SettingsAppPath() {
     return settings;
 }
 
+std::string DesktopWritablePath() {
+    // Counters do not need the lexicon, modules or input engine.
+    return DefaultPaths(RoamingFolder(), true).writablePath;
+}
+
 ChiaKey::RuntimePaths DesktopRuntimePaths() {
     SharedRuntime();
     RuntimeHolder& holder = Holder();

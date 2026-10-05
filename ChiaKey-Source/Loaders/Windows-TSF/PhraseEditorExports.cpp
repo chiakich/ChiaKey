@@ -54,12 +54,12 @@ int __stdcall ChiaKeySimplifyText(const wchar_t* source, wchar_t* output, int ca
 BOOL __stdcall ChiaKeyWordCounts(long long* today, long long* week, long long* total) {
     if (!today || !week || !total) return FALSE;
     ChiaKey::WindowsTsf::WordCounts counts;
-    if (!ChiaKey::WindowsTsf::ReadWordCounts(ChiaKey::WindowsTsf::DesktopRuntimePaths().writablePath,
+    if (!ChiaKey::WindowsTsf::ReadWordCounts(ChiaKey::WindowsTsf::DesktopWritablePath(),
                                             ChiaKey::WindowsTsf::LocalDayNumber(), &counts)) return FALSE;
     *today = counts.today; *week = counts.week; *total = counts.total; return TRUE;
 }
 BOOL __stdcall ChiaKeyClearWordCounts() {
-    return ChiaKey::WindowsTsf::ClearWordCounts(ChiaKey::WindowsTsf::DesktopRuntimePaths().writablePath);
+    return ChiaKey::WindowsTsf::ClearWordCounts(ChiaKey::WindowsTsf::DesktopWritablePath());
 }
 
 

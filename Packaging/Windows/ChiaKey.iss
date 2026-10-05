@@ -76,13 +76,14 @@ Source: "{#X86Dir}\WebView2Loader.dll"; DestDir: "{app}\{#Version}"; Flags: igno
 Source: "{#X64Dir}\ChiaKeyStateHost.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: Is64BitInstallMode
 Source: "{#X86Dir}\ChiaKeyStateHost.exe"; DestDir: "{app}\{#Version}"; Flags: ignoreversion uninsrestartdelete; Check: not Is64BitInstallMode
 Source: "{#X64Dir}\WebView2-LICENSE.txt"; DestDir: "{app}\{#Version}"; Flags: ignoreversion
+Source: "{#X64Dir}\phrase-editor.ico"; DestDir: "{app}\{#Version}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}\{#Version}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\千秋輸入法\千秋輸入法設定"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"
-Name: "{autoprograms}\千秋輸入法\千秋輸入法詞彙編輯器"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/phrases"
+Name: "{autoprograms}\千秋輸入法\千秋輸入法設定"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; AppUserModelID: "ChiaKey.Settings"
+Name: "{autoprograms}\千秋輸入法\千秋輸入法詞彙編輯器"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/phrases"; IconFilename: "{app}\{#Version}\phrase-editor.ico"; AppUserModelID: "ChiaKey.PhraseEditor"
 
-Name: "{autoprograms}\千秋輸入法\千秋輸入法字典"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/dictionary"
+Name: "{autoprograms}\千秋輸入法\千秋輸入法字典"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/dictionary"; AppUserModelID: "ChiaKey.Dictionary"
 
 [Run]
 ; Preserve update preferences and refresh the per-user startup path after an upgrade. The helper
@@ -99,12 +100,42 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: 
 Type: dirifempty; Name: "{app}"
 
 [Code]
-// A folder an app still has a DLL loaded from refuses to go; the next upgrade
-// or a restart after uninstalling takes care of it.
+// Delete children before parents so locked files and their empty directories
+// can be removed in that order on reboot. Never follow directory junctions.
+procedure RemoveVersionTree(const Path: String);
+var
+  Found: TFindRec;
+  Child: String;
+begin
+  if FindFirst(Path + '\*', Found) then
+  try
+    repeat
+      if (Found.Name <> '.') and (Found.Name <> '..') then
+      begin
+        Child := Path + '\' + Found.Name;
+        if (Found.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
+        begin
+          if (Found.Attributes and $400) = 0 then
+            RemoveVersionTree(Child);
+        end
+        else if not DeleteFile(Child) then
+        begin
+          Log('Scheduling old version file for deletion: ' + Child);
+          RestartReplace(Child, '');
+        end;
+      end;
+    until not FindNext(Found);
+  finally
+    FindClose(Found);
+  end;
+  if not RemoveDir(Path) then
+    RestartReplace(Path, '');
+end;
+
 procedure RemoveOlderVersions();
 var
   Found: TFindRec;
-  Root: String;
+  Root, OldPath, CleanupPath: String;
 begin
   Root := ExpandConstant('{app}');
   if FindFirst(Root + '\*', Found) then
@@ -112,9 +143,31 @@ begin
     repeat
       // only version folders: anything else in there is not ours to remove
       if ((Found.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0) and
-         (Length(Found.Name) > 0) and (Found.Name[1] >= '0') and (Found.Name[1] <= '9') and
-         (Found.Name <> '{#Version}') then
-        DelTree(Root + '\' + Found.Name, True, True, True);
+         ((Found.Attributes and $400) = 0) and
+         (Length(Found.Name) > 0) and
+         (((Found.Name[1] >= '0') and (Found.Name[1] <= '9')) or
+          (Pos('obsolete-', Found.Name) = 1)) and
+         (Found.Name <> '{#Version}') and
+         ((Pos('obsolete-', Found.Name) = 1) or
+          FileExists(Root + '\' + Found.Name + '\ChiaKeyTsf.dll') or
+          FileExists(Root + '\' + Found.Name + '\x86\ChiaKeyTsf.dll') or
+          FileExists(Root + '\' + Found.Name + '\LICENSE.txt')) then
+      begin
+        OldPath := Root + '\' + Found.Name;
+        if Pos('obsolete-', Found.Name) = 1 then
+          RemoveVersionTree(OldPath)
+        else
+        begin
+          // Pending deletions must not target a version path that a later
+          // reinstall could reuse before rebooting.
+          CleanupPath := Root + '\obsolete-' + Found.Name + '-' +
+            GetDateTimeString('yyyymmddhhnnss', #0, #0);
+          if RenameFile(OldPath, CleanupPath) then
+            RemoveVersionTree(CleanupPath)
+          else
+            Log('Old version is still in use; retry cleanup on next upgrade: ' + OldPath);
+        end;
+      end;
     until not FindNext(Found);
   finally
     FindClose(Found);
