@@ -713,6 +713,103 @@ void TestSymbols() {
           "the symbol window's state survives a round trip");
 }
 
+void TestPhraseCompletion() {
+    Check(SelectInputMethod("SmartMandarin"), "completion uses Smart Mandarin");
+    const auto frontendPath = CurrentWritablePath() + "\\Preferences\\Windows.plist";
+    WritePlist(frontendPath, Entry("EnableAssociatedPhrases", "true"));
+    auto session = EngineSession::Create();
+    Check(session && session->ready(), "completion session is ready");
+    if (!session || !session->ready()) return;
+    const auto prefix = [&]() {
+        session->reset();
+        for (const char key : std::string("bp6ej/ ")) {
+            UINT vk = key == '/' ? VK_OEM_2 : key == ' ' ? VK_SPACE :
+                key >= 'a' && key <= 'z' ? key - 'a' + 'A' : key;
+            session->handleKey(Key(vk));
+        }
+    };
+    prefix();
+    auto result = session->handleKey(Key(VK_TAB, true));
+    Check(result.horizontalCandidates && result.candidatesVisible && result.candidates.size() == 3 &&
+          result.allCandidates.size() == 3 && result.selectedCandidate == 1 &&
+          result.candidates[0].selectionKey.empty(), "horizontal completion exports all candidates without digit shortcuts");
+    if (result.allCandidates.size() != 3) return;
+    const auto suffixes = result.allCandidates;
+    KeyEvent release = Key(VK_LSHIFT);
+    release.keyUp = true;
+    Check(session->wantsShiftRelease() && session->wantsKey(release), "Shift cycling arms the release");
+    result = session->handleKey(release);
+    Check(result.handled && result.committedText == L"人工" + suffixes[1] &&
+          result.compositionText.empty() && !result.candidatesVisible && !session->wantsShiftRelease(),
+          "Shift release commits the full completed phrase once");
+    Check(!session->handleKey(release).handled, "duplicate Shift release passes to host");
+    prefix();
+    session->handleKey(Key(VK_TAB, true));
+    auto invalidRelease = release;
+    invalidRelease.virtualKey = 'A';
+    Check(!session->wantsKey(invalidRelease) && !session->handleKey(invalidRelease).handled,
+          "only Shift release may accept a cycled completion");
+    for (int modifier = 0; modifier < 3; ++modifier) {
+        prefix();
+        session->handleKey(Key(VK_TAB, true));
+        invalidRelease = release;
+        invalidRelease.control = modifier == 0;
+        invalidRelease.alt = modifier == 1;
+        invalidRelease.capsLock = modifier == 2;
+        Check(session->handleKey(invalidRelease).committedText.empty() && !session->wantsShiftRelease(),
+              "modified release cancels the gesture without committing");
+    }
+    prefix();
+    result = session->handleKey(Key(VK_TAB));
+    Check(result.compositionText == L"人工" + suffixes[0] && result.committedText.empty(),
+          "Tab inserts editable completion without committing");
+    for (size_t index = 0; index < 3; ++index) {
+        prefix();
+        KeyEvent click;
+        click.candidateIndex = index;
+        result = session->handleKey(click);
+        Check(result.handled && result.compositionText == L"人工" + suffixes[index] && result.committedText.empty(),
+              "mouse absolute index inserts the selected completion");
+    }
+    prefix();
+    for (int i = 0; i < 3; ++i) result = session->handleKey(Key(VK_TAB, true));
+    Check(result.selectedCandidate == 0, "Shift Tab wraps through the three suggestions");
+    release.virtualKey = VK_RSHIFT;
+    Check(session->handleKey(release).committedText == L"人工" + suffixes[0], "right Shift release accepts completion");
+    for (UINT cancel : std::vector<UINT>{VK_ESCAPE, VK_RIGHT, 'S', VK_DOWN}) {
+        prefix();
+        session->handleKey(Key(VK_TAB, true));
+        result = session->handleKey(Key(cancel));
+        Check(!session->wantsShiftRelease() && session->handleKey(release).committedText.empty(),
+              "editing and normal selection cancel pending release");
+        if (cancel == VK_DOWN) Check(!result.horizontalCandidates, "normal selection returns to vertical layout");
+    }
+    session->reset();
+    Check(!session->wantsShiftRelease(), "reset disarms release");
+    Type(*session, "u03n");
+    result = session->handleKey(Key(VK_TAB, true));
+    Check(result.horizontalCandidates && result.candidatesVisible && result.compositionText == L"演ㄙ",
+          "partial next reading shows full phrase completions");
+    if (result.selectedCandidate < result.allCandidates.size()) {
+        const auto selected = result.allCandidates[result.selectedCandidate];
+        result = session->handleKey(release);
+        Check(result.committedText == selected && result.compositionText.empty(),
+              "partial reading Shift release commits the full selected phrase");
+    }
+    session->reset();
+    for (UINT vk : std::vector<UINT>{'E', 'J', VK_OEM_2, VK_SPACE, 'S'})
+        session->handleKey(Key(vk));
+    result = session->handleKey(Key(VK_TAB));
+    Check(result.compositionText == L"功能" && result.committedText.empty(),
+          "partial homophone completion replaces the automatic prefix and consumes reading");
+    session->reset();
+    WritePlist(frontendPath, Entry("EnableAssociatedPhrases", "false"));
+    session = EngineSession::Create();
+    prefix();
+    result = session->handleKey(Key(VK_RIGHT));
+    Check(!result.candidatesVisible, "disabled completion leaves normal composition");
+}
+
 int main(int argc, char* argv[]) {
     if (argc == 3 && std::string(argv[1]) == "--history-child") {
         const std::string scope(argv[2]);
@@ -760,6 +857,7 @@ int main(int argc, char* argv[]) {
     TestGenericInputMethods();
     TestSymbols();
     TestReverseLookup(paths);
+    TestPhraseCompletion();
     if (failures) return 1;
     std::cout << "chiakey_tsf_engine_test: OK" << std::endl;
     return 0;

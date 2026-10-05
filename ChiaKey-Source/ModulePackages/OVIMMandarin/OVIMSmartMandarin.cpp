@@ -101,6 +101,9 @@ void OVIMSmartMandarinContext::startSession(OVLoaderService* loaderService) {
   m_cursor = m_manjusri.cursorLeftBound();
   m_markMode = false;
   m_markCursor = m_cursor;
+  m_completions.clear();
+  m_completionShiftCyclePending = false;
+  m_completionDismissedText.clear();
 }
 
 void OVIMSmartMandarinContext::stopSession(OVLoaderService* loaderService) {
@@ -133,6 +136,50 @@ void OVIMSmartMandarinContext::clear(OVLoaderService* loaderService) {
   m_cursor = m_manjusri.cursorLeftBound();
   m_markMode = false;
   m_markCursor = m_cursor;
+  m_completions.clear();
+  m_completionShiftCyclePending = false;
+  m_completionDismissedText.clear();
+}
+
+void OVIMSmartMandarinContext::refreshPhraseCompletion(
+    OVTextBuffer* composingText, OVCandidateService* candidateService,
+    OVLoaderService* loaderService) {
+  m_completions.clear();
+  m_completionShiftCyclePending = false;
+  if (!m_phraseCompletionEnabled || m_markMode ||
+      m_cursor != m_manjusri.cursorRightBound() ||
+      composingText->isEmpty()) return;
+  string text = m_manjusri.composedString() + m_BPMFReading.composedString();
+  if (text == m_completionDismissedText) return;
+  m_completionDismissedText.clear();
+  OVIMSmartMandarinStringFilter filter(
+      m_module->m_cfgUseCharactersSupportedByEncoding,
+      loaderService->encodingService());
+  m_completions = m_manjusri.phraseCompletions(&filter, m_BPMFReading.syllable());
+  if (m_completions.empty()) return;
+  OVOneDimensionalCandidatePanel* panel =
+      candidateService->useHorizontalCandidatePanel();
+  panel->reset();
+  vector<string> suffixes;
+  for (const PhraseCompletion& completion : m_completions)
+    suffixes.push_back(m_BPMFReading.isEmpty() ? completion.suffix
+                                               : completion.phrase.current);
+  panel->candidateList()->setCandidates(suffixes);
+  panel->setCandidatesPerPage(3);
+  // No digit bindings: numbers must continue to act as phonetic tone keys.
+  OVKeyVector empty;
+  panel->setCandidateKeys(empty);
+  panel->setNextPageKeys(empty);
+  panel->setPreviousPageKeys(empty);
+  panel->setNextCandidateKeys(empty);
+  panel->setPreviousCandidateKeys(empty);
+  panel->setChooseHighlightedCandidateKeys(
+      OVKeyVector(1, loaderService->makeOVKey(OVKeyCode::Tab)));
+  panel->setCancelKeys(OVKeyVector(1, loaderService->makeOVKey(OVKeyCode::Esc)));
+  panel->setPrompt("TAB選取，shift+TAB切換");
+  panel->show();
+  panel->yieldToCandidateEventHandler();
+  panel->updateDisplay();
 }
 
 void OVIMSmartMandarinContext::refreshComposingText(
@@ -252,6 +299,10 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
   OVIMSmartMandarinStringFilter filter(
       m_module->m_cfgUseCharactersSupportedByEncoding,
       loaderService->encodingService());
+
+  composingText->clearToolTip();
+  m_completions.clear();
+  m_completionShiftCyclePending = false;
 
   if (0) {
     loaderService->logger("OVIMSmartMandarinContext")
@@ -545,6 +596,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         break;
 
       case OVKeyCode::Tab:
+        if (key->isShiftPressed()) return false;
         if (!m_BPMFReading.isEmpty()) {
           loaderService->beep();
         } else {
@@ -955,6 +1007,8 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
   composingText->setWordSegments(wordsegs);
   composingText->updateDisplay();
 
+  refreshPhraseCompletion(composingText, candidateService, loaderService);
+
   if (punctuationListLongJump) {
     goto CallForthCandidateWindow;
   }
@@ -964,12 +1018,38 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
 
 void OVIMSmartMandarinContext::candidateCanceled(
     OVCandidateService* candidateService, OVTextBuffer* readingText,
-    OVTextBuffer* composingText, OVLoaderService* loaderService) {}
+    OVTextBuffer* composingText, OVLoaderService* loaderService) {
+  composingText->clearToolTip();
+  if (!m_completions.empty()) {
+    m_completionDismissedText =
+        m_manjusri.composedString() + m_BPMFReading.composedString();
+    m_completions.clear();
+    m_completionShiftCyclePending = false;
+  }
+}
 
 bool OVIMSmartMandarinContext::candidateSelected(
     OVCandidateService* candidateService, const string& text, size_t index,
     OVTextBuffer* readingText, OVTextBuffer* composingText,
     OVLoaderService* loaderService) {
+  if (!m_completions.empty()) {
+    OVIMSmartMandarinStringFilter filter(
+        m_module->m_cfgUseCharactersSupportedByEncoding,
+        loaderService->encodingService());
+    if (index < m_completions.size() &&
+        m_manjusri.acceptPhraseCompletion(m_completions[index], &filter)) {
+      m_BPMFReading.clear();
+      readingText->clear();
+      readingText->updateDisplay();
+      m_cursor = m_manjusri.cursorRightBound();
+      refreshComposingText(composingText);
+    } else {
+      loaderService->beep();
+    }
+    m_completions.clear();
+    m_completionShiftCyclePending = false;
+    return true;
+  }
   size_t newCursorPosition =
       m_manjusri.chooseCandidate(index, true, !loaderService->secureInputMode());
   composingText->setText(m_manjusri.composedString());
@@ -990,6 +1070,8 @@ bool OVIMSmartMandarinContext::candidateSelected(
   composingText->setWordSegments(wordsegs);
 
   composingText->updateDisplay();
+  composingText->clearToolTip();
+  refreshPhraseCompletion(composingText, candidateService, loaderService);
   return true;
 }
 
@@ -997,7 +1079,62 @@ bool OVIMSmartMandarinContext::candidateNonPanelKeyReceived(
     OVCandidateService* candidateService, const OVKey* key,
     OVTextBuffer* readingText, OVTextBuffer* composingText,
     OVLoaderService* loaderService) {
-  return false;
+  if (m_completions.empty()) return false;
+  OVOneDimensionalCandidatePanel* panel =
+      candidateService->useHorizontalCandidatePanel();
+  if ((key->keyCode() == OVKeyCode::LeftShift ||
+       key->keyCode() == OVKeyCode::RightShift) && !key->isShiftPressed()) {
+    if (!m_completionShiftCyclePending) return true;
+    if (key->isCtrlPressed() || key->isOptPressed() || key->isAltPressed() ||
+        key->isCommandPressed() || key->isCapsLockOn()) {
+      m_completionShiftCyclePending = false;
+      return true;
+    }
+    const size_t index = panel->currentHightlightIndex();
+    PhraseCompletion completion = m_completions[index];
+    panel->reset();
+    m_completions.clear();
+    m_completionShiftCyclePending = false;
+    OVIMSmartMandarinStringFilter filter(
+        m_module->m_cfgUseCharactersSupportedByEncoding,
+        loaderService->encodingService());
+    if (!m_manjusri.acceptPhraseCompletion(completion, &filter)) {
+      loaderService->beep();
+      return true;
+    }
+    m_BPMFReading.clear();
+    readingText->clear();
+    readingText->updateDisplay();
+    m_cursor = m_manjusri.cursorRightBound();
+    refreshComposingText(composingText);
+    // Commit through the usual key path so text segments and output filters
+    // behave exactly as they do for Enter.
+    OVKey commitKey = loaderService->makeOVKey(OVKeyCode::Return);
+    handleKey(&commitKey, readingText, composingText, candidateService,
+              loaderService);
+    return true;
+  }
+  if (key->keyCode() == OVKeyCode::Tab && key->isShiftPressed() &&
+      !key->isCtrlPressed() && !key->isOptPressed() && !key->isAltPressed() &&
+      !key->isCommandPressed() && !key->isCapsLockOn()) {
+    m_completionShiftCyclePending = true;
+    panel->setHighlightIndex((panel->currentHightlightIndex() + 1) %
+                             m_completions.size());
+    panel->updateDisplay();
+    return true;
+  }
+  // Hand editing/phonetic keys back to Smart Mandarin instead of allowing the
+  // candidate handler to consume arrows, Enter or tone digits.
+  panel->reset();
+  m_completions.clear();
+  m_completionShiftCyclePending = false;
+  if (key->keyCode() == OVKeyCode::Right)
+    m_completionDismissedText =
+        m_manjusri.composedString() + m_BPMFReading.composedString();
+  OVKey forwardedKey = *key;
+  handleKey(&forwardedKey, readingText, composingText, candidateService,
+            loaderService);
+  return true;
 }
 
 OVIMSmartMandarin::OVIMSmartMandarin()

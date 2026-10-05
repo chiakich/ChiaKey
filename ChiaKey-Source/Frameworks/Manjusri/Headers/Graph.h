@@ -256,6 +256,10 @@ class Graph {
 
   StringVector queryBlocks() const;
 
+  bool phraseCrossesForcedBreak(size_t begin, size_t length) const {
+    return crossesForcedBreak(Location(begin, length));
+  }
+
   // if cursorAtEndOfBlock == false (default), cursor must be in or just before
   // the block (Microsoft-style); set it to true for Apple-style candidate
   // search

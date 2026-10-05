@@ -60,6 +60,7 @@ class PVLoaderContext : public OVBase {
   virtual const string residueComposingTextBeforeDeactivation();
   virtual void clear();
   virtual bool handleKeyEvent(OVKey* key);
+  bool wantsShiftRelease();
 
   // Runs text that the IME code commits on its own -- text that never went
   // through the sandwich -- through the activated output filters, so that
@@ -375,7 +376,11 @@ class PVLoader : public OVBase {
       // if module exists *and* it's not in a skipped set
       if (module && (m_skippedAroundFilterIdentifiers.find(*iter) ==
                      m_skippedAroundFilterIdentifiers.end())) {
-        sandwich->aroundFilters.push_back(module->createContext());
+        bool replaced = false;
+        for (OVEventHandlingContext* input : sandwich->inputMethods)
+          if (input->activateReplacingAroundFilter(*iter)) replaced = true;
+        if (!replaced)
+          sandwich->aroundFilters.push_back(module->createContext());
       }
     }
 
@@ -883,6 +888,11 @@ inline const string PVLoaderContext::applyOutputFilters(const string& text) {
   return filteredText;
 }
 
+inline bool PVLoaderContext::wantsShiftRelease() {
+  if (!m_loader || !shouldEnter(m_loader->loaderService(), true, true)) return false;
+  return m_focusedContext && m_focusedContext->wantsShiftRelease();
+}
+
 inline bool PVLoaderContext::handleKeyEvent(OVKey* key) {
   OVLoaderService* loaderService = m_loader->loaderService();
   if (!shouldEnter(loaderService, true)) return false;
@@ -915,8 +925,12 @@ inline bool PVLoaderContext::handleKeyEvent(OVKey* key) {
             m_candidateService, odpanel->chosenCandidateString(),
             odpanel->chosenCandidateIndex(), m_readingText, m_composingText,
             loaderService);
-        odpanel->reset();
-        m_focusedContext = 0;
+        // A selection callback may open follow-up candidates (e.g. phrase
+        // completions). Keep their panel and the context that owns it alive.
+        if (!odpanel->isInControl()) odpanel->reset();
+        if (!m_candidateService->accessHorizontalCandidatePanel()->isInControl() &&
+            !m_candidateService->accessVerticalCandidatePanel()->isInControl())
+          m_focusedContext = 0;
         handled = true;
         break;
 

@@ -63,6 +63,7 @@ struct TextRange {
 
 struct CandidateState {
   bool visible = false;
+  bool horizontal = false;
   std::vector<std::string> candidates;
   // aligned with candidates; true = the preceding text promotes this pick
   std::vector<bool> contextPicks;
@@ -179,6 +180,8 @@ class Engine {
   Engine& operator=(const Engine&) = delete;
 
   bool handleKey(const KeyEvent& event);
+  // True only after a context has armed a Shift+Tab completion gesture.
+  bool wantsShiftRelease() const;
   bool handleAsciiKey(char key, const KeyModifiers& modifiers = KeyModifiers());
   // absolute index into CandidateState::candidates
   bool selectCandidate(std::size_t candidateIndex);

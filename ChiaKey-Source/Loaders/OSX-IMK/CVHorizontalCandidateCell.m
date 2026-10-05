@@ -50,7 +50,7 @@
                             attributes:_candidateAttributes];
   NSSize size = rect.size;
   if (size.width > 100) size.width = 100;
-  size.width += 30.0;
+  size.width += [_keyString length] ? 30.0 : 16.0;
   size.height = refSpacing;
   return size;
 }
@@ -71,20 +71,24 @@
 #endif
   }
 
-  NSImage *keyImage =
-      [CVTextDecoration imageWithACharacterInACircle:_keyString
+  BOOL hasKey = [_keyString length] > 0;
+  if (hasKey) {
+    NSImage *keyImage =
+        [CVTextDecoration imageWithACharacterInACircle:_keyString
                                           foreground:[NSColor whiteColor]
                                           background:[NSColor blackColor]];
-  NSRect imageRect = NSMakeRect(
-      NSMinX(cellFrame) + 4.0,
-      NSMinY(cellFrame) + (_fontHeight - 16.0) / 2 + 4.0, 16.0, 16.0);
-  [keyImage drawInRect:imageRect
-             fromRect:NSZeroRect
-             operation:NSCompositingOperationSourceOver
-              fraction:1.0];
+    NSRect imageRect = NSMakeRect(
+        NSMinX(cellFrame) + 4.0,
+        NSMinY(cellFrame) + (_fontHeight - 16.0) / 2 + 4.0, 16.0, 16.0);
+    [keyImage drawInRect:imageRect
+               fromRect:NSZeroRect
+               operation:NSCompositingOperationSourceOver
+                fraction:1.0];
+  }
+  CGFloat textInset = hasKey ? 24.0 : 8.0;
   NSRect candidateRect =
-      NSMakeRect(NSMinX(cellFrame) + 24.0, NSMinY(cellFrame),
-                 cellFrame.size.width - 24.0, cellFrame.size.height);
+      NSMakeRect(NSMinX(cellFrame) + textInset, NSMinY(cellFrame),
+                 cellFrame.size.width - textInset, cellFrame.size.height);
   [_candidate drawInRect:candidateRect withAttributes:_candidateAttributes];
 }
 

@@ -189,6 +189,7 @@ private:
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;
     bool candidateActive_ = false;
+    unsigned candidateGeneration_ = 0;
     bool endingComposition_ = false;
     bool pendingModeCommit_ = false;
     unsigned commitGeneration_ = 0;

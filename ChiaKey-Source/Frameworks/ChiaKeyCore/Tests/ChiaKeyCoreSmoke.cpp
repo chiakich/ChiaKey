@@ -32,6 +32,267 @@ int Fail(const std::string& message) {
   return 1;
 }
 
+int RunPhraseCompletionSmoke(const std::string& repoRoot,
+                             const std::string& writableDir,
+                             const std::string& lexiconDatabasePath) {
+  ChiaKey::RuntimePaths paths;
+  paths.loadedPath = paths.resourcePath = repoRoot + "/ChiaKey-Source";
+  paths.writablePath = writableDir;
+  paths.lexiconDatabasePath = lexiconDatabasePath;
+  std::string error;
+  auto engine = ChiaKey::Engine::Create(paths, ChiaKey::EngineConfig(), &error);
+  if (!engine) return Fail("completion engine: " + error);
+  engine->runtime()->setPrimaryInputMethod(ChiaKey::Runtime::SmartMandarinIdentifier());
+  const auto typePrefix = [&]() {
+    engine->reset();
+    // ㄖㄣˊ ㄍㄨㄥ (standard keyboard).
+    for (char key : std::string("bp6ej/ ")) engine->handleAsciiKey(key);
+  };
+  const auto press = [&](int code, bool shift = false) {
+    ChiaKey::KeyEvent key;
+    key.keyCode = code;
+    key.modifiers.shift = shift;
+    return engine->handleKey(key);
+  };
+  engine->runtime()->setAssociatedPhrasesEnabled(false);
+  typePrefix();
+  if (engine->snapshot().candidateState.visible)
+    return Fail("disabled associated phrases should disable completion");
+  press(28); // Move between 人 and 工 with completion disabled.
+  auto beforeShiftTab = engine->snapshot();
+  if (press(9, true) ||
+      engine->snapshot().wordSegments.size() != beforeShiftTab.wordSegments.size() ||
+      engine->snapshot().composingText != beforeShiftTab.composingText ||
+      engine->snapshot().cursorPosition != beforeShiftTab.cursorPosition ||
+      engine->snapshot().beeped)
+    return Fail("disabled completion let Shift+Tab change composition");
+  engine->runtime()->setAssociatedPhrasesEnabled(true);
+  typePrefix();
+  auto state = engine->snapshot();
+  if (state.composingText != "人工" || !state.candidateState.visible ||
+      state.candidateState.candidates.size() != 3 ||
+      state.candidateState.candidates.front() != "智慧" ||
+      state.candidateState.highlightedIndex != 0 || !state.tooltip.empty())
+    return Fail("expected 人工 with three completion candidates");
+  const auto suffixes = state.candidateState.candidates;
+  for (size_t tabCount = 1; tabCount <= 3; ++tabCount) {
+    typePrefix();
+    for (size_t i = 0; i < tabCount; ++i) press(9, true);
+    const size_t selected = tabCount % suffixes.size();
+    press(0x10001);  // Left Shift release, Shift modifier cleared.
+    state = engine->snapshot();
+    if (state.committedText != "人工" + suffixes[selected] ||
+        !state.composingText.empty() || state.candidateState.visible || state.beeped)
+      return Fail("Shift release did not commit the cycled completion");
+    engine->acknowledgeCommit();
+    press(0x10001);
+    if (!engine->snapshot().committedText.empty())
+      return Fail("repeated Shift release committed twice");
+  }
+  typePrefix();
+  press(0x10001);
+  if (!engine->snapshot().committedText.empty() ||
+      !engine->snapshot().candidateState.visible)
+    return Fail("Shift release without cycling should not select completion");
+  typePrefix();
+  press(9, true);
+  press(27);
+  press(0x10001);
+  if (!engine->snapshot().committedText.empty())
+    return Fail("Esc did not cancel Shift-release completion");
+  typePrefix();
+  press(9, true);
+  engine->handleAsciiKey('s');
+  press(0x10001);
+  if (!engine->snapshot().committedText.empty())
+    return Fail("continuing input did not cancel Shift-release completion");
+  engine->reset();
+  for (char key : std::string("su3cl3bp6ej/ ")) engine->handleAsciiKey(key);
+  press(9, true);
+  press(0x10002);  // Right Shift release follows the same path.
+  if (engine->snapshot().committedText != "你好人工" + suffixes[1])
+    return Fail("Shift release did not commit the entire composition");
+  engine->acknowledgeCommit();
+  for (size_t i = 0; i < 3; ++i) {
+    typePrefix();
+    for (size_t step = 0; step < i; ++step) press(9, true);
+    state = engine->snapshot();
+    if (state.candidateState.highlightedIndex != i || state.beeped)
+      return Fail("Shift+Tab did not highlight completion");
+    press(9);
+    state = engine->snapshot();
+    if (state.composingText != "人工" + suffixes[i] ||
+        !state.committedText.empty() || state.beeped ||
+        state.candidateState.visible || !state.readingText.empty())
+      return Fail("Tab did not insert highlighted completion");
+  }
+  typePrefix();
+  for (int i = 0; i < 3; ++i) press(9, true);
+  if (engine->snapshot().candidateState.highlightedIndex != 0 ||
+      engine->snapshot().beeped)
+    return Fail("Shift+Tab did not wrap to first completion");
+  typePrefix();
+  if (!engine->selectCandidate(2) ||
+      engine->snapshot().composingText != "人工" + suffixes[2])
+    return Fail("absolute-index selection did not accept completion");
+  typePrefix();
+  press(9);
+  press(8);
+  state = engine->snapshot();
+  // The normal language model may reselect 智 / 至 after deletion.
+  if (state.composingText.find("人工") != 0 || state.cursorPosition != 3 ||
+      state.beeped || !state.committedText.empty())
+    return Fail("backspace did not remove a completed character");
+  typePrefix();
+  press(9);
+  press(13);
+  if (engine->snapshot().committedText != "人工智慧")
+    return Fail("Enter did not commit completed phrase");
+  engine->acknowledgeCommit();
+  typePrefix();
+  press(13);
+  if (engine->snapshot().committedText != "人工")
+    return Fail("Enter should commit original text without accepting completion");
+  engine->acknowledgeCommit();
+  typePrefix();
+  press(29);
+  state = engine->snapshot();
+  if (state.composingText != "人工" || state.candidateState.visible)
+    return Fail("Right should dismiss completion without accepting it");
+  typePrefix();
+  press(27);
+  state = engine->snapshot();
+  if (state.composingText != "人工" || state.candidateState.visible)
+    return Fail("Esc should dismiss completion and preserve composition");
+  press(28);
+  press(29);
+  if (engine->snapshot().candidateState.visible)
+    return Fail("dismissed completion reappeared without a text change");
+  typePrefix();
+  press(28);
+  state = engine->snapshot();
+  if (state.candidateState.visible || state.cursorPosition != 1)
+    return Fail("Left should hide completion and move cursor");
+  beforeShiftTab = state;
+  if (press(9, true) ||
+      engine->snapshot().wordSegments.size() != beforeShiftTab.wordSegments.size() ||
+      engine->snapshot().composingText != beforeShiftTab.composingText ||
+      engine->snapshot().cursorPosition != beforeShiftTab.cursorPosition ||
+      engine->snapshot().beeped)
+    return Fail("Shift+Tab in the middle changed forced breaks");
+  press(9);
+  state = engine->snapshot();
+  if (state.composingText != "人工" || state.wordSegments.size() != 2)
+    return Fail("Tab in the middle should retain forced-break behavior");
+  press(29);
+  state = engine->snapshot();
+  // The last character 工 may now have its own completions, but the
+  // explicitly separated 人 / 工 must not complete as 人工智慧.
+  for (const auto& candidate : state.candidateState.candidates) {
+    if (candidate == "智慧")
+      return Fail("completion crossed an explicit word break");
+  }
+  typePrefix();
+  engine->handleAsciiKey('s');
+  state = engine->snapshot();
+  if (state.readingText.empty() ||
+      (state.candidateState.visible &&
+       state.candidateState.candidates == suffixes))
+    return Fail("continuing phonetic input should replace the old completions");
+  engine->handleAsciiKey('u');
+  engine->handleAsciiKey('3');
+  if (!engine->snapshot().readingText.empty() || engine->snapshot().beeped)
+    return Fail("tone digit was consumed by completion candidate keys");
+  typePrefix();
+  press(31);  // Down opens ordinary candidates.
+  state = engine->snapshot();
+  if (!state.candidateState.visible || state.candidateState.candidates == suffixes)
+    return Fail("completion interfered with ordinary candidates");
+  size_t phraseIndex = state.candidateState.candidates.size();
+  for (size_t i = 0; i < state.candidateState.candidates.size(); ++i)
+    if (state.candidateState.candidates[i] == "人工") phraseIndex = i;
+  if (phraseIndex == state.candidateState.candidates.size() ||
+      !engine->selectCandidate(phraseIndex))
+    return Fail("cannot reselect 人工 in ordinary candidate panel");
+  state = engine->snapshot();
+  if (!state.candidateState.visible || state.candidateState.candidates != suffixes)
+    return Fail("ordinary selection did not restore completion candidates");
+  press(9, true);
+  press(9);
+  if (engine->snapshot().composingText != "人工" + suffixes[1])
+    return Fail("restored completion panel lost its owning context");
+  engine->reset();
+  if (engine->snapshot().candidateState.visible)
+    return Fail("reset left a stale completion");
+  for (char key : std::string("bp6")) engine->handleAsciiKey(key);
+  press(13);
+  if (engine->snapshot().committedText != "人" ||
+      engine->snapshot().candidateState.visible)
+    return Fail("Smart Mandarin should replace legacy post-commit associated phrases");
+  engine->acknowledgeCommit();
+  typePrefix();
+  engine->reset();
+  for (char key : std::string("ej/ s")) engine->handleAsciiKey(key); // 工ㄋ
+  state = engine->snapshot();
+  if (state.composingText != "工" || state.readingText != "ㄋ" ||
+      !state.candidateState.visible || state.candidateState.candidates.front() != "功能")
+    return Fail("工ㄋ did not suggest the homophone phrase 功能");
+  press(9);
+  state = engine->snapshot();
+  if (state.composingText != "功能" || !state.readingText.empty())
+    return Fail("homophone completion did not replace 工 and consume ㄋ");
+  // Complete a word using a confirmed character and a partial next reading.
+  engine->reset();
+  for (char key : std::string("u03n")) engine->handleAsciiKey(key); // 演ㄙ
+  state = engine->snapshot();
+  if (state.composingText != "演" || state.readingText != "ㄙ" ||
+      !state.candidateState.visible)
+    return Fail("partial next reading did not display completions");
+  size_t algorithmIndex = state.candidateState.candidates.size();
+  for (size_t i = 0; i < state.candidateState.candidates.size(); ++i)
+    if (state.candidateState.candidates[i] == "演算法") algorithmIndex = i;
+  if (algorithmIndex == state.candidateState.candidates.size())
+    return Fail("演ㄙ did not suggest 演算法");
+  engine->selectCandidate(algorithmIndex);
+  state = engine->snapshot();
+  if (state.composingText != "演算法" || !state.readingText.empty() ||
+      !state.committedText.empty())
+    return Fail("partial completion did not consume reading into editable phrase");
+  press(13);
+  if (engine->snapshot().committedText != "演算法")
+    return Fail("partial completion did not commit correctly");
+  engine->reset();
+  for (char key : std::string("u03n")) engine->handleAsciiKey(key);
+  press(27);
+  if (engine->snapshot().readingText != "ㄙ" || engine->snapshot().candidateState.visible)
+    return Fail("canceling partial completion disturbed the reading");
+  engine->handleAsciiKey('j'); // ㄙㄨ changes the completion query after Esc.
+  if (!engine->snapshot().candidateState.visible)
+    return Fail("changed partial reading did not restore completions");
+  engine->handleAsciiKey('0'); // 演ㄙㄨㄢ narrows to 算.
+  state = engine->snapshot();
+  if (!state.candidateState.visible || state.candidateState.candidates.front() != "演算法")
+    return Fail("a more specific reading did not narrow completions");
+  press(9);
+  if (engine->snapshot().composingText != "演算法" || !engine->snapshot().readingText.empty())
+    return Fail("Tab did not consume the partial reading");
+  engine->reset();
+  for (char key : std::string("u03n")) engine->handleAsciiKey(key);
+  press(9, true);
+  const auto selectedPhrase = engine->snapshot().candidateState.candidates[
+      engine->snapshot().candidateState.highlightedIndex];
+  press(0x10001);
+  if (engine->snapshot().committedText != selectedPhrase ||
+      !engine->snapshot().readingText.empty() || !engine->snapshot().composingText.empty())
+    return Fail("Shift release did not commit the partial-reading completion");
+
+  engine->runtime()->setAssociatedPhrasesEnabled(false);
+  typePrefix();
+  if (engine->snapshot().candidateState.visible)
+    return Fail("toggling off did not dismiss completion");
+  return 0;
+}
+
 int RunCppSmoke(const std::string& repoRoot, const std::string& writableDir,
                 const std::string& lexiconDatabasePath) {
   ChiaKey::EnginePaths paths;
@@ -1378,6 +1639,8 @@ int main(int argc, char* argv[]) {
   const std::string writableDir = argv[2];
   const std::string lexiconDatabasePath = argv[3];
 
+  if (int result = RunPhraseCompletionSmoke(repoRoot, writableDir, lexiconDatabasePath))
+    return result;
   if (int result = RunCppSmoke(repoRoot, writableDir, lexiconDatabasePath))
     return result;
   if (int result = RunCSmoke(repoRoot, writableDir, lexiconDatabasePath))
