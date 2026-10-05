@@ -100,7 +100,19 @@ class ManjusriComposer {
 
   const string composedString() { return m_composedString; }
 
-  vector<PhraseCompletion> phraseCompletions(StringFilter* filter = 0) {
+  vector<PhraseCompletion> phraseCompletions(StringFilter* filter = 0,
+                                             BPMF partial = BPMF()) {
+    struct NextReadingFilter : StringFilter {
+      BPMF partial;
+      explicit NextReadingFilter(BPMF value) : partial(value) {}
+      bool shouldPass(const string& reading) {
+        if (reading.size() != 2) return false;
+        BPMF full = BPMF::FromAbsoluteOrderString(reading);
+        return !full.isEmpty() && full.absoluteOrderString() == reading &&
+               full.composedString().compare(0, partial.composedString().size(),
+                                             partial.composedString()) == 0;
+      }
+    } nextReadingFilter(partial);
     vector<PhraseCompletion> results;
     set<string> seen;
     vector<string> chars = OVUTF8Helper::SplitStringByCodePoint(m_composedString);
@@ -124,7 +136,8 @@ class ManjusriComposer {
         reading += readings[i + 1];
       }
       if (!valid) continue;
-      UnigramVector matches = m_LM->findPhraseCompletions(reading, text, filter);
+      UnigramVector matches = m_LM->findPhraseCompletions(
+          reading, text, filter, partial.isEmpty() ? 0 : &nextReadingFilter);
       for (const Unigram& phrase : matches) {
         vector<string> full = OVUTF8Helper::SplitStringByCodePoint(phrase.current);
         if (phrase.queryString.size() != full.size() * 2) continue;

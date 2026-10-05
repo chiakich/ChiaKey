@@ -494,7 +494,8 @@ class LanguageModel {
   // existing lexicon index, including on older DBs without a current index.
   virtual UnigramVector findPhraseCompletions(const string& readingPrefix,
                                              const string& textPrefix,
-                                             StringFilter* filter = 0);
+                                             StringFilter* filter = 0,
+                                             StringFilter* nextReadingFilter = 0);
 
   virtual const Unigram& UNKUnigram();
   virtual const Unigram& BOSUnigram();
@@ -1569,7 +1570,8 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
 }
 
 inline UnigramVector LanguageModel::findPhraseCompletions(
-    const string& readingPrefix, const string& textPrefix, StringFilter* filter) {
+    const string& readingPrefix, const string& textPrefix, StringFilter* filter,
+    StringFilter* nextReadingFilter) {
   UnigramVector results;
   if (readingPrefix.empty() || textPrefix.empty()) return results;
 
@@ -1586,18 +1588,26 @@ inline UnigramVector LanguageModel::findPhraseCompletions(
         "substr(current, 1, length(?3)) = ?3 AND length(current) > length(?3) "
         "AND length(current) <= 8";
   }
-  sql += " ORDER BY probability DESC, current, qstring LIMIT 32";
+  sql += " ORDER BY probability DESC, current, qstring";
+  // Filter the next syllable before limiting; a matching word may be far
+  // below the unfiltered top 32 for a common single-character prefix.
+  if (!nextReadingFilter) sql += " LIMIT 32";
   OVSQLiteStatementRef statement = m_connection->prepare(sql.c_str());
   if (!statement) return results;
   statement->bindTextToColumn(readingPrefix, 1);
   statement->bindTextToColumn(upper, 2);
   statement->bindTextToColumn(textPrefix, 3);
   while (statement->step() == SQLITE_ROW) {
+    string query = SafeColumnText(statement.get(), 0);
+    if (nextReadingFilter &&
+        !nextReadingFilter->shouldPass(query.substr(readingPrefix.size(), 2)))
+      continue;
     string text = SafeColumnText(statement.get(), 1);
     if (!filter || filter->shouldPass(text))
       results.push_back(Unigram(SafeColumnText(statement.get(), 0), text,
                                statement->doubleOfColumn(2),
                                statement->doubleOfColumn(3)));
+    if (results.size() == 32) break;
   }
   return results;
 }

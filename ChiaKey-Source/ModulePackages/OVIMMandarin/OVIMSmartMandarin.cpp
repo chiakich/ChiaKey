@@ -146,23 +146,24 @@ void OVIMSmartMandarinContext::refreshPhraseCompletion(
     OVLoaderService* loaderService) {
   m_completions.clear();
   m_completionShiftCyclePending = false;
-  if (!m_phraseCompletionEnabled || !m_BPMFReading.isEmpty() || m_markMode ||
+  if (!m_phraseCompletionEnabled || m_markMode ||
       m_cursor != m_manjusri.cursorRightBound() ||
       composingText->isEmpty()) return;
-  string text = m_manjusri.composedString();
+  string text = m_manjusri.composedString() + m_BPMFReading.composedString();
   if (text == m_completionDismissedText) return;
   m_completionDismissedText.clear();
   OVIMSmartMandarinStringFilter filter(
       m_module->m_cfgUseCharactersSupportedByEncoding,
       loaderService->encodingService());
-  m_completions = m_manjusri.phraseCompletions(&filter);
+  m_completions = m_manjusri.phraseCompletions(&filter, m_BPMFReading.syllable());
   if (m_completions.empty()) return;
   OVOneDimensionalCandidatePanel* panel =
       candidateService->useHorizontalCandidatePanel();
   panel->reset();
   vector<string> suffixes;
   for (const PhraseCompletion& completion : m_completions)
-    suffixes.push_back(completion.suffix);
+    suffixes.push_back(m_BPMFReading.isEmpty() ? completion.suffix
+                                               : completion.phrase.current);
   panel->candidateList()->setCandidates(suffixes);
   panel->setCandidatesPerPage(3);
   // No digit bindings: numbers must continue to act as phonetic tone keys.
@@ -1019,7 +1020,8 @@ void OVIMSmartMandarinContext::candidateCanceled(
     OVTextBuffer* composingText, OVLoaderService* loaderService) {
   composingText->clearToolTip();
   if (!m_completions.empty()) {
-    m_completionDismissedText = m_manjusri.composedString();
+    m_completionDismissedText =
+        m_manjusri.composedString() + m_BPMFReading.composedString();
     m_completions.clear();
     m_completionShiftCyclePending = false;
   }
@@ -1035,6 +1037,9 @@ bool OVIMSmartMandarinContext::candidateSelected(
         loaderService->encodingService());
     if (index < m_completions.size() &&
         m_manjusri.acceptPhraseCompletion(m_completions[index], &filter)) {
+      m_BPMFReading.clear();
+      readingText->clear();
+      readingText->updateDisplay();
       m_cursor = m_manjusri.cursorRightBound();
       refreshComposingText(composingText);
     } else {
@@ -1096,6 +1101,9 @@ bool OVIMSmartMandarinContext::candidateNonPanelKeyReceived(
       loaderService->beep();
       return true;
     }
+    m_BPMFReading.clear();
+    readingText->clear();
+    readingText->updateDisplay();
     m_cursor = m_manjusri.cursorRightBound();
     refreshComposingText(composingText);
     // Commit through the usual key path so text segments and output filters
@@ -1120,7 +1128,8 @@ bool OVIMSmartMandarinContext::candidateNonPanelKeyReceived(
   m_completions.clear();
   m_completionShiftCyclePending = false;
   if (key->keyCode() == OVKeyCode::Right)
-    m_completionDismissedText = m_manjusri.composedString();
+    m_completionDismissedText =
+        m_manjusri.composedString() + m_BPMFReading.composedString();
   OVKey forwardedKey = *key;
   handleKey(&forwardedKey, readingText, composingText, candidateService,
             loaderService);

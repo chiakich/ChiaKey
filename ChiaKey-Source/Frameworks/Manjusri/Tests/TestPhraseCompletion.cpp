@@ -118,6 +118,16 @@ int main() {
     CHECK(completions.size() == 1);
     CHECK(completions.front().suffix == "算法");
     CHECK(completions.front().prefixLength == 1);
+    // Nonmatching high-ranked words must not consume the query's 32 slots.
+    for (int i = 0; i < 40; ++i)
+      db->execute("INSERT INTO unigrams VALUES(%Q, '演出', %f, 0)",
+                  (yan + Reading("ㄔㄨ")).c_str(), -0.1 - i * 0.01);
+    auto partial = composer.phraseCompletions(0, BPMF::FromComposedString("ㄙ"));
+    CHECK(partial.size() == 1);
+    CHECK(partial.front().phrase.current == "演算法");
+    CHECK(composer.phraseCompletions(0, BPMF::FromComposedString("ㄙㄢ")).empty());
+    CHECK(composer.phraseCompletions(0, BPMF::FromComposedString("ㄙㄨㄢˊ")).empty());
+    CHECK(composer.phraseCompletions(0, BPMF::FromComposedString("ㄙㄨ")).size() == 1);
     CHECK(composer.acceptPhraseCompletion(completions.front()));
     CHECK(composer.composedString() == "演算法");
   }

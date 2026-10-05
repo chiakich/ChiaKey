@@ -179,8 +179,11 @@ int RunPhraseCompletionSmoke(const std::string& repoRoot,
   }
   typePrefix();
   engine->handleAsciiKey('s');
-  if (engine->snapshot().candidateState.visible || engine->snapshot().readingText.empty())
-    return Fail("continuing phonetic input should hide completion");
+  state = engine->snapshot();
+  if (state.readingText.empty() ||
+      (state.candidateState.visible &&
+       state.candidateState.candidates == suffixes))
+    return Fail("continuing phonetic input should replace the old completions");
   engine->handleAsciiKey('u');
   engine->handleAsciiKey('3');
   if (!engine->snapshot().readingText.empty() || engine->snapshot().beeped)
@@ -213,6 +216,51 @@ int RunPhraseCompletionSmoke(const std::string& repoRoot,
     return Fail("Smart Mandarin should replace legacy post-commit associated phrases");
   engine->acknowledgeCommit();
   typePrefix();
+  // Complete a word using a confirmed character and a partial next reading.
+  engine->reset();
+  for (char key : std::string("u03n")) engine->handleAsciiKey(key); // 演ㄙ
+  state = engine->snapshot();
+  if (state.composingText != "演" || state.readingText != "ㄙ" ||
+      !state.candidateState.visible)
+    return Fail("partial next reading did not display completions");
+  size_t algorithmIndex = state.candidateState.candidates.size();
+  for (size_t i = 0; i < state.candidateState.candidates.size(); ++i)
+    if (state.candidateState.candidates[i] == "演算法") algorithmIndex = i;
+  if (algorithmIndex == state.candidateState.candidates.size())
+    return Fail("演ㄙ did not suggest 演算法");
+  engine->selectCandidate(algorithmIndex);
+  state = engine->snapshot();
+  if (state.composingText != "演算法" || !state.readingText.empty() ||
+      !state.committedText.empty())
+    return Fail("partial completion did not consume reading into editable phrase");
+  press(13);
+  if (engine->snapshot().committedText != "演算法")
+    return Fail("partial completion did not commit correctly");
+  engine->reset();
+  for (char key : std::string("u03n")) engine->handleAsciiKey(key);
+  press(27);
+  if (engine->snapshot().readingText != "ㄙ" || engine->snapshot().candidateState.visible)
+    return Fail("canceling partial completion disturbed the reading");
+  engine->handleAsciiKey('j'); // ㄙㄨ changes the completion query after Esc.
+  if (!engine->snapshot().candidateState.visible)
+    return Fail("changed partial reading did not restore completions");
+  engine->handleAsciiKey('0'); // 演ㄙㄨㄢ narrows to 算.
+  state = engine->snapshot();
+  if (!state.candidateState.visible || state.candidateState.candidates.front() != "演算法")
+    return Fail("a more specific reading did not narrow completions");
+  press(9);
+  if (engine->snapshot().composingText != "演算法" || !engine->snapshot().readingText.empty())
+    return Fail("Tab did not consume the partial reading");
+  engine->reset();
+  for (char key : std::string("u03n")) engine->handleAsciiKey(key);
+  press(9, true);
+  const auto selectedPhrase = engine->snapshot().candidateState.candidates[
+      engine->snapshot().candidateState.highlightedIndex];
+  press(0x10001);
+  if (engine->snapshot().committedText != selectedPhrase ||
+      !engine->snapshot().readingText.empty() || !engine->snapshot().composingText.empty())
+    return Fail("Shift release did not commit the partial-reading completion");
+
   engine->runtime()->setAssociatedPhrasesEnabled(false);
   typePrefix();
   if (engine->snapshot().candidateState.visible)
