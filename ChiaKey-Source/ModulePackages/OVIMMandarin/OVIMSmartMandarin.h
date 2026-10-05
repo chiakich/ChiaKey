@@ -136,8 +136,20 @@ class ManjusriComposer {
         reading += readings[i + 1];
       }
       if (!valid) continue;
+      // Automatic composition is provisional: a partial next reading may
+      // disambiguate the preceding homophones. Preserve existing overrides.
+      const size_t prefixStart = readings.size() - 1 - length;
+      bool textLocked = false;
+      for (auto iter = m_latestFastPath.begin();
+           iter + 1 != m_latestFastPath.end(); ++iter) {
+        const Node& node = *iter->nodePointer;
+        Location location = node.location();
+        if (node.isOverridden() && location.first < readings.size() - 1 &&
+            location.first + location.second > prefixStart) textLocked = true;
+      }
       UnigramVector matches = m_LM->findPhraseCompletions(
-          reading, text, filter, partial.isEmpty() ? 0 : &nextReadingFilter);
+          reading, text, filter, partial.isEmpty() ? 0 : &nextReadingFilter,
+          !partial.isEmpty() && !textLocked);
       for (const Unigram& phrase : matches) {
         vector<string> full = OVUTF8Helper::SplitStringByCodePoint(phrase.current);
         if (phrase.queryString.size() != full.size() * 2) continue;
@@ -149,8 +161,8 @@ class ManjusriComposer {
             validReading = false;
         }
         if (!validReading) continue;
-        string suffix = phrase.current.substr(text.size());
-        if (!seen.insert(suffix).second) continue;
+        string suffix = SVH::Join(SVH::SubVector(full, length, full.size() - length));
+        if (!seen.insert(partial.isEmpty() ? suffix : phrase.current).second) continue;
         PhraseCompletion completion;
         completion.phrase = phrase;
         completion.prefixLength = length;

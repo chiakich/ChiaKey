@@ -131,6 +131,38 @@ int main() {
     CHECK(composer.acceptPhraseCompletion(completions.front()));
     CHECK(composer.composedString() == "演算法");
   }
+  string gong = Reading("ㄍㄨㄥ");
+  string neng = Reading("ㄋㄥˊ");
+  string nong = Reading("ㄋㄨㄥˊ");
+  db->execute("INSERT INTO unigrams VALUES(%Q, '功', -4, 0)", gong.c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '能', -2, 0)", neng.c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '農', -2, 0)", nong.c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '功能', -1, 0)", (gong + neng).c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '工農', -2, 0)", (gong + nong).c_str());
+  {
+    LanguageModel lm(db, 0, true, false, false);
+    ManjusriComposer composer(&lm);
+    composer.clear();
+    CHECK(composer.insertAt(1, gong));
+    composer.update();
+    CHECK(composer.composedString() == "工");
+    CHECK(composer.phraseCompletions().front().phrase.current == "工農");
+    auto completions = composer.phraseCompletions(0, BPMF::FromComposedString("ㄋ"));
+    CHECK(completions.size() == 2);
+    CHECK(completions.front().phrase.current == "功能");
+    CHECK(composer.composedString() == "工"); // Query never changes the buffer.
+    CHECK(composer.acceptPhraseCompletion(completions.front()));
+    CHECK(composer.composedString() == "功能");
+    composer.clear();
+    CHECK(composer.insertAt(1, gong));
+    composer.update();
+    auto candidates = composer.collectCandidates(composer.cursorRightBound(), true);
+    for (size_t i = 0; i < candidates.size(); ++i)
+      if (candidates[i] == "工") composer.chooseCandidate(i, true, false);
+    completions = composer.phraseCompletions(0, BPMF::FromComposedString("ㄋ"));
+    CHECK(completions.size() == 1);
+    CHECK(completions.front().phrase.current == "工農"); // Explicit selection stays locked.
+  }
   delete db;
   if (failures) return 1;
   std::cout << "TestPhraseCompletion: OK" << std::endl;

@@ -216,6 +216,16 @@ int RunPhraseCompletionSmoke(const std::string& repoRoot,
     return Fail("Smart Mandarin should replace legacy post-commit associated phrases");
   engine->acknowledgeCommit();
   typePrefix();
+  engine->reset();
+  for (char key : std::string("ej/ s")) engine->handleAsciiKey(key); // 工ㄋ
+  state = engine->snapshot();
+  if (state.composingText != "工" || state.readingText != "ㄋ" ||
+      !state.candidateState.visible || state.candidateState.candidates.front() != "功能")
+    return Fail("工ㄋ did not suggest the homophone phrase 功能");
+  press(9);
+  state = engine->snapshot();
+  if (state.composingText != "功能" || !state.readingText.empty())
+    return Fail("homophone completion did not replace 工 and consume ㄋ");
   // Complete a word using a confirmed character and a partial next reading.
   engine->reset();
   for (char key : std::string("u03n")) engine->handleAsciiKey(key); // 演ㄙ

@@ -495,7 +495,8 @@ class LanguageModel {
   virtual UnigramVector findPhraseCompletions(const string& readingPrefix,
                                              const string& textPrefix,
                                              StringFilter* filter = 0,
-                                             StringFilter* nextReadingFilter = 0);
+                                             StringFilter* nextReadingFilter = 0,
+                                             bool allowHomophones = false);
 
   virtual const Unigram& UNKUnigram();
   virtual const Unigram& BOSUnigram();
@@ -1571,21 +1572,23 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
 
 inline UnigramVector LanguageModel::findPhraseCompletions(
     const string& readingPrefix, const string& textPrefix, StringFilter* filter,
-    StringFilter* nextReadingFilter) {
+    StringFilter* nextReadingFilter, bool allowHomophones) {
   UnigramVector results;
   if (readingPrefix.empty() || textPrefix.empty()) return results;
 
   string upper = readingPrefix;
   ++upper[upper.size() - 1];  // absolute-order reading bytes are ASCII 48..126
+  string textMatch = allowHomophones ? "" :
+      "substr(current, 1, length(?3)) = ?3 AND ";
   string sql = "SELECT qstring, current, probability, backoff FROM " +
       m_unigramTableName +
-      " WHERE qstring >= ?1 AND qstring < ?2 AND "
-      "substr(current, 1, length(?3)) = ?3 AND length(current) > length(?3) "
+      " WHERE qstring >= ?1 AND qstring < ?2 AND " + textMatch +
+      "length(current) > length(?3) "
       "AND length(current) <= 8";
   if (m_cfgUseUserTable) {
     sql += " UNION SELECT qstring, current, probability, backoff FROM "
-        "userdb.user_unigrams WHERE qstring >= ?1 AND qstring < ?2 AND "
-        "substr(current, 1, length(?3)) = ?3 AND length(current) > length(?3) "
+        "userdb.user_unigrams WHERE qstring >= ?1 AND qstring < ?2 AND " +
+        textMatch + "length(current) > length(?3) "
         "AND length(current) <= 8";
   }
   sql += " ORDER BY probability DESC, current, qstring";
