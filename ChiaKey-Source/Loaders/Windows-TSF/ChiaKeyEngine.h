@@ -33,6 +33,9 @@ struct EngineResult {
     bool candidatesVisible = false;
     size_t highlightedCandidate = 0;
     std::vector<EngineCandidate> candidates;
+    // The host renders the complete list in UILess mode, not just our current page.
+    std::vector<std::wstring> allCandidates;
+    size_t selectedCandidate = 0;
     size_t candidatesPerPage = 0;
     // 1-based, as the page indicator shows it
     size_t candidatePage = 0;

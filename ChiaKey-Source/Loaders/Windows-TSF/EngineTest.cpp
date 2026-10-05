@@ -80,7 +80,11 @@ void TestLayout() {
     state.candidateState.pageCount = 2;
     state.candidateState.selectionKeys = {"1", "2"};
     state.candidateState.highlightedIndex = 1;
+    state.candidateState.highlightedCandidateIndex = 4;
     result = MakeResult(state);
+    Check(result.allCandidates == std::vector<std::wstring>({L"a", L"b", L"c", L"d", L"e"}) &&
+              result.selectedCandidate == 4,
+          "UILess hosts receive the entire list and global selection");
     Check(result.candidates.size() == 2 && result.candidates[0].text == L"d" &&
               result.candidates[1].selectionKey == L"2" && result.highlightedCandidate == 1,
           "candidates are taken from the current page");

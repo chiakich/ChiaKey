@@ -17,6 +17,7 @@
 #include "PunctuationKeyboard.h"
 #include "SharedState.h"
 #include "NotificationWindow.h"
+#include "UIElement.h"
 
 namespace ChiaKey::WindowsTsf {
 
@@ -170,6 +171,14 @@ private:
     TfGuidAtom focusedAttributeAtom_ = TF_INVALID_GUIDATOM;
     bool chineseMode_ = true;
     bool secureMode_ = false;
+    bool uiLessMode_ = false;
+    Microsoft::WRL::ComPtr<ITfUIElementMgr> uiElementManager_;
+    UIElementSession candidateUI_, notificationUI_, symbolUI_, punctuationUI_;
+    void presentAuxiliaryUI(UIElementSession& session, int kind,
+                            std::function<void(bool)> show, std::function<bool()> visible);
+    void showSymbolWindow(bool userOpened = false);
+    void showNotification(const std::wstring& text);
+    bool keyboardAvailable(ITfContext* context) const;
     SharedCommitHistory commitHistory_;
     std::wstring historyHostPath_;
     bool historyHostReady_ = false;

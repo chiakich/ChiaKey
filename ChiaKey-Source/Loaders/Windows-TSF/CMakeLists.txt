@@ -89,6 +89,7 @@ add_library(ChiaKeyTsf SHARED
     PunctuationKeyboard.cpp
     NotificationWindow.cpp
     TextService.cpp
+    UIElement.cpp
     ChiaKeyTsf.rc
     "${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc"
     ${CHIAKEY_ICON_FILES}
@@ -250,6 +251,15 @@ if(CHIAKEY_CSC)
     endif()
 else()
     message(WARNING "csc.exe from .NET Framework 4 not found: ChiaKeySettings.exe is not built.")
+endif()
+
+if(BUILD_TESTING)
+    add_executable(chiakey_ui_element_test UIElementTest.cpp UIElement.cpp)
+    target_compile_features(chiakey_ui_element_test PRIVATE cxx_std_17)
+    target_compile_definitions(chiakey_ui_element_test PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_compile_options(chiakey_ui_element_test PRIVATE /W4 /permissive-)
+    target_link_libraries(chiakey_ui_element_test PRIVATE oleaut32 uuid)
+    add_test(NAME chiakey_game_ui_elements COMMAND chiakey_ui_element_test)
 endif()
 
 if(BUILD_TESTING AND EXISTS "${CHIAKEY_LEXICON_DATABASE}")

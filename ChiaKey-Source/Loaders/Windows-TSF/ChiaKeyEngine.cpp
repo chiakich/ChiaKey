@@ -672,6 +672,9 @@ EngineResult MakeResult(const ChiaKey::EngineState& state, bool showNotification
 
     const ChiaKey::CandidateState& panel = state.candidateState;
     if (panel.visible && !panel.selectionKeys.empty()) {
+        for (const auto& candidate : panel.candidates)
+            result.allCandidates.push_back(Utf8ToWide(candidate));
+        result.selectedCandidate = panel.highlightedCandidateIndex;
         const size_t first = panel.currentPage * panel.candidatesPerPage;
         for (size_t index = 0; index < panel.selectionKeys.size() &&
                                first + index < panel.candidates.size();

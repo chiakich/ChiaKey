@@ -30,6 +30,7 @@ public:
     void show(HWND owner, const RECT& textRect, const EngineResult& result);
     void showMessage(HWND owner, const RECT& textRect, const std::wstring& message);
     void hide();
+    bool isVisible() const { return window_ && IsWindowVisible(window_); }
 
 private:
     static bool ensureWindowClass();

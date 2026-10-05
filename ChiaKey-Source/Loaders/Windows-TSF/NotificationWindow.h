@@ -33,6 +33,11 @@ public:
     ~NotificationWindow() { destroy(); }
     void show(const std::wstring& message);
     void hide();
+    bool isVisible() const {
+        if (window_ && IsWindowVisible(window_)) return true;
+        for (const auto& notice : notices_) if (notice->isVisible()) return true;
+        return false;
+    }
     void destroy();
 private:
     void showSingle(const std::wstring& message, LONG previousBottom);

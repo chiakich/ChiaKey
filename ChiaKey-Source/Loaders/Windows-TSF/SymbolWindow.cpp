@@ -272,6 +272,7 @@ void SymbolWindow::updateTooltips() {
 }
 
 void SymbolWindow::show() {
+    if (!hostAllowed_) return;
     pages_ = SymbolPages();
     if (pages_.empty() || !ensureWindow()) {
         Trace("SymbolWindow: pages=%zu window=%p error=%lu", pages_.size(),

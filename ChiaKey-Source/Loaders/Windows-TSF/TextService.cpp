@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "Diagnostics.h"
+#include "EditSessionRequest.h"
 #include "Guids.h"
 #include "LangBarButton.h"
 #include "ModuleState.h"
@@ -347,7 +348,10 @@ HRESULT MoveCaret(TfEditCookie editCookie, ITfContext* context, ITfRange* range)
 }  // namespace
 
 TextService::TextService() { ++g_objectCount; }
-TextService::~TextService() { --g_objectCount; }
+TextService::~TextService() {
+    candidateUI_.end(); notificationUI_.end(); symbolUI_.end(); punctuationUI_.end();
+    --g_objectCount;
+}
 
 HRESULT TextService::CreateInstance(IUnknown* outer, REFIID iid, void** object) {
     if (!object) return E_INVALIDARG;
@@ -408,6 +412,9 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
     if (threadManager_) return S_OK;
 
     secureMode_ = (flags & TF_TMAE_SECUREMODE) != 0;
+    uiLessMode_ = (flags & TF_TMAE_UIELEMENTENABLEDONLY) != 0;
+    threadManager->QueryInterface(IID_PPV_ARGS(&uiElementManager_));
+    Trace("Activate flags=0x%08lX uiLess=%d uiManager=%d", flags, uiLessMode_, uiElementManager_ != nullptr);
     threadManager_ = threadManager;
     clientId_ = clientId;
     ComPtr<ITfCategoryMgr> categoryManager;
@@ -443,13 +450,14 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         BOOL threadFocused = FALSE;
         if (SUCCEEDED(threadManager_->IsThreadFocus(&threadFocused)) && threadFocused &&
             ReadSymbolWindowState().visible) {
-            symbolWindow_.show();
+            showSymbolWindow();
         }
     } else {
         Trace("AdviseSinks hr=0x%08lX", static_cast<unsigned long>(result));
         unadviseSinks();
         uninitializeLangBar();
         engine_.reset();
+        uiElementManager_.Reset();
         threadManager_.Reset();
         clientId_ = TF_CLIENTID_NULL;
     }
@@ -463,6 +471,9 @@ STDMETHODIMP TextService::Deactivate() {
     unadviseFunctionProvider();
     unadviseSinks();
     uninitializeLangBar();
+    resetCandidateState();
+    notificationUI_.end(); symbolUI_.end(); punctuationUI_.end();
+    uiElementManager_.Reset();
     // another input method takes over; the saved state brings the window back with ChiaKey
     symbolWindow_.destroy();
     punctuationKeyboard_.destroy();
@@ -744,7 +755,7 @@ void TextService::notifyMode(const std::wstring& text) {
     if (secureMode_ || !CurrentFrontendSettings().showNotifications) return;
     BOOL focused = FALSE;
     if (threadManager_ && SUCCEEDED(threadManager_->IsThreadFocus(&focused)) && focused)
-        notificationWindow_.show(text);
+        showNotification(text);
 }
 
 void TextService::setChineseMode(bool enabled) {
@@ -886,8 +897,9 @@ bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
 void TextService::toggleSymbolWindow() {
     if (symbolWindow_.isVisible()) {
         symbolWindow_.close();
+        symbolUI_.end();
     } else {
-        symbolWindow_.open();
+        showSymbolWindow(true);
     }
     refreshLangBar();
 }
@@ -940,9 +952,15 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lparam,
+STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam,
                                         BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    *eaten = FALSE;
+    if (!keyboardAvailable(context)) {
+        shiftTogglePending_ = false;
+        shiftPressedAt_ = 0;
+        return S_OK;
+    }
     if (!engine_ || !engine_->hasComposition()) RefreshSettings(true);
     const KeyEvent event = translateKey(wparam, lparam);
     if (!IsShiftKey(event.virtualKey)) {
@@ -985,6 +1003,7 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
                                     BOOL* eaten) {
     if (!context || !eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (!keyboardAvailable(context)) return S_OK;
     KeyEvent event = translateKey(wparam, lparam);
     if (punctuationKeyboard_.isVisible()) {
         shiftTogglePending_ = false;
@@ -1015,18 +1034,9 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
 
 HRESULT TextService::requestEditSession(ITfContext* context, ITfEditSession* session,
                                         HRESULT* editResult, bool* retriedAsync) {
-    *editResult = E_FAIL;
-    HRESULT requestResult = context->RequestEditSession(
-        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, editResult);
-    const bool refused = requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
-                         (SUCCEEDED(requestResult) && *editResult == TF_E_SYNCHRONOUS);
-    if (refused) {
-        *editResult = E_FAIL;
-        requestResult = context->RequestEditSession(
-            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, editResult);
-    }
-    if (retriedAsync) *retriedAsync = refused;
-    return requestResult;
+    return RequestWriteEditSession([&](DWORD flags, HRESULT* result) {
+        return context->RequestEditSession(clientId_, session, flags, result);
+    }, editResult, retriedAsync);
 }
 
 HRESULT TextService::handleFrontendShortcut(ITfContext* context, const KeyEvent& event, BOOL* eaten) {
@@ -1094,6 +1104,7 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eate
 STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (!keyboardAvailable(context)) return S_OK;
     if (!engine_ || !engine_->hasComposition()) RefreshSettings(true);
     if (guid == kSymbolWindowKeyGuid) {
         if (punctuationKeyboard_.isVisible() && context) {
@@ -1161,7 +1172,11 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         if (!range || FAILED(context->GetActiveView(&view)) ||
             FAILED(view->GetTextExt(editCookie, range.Get(), &caret, &clipped)) ||
             FAILED(view->GetWnd(&owner))) { PlayTypingErrorSound(settings); return S_OK; }
-        punctuationKeyboard_.open(owner, caret, settings.keyboardFollowsCursor);
+        presentAuxiliaryUI(punctuationUI_, 3,
+            [this, owner, caret, follow = settings.keyboardFollowsCursor](bool show) {
+                if (show) punctuationKeyboard_.open(owner, caret, follow);
+                else punctuationKeyboard_.close();
+            }, [this] { return punctuationKeyboard_.isVisible(); });
         return S_OK;
     }
     if (ShortcutFor(event, settings) == FrontendShortcut::RepeatCommit) {
@@ -1230,20 +1245,22 @@ HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* cont
 
     ComPtr<ITfInsertAtSelection> insertion;
     HRESULT result = context->QueryInterface(IID_PPV_ARGS(&insertion));
-    if (FAILED(result)) return result;
+    if (FAILED(result)) { Trace("CompositionStart insertInterface=0x%08lX", result); return result; }
     ComPtr<ITfRange> range;
     result = insertion->InsertTextAtSelection(editCookie, TF_IAS_QUERYONLY, nullptr, 0, &range);
-    if (FAILED(result)) return result;
+    if (FAILED(result)) { Trace("CompositionStart queryRange=0x%08lX", result); return result; }
 
     ComPtr<ITfContextComposition> compositionContext;
     result = context->QueryInterface(IID_PPV_ARGS(&compositionContext));
     if (FAILED(result)) return result;
     result = compositionContext->StartComposition(editCookie, range.Get(), this, &composition_);
+    if (FAILED(result)) Trace("CompositionStart start=0x%08lX", result);
     if (SUCCEEDED(result) && composition_) {
         compositionContext_ = context;
     } else if (SUCCEEDED(result)) {
         // a read-only field refuses the composition with S_OK and no object
         result = E_FAIL;
+        Trace("CompositionStart hostRefused=1");
     }
     return result;
 }
@@ -1395,6 +1412,7 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
 }
 
 void TextService::resetCandidateState() {
+    candidateUI_.end();
     candidateWindow_.hide();
     candidateActive_ = false;
     candidateAnchor_.Reset();
@@ -1496,55 +1514,126 @@ HRESULT TextService::updateComposition(TfEditCookie editCookie, ITfContext* cont
         if (FAILED(status)) return status;
     }
     updateCandidateWindow(editCookie, context, result);
-    if (!secureMode_ && !result.notification.empty()) notificationWindow_.show(result.notification);
+    if (!secureMode_ && !result.notification.empty()) showNotification(result.notification);
     return S_OK;
+}
+
+void TextService::presentAuxiliaryUI(UIElementSession& session, int kind,
+                                     std::function<void(bool)> show, std::function<bool()> visible) {
+    // Optional palettes and notifications must not pop over an exclusive game.
+    if (secureMode_ || uiLessMode_) { session.end(); show(false); return; }
+    ComPtr<TextUIElement> element = session.element();
+    if (!element) {
+        GUID guid = {0xd0126bd3, 0x5ecf, 0x4dcb, {0x91, 0x16, 0xad, 0xbb, 0x61, 0xa2, 0x9c, 0}};
+        guid.Data4[7] = static_cast<BYTE>(kind);
+        element.Attach(new TextUIElement(false, guid, L"ChiaKey auxiliary UI"));
+    }
+    element->setCallbacks(std::move(show), std::move(visible));
+    const HRESULT status = session.present(uiElementManager_.Get(), element.Get(), true);
+    if (FAILED(status)) Trace("AuxiliaryUI kind=%d hr=0x%08lX", kind, status);
+}
+
+void TextService::showNotification(const std::wstring& text) {
+    presentAuxiliaryUI(notificationUI_, 1,
+        [this, text](bool show) { if (show) notificationWindow_.show(text); else notificationWindow_.hide(); },
+        [this] { return notificationWindow_.isVisible(); });
+}
+
+void TextService::showSymbolWindow(bool userOpened) {
+    presentAuxiliaryUI(symbolUI_, 2,
+        [this, userOpened](bool show) {
+            symbolWindow_.setHostAllowed(show);
+            if (!show) symbolWindow_.hide();
+            else if (userOpened) symbolWindow_.open();
+            else symbolWindow_.show();
+        }, [this] { return symbolWindow_.isVisible(); });
+}
+
+bool TextService::keyboardAvailable(ITfContext* context) const {
+    if (!context) return false;
+    TF_STATUS status{};
+    if (SUCCEEDED(context->GetStatus(&status)) && (status.dwDynamicFlags & TF_SD_READONLY)) return false;
+    ComPtr<ITfCompartmentMgr> compartments;
+    if (FAILED(context->QueryInterface(IID_PPV_ARGS(&compartments)))) return true;
+    for (const auto& guid : {GUID_COMPARTMENT_KEYBOARD_DISABLED, GUID_COMPARTMENT_EMPTYCONTEXT}) {
+        ComPtr<ITfCompartment> compartment;
+        VARIANT value; VariantInit(&value);
+        bool disabled = false;
+        if (SUCCEEDED(compartments->GetCompartment(guid, &compartment)) &&
+            SUCCEEDED(compartment->GetValue(&value)))
+            disabled = value.vt == VT_I4 && value.lVal != 0;
+        VariantClear(&value);
+        if (disabled) return false;
+    }
+    return true;
 }
 
 void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
                                         const EngineResult& result) {
     const bool showCandidates = result.candidatesVisible && !result.candidates.empty();
-    if (!showCandidates && result.message.empty()) {
-        resetCandidateState();
-        return;
-    }
+    if (!showCandidates && result.message.empty()) { resetCandidateState(); return; }
 
+    // Candidate data remains available even if a game's text store has no geometry.
+    ComPtr<ITfDocumentMgr> document;
+    context->GetDocumentMgr(&document);
     ComPtr<ITfRange> range;
     if (composition_) composition_->GetRange(&range);
     if (!range) {
-        TF_SELECTION selection{};
-        ULONG fetched = 0;
-        if (FAILED(context->GetSelection(editCookie, TF_DEFAULT_SELECTION, 1, &selection,
-                                         &fetched)) ||
-            !fetched) {
-            resetCandidateState();
-            return;
+        TF_SELECTION selection{}; ULONG fetched = 0;
+        if (SUCCEEDED(context->GetSelection(editCookie, TF_DEFAULT_SELECTION, 1, &selection, &fetched)) && fetched)
+            range.Attach(selection.range);
+    }
+    ComPtr<ITfContextView> view;
+    RECT textRect{}; BOOL clipped = FALSE; HWND owner = nullptr;
+    bool anchored = false;
+    if (SUCCEEDED(context->GetActiveView(&view)) && view) {
+        view->GetWnd(&owner);
+        const HRESULT geometry = range ? view->GetTextExt(editCookie, range.Get(), &textRect, &clipped) : E_FAIL;
+        anchored = SUCCEEDED(geometry) && owner && textRect.bottom > textRect.top;
+        if (!anchored) {
+            Trace("CandidateGeometry hr=0x%08lX owner=%d clipped=%d uiLess=%d", geometry, owner != nullptr, clipped, uiLessMode_);
+            // Legacy custom controls sometimes expose a system caret but no TSF layout.
+            GUITHREADINFO info{sizeof(info)};
+            if (owner && GetGUIThreadInfo(GetWindowThreadProcessId(owner, nullptr), &info) && info.hwndCaret) {
+                textRect = info.rcCaret;
+                MapWindowPoints(info.hwndCaret, HWND_DESKTOP, reinterpret_cast<POINT*>(&textRect), 2);
+                anchored = textRect.bottom > textRect.top;
+            }
+            if (!anchored && owner && GetClientRect(owner, &textRect)) {
+                textRect.left += 8; textRect.right = textRect.left + 1;
+                textRect.top = std::max(textRect.top, textRect.bottom - 32);
+                MapWindowPoints(owner, HWND_DESKTOP, reinterpret_cast<POINT*>(&textRect), 2);
+                anchored = textRect.bottom > textRect.top;
+            }
         }
-        range.Attach(selection.range);
     }
 
-    ComPtr<ITfContextView> view;
-    RECT textRect{};
-    BOOL clipped = FALSE;
-    HWND owner = nullptr;
-    if (FAILED(context->GetActiveView(&view)) ||
-        FAILED(view->GetTextExt(editCookie, range.Get(), &textRect, &clipped)) ||
-        FAILED(view->GetWnd(&owner))) {
-        resetCandidateState();
-        return;
+    ComPtr<TextUIElement> element = candidateUI_.element();
+    if (element) {
+        ComPtr<ITfCandidateListUIElement> list;
+        const bool wasCandidates = SUCCEEDED(element.As(&list));
+        if (wasCandidates != showCandidates) { candidateUI_.end(); element.Reset(); }
     }
-    if (showCandidates) {
-        candidateWindow_.show(owner, textRect, result);
-    } else {
-        candidateWindow_.showMessage(owner, textRect, result.message);
+    if (!element) {
+        GUID guid = {0x9d26f572, 0x1a99, 0x4948, {0x90, 0xc9, 0x94, 0xe2, 0xf2, 0x8c, 0x57, 0x22}};
+        if (!showCandidates) ++guid.Data4[7];
+        element.Attach(new TextUIElement(showCandidates, guid, showCandidates ? L"ChiaKey candidates" : L"ChiaKey message"));
     }
+    element->update(document.Get(), result.allCandidates, static_cast<UINT>(result.selectedCandidate),
+                    static_cast<UINT>(result.candidatesPerPage));
+    element->setCallbacks([this, owner, textRect, result, anchored, showCandidates](bool show) {
+        if (!show || !anchored || secureMode_) { candidateWindow_.hide(); return; }
+        if (showCandidates) candidateWindow_.show(owner, textRect, result);
+        else candidateWindow_.showMessage(owner, textRect, result.message);
+    }, [this] { return candidateWindow_.isVisible(); });
+    const HRESULT uiStatus = candidateUI_.present(uiElementManager_.Get(), element.Get(), !uiLessMode_ && !secureMode_);
+    if (FAILED(uiStatus)) Trace("CandidateUI hr=0x%08lX uiLess=%d", uiStatus, uiLessMode_);
     candidateActive_ = showCandidates;
     candidateContext_ = context;
     candidateAnchor_.Reset();
-    if (showCandidates && !composition_ && SUCCEEDED(range->Clone(&candidateAnchor_))) {
+    if (showCandidates && !composition_ && range && SUCCEEDED(range->Clone(&candidateAnchor_)))
         candidateAnchor_->Collapse(editCookie, TF_ANCHOR_END);
-    }
 }
-
 bool TextService::selectionMatchesTrackedState(TfEditCookie editCookie,
                                                ITfContext* context) const {
     if (!context) return false;
@@ -1691,7 +1780,7 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
 // the window itself hides when another app comes to the front
 STDMETHODIMP TextService::OnSetThreadFocus() {
     RefreshSettings();
-    if (!symbolWindow_.isVisible() && ReadSymbolWindowState().visible) symbolWindow_.show();
+    if (!symbolWindow_.isVisible() && ReadSymbolWindowState().visible) showSymbolWindow();
     return S_OK;
 }
 

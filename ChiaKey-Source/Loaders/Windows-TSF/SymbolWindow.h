@@ -30,8 +30,10 @@ public:
     void hide();
     void destroy();
     bool isVisible() const;
+    void setHostAllowed(bool allowed) { hostAllowed_ = allowed; if (!allowed) hide(); }
 
 private:
+    bool hostAllowed_ = true;
     static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
     static LRESULT CALLBACK ListProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
     static void CALLBACK ForegroundChanged(HWINEVENTHOOK hook, DWORD event, HWND window,

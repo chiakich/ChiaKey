@@ -5,6 +5,9 @@
 功能與 UI 的歷史來源、已補齊項目及尚缺差異見 [原版 Windows KeyKey 對照](WindowsParity.md)。
 
 這份文件說明已接入 `ChiaKeyCore` 的 Windows TSF 前端架構、移植限制與更新機制。
+
+遊戲的 UILess 候選字介面、診斷工具與實機驗證步驟見
+[Windows 遊戲輸入相容性](WindowsGameCompatibility.md)。
 開發環境、完整建置／測試、本機註冊及 commit message 規則集中在
 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
