@@ -135,6 +135,14 @@ class OVFileTimestamp {
       : m_timestamp(timestamp), m_subtimestamp(subtimestamp) {
   }
 
+#if defined(__APPLE__)
+  __darwin_time_t timestamp() const { return m_timestamp; }
+  long subtimestamp() const { return m_subtimestamp; }
+#elif defined(WIN32)
+  time_t timestamp() const { return m_timestamp; }
+  time_t subtimestamp() const { return m_subtimestamp; }
+#endif
+
   OVFileTimestamp(const OVFileTimestamp& timestamp)
       : m_timestamp(timestamp.m_timestamp),
         m_subtimestamp(timestamp.m_subtimestamp) {}
@@ -334,10 +342,18 @@ class OVPathHelper {
           OVFileTimestamp(buf.st_mtimespec.tv_sec, buf.st_mtimespec.tv_nsec);
     }
 #elif defined(WIN32)
-    struct _stat buf;
+    // _wstat has whole seconds only, so a second save within that second went unseen
+    WIN32_FILE_ATTRIBUTE_DATA data;
     wstring wpath = OVUTF16::FromUTF8(path);
-    if (!_wstat(wpath.c_str(), &buf)) {
-      timestamp = OVFileTimestamp(buf.st_mtime);
+    if (GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &data)) {
+      ULARGE_INTEGER ticks;
+      ticks.LowPart = data.ftLastWriteTime.dwLowDateTime;
+      ticks.HighPart = data.ftLastWriteTime.dwHighDateTime;
+      // FILETIME starts in 1601; timestamp() uses Unix epoch seconds.
+      const ULONGLONG epochTicks = 116444736000000000ULL;
+      const ULONGLONG unixTicks = ticks.QuadPart > epochTicks ? ticks.QuadPart - epochTicks : 0;
+      timestamp = OVFileTimestamp(static_cast<time_t>(unixTicks / 10000000ULL),
+                                  static_cast<time_t>(unixTicks % 10000000ULL));
     }
 #else
 #error Sorry, no idea for Linux yet.

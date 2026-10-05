@@ -1,8 +1,6 @@
 name: Release
 
-# Manually triggered release: compute the next tag from existing tags,
-# build the installer package, and publish a GitHub Release with
-# auto-generated release notes.
+# Joint release: build both platforms at one exact commit before publishing v*.
 on:
   workflow_dispatch:
     inputs:
@@ -10,7 +8,7 @@ on:
         description: 'How to bump the next version tag'
         type: choice
         required: true
-        default: beta
+        default: patch
         options:
           - beta # bump -beta.N (or start beta.1 on current base)
           - patch # x.y.(z+1)
@@ -22,6 +20,14 @@ on:
         type: boolean
         required: false
         default: false
+      notes_macos:
+        description: 'Optional macOS notes to append verbatim (Markdown)'
+        type: string
+        required: false
+      notes_windows:
+        description: 'Optional Windows notes to append verbatim (Markdown)'
+        type: string
+        required: false
       verbose:
         description: 'Show full xcodebuild output (for diagnosing build failures)'
         type: boolean
@@ -31,14 +37,38 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: joint-release
+  cancel-in-progress: false
+
 jobs:
-  release:
+  macos:
     runs-on: macos-26
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      source_sha: ${{ steps.source.outputs.sha }}
+      built_sha: ${{ steps.snapshot.outputs.sha }}
     steps:
+      - name: Require a branch for release builds
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF: ${{ github.ref }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          test "$REF_TYPE" = branch
+          if [[ "$DRY_RUN" != true && "$REF" != refs/heads/main ]]; then
+            echo 'Publish joint releases from main; use dry_run on other branches.' >&2
+            exit 1
+          fi
       - name: Checkout (full history for tags)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+
+      - name: Record original source
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Select Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app
@@ -58,13 +88,18 @@ jobs:
           NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           # Not an array: an empty one is unbound under `set -u` on bash 3.2.
           missing=""
           for name in APP_CERT_P12 APP_SIGN_IDENTITY INSTALLER_CERT_P12 \
                       INSTALLER_SIGN_IDENTITY NOTARY_API_KEY_P8 \
-                      NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID; do
+                      NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID \
+                      R2_S3_ENDPOINT R2_BUCKET R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY; do
             eval "value=\${${name}:-}"
             [[ -n "${value}" ]] || missing="${missing} ${name}"
           done
@@ -79,7 +114,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          latest="$(git -c versionsort.suffix=-beta tag --sort=-v:refname | head -n1 || true)"
+          latest="$(git -c versionsort.suffix=-beta tag --list 'v[0-9]*' --merged HEAD --sort=-v:refname | head -n1 || true)"
           echo "Latest tag: ${latest:-<none>}"
           base="${latest#v}"
 
@@ -128,7 +163,7 @@ jobs:
           if [[ "${prerelease}" == "true" ]]; then
             notes_base="${latest}"
           else
-            notes_base="$(git tag --list 'v*' | grep -v -- '-beta\.' \
+            notes_base="$(git tag --list 'v[0-9]*' --merged HEAD | grep -v -- '-beta\.' \
               | sort -V | tail -n1 || true)"
           fi
 
@@ -137,10 +172,9 @@ jobs:
           echo "tag=${next}" >>"$GITHUB_OUTPUT"
           echo "core=${core}" >>"$GITHUB_OUTPUT"
           echo "prerelease=${prerelease}" >>"$GITHUB_OUTPUT"
-          echo "previous=${latest}" >>"$GITHUB_OUTPUT"
           echo "notes_base=${notes_base}" >>"$GITHUB_OUTPUT"
 
-      - name: Bump CFBundleVersion
+      - name: Bump both platform versions
         id: bump
         run: |
           set -euo pipefail
@@ -160,13 +194,24 @@ jobs:
             /usr/libexec/PlistBuddy -c "Delete :ChiaKeyReleaseTag" "$plist" 2>/dev/null || true
             /usr/libexec/PlistBuddy -c "Add :ChiaKeyReleaseTag string ${{ steps.version.outputs.tag }}" "$plist"
           done
-          if git diff --quiet -- "${plists[@]}"; then
+          cmake=ChiaKey-Source/Loaders/Windows-TSF/CMakeLists.txt
+          python3 - "${{ steps.version.outputs.core }}" "$cmake" <<'PYCODE'
+          import re, sys
+          from pathlib import Path
+          path = Path(sys.argv[2])
+          text, count = re.subn(r'(project\(ChiaKeyWindowsTsf VERSION )\d+\.\d+\.\d+',
+                               lambda m: m[1] + sys.argv[1], path.read_text())
+          if count != 1:
+              raise SystemExit("missing Windows project version")
+          path.write_text(text)
+          PYCODE
+          if git diff --quiet -- "${plists[@]}" "$cmake"; then
             echo "CFBundleVersion already ${{ steps.version.outputs.core }}; nothing to commit."
             echo "committed=false" >>"$GITHUB_OUTPUT"
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: bump version to ${{ steps.version.outputs.core }}" -- "${plists[@]}"
+            git commit -m "chore: bump version to ${{ steps.version.outputs.core }}" -- "${plists[@]}" "$cmake"
             echo "committed=true" >>"$GITHUB_OUTPUT"
           fi
 
@@ -181,9 +226,9 @@ jobs:
           INSTALLER_CERT_PASSWORD: ${{ secrets.INSTALLER_CERT_PASSWORD }}
           APP_SIGN_IDENTITY: ${{ secrets.APP_SIGN_IDENTITY }}
           INSTALLER_SIGN_IDENTITY: ${{ secrets.INSTALLER_SIGN_IDENTITY }}
-          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
-          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
-          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          NOTARY_API_KEY_P8: ${{ inputs.dry_run == false && secrets.NOTARY_API_KEY_P8 || '' }}
+          NOTARY_API_KEY_ID: ${{ inputs.dry_run == false && secrets.NOTARY_API_KEY_ID || '' }}
+          NOTARY_API_ISSUER_ID: ${{ inputs.dry_run == false && secrets.NOTARY_API_ISSUER_ID || '' }}
           # When the 'verbose' input is set, surface full xcodebuild output so a
           # CompileXIB/ibtool failure shows the actual error instead of being
           # hidden by the script's default quiet mode.
@@ -191,9 +236,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          args=()
+          args=(--pkg-name "ChiaKey-${{ steps.version.outputs.tag }}.pkg")
+          args[1]="${args[1]/ChiaKey-v/ChiaKey-}"
 
-          # Import code-signing certificates into a temporary keychain.
           if [[ -n "${APP_CERT_P12}" ]]; then
             KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
             KEYCHAIN_PASSWORD="ci-temp-$RANDOM"
@@ -220,7 +265,6 @@ jobs:
             echo "No signing secrets configured; building an unsigned (ad-hoc) package."
           fi
 
-          # Notarize when an App Store Connect API key is provided.
           if [[ -n "${NOTARY_API_KEY_P8}" ]]; then
             echo "$NOTARY_API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary_key.p8"
             xcrun notarytool store-credentials chiakey-notary \
@@ -260,272 +304,182 @@ jobs:
 
           lexicon_version="$(cat artifacts/release/lexicon-version.txt 2>/dev/null || true)"
           echo "Bundled lexicon: ${lexicon_version:-<unknown>}"
-          echo "lexicon_version=${lexicon_version}" >>"$GITHUB_OUTPUT"
 
-      # Build categorized notes from Conventional Commit subjects since the
-      # previous tag. This repo commits straight to main, so GitHub's built-in
-      # PR-based generator has nothing to group; parsing the log ourselves gives
-      # a proper changelog. awk (not bash) does the bucketing so it runs on the
-      # runner's bash 3.2, which has no associative arrays.
-      - name: Generate release notes
-        id: notes
+      - name: Collect platform commit messages
         env:
-          TAG: ${{ steps.version.outputs.tag }}
           PREV: ${{ steps.version.outputs.notes_base }}
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
-          REPO: ${{ github.repository }}
-          SERVER: ${{ github.server_url }}
-          LEXICON_VERSION: ${{ steps.build.outputs.lexicon_version }}
+          NOTES_MACOS: ${{ inputs.notes_macos }}
+          NOTES_WINDOWS: ${{ inputs.notes_windows }}
         run: |
           set -euo pipefail
-
-          # Only diff against the previous tag when it actually exists (the very
-          # first release has none, so we fall back to the whole history).
-          range=()
-          if [[ -n "${PREV}" ]] && git rev-parse -q --verify "${PREV}^{commit}" >/dev/null 2>&1; then
-            range=("${PREV}..HEAD")
-          fi
-
-          changelog="$(git log ${range[@]+"${range[@]}"} --no-merges \
-            --pretty=format:'%h%x1f%s' | awk -F'\037' '
-            BEGIN {
-              n = split("feat fix perf refactor test build style chore other", ord, " ")
-              title["feat"]="### Features"; title["fix"]="### Bug Fixes"
-              title["perf"]="### Performance"; title["refactor"]="### Refactoring"
-              title["test"]="### Tests"; title["build"]="### Build"
-              title["style"]="### Styling"; title["other"]="### Other Changes"
-              drop["docs"]=1; drop["ci"]=1        # not user-facing; keep them out of notes
-            }
+          mkdir -p release-notes
+          printf '%s\n' "$NOTES_MACOS" > release-notes/extra-macos.md
+          printf '%s\n' "$NOTES_WINDOWS" > release-notes/extra-windows.md
+          args=()
+          [[ -z "$PREV" ]] || args=(--since "$PREV")
+          for platform in macos windows; do
+            python3 Scripts/generate-release-notes.py --platform "$platform" ${args[@]+"${args[@]}"} > "release-notes/notes-$platform.md"
             {
-              hash=$1; s=$2
-              if (s ~ /^chore.*bump version/) next          # skip the automated bump commit
-              type="other"; desc=s
-              p=index(s, ": ")
-              if (p > 1) {
-                left=substr(s, 1, p-1); right=substr(s, p+2)
-                gsub(/\([^)]*\)/, "", left); gsub(/!/, "", left)
-                gsub(/^[ \t]+|[ \t]+$/, "", left); left=tolower(left)
-                if (left in drop) next
-                if (left in title || left == "chore") { type=left; desc=right }
-              }
-              bucket[type]=bucket[type] "- " desc " (`" hash "`)\n"
-            }
-            END {
-              for (i=1; i<=n; i++) {
-                t=ord[i]; if (!(t in bucket)) continue
-                if (t == "chore")
-                  printf "<details>\n<summary>Chores</summary>\n\n%s</details>\n\n", bucket[t]
-                else
-                  printf "%s\n\n%s\n", title[t], bucket[t]
-              }
-            }')"
+              printf '你是千秋輸入法的 %s 發版助理。請以繁體中文整理以下該平台變更；只輸出條列，不加入其他平台或未提到的功能。保留新功能、修正與相容性要求；略過內部實作。\n<changes>\n' "$platform"
+              cat "release-notes/notes-$platform.md"
+              printf '</changes>\n'
+            } > "release-notes/prompt-$platform.txt"
+          done
 
-          printf '%s\n' "${changelog}" > changelog.md
-
-          # Assembled as a file rather than an action input: commit subjects are
-          # author-controlled, and this way they never pass through a shell or a
-          # workflow expression. The instructions live in their own file so
-          # tuning the wording does not mean editing YAML.
-          {
-            cat .github/release-notes-prompt.txt
-            cat changelog.md
-            printf '</changes>\n'
-          } > notes-prompt.txt
-
-      # Commit subjects describe mechanisms; users need symptoms. The model
-      # rewrites them, and the raw list stays below so nothing is lost if it
-      # guesses wrong. The script never fails: on any error summary-zh.md is
-      # empty and the notes fall back to the commit list.
-      - name: Write user-facing notes in Chinese
+      - name: Summarize macOS notes
+        if: ${{ inputs.dry_run == false }}
         continue-on-error: true
-        # Three models, each retried three times behind a 120s curl timeout with
-        # 30s and 60s backoffs, is ~22 minutes of a release job spent waiting out
-        # a capacity incident. The notes fall back to the commit list anyway.
         timeout-minutes: 10
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: Scripts/gemini-summarize.sh notes-prompt.txt summary-zh.md
+        run: Scripts/gemini-summarize.sh release-notes/prompt-macos.txt release-notes/summary-macos.md
 
-      - name: Assemble release notes
+      - name: Summarize Windows notes
+        if: ${{ inputs.dry_run == false }}
+        continue-on-error: true
+        timeout-minutes: 10
         env:
-          TAG: ${{ steps.version.outputs.tag }}
-          PREV: ${{ steps.version.outputs.notes_base }}
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
-          REPO: ${{ github.repository }}
-          SERVER: ${{ github.server_url }}
-          LEXICON_VERSION: ${{ steps.build.outputs.lexicon_version }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: Scripts/gemini-summarize.sh release-notes/prompt-windows.txt release-notes/summary-windows.md
+
+      - name: Save exact source for both builds
+        id: snapshot
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
-          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git bundle create source.bundle HEAD "${SOURCE_SHA}^"
 
-          changelog="$(cat changelog.md)"
-          # The summary step is continue-on-error, so the file may not exist at
-          # all if that step never ran; an empty summary means "publish the
-          # commit list", not "fail the release".
-          SUMMARY_ZH="$(cat summary-zh.md 2>/dev/null || true)"
-
-          {
-            if [[ "${PRERELEASE}" == "true" ]]; then
-              printf '> This is a **pre-release (beta)** and may be less stable than a normal release.\n\n'
-            fi
-            if [[ -n "${SUMMARY_ZH//[[:space:]]/}" ]]; then
-              printf '## 這次更新\n\n%s\n\n' "${SUMMARY_ZH}"
-              [[ -n "${changelog}" ]] && printf '<details>\n<summary>完整變更</summary>\n\n%s\n\n</details>\n\n' "${changelog}"
-            else
-              # Redirected: this block writes RELEASE_NOTES.md, so a bare echo
-              # would put the workflow command into the release body itself.
-              echo "::warning::No Chinese summary was produced; publishing the commit list only." >&2
-              [[ -n "${changelog}" ]] && printf '%s\n\n' "${changelog}"
-            fi
-            if [[ -n "${LEXICON_VERSION}" ]]; then
-              printf 'Bundled lexicon: `%s`\n\n' "${LEXICON_VERSION}"
-            fi
-            printf 'Please download the `.pkg` below.\n'
-            if [[ -n "${PREV}" ]]; then
-              printf '\n**Full Changelog**: %s/%s/compare/%s...%s\n' "${SERVER}" "${REPO}" "${PREV}" "${TAG}"
-            fi
-          } > RELEASE_NOTES.md
-
-          echo "Generated release notes:"
-          cat RELEASE_NOTES.md
-          {
-            echo "## Release notes preview (${TAG})"
-            cat RELEASE_NOTES.md
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Push version bump and tag
-        if: ${{ inputs.dry_run == false }}
-        run: |
-          set -euo pipefail
-          # Tag the commit the package was built from, and let the branch push
-          # fail rather than rebasing onto a tree that was never built.
-          built="$(git rev-parse HEAD)"
-          git tag "${{ steps.version.outputs.tag }}" "${built}"
-
-          if [[ "${{ steps.bump.outputs.committed }}" == "true" ]]; then
-            if ! git push origin "${built}:${{ github.ref_name }}"; then
-              echo "Push rejected: ${{ github.ref_name }} moved while this release was building." >&2
-              echo "Re-run the workflow so the package matches the tagged source." >&2
-              exit 1
-            fi
-          fi
-          git push origin "${{ steps.version.outputs.tag }}"
-
-      - name: Publish GitHub Release
-        if: ${{ inputs.dry_run == false }}
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ChiaKey ${{ steps.version.outputs.tag }}
-          body_path: RELEASE_NOTES.md
-          prerelease: ${{ steps.version.outputs.prerelease }}
-          files: |
-            ${{ steps.build.outputs.pkg }}
+          name: joint-source
+          path: source.bundle
+          retention-days: 7
 
-      # The updater reads this manifest instead of the GitHub API, whose
-      # unauthenticated limit is 60 requests/hour per IP -- shared by everyone
-      # behind one NAT. R2 also keeps the response small: one channel entry
-      # rather than every release's full JSON.
-      - name: Publish update manifest to R2
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-installer
+          path: artifacts/release/*.pkg
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: joint-notes
+          path: release-notes/*.md
+          retention-days: 7
+
+  windows:
+    needs: macos
+    uses: ./.github/workflows/release-windows.yml
+    with:
+      tag: ${{ needs.macos.outputs.tag }}
+      source_sha: ${{ needs.macos.outputs.source_sha }}
+      built_sha: ${{ needs.macos.outputs.built_sha }}
+
+  publish:
+    needs: [macos, windows]
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.macos.outputs.source_sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: joint-source
+          path: source-snapshot
+      - name: Restore the source both platforms built
+        env:
+          BUILT_SHA: ${{ needs.macos.outputs.built_sha }}
+        run: |
+          git fetch source-snapshot/source.bundle HEAD
+          git checkout --detach "$BUILT_SHA"
+          test "$(git rev-parse HEAD)" = "$BUILT_SHA"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: macos-installer
+          path: joint-release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: windows-installer
+          path: joint-release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: joint-notes
+          path: joint-release
+      - name: Validate artifacts and assemble platform notes
+        env:
+          TAG: ${{ needs.macos.outputs.tag }}
+        run: python3 Scripts/assemble-joint-release.py --directory joint-release --tag "$TAG"
+      - name: Upload complete dry-run result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: joint-release
+          path: joint-release/*
+          retention-days: 7
+      - name: Preview joint notes
+        run: cat joint-release/RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Push the exact built commit and tag
         if: ${{ inputs.dry_run == false }}
         env:
+          TAG: ${{ needs.macos.outputs.tag }}
+          BUILT_SHA: ${{ needs.macos.outputs.built_sha }}
+          SOURCE_SHA: ${{ needs.macos.outputs.source_sha }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Never rebase a release onto source that was not built.
+          remote="$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)"
+          if [[ "$remote" != "$SOURCE_SHA" && "$remote" != "$BUILT_SHA" ]]; then
+            echo 'Branch moved; re-run the release.' >&2; exit 1
+          fi
+          [[ "$remote" = "$BUILT_SHA" ]] || git push origin "$BUILT_SHA:refs/heads/$BRANCH"
+          if git rev-parse -q --verify "$TAG^{commit}" >/dev/null; then
+            test "$(git rev-parse "$TAG^{commit}")" = "$BUILT_SHA"
+          else
+            git tag "$TAG" "$BUILT_SHA"
+          fi
+          git push origin "$TAG"
+      - name: Publish complete GitHub release
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.macos.outputs.tag }}
+          PRERELEASE: ${{ needs.macos.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          args=(--latest)
+          [[ "$PRERELEASE" != true ]] || args=(--prerelease --latest=false)
+          # Upload into a draft first; old clients never see a release without its .pkg.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft > existing-release.json; then
+            if [[ "$(jq -r .isDraft existing-release.json)" = false ]]; then
+              mkdir -p existing-artifacts
+              gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+                --pattern SHA256SUMS.txt --dir existing-artifacts
+              cmp joint-release/SHA256SUMS.txt existing-artifacts/SHA256SUMS.txt
+            else
+              gh release upload "$TAG" joint-release/*.pkg joint-release/*.exe \
+                joint-release/SHA256SUMS.txt joint-release/release-notes-*.md \
+                --repo "$GITHUB_REPOSITORY" --clobber
+              gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false "${args[@]}"
+            fi
+          else
+            gh release create "$TAG" joint-release/*.pkg joint-release/*.exe \
+              joint-release/SHA256SUMS.txt joint-release/release-notes-*.md \
+              --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+              --title "ChiaKey $TAG" --notes-file joint-release/RELEASE_NOTES.md
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false "${args[@]}"
+          fi
+      - name: Publish platform CDN feeds and legacy macOS feed
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
           R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_PUBLIC_BASE_URL: ${{ vars.R2_PUBLIC_BASE_URL || 'https://cdn.chiaki.ch' }}
-          PKG: ${{ steps.build.outputs.pkg }}
-          TAG: ${{ steps.version.outputs.tag }}
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
-        run: |
-          set -euo pipefail
-
-          # Guarded here rather than in `if:`, where the step's own env block is
-          # not reliably in scope.
-          if [[ -z "${R2_S3_ENDPOINT}" || -z "${R2_ACCESS_KEY_ID}" ]]; then
-            echo "R2 secrets not configured; skipping manifest publish."
-            exit 0
-          fi
-
-          case "${PRERELEASE}" in
-            true|false) ;;
-            *) echo "Unexpected prerelease value: ${PRERELEASE}" >&2; exit 1 ;;
-          esac
-
-          # Everything lives under one prefix so the bucket stays usable for
-          # other projects.
-          prefix="chiakey"
-
-          r2() {
-            local method="$1" key="$2"; shift 2
-            curl --fail --silent --show-error \
-              --aws-sigv4 "aws:amz:auto:s3" \
-              --user "${R2_ACCESS_KEY_ID}:${R2_SECRET_ACCESS_KEY}" \
-              -X "${method}" "$@" \
-              "${R2_S3_ENDPOINT}/${R2_BUCKET}/${prefix}/${key}"
-          }
-
-          pkg_name="$(basename "${PKG}")"
-          sha256="$(shasum -a 256 "${PKG}" | awk '{print $1}')"
-          published_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-          # Immutable: the manifest pins a SHA-256 against this exact object,
-          # so it must never be overwritten.
-          r2 PUT "releases/${pkg_name}" \
-            --upload-file "${PKG}" \
-            -H "Content-Type: application/octet-stream" \
-            -H "Cache-Control: public, max-age=31536000, immutable"
-
-          # A stable download link for the README and the website. Humans only:
-          # the updater always fetches the versioned object, because this one
-          # can change between reading the manifest and finishing the download,
-          # which would break the digest check. Betas never claim it.
-          if [[ "${PRERELEASE}" == "false" ]]; then
-            r2 PUT "ChiaKey.pkg" \
-              --upload-file "${PKG}" \
-              -H "Content-Type: application/octet-stream" \
-              -H "Cache-Control: public, max-age=300"
-          fi
-
-          # Read-modify-write: publishing a beta must not erase the stable
-          # entry that non-beta users are still following.
-          if ! r2 GET appcast.json -o current.json; then
-            echo '{"schema":1}' >current.json
-          fi
-
-          entry="$(jq -n \
-            --arg tag "${TAG}" \
-            --arg published_at "${published_at}" \
-            --arg package_name "${pkg_name}" \
-            --arg package_url "${R2_PUBLIC_BASE_URL}/${prefix}/releases/${pkg_name}" \
-            --arg sha256 "${sha256}" \
-            --argjson prerelease "${PRERELEASE}" \
-            '{tag:$tag, published_at:$published_at, package_name:$package_name,
-              package_url:$package_url, sha256:$sha256, prerelease:$prerelease}')"
-
-          # A stable build is also the newest thing a beta follower should see,
-          # so it lands in both channels.
-          if [[ "${PRERELEASE}" == "true" ]]; then
-            jq --argjson e "${entry}" '.schema=1 | .beta=$e' current.json >appcast.json
-          else
-            jq --argjson e "${entry}" '.schema=1 | .stable=$e | .beta=$e' current.json >appcast.json
-          fi
-
-          # Clients throttle their update check to once every 24h, so a short
-          # freshness window buys nothing and just multiplies origin fetches.
-          r2 PUT appcast.json \
-            --upload-file appcast.json \
-            -H "Content-Type: application/json" \
-            -H "Cache-Control: public, max-age=3600"
-
-          echo "Published manifest for ${TAG} to ${R2_PUBLIC_BASE_URL}/${prefix}/appcast.json" \
-            >>"$GITHUB_STEP_SUMMARY"
-          if [[ "${PRERELEASE}" == "false" ]]; then
-            echo "Updated ${R2_PUBLIC_BASE_URL}/${prefix}/ChiaKey.pkg" \
-              >>"$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Dry run summary
-        if: ${{ inputs.dry_run == true }}
-        run: |
-          echo "Dry run: would publish ${{ steps.version.outputs.tag }}" >>"$GITHUB_STEP_SUMMARY"
-          echo "Package: ${{ steps.build.outputs.pkg }}" >>"$GITHUB_STEP_SUMMARY"
+          TAG: ${{ needs.macos.outputs.tag }}
+          RELEASE_DIR: joint-release
+        run: bash Scripts/publish-joint-appcast.sh

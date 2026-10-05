@@ -1,22 +1,22 @@
 # Contributing
 
-感謝你願意協助千秋輸入法。這個 repo 的維護目標偏保守：優先保留 Yahoo! 奇摩輸入法 / KeyKey 的輸入手感與歷史脈絡，同時讓專案能在現代 macOS、Xcode 與 Apple Silicon 上穩定編譯、測試、打包與發佈。
+感謝你願意協助千秋輸入法。這個 repo 的維護目標偏保守：優先保留 Yahoo! 奇摩輸入法 / KeyKey 的輸入手感與歷史脈絡，同時讓專案能在現代 macOS 與 Windows 上穩定編譯、測試、打包與發佈。
 
 ## 開發環境
 
-需使用支援 Apple Silicon 的現代 Xcode；目前已在 Xcode 26.5 驗證。
+macOS 開發需使用支援 Apple Silicon 的現代 Xcode；目前已在 Xcode 26.5 驗證。Windows 開發使用 MSVC、Windows SDK 與 CMake 3.21 以上，完整流程見下方「Windows 開發」。
 
 這個 fork 的上游脈絡來自官方封存的 `YahooArchive/KeyKey`，目前的現代化工作則起始於 `vChewing/KeyKey-Boneyard` snapshot。
 
 主要主線設定：
 
-1. 目前發佈主線維護現代 macOS InputMethodKit 版本。
+1. 目前發佈主線維護現代 macOS InputMethodKit 與 Windows TSF 版本；Windows 仍標示為預覽版。
 2. bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
 3. 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
 4. 詞庫由獨立 repo `ChiaKey-Lexicon` 透過 GitHub Releases 發佈。
 5. `ChiaKeyCore` host-neutral engine facade（Runtime + Engine 兩層），作為 Windows / Linux 等其他 host 可共用的輸入核心地基。
 
-## 編譯
+## macOS 編譯
 
 歷史 target 目前可在 Xcode 26+ / Apple Silicon 上編譯。
 
@@ -44,7 +44,7 @@ Release build 已可在現代 Xcode 完成。先前的 `LSMinimumSystemVersion`�
 
 乾淨 rebuild 仍會看到部分舊 API / nib 警告，例如 `NSConnection`、舊 AppKit 常數與既有 XIB layout notices；這些要分批評估，尤其 IPC 與組字視窗相關程式不應一次大換。
 
-## 本機測試
+## macOS 本機測試
 
 日常開發請使用 local install helper，不需要每次重跑 installer：
 
@@ -155,7 +155,7 @@ ctest --test-dir build/core-cmake --output-on-failure
 驗證規則（含跨 origin 的 `SHA256SUMS` 比對）全部由 installer 負責，測試腳本沒有自己的
 下載路徑。設 `CHIAKEY_SMOKE_NO_DOWNLOAD=1` 可改成直接失敗。
 
-CMake 會依序找 bundled、已安裝的 active、以及上面這個快取；都沒有就用
+CMake 會依序找已安裝的 active、bundled、以及上面這個快取；都沒有就用
 `-DCHIAKEY_LEXICON_DATABASE=<path>` 指定，否則 smoke test 會編出來但不註冊。
 
 在 Windows 上用 MSVC（x64 Native Tools 命令列，需 CMake 3.21 以上）：
@@ -218,6 +218,80 @@ Scripts/test-manjusri-core.sh
 
 iOS app + keyboard extension 可放在獨立 repo，並透過 `ChiaKeyCore` 接入共用輸入核心。若有對應的 iOS host project，請在該 repo 執行它自己的 Xcode build 驗證腳本。
 
+## Windows 開發
+
+請安裝 Visual Studio／Build Tools 的「使用 C++ 的桌面開發」工作負載（含 MSVC 與 Windows SDK），以及 CMake 3.21 以上。設定程式使用 .NET Framework 4.x 的 `csc.exe`，不需要另裝 .NET SDK；字典使用 WebView2，CMake 會從 Microsoft NuGet 下載固定版本並校驗 SHA-256 的 SDK（首次 configure 需網路），其授權與 loader 隨安裝包提供。內嵌字典另外需要 Evergreen WebView2 Runtime；未安裝時可使用字典的瀏覽器開啟功能。若 CMake 顯示找不到 `csc.exe`，設定程式與更新測試不會建置，請先補齊環境。
+
+以下指令從 repo 根目錄，在可使用 MSVC 的 PowerShell 執行。先取得詞庫 repo 的 release／本機產出的 `ChiaKeySource.db`，並替換範例路徑；詞庫不在 git 裡，Windows 的 CMake 不會自動下載。
+
+### 建置 TSF 前端與測試
+
+```powershell
+$db = (Resolve-Path 'C:\path\to\ChiaKeySource.db').Path
+cmake -S ChiaKey-Source/Loaders/Windows-TSF -B build/tsf-x64 -A x64 "-DCHIAKEY_LEXICON_DATABASE=$db"
+cmake --build build/tsf-x64 --config Release
+ctest --test-dir build/tsf-x64 -C Release --output-on-failure
+```
+
+這個入口會一起建置共用核心、`ChiaKeyTsf.dll`、圖示與 `ChiaKeySettings.exe`，並將 DB 複製到 `build/tsf-x64/Release/`。CTest 涵蓋核心 smoke test、TSF 引擎測試與離線更新測試；它不會註冊輸入法。請確認詞庫路徑有效，否則相關測試不會註冊，不能只以 CTest 結束成功判定驗證完成。
+
+要驗證 32 位元宿主，使用另一個 build 目錄並指定 `-A Win32`：
+
+```powershell
+cmake -S ChiaKey-Source/Loaders/Windows-TSF -B build/tsf-x86 -A Win32 "-DCHIAKEY_LEXICON_DATABASE=$db"
+cmake --build build/tsf-x86 --config Release
+ctest --test-dir build/tsf-x86 -C Release --output-on-failure
+```
+
+正式 Windows release workflow 會建置並測試 x64 與 Win32；要製作含兩種架構的安裝器，另需 Inno Setup 6，參考 [release-windows.yml](.github/workflows/release-windows.yml)。
+
+### 本機註冊與實機測試
+
+在 64 位元 Windows PowerShell 中註冊 x64 DLL，腳本會在需要時要求系統管理員權限：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ChiaKey-Source/Loaders/Windows-TSF/Register-Tip.ps1 -DllPath build/tsf-x64/Release/ChiaKeyTsf.dll
+```
+
+保持 DLL、`ChiaKeySource.db` 與 `ChiaKeySettings.exe` 在同一目錄。已開啟的應用程式可能仍持有舊 DLL；關閉使用輸入法的程式後再 rebuild，重新開啟以載入新版。測試完可解除註冊：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ChiaKey-Source/Loaders/Windows-TSF/Register-Tip.ps1 -DllPath build/tsf-x64/Release/ChiaKeyTsf.dll -Unregister
+```
+
+實機請在記事本、Word、Edge、Store app／開始選單搜尋，以及以系統管理員身分執行的記事本確認組字、候選窗、切換中英／全半形、符號表、設定重載與學習存檔。更新功能另需測試實際下載、UAC／取消、登入時的背景更新與更新中組字；離線 CTest 不涵蓋這些 GUI 與網路流程。
+
+Windows 學習資料與偏好設定位於 `%APPDATA%\ChiaKey`，外部詞庫與更新狀態位於 `%APPDATA%\ChiaKeyUpdates`。架構、AppContainer 行為與移植注意事項見 [Windows 實作指南](Docs/WindowsImplementation.md)。
+
+## Commit message 規則
+
+Commit message 請使用**單行 Conventional Commit**，格式為：
+
+```text
+type(scope): description
+```
+
+`scope` 可省略；description 簡潔描述實際變更。使用小寫 type：
+
+- `feat`：新增功能。
+- `fix`：修正錯誤。
+- `perf`：效能改善。
+- `revert`：回退變更。
+- `refactor`：內部重構。
+- `docs`、`test`、`ci`、`build`、`chore`：文件、測試、CI、建置與維護。
+
+只影響 Windows 的使用者變更請用 `win`（也接受 `windows`）scope；只影響 macOS 請用 `mac`（也接受 `macos`）。跨平台變更可省略平台 scope。若有不相容變更，可在冒號前加 `!`。
+
+```text
+fix(win): correct editing lock timestamp epoch
+feat(mac): add symbol window keyboard navigation
+fix: preserve user phrase readings during import
+refactor: share GDI text measurement helper
+docs: document Windows development workflow
+```
+
+Release notes 由 [generate-release-notes.py](Scripts/generate-release-notes.py) 收集 `feat`／`fix`／`perf`／`revert`，其他 type 不會收錄。明確的 `win`／`mac` scope 優先決定平台；未指定平台時會依 Windows 關鍵字與變更檔案路徑判斷，共用核心變更通常列入兩平台。因此請用 `fix` 描述使用者可感受到的錯誤修正，純內部整理使用 `refactor`／`chore`。
+
 ## Release package
 
 正式發佈使用 macOS Installer `.pkg`，預設走 per-user domain，安裝目的地是：
@@ -253,6 +327,8 @@ artifacts/release/
 - `ChiaKey-Source/Frameworks/Manjusri/`：SQLite-backed language model。
 - `ChiaKey-Source/ModulePackages/OVIMMandarin/`：智慧注音 OpenVanilla module。
 - `ChiaKey-Source/Loaders/OSX-IMK/`：目前發佈中的 macOS InputMethodKit host。
+- `ChiaKey-Source/Loaders/Windows-TSF/`：Windows TSF host、候選／符號視窗、設定與更新程式。
+- `Packaging/Windows/`：Windows Inno Setup 安裝器與資源。
 - `ChiaKey-Source/Loaders/iOS-Keyboard/`：iOS host placeholder；實際 iOS host 可放在獨立 repo。
 - `ChiaKey-Source/Distributions/Takao/CookedDatabase/`：本機 bundled fallback DB 位置；DB 由詞庫 repo 或 release artifact 提供。
 - `Scripts/`：本機 build、install、icon、lexicon helper。

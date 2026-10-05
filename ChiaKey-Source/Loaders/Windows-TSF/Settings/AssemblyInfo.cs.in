@@ -1,0 +1,12 @@
+// filled in by CMake from the project version, so the app and ChiaKeyTsf.dll report one version
+
+using System.Reflection;
+
+[assembly: AssemblyTitle("ChiaKey Settings")]
+[assembly: AssemblyDescription("ChiaKey settings and phrase editor")]
+[assembly: AssemblyCompany("ChiaKey")]
+[assembly: AssemblyProduct("ChiaKey")]
+[assembly: AssemblyCopyright("Copyright (c) 2012 Yahoo! Inc., (c) 2026 Chiaki.C")]
+[assembly: AssemblyVersion("@PROJECT_VERSION@.0")]
+[assembly: AssemblyFileVersion("@PROJECT_VERSION@.0")]
+[assembly: AssemblyInformationalVersion("@CHIAKEY_DISPLAY_VERSION@")]

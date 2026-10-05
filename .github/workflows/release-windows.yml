@@ -1,0 +1,173 @@
+name: Windows release build
+
+# Build only: joint publication waits for both platforms. Manual runs rebuild the
+# requested Windows preview; publication is performed separately after checks.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Windows preview tag (must match the project version)'
+        required: true
+        default: 'win-v0.1.0-beta.2'
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+      source_sha:
+        type: string
+        required: true
+      built_sha:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # as in core-msvc.yml: install-lexicon-release.sh owns the verification rules
+  lexicon:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: inputs.built_sha != ''
+        with:
+          name: joint-source
+          path: source-snapshot
+      - name: Restore joint source
+        if: inputs.built_sha != ''
+        shell: bash
+        env:
+          BUILT_SHA: ${{ inputs.built_sha }}
+        run: |
+          set -euo pipefail
+          git fetch source-snapshot/source.bundle HEAD
+          git checkout --detach "$BUILT_SHA"
+          test "$(git rev-parse HEAD)" = "$BUILT_SHA"
+
+      - name: Download and verify a lexicon release
+        run: |
+          set -euo pipefail
+          mkdir -p downloads lexicon
+          TMPDIR="$PWD/downloads" \
+            Scripts/install-lexicon-release.sh --dry-run --keep-downloads
+          found="$(find downloads -type f -name 'ChiaKeySource*.db')"
+          if [ "$(printf '%s\n' "$found" | grep -c .)" -ne 1 ]; then
+            echo "expected exactly one downloaded database, got:" >&2
+            printf '%s\n' "$found" >&2
+            exit 1
+          fi
+          cp "$found" lexicon/ChiaKeySource.db
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lexicon
+          path: lexicon/ChiaKeySource.db
+          retention-days: 1
+
+  build:
+    runs-on: windows-latest
+    needs: lexicon
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: inputs.built_sha != ''
+        with:
+          name: joint-source
+          path: source-snapshot
+      - name: Restore joint source
+        if: inputs.built_sha != ''
+        shell: bash
+        env:
+          BUILT_SHA: ${{ inputs.built_sha }}
+        run: |
+          set -euo pipefail
+          git fetch source-snapshot/source.bundle HEAD
+          git checkout --detach "$BUILT_SHA"
+          test "$(git rev-parse HEAD)" = "$BUILT_SHA"
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: lexicon
+          path: lexicon
+
+      - name: Check the tag against the project version
+        id: version
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+          BUILT_SHA: ${{ inputs.built_sha }}
+        run: |
+          $cmake = Get-Content ChiaKey-Source/Loaders/Windows-TSF/CMakeLists.txt -Raw
+          if ($cmake -notmatch 'project\(ChiaKeyWindowsTsf VERSION (\d+\.\d+\.\d+)') {
+            throw 'no project version in Loaders/Windows-TSF/CMakeLists.txt'
+          }
+          $version = $Matches[1]
+          $tag = $env:TAG
+          if ($env:BUILT_SHA -eq '') {
+            if ($tag -notmatch '^win-v\d+\.\d+\.\d+-beta\.[1-9][0-9]*$') {
+              throw 'manual Windows builds require an explicit win-vX.Y.Z-beta.N preview tag'
+            }
+          }
+          $versionTag = $tag -replace '^win-v', 'v'
+          if ($versionTag -notmatch "^v$([regex]::Escape($version))(-beta\.[1-9][0-9]*)?$") {
+            throw "tag $tag does not match the project version $version"
+          }
+          $prerelease = if ($Matches[1]) { $Matches[1].TrimStart('-') } else { '' }
+          "numeric_version=$version" >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+          "version=$($versionTag.Substring('v'.Length))" >> $env:GITHUB_OUTPUT
+
+      - name: Build and test
+        shell: pwsh
+        run: |
+          $db = (Resolve-Path lexicon/ChiaKeySource.db).Path -replace '\\', '/'
+          foreach ($arch in 'x64', 'Win32') {
+            cmake -S ChiaKey-Source/Loaders/Windows-TSF -B "build/$arch" -A $arch `
+              "-DCHIAKEY_LEXICON_DATABASE=$db" `
+              "-DCHIAKEY_PRERELEASE=${{ steps.version.outputs.prerelease }}"
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            cmake --build "build/$arch" --config Release
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            ctest --test-dir "build/$arch" -C Release --output-on-failure
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+
+      # Code signing goes here once SignPath Foundation grants the certificate
+      # (see README, Code signing policy): the DLLs and ChiaKeySettings.exe
+      # before the installer is built, then the installer itself.
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+          $root = (Get-Location).Path
+          & $iscc /Q "/DVersion=${{ steps.version.outputs.version }}" `
+            "/DNumericVersion=${{ steps.version.outputs.numeric_version }}" `
+            "/DX64Dir=$root\build\x64\Release" "/DX86Dir=$root\build\Win32\Release" `
+            "/DIconFile=$root\build\x64\icons\app.ico" "/DOutputDir=$root\dist" `
+            Packaging\Windows\ChiaKey.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Push-Location dist
+          Get-ChildItem *.exe | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Out-File -Encoding ascii SHA256SUMS.txt
+          Pop-Location
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-installer
+          path: dist/*
+          retention-days: 7

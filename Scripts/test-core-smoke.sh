@@ -55,10 +55,12 @@ CORE_DEFINES=(
   -DOVIMTRADITIONALMANDARIN_IDENTIFIER='"TraditionalMandarin"'
   -DOVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING=1
   -DOVAFASSOCIATEDPHRASE_IDENTIFIER='"AssociatedPhrase"'
+  -DOVIMGENERIC_IDENTIFIER_PREFIX='"Generic"'
 )
 CORE_SOURCES=(
   "$SOURCE_DIR/Frameworks/ChiaKeyCore/Source/ChiaKeyCore.cpp"
   "$SOURCE_DIR/Frameworks/ChiaKeyCore/Source/ChiaKeyCoreC.cpp"
+  "$SOURCE_DIR/Frameworks/ChiaKeyCore/Source/UserPhraseStore.cpp"
   "$SOURCE_DIR/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
   "$SOURCE_DIR/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
   "$SOURCE_DIR/Frameworks/Formosa/Source/Mandarin.cpp"
@@ -66,6 +68,8 @@ CORE_SOURCES=(
   "$SOURCE_DIR/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
   "$SOURCE_DIR/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
   "$SOURCE_DIR/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"
+  "$SOURCE_DIR/ModulePackages/OVIMGeneric/OVIMGeneric.cpp"
+  "$SOURCE_DIR/ModulePackages/OVIMGeneric/OVIMGenericPackage.cpp"
 )
 
 clang++ \
@@ -78,6 +82,7 @@ clang++ \
   -I"$SOURCE_DIR/Frameworks/Manjusri/Headers" \
   -I"$SOURCE_DIR/Frameworks/ChiaKeyCore/Headers" \
   -I"$SOURCE_DIR/ModulePackages/OVIMMandarin" \
+  -I"$SOURCE_DIR/ModulePackages/OVIMGeneric" \
   "$SOURCE_DIR/Frameworks/ChiaKeyCore/Tests/ChiaKeyCoreSmoke.cpp" \
   "${CORE_SOURCES[@]}" \
   -lsqlite3 -lexpat \

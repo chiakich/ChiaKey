@@ -71,6 +71,7 @@ set_target_properties(chiakey_third_party PROPERTIES POSITION_INDEPENDENT_CODE O
 add_library(chiakey_core STATIC
     "${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore/Source/ChiaKeyCore.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore/Source/ChiaKeyCoreC.cpp"
+    "${CHIAKEY_SOURCE}/Frameworks/ChiaKeyCore/Source/UserPhraseStore.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${CHIAKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"
@@ -78,6 +79,8 @@ add_library(chiakey_core STATIC
     "${CHIAKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
     "${CHIAKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
     "${CHIAKEY_SOURCE}/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"
+    "${CHIAKEY_SOURCE}/ModulePackages/OVIMGeneric/OVIMGeneric.cpp"
+    "${CHIAKEY_SOURCE}/ModulePackages/OVIMGeneric/OVIMGenericPackage.cpp"
 )
 target_compile_features(chiakey_core PUBLIC cxx_std_17)
 target_include_directories(chiakey_core PUBLIC
@@ -87,6 +90,7 @@ target_include_directories(chiakey_core PUBLIC
     "${CHIAKEY_SOURCE}/Frameworks/Formosa/Headers"
     "${CHIAKEY_SOURCE}/Frameworks/Manjusri/Headers"
     "${CHIAKEY_SOURCE}/ModulePackages/OVIMMandarin"
+    "${CHIAKEY_SOURCE}/ModulePackages/OVIMGeneric"
 )
 # Must match Takao.xcodeproj: these name the lexicon's table prefixes, so a
 # mismatch compiles cleanly and then finds no data at runtime.
@@ -98,6 +102,7 @@ target_compile_definitions(chiakey_core PUBLIC
     OVIMTRADITIONALMANDARIN_IDENTIFIER=\"TraditionalMandarin\"
     OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING=1
     OVAFASSOCIATEDPHRASE_IDENTIFIER=\"AssociatedPhrase\"
+    OVIMGENERIC_IDENTIFIER_PREFIX=\"Generic\"
 )
 target_link_libraries(chiakey_core PUBLIC chiakey_third_party)
 set_target_properties(chiakey_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -113,6 +118,13 @@ if(WIN32)
         NOMINMAX
         _CRT_SECURE_NO_WARNINGS
     )
+    target_sources(chiakey_core PRIVATE
+        "${CHIAKEY_SOURCE}/ModulePackages/OVAFReverseLookup/OVAFReverseLookup.cpp"
+        "${CHIAKEY_SOURCE}/ModulePackages/OVAFReverseLookup/OVAFReverseLookupPackage.cpp")
+    target_include_directories(chiakey_core PRIVATE "${CHIAKEY_SOURCE}/ModulePackages/OVAFReverseLookup")
+    target_compile_definitions(chiakey_core PRIVATE
+        OVAFREVERSELOOKUP_IDENTIFIER_PREFIX="ReverseLookup"
+        "OVAFREVERSELOOKUP_SOURCE_TABLE_PATTERNS_SEMICOLON_SEPARATED=\"Generic-*\;Mandarin-bpmf-cin\"")
     # SHGetFolderPathW, used by OVDirectoryHelper for the user data directory.
     target_link_libraries(chiakey_core PUBLIC shell32)
 elseif(APPLE)

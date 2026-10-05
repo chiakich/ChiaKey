@@ -6,7 +6,7 @@
 
 <img height="400" alt="Image" src="https://github.com/user-attachments/assets/c43697e2-e22e-4c08-95eb-1cfe36028774" />
 
-千秋輸入法（ChiaKey）是一套給 macOS 使用的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 上繼續使用與維護。Windows 版目前為預覽版，見下方〈Windows（預覽版）〉。  
+千秋輸入法（ChiaKey）是一套支援 macOS 與 Windows 的繁體中文注音輸入法。它以 Yahoo! 奇摩輸入法 / KeyKey / OpenVanilla 的開源程式碼為基礎，目標是保留 KeyKey 熟悉的輸入手感，並讓這套輸入法引擎能在現代 macOS 與 Windows 上繼續使用與維護。Windows 版目前為預覽版，見下方〈Windows（預覽版）〉。
 
 官方網站：[千秋輸入法 ChiaKey](https://chiaki.ch/works/chiakey)  
 相關文章：[都 2026 年了，怎麼還有人在寫輸入法？](https://chiaki.ch/blog/writing-an-input-method-in-2026)  
@@ -29,9 +29,10 @@
 ## 下載
 
 - [下載最新版 macOS 安裝包（.pkg）](https://cdn.chiaki.ch/chiakey/ChiaKey.pkg)
+- [下載 Windows 預覽版（GitHub Releases）](https://github.com/chiakich/ChiaKey/releases/)
 - [查看所有歷史版本](https://github.com/chiakich/ChiaKey/releases/)
 
-安裝包會裝到目前使用者的 `~/Library/Input Methods`。
+macOS 安裝包會裝到目前使用者的 `~/Library/Input Methods`。
 第一次安裝後若未自動啟動，請到「系統設定 > 鍵盤 > 文字輸入」新增「千秋輸入法」。若安裝後系統仍顯示舊版本或找不到輸入法，登出再登入一次通常可以解決。
 
 備註：若需要全域安裝（讓同一台 Mac 上所有帳號都能使用），或用 MDM 批次部署，請使用命令列：
@@ -64,13 +65,13 @@ Scripts/uninstall.sh
 
 ## Windows（預覽版）
 
-Windows 版目前是預覽版，以 `win-v` 開頭的版本號，在 [GitHub Releases](https://github.com/chiakich/ChiaKey/releases) 以 Pre-release 發佈，下載 `ChiaKey-Windows-<版本>-Setup.exe` 執行即可。
+Windows 版目前仍是預覽版；自 `v1.2.7` 起與 macOS 使用同一版號共同發佈。在 [GitHub Releases](https://github.com/chiakich/ChiaKey/releases) 下載 `ChiaKey-Windows-<版本>-Setup.exe` 執行即可。GitHub release 的正式／Beta 標記依共同版本決定，Windows 預覽狀態會另行標示。同名重發的 `win-v0.1.0-beta.1` 測試預覽已支援共同 `v` 版本更新；重發前的原建置需手動安裝一次新版。
 
 - 支援 Windows 10 / 11 的 x64 版，64 位元與 32 位元程式都能打字；ARM64 版尚未支援。
 - 安裝後，已經開著的程式要重新開啟才會載入輸入法。若輸入法清單裡沒有千秋輸入法，請到「設定 > 時間與語言 > 語言與地區」加入「中文 (繁體，台灣)」。
 - 目前的安裝檔**尚未簽章**（見下方 [Code signing policy](#code-signing-policy)）。下載後執行時 SmartScreen 會跳出警告，按「其他資訊 > 仍要執行」即可；開啟了「智慧型應用程式控制」（Smart App Control）的電腦則會直接擋下，暫時無法使用。
 - 解除安裝：「設定 > 應用程式 > 已安裝的應用程式」中的「千秋輸入法」。自訂詞、學習記錄與設定存在 `%APPDATA%\ChiaKey`，解除安裝時會保留。
-- 「偏好設定 > 更新」可檢查並安裝本體與詞庫更新，也可分別開啟自動更新（預設關閉）。開啟後每天檢查一次，發布滿三天才自動更新；本體安裝需要 Windows 權限確認。詞庫驗證通過後於組字結束時切換，失敗則保留舊版。更新設定與外部詞庫存於 `%APPDATA%\ChiaKeyUpdates`。
+- 「偏好設定 > 更新」可檢查並安裝本體與詞庫更新，本體與詞庫的自動更新各有獨立開關（預設皆開啟），可分別關閉；「接受 Beta 版」預設關閉。自動更新每天檢查一次，發布滿三天才自動更新；本體安裝需要 Windows 權限確認。詞庫驗證通過後於組字結束時切換，失敗則保留舊版。更新設定與外部詞庫存於 `%APPDATA%\ChiaKeyUpdates`。
 
 ## Code signing policy
 
@@ -86,8 +87,9 @@ the Windows release files are unsigned.
   No third-party binaries are redistributed.
 - **Privacy.** Typing remains offline. The separate update helper connects to ChiaKey's
   GitHub releases and lexicon CDN only when checking or downloading updates; automatic
-  updates are opt-in. It never sends typed text, phrases, or learning data. Your phrases
-  and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
+  updates are enabled by default and can be disabled separately for the app and lexicon
+  in Preferences > Update. Beta updates are off by default. It never sends typed text,
+  phrases, or learning data. Your phrases and learning stay in `%APPDATA%\ChiaKey`; update state stays in `%APPDATA%\ChiaKeyUpdates`.
 
 ## 適合誰使用
 
@@ -118,6 +120,8 @@ Yahoo! 奇摩輸入法當年為人稱道的選字品質，很大一部分來自�
 
 除了注音、倉頡與速成之外，千秋輸入法也保留了 OpenVanilla 的通用表格引擎，可以載入 `.cin` 對照表。倉頡、行列、大易、粵語拼音、客語、台語等以「打碼查字」為主的輸入法，都是這種格式。
 
+以下為 macOS 的匯入方式；Windows 自訂表格存放於 `%APPDATA%\ChiaKey\Tables\Generic\`。
+
 在「千秋輸入法偏好設定 > 自訂輸入法」按 **+** 選擇 `.cin` 檔即可匯入。匯入前會先顯示表格名稱、字詞數與選字鍵讓你確認；Big5 編碼的舊表格會自動轉成 UTF-8。匯入完成後，該輸入法就會出現在輸入選單中，也可以在「一般」分頁取消勾選，讓它不顯示在選單上。
 
 選取清單中的表格再按 **−** 即可移除。只有你自己匯入的表格會列在這裡，內建的四個輸入法不受影響。
@@ -144,22 +148,26 @@ Yahoo! 奇摩輸入法當年為人稱道的選字品質，很大一部分來自�
 Note:
 
 - `ChiaKey` 是 `Chiaki` 與 `KeyKey` 結合的諧音哏。
-- 目前發佈主線維護現代 macOS InputMethodKit 版本。
-- bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
-- 使用者資料路徑使用 `~/Library/Application Support/ChiaKey`。
+- 目前發佈主線維護 macOS InputMethodKit 與 Windows TSF 版本；Windows 仍為預覽版。
+- macOS bundle id / TIS id 使用 `com.chiakey.inputmethod.ChiaKey`。
+- macOS 使用者資料位於 `~/Library/Application Support/ChiaKey`；Windows 位於 `%APPDATA%\ChiaKey`。
 - 詞庫由獨立 repo `ChiaKey-Lexicon` 發佈。
-- 新增實驗性的 `ChiaKeyCore` host-neutral engine facade，作為獨立 iOS host repo 可共用的輸入核心地基。
+- `ChiaKeyCore` 提供共用輸入核心，Windows TSF 已接入，獨立 iOS host repo 也可透過此介面整合。
 
-需使用支援 Apple Silicon 的現代 Xcode；目前已在 Xcode 26.5 驗證。
+## 開發與貢獻
+
+macOS 使用支援 Apple Silicon 的現代 Xcode（已在 Xcode 26.5 驗證）；Windows 使用 MSVC、Windows SDK 與 CMake 3.21 以上。完整建置、測試與本機安裝／註冊流程見 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+Commit message 請使用**單行 Conventional Commit**，例如 `fix(win): correct editing lock timestamp epoch`。Windows 專屬變更用 `win` scope，macOS 專屬變更用 `mac`；共用變更可省略平台 scope。Type 與 release notes 收錄規則見 [Commit message 規則](CONTRIBUTING.md#commit-message-規則)。
 
 ## 文件
 
-- [CONTRIBUTING.md](CONTRIBUTING.md)：編譯、測試、release packaging、詞庫更新測試與維護邊界。
+- [CONTRIBUTING.md](CONTRIBUTING.md)：macOS／Windows 開發流程、測試、commit message 規則與維護邊界。
 - [架構](Docs/Architecture.md)：產品範圍、runtime 路線、legacy cleanup 原則與測試基線。
 - [專案目錄結構](Docs/ProjectStructure.md)：source tree 分層、host 邊界與獨立 iOS host repo 關係。
 - [iOS 實作指南](Docs/iOSImplementation.md)：iOS keyboard extension 的 core 接法、repo 邊界與驗證入口。
 - [Windows 實作指南](Docs/WindowsImplementation.md)：TSF 前端的架構決定、移植時必須遵守的事項與建置方式。
 - [詞庫 contract](Docs/LexiconContract.md)：GitHub Release assets、SQLite 必要資料、驗證規則與 fallback 行為。
-- [Release packaging](Docs/ReleasePackaging.md)：正式 `.pkg` installer、簽章與 notarization 流程。
+- [Release packaging](Docs/ReleasePackaging.md)：macOS `.pkg` 打包、簽章與 notarization，以及 macOS／Windows 共同發佈流程。
 - [現代化 roadmap](Docs/ModernizationPlan.md)：已完成基線、下一步與延後事項。
 - [OneKey 移除說明](Docs/LexiconOneKeyRemoval.md)：給詞庫 repo 的相容性說明。
