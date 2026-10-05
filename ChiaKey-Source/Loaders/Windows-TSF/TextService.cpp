@@ -1526,7 +1526,12 @@ void TextService::presentAuxiliaryUI(UIElementSession& session, int kind,
     if (!element) {
         GUID guid = {0xd0126bd3, 0x5ecf, 0x4dcb, {0x91, 0x16, 0xad, 0xbb, 0x61, 0xa2, 0x9c, 0}};
         guid.Data4[7] = static_cast<BYTE>(kind);
-        element.Attach(new TextUIElement(false, guid, L"ChiaKey auxiliary UI"));
+        try {
+            element.Attach(new TextUIElement(false, guid, L"ChiaKey auxiliary UI"));
+        } catch (const std::bad_alloc&) {
+            show(false);
+            return;
+        }
     }
     element->setCallbacks(std::move(show), std::move(visible));
     const HRESULT status = session.present(uiElementManager_.Get(), element.Get(), true);
@@ -1617,7 +1622,12 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
     if (!element) {
         GUID guid = {0x9d26f572, 0x1a99, 0x4948, {0x90, 0xc9, 0x94, 0xe2, 0xf2, 0x8c, 0x57, 0x22}};
         if (!showCandidates) ++guid.Data4[7];
-        element.Attach(new TextUIElement(showCandidates, guid, showCandidates ? L"ChiaKey candidates" : L"ChiaKey message"));
+        try {
+            element.Attach(new TextUIElement(showCandidates, guid, showCandidates ? L"ChiaKey candidates" : L"ChiaKey message"));
+        } catch (const std::bad_alloc&) {
+            resetCandidateState();
+            return;
+        }
     }
     element->update(document.Get(), result.allCandidates, static_cast<UINT>(result.selectedCandidate),
                     static_cast<UINT>(result.candidatesPerPage));
