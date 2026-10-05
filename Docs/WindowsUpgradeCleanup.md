@@ -11,7 +11,9 @@ uses Inno Setup `RestartReplace(path, '')` for locked files, followed by their
 parent directories. Renaming prevents pending deletions from affecting a
 subsequent reinstall of the same version before reboot. If Windows refuses the
 directory rename, the installer logs it and retries on a later upgrade.
-Directory junctions are not traversed. The current release is retained.
+Directory junctions are removed without traversing their targets; if removal
+fails, the link itself is scheduled for deletion before its parent directory.
+The current release is retained.
 
 Settings initialization keeps the content panel, toolbar and nested preference
 layouts suspended until stored values are populated. The update pane reads the

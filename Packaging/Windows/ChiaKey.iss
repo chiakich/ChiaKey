@@ -116,7 +116,12 @@ begin
         if (Found.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
         begin
           if (Found.Attributes and $400) = 0 then
-            RemoveVersionTree(Child);
+            RemoveVersionTree(Child)
+          else if not RemoveDir(Child) then
+          begin
+            Log('Scheduling old version directory link for deletion: ' + Child);
+            RestartReplace(Child, '');
+          end;
         end
         else if not DeleteFile(Child) then
         begin
