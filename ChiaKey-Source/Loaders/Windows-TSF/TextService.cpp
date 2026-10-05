@@ -983,8 +983,14 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPAR
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eaten) {
+STDMETHODIMP TextService::OnTestKeyUp(ITfContext* context, WPARAM wparam, LPARAM, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    if (IsShiftKey(static_cast<UINT>(wparam)) && keyboardAvailable(context) &&
+        engine_ && engine_->wantsShiftRelease()) {
+        shiftTogglePending_ = false;
+        *eaten = TRUE;
+        return S_OK;
+    }
     if (wparam == VK_CAPITAL && CurrentFrontendSettings().capsLockTogglesEnglish) {
         *eaten = TRUE; // Observe the new latch state, then pass the key up to Windows.
         return S_OK;
@@ -1079,9 +1085,18 @@ HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* ea
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eaten) {
+STDMETHODIMP TextService::OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (IsShiftKey(static_cast<UINT>(wparam)) && keyboardAvailable(context) &&
+        engine_ && engine_->wantsShiftRelease()) {
+        shiftTogglePending_ = false;
+        shiftPressedAt_ = 0;
+        KeyEvent event = translateKey(wparam, lparam);
+        event.shift = false;
+        event.keyUp = true;
+        return runKeySession(context, event, eaten);
+    }
     if (wparam == VK_CAPITAL && CurrentFrontendSettings().capsLockTogglesEnglish) {
         if (GetKeyState(VK_CAPITAL) & 1) requestCommitComposition();
         refreshLangBar();
@@ -1138,6 +1153,12 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
 HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
                                 const KeyEvent& event, bool* handled) {
     if (!context || !handled) return E_INVALIDARG;
+    if (event.candidateIndex != static_cast<size_t>(-1) &&
+        (!candidateActive_ || candidateContext_.Get() != context ||
+         event.candidateGeneration != candidateGeneration_ || !keyboardAvailable(context))) {
+        *handled = false;
+        return S_OK;
+    }
     const auto settings = CurrentFrontendSettings();
     if (punctuationKeyboard_.isVisible() && !PunctuationModifier(event.virtualKey)) {
         punctuationKeyboard_.close();
@@ -1412,6 +1433,7 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
 }
 
 void TextService::resetCandidateState() {
+    ++candidateGeneration_;
     candidateUI_.end();
     candidateWindow_.hide();
     candidateActive_ = false;
@@ -1631,15 +1653,30 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
     }
     element->update(document.Get(), result.allCandidates, static_cast<UINT>(result.selectedCandidate),
                     static_cast<UINT>(result.candidatesPerPage));
-    element->setCallbacks([this, owner, textRect, result, anchored, showCandidates](bool show) {
+    candidateContext_ = context;
+    candidateActive_ = showCandidates;
+    const unsigned generation = ++candidateGeneration_;
+    element->setCallbacks([this, owner, textRect, result, anchored, showCandidates, generation](bool show) {
         if (!show || !anchored || secureMode_) { candidateWindow_.hide(); return; }
-        if (showCandidates) candidateWindow_.show(owner, textRect, result);
+        if (showCandidates) {
+            candidateWindow_.show(owner, textRect, result);
+            // A no-activate click keeps the text field focused. Capture its
+            // context, and let TSF grant a write lock before accepting it.
+            ComPtr<ITfContext> target = candidateContext_;
+            candidateWindow_.setSelectionCallback([this, target, generation, first =
+                (result.candidatePage - 1) * result.candidatesPerPage](size_t index) {
+                if (!target || !keyboardAvailable(target.Get()) || candidateContext_ != target) return;
+                KeyEvent event;
+                event.candidateIndex = first + index;
+                event.candidateGeneration = generation;
+                BOOL eaten = FALSE;
+                runKeySession(target.Get(), event, &eaten);
+            });
+        }
         else candidateWindow_.showMessage(owner, textRect, result.message);
     }, [this] { return candidateWindow_.isVisible(); });
     const HRESULT uiStatus = candidateUI_.present(uiElementManager_.Get(), element.Get(), !uiLessMode_ && !secureMode_);
     if (FAILED(uiStatus)) Trace("CandidateUI hr=0x%08lX uiLess=%d", uiStatus, uiLessMode_);
-    candidateActive_ = showCandidates;
-    candidateContext_ = context;
     candidateAnchor_.Reset();
     if (showCandidates && !composition_ && range && SUCCEEDED(range->Clone(&candidateAnchor_)))
         candidateAnchor_->Collapse(editCookie, TF_ANCHOR_END);

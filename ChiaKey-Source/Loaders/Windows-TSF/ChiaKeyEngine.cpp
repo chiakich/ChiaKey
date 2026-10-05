@@ -592,6 +592,13 @@ bool IsInputMethodControlKey(const KeyEvent& event) {
 
 ChiaKey::KeyEvent MakeCoreKey(const KeyEvent& event) {
     ChiaKey::KeyEvent key;
+    if (event.keyUp) {
+        key.keyCode = event.virtualKey == VK_RSHIFT ? OVKeyCode::RightShift : OVKeyCode::LeftShift;
+        key.modifiers.ctrl = event.control;
+        key.modifiers.alt = event.alt;
+        key.modifiers.capsLock = event.capsLock;
+        return key;
+    }
     key.modifiers.directText = event.directText;
     if (event.directText) { key.receivedString = WideToUtf8(event.text); return key; }
     key.modifiers.alt = event.alt;
@@ -671,6 +678,7 @@ EngineResult MakeResult(const ChiaKey::EngineState& state, bool showNotification
     }
 
     const ChiaKey::CandidateState& panel = state.candidateState;
+    result.horizontalCandidates = panel.horizontal;
     if (panel.visible && !panel.selectionKeys.empty()) {
         for (const auto& candidate : panel.candidates)
             result.allCandidates.push_back(Utf8ToWide(candidate));
@@ -994,9 +1002,12 @@ std::unique_ptr<EngineSession> EngineSession::Create() {
 }
 
 bool EngineSession::hasComposition() const { return engine_ && engine_->isComposing(); }
+bool EngineSession::wantsShiftRelease() const { return engine_ && engine_->wantsShiftRelease(); }
 
 bool EngineSession::wantsKey(const KeyEvent& event) const {
     if (!engine_) return false;
+    if (event.keyUp) return (event.virtualKey == VK_SHIFT || event.virtualKey == VK_LSHIFT ||
+                             event.virtualKey == VK_RSHIFT) && wantsShiftRelease();
     const bool composing = hasComposition();
     // Idle editing keys belong to the host, even when ToUnicodeEx returned text.
     // TextService handles explicit full-width mode before asking wantsKey.
@@ -1025,7 +1036,9 @@ EngineResult EngineSession::handleKey(const KeyEvent& event) {
             }
         }
     }
-    const bool handled = engine_->handleKey(MakeCoreKey(event));
+    if (event.keyUp && !wantsKey(event)) return {};
+    const bool handled = event.candidateIndex != static_cast<size_t>(-1)
+        ? engine_->selectCandidate(event.candidateIndex) : engine_->handleKey(MakeCoreKey(event));
     EngineResult result = MakeResult(engine_->snapshot(), CurrentFrontendSettings().showNotifications);
     result.handled = handled;
     if (!result.committedText.empty()) engine_->acknowledgeCommit();

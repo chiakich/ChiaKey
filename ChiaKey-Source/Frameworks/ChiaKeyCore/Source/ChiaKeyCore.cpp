@@ -327,6 +327,10 @@ class CoreContext : public PVLoaderContext {
     return panel ? panel : m_candidateService->accessVerticalCandidatePanel();
   }
 
+  bool horizontalPanelActive() {
+    return activePanel() == m_candidateService->accessHorizontalCandidatePanel();
+  }
+
   // Goes through the panel's own key so the filters run as they would for a
   // typed selection.
   bool selectCandidate(std::size_t candidateIndex) {
@@ -560,6 +564,11 @@ class Engine::Impl {
     return context->handleKeyEvent(&key);
   }
 
+  bool wantsShiftRelease() const {
+    std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
+    return context->wantsShiftRelease();
+  }
+
   bool selectCandidate(std::size_t candidateIndex) {
     std::lock_guard<std::recursive_mutex> lock(runtime->impl_->mutex);
     service()->resetState();
@@ -614,6 +623,7 @@ class Engine::Impl {
 
     PVOneDimensionalCandidatePanel* panel = context->activePanel();
     state.candidateState.visible = panel->isVisible();
+    state.candidateState.horizontal = context->horizontalPanelActive();
     state.candidateState.currentPage = panel->currentPage();
     state.candidateState.pageCount = panel->pageCount();
     state.candidateState.candidatesPerPage = panel->candidatesPerPage();
@@ -871,6 +881,7 @@ Engine::Engine(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
 Engine::~Engine() {}
 
 bool Engine::handleKey(const KeyEvent& event) { return impl_->handleKey(event); }
+bool Engine::wantsShiftRelease() const { return impl_->wantsShiftRelease(); }
 
 bool Engine::handleAsciiKey(char key, const KeyModifiers& modifiers) {
   KeyEvent event;

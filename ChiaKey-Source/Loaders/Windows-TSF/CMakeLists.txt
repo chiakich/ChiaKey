@@ -254,6 +254,12 @@ else()
 endif()
 
 if(BUILD_TESTING)
+    add_executable(chiakey_phrase_completion_test
+        "${CHIAKEY_SOURCE}/Frameworks/Manjusri/Tests/TestPhraseCompletion.cpp")
+    target_include_directories(chiakey_phrase_completion_test PRIVATE
+        "${CHIAKEY_SOURCE}/ModulePackages/OVIMMandarin")
+    target_link_libraries(chiakey_phrase_completion_test PRIVATE chiakey_core)
+    add_test(NAME chiakey_phrase_completion COMMAND chiakey_phrase_completion_test)
     add_executable(chiakey_ui_element_test UIElementTest.cpp UIElement.cpp)
     target_compile_features(chiakey_ui_element_test PRIVATE cxx_std_17)
     target_compile_definitions(chiakey_ui_element_test PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)

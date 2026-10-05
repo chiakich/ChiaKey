@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include <string>
+#include <functional>
 #include <vector>
 
 #include "ChiaKeyEngine.h"
@@ -31,6 +32,7 @@ public:
     void showMessage(HWND owner, const RECT& textRect, const std::wstring& message);
     void hide();
     bool isVisible() const { return window_ && IsWindowVisible(window_); }
+    void setSelectionCallback(std::function<void(size_t)> callback) { select_ = std::move(callback); }
 
 private:
     static bool ensureWindowClass();
@@ -60,6 +62,10 @@ private:
     size_t page_ = 0;
     size_t pageCount_ = 0;
     std::wstring message_;
+    bool horizontal_ = false;
+    HFONT hintFont_ = nullptr;
+    std::vector<RECT> candidateRects_;
+    std::function<void(size_t)> select_;
 };
 
 }  // namespace ChiaKey::WindowsTsf

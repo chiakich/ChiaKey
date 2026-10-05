@@ -31,6 +31,7 @@ struct EngineResult {
     // drawn solid; the rest of the composition is dotted
     CompositionSegment focusedSegment;
     bool candidatesVisible = false;
+    bool horizontalCandidates = false;
     size_t highlightedCandidate = 0;
     std::vector<EngineCandidate> candidates;
     // The host renders the complete list in UILess mode, not just our current page.
@@ -53,6 +54,10 @@ struct KeyEvent {
     bool capsLock = false;
     bool numLock = false;
     bool directText = false;
+    bool keyUp = false;
+    // Internal mouse selection, dispatched inside the same TSF edit session.
+    size_t candidateIndex = static_cast<size_t>(-1);
+    unsigned candidateGeneration = 0;
 };
 
 // only chords in bpmf-punctuations.cin; other shortcuts belong to the host
@@ -150,6 +155,7 @@ public:
     bool ready() const noexcept { return engine_ != nullptr; }
     bool hasComposition() const;
     bool wantsKey(const KeyEvent& event) const;
+    bool wantsShiftRelease() const;
     EngineResult handleKey(const KeyEvent& event);
     void reset();
 

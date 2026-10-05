@@ -144,7 +144,7 @@ void CandidateWindow::ensureWindow(HWND owner) {
 }
 
 void CandidateWindow::releaseFonts() {
-    for (HFONT* font : {&candidateFont_, &keyFont_, &indicatorFont_}) {
+    for (HFONT* font : {&candidateFont_, &keyFont_, &indicatorFont_, &hintFont_}) {
         if (*font) DeleteObject(*font);
         *font = nullptr;
     }
@@ -157,6 +157,7 @@ void CandidateWindow::updateFonts(UINT dpi) {
     candidateFont_ = MakeFont(L"Microsoft JhengHei", 12, FW_BOLD, dpi);
     keyFont_ = MakeFont(L"Arial", 8, FW_BOLD, dpi);
     indicatorFont_ = MakeFont(L"Arial", 7, FW_BOLD, dpi);
+    hintFont_ = MakeFont(L"Microsoft JhengHei", 9, FW_NORMAL, dpi);
 
     HDC dc = GetDC(window_);
     HGDIOBJ old = SelectObject(dc, candidateFont_);
@@ -170,9 +171,21 @@ void CandidateWindow::updateFonts(UINT dpi) {
 SIZE CandidateWindow::measure() {
     HDC dc = GetDC(window_);
     SIZE size{};
+    candidateRects_.clear();
     if (!message_.empty()) {
         size.cx = TextWidth(dc, candidateFont_, message_) + scale(kMessagePadding) * 2;
         size.cy = rowHeight_ + scale(kMessagePadding);
+    } else if (horizontal_) {
+        int left = scale(kMessagePadding);
+        const int top = scale(22);
+        for (const auto& candidate : candidates_) {
+            const int width = TextWidth(dc, candidateFont_, candidate.text) + scale(20);
+            candidateRects_.push_back({left, top, left + width, top + rowHeight_});
+            left += width;
+        }
+        size.cx = std::max(left + scale(kMessagePadding),
+            TextWidth(dc, hintFont_, L"TAB選取，shift+TAB切換") + scale(16));
+        size.cy = top + rowHeight_ + scale(kMessagePadding);
     } else {
         int width = scale(kMinimumWidth);
         for (const EngineCandidate& candidate : candidates_) {
@@ -215,6 +228,7 @@ void CandidateWindow::place(HWND owner, const RECT& textRect) {
 }
 
 void CandidateWindow::show(HWND owner, const RECT& textRect, const EngineResult& result) {
+    horizontal_ = result.horizontalCandidates;
     candidates_ = result.candidates;
     highlightedIndex_ = result.highlightedCandidate;
     candidatesPerPage_ = std::max(result.candidatesPerPage, candidates_.size());
@@ -231,6 +245,7 @@ void CandidateWindow::show(HWND owner, const RECT& textRect, const EngineResult&
 }
 
 void CandidateWindow::showMessage(HWND owner, const RECT& textRect, const std::wstring& message) {
+    horizontal_ = false;
     candidates_.clear();
     message_ = message;
     palette_ = PaletteFor(CurrentFrontendSettings());
@@ -249,6 +264,8 @@ void CandidateWindow::hide() {
     }
     candidates_.clear();
     message_.clear();
+    candidateRects_.clear();
+    select_ = {};
 }
 
 LRESULT CALLBACK CandidateWindow::WindowProc(HWND window, UINT message, WPARAM wparam,
@@ -270,6 +287,17 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
             return 1;
         case WM_MOUSEACTIVATE:
             return MA_NOACTIVATE;
+        case WM_LBUTTONUP: {
+            const POINT point{static_cast<short>(LOWORD(lparam)), static_cast<short>(HIWORD(lparam))};
+            for (size_t index = 0; index < candidateRects_.size(); ++index) {
+                if (PtInRect(&candidateRects_[index], point) && select_) {
+                    auto callback = select_;
+                    callback(index);
+                    break;
+                }
+            }
+            return 0;
+        }
         case WM_PAINT:
             paint();
             return 0;
@@ -335,6 +363,19 @@ void CandidateWindow::paintMessage(HDC dc, const RECT& client) {
 }
 
 void CandidateWindow::paintCandidates(HDC dc, const RECT& client) {
+    if (horizontal_) {
+        const RECT hint{scale(8), 0, client.right - scale(8), scale(22)};
+        DrawTextIn(dc, hintFont_, palette_.foreground, L"TAB選取，shift+TAB切換", hint, DT_LEFT);
+        for (size_t index = 0; index < candidateRects_.size(); ++index) {
+            RECT rect = candidateRects_[index];
+            const bool highlighted = index == highlightedIndex_;
+            if (highlighted) FillGradient(dc, rect, palette_.highlight, palette_.highlightEnd);
+            InflateRect(&rect, -scale(10), 0);
+            DrawTextIn(dc, candidateFont_, highlighted ? kHighlightForegroundColor : palette_.foreground,
+                       candidates_[index].text, rect, DT_LEFT);
+        }
+        return;
+    }
     const int top = scale(kHeaderHeight);
     const int keySize = scale(kKeySize);
     const int notch = std::max(1, scale(1));

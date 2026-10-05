@@ -1,10 +1,14 @@
 # Windows 實作指南
 
-最後更新：2026-10-04
+最後更新：2026-10-05
 
 功能與 UI 的歷史來源、已補齊項目及尚缺差異見 [原版 Windows KeyKey 對照](WindowsParity.md)。
 
 這份文件說明已接入 `ChiaKeyCore` 的 Windows TSF 前端架構、移植限制與更新機制。
+
+PR #18 的好打注音中文詞語補全已接入 Windows：三項橫向建議、Tab 補入、
+Shift+Tab 循環與放開送出、滑鼠選取、未完成注音及自動同音字重判，沿用
+「聯想詞提示」開關。行為、限制與驗證見 [中文詞語補全](ChinesePhraseCompletion.md)。
 
 遊戲的 UILess 候選字介面、診斷工具與實機驗證步驟見
 [Windows 遊戲輸入相容性](WindowsGameCompatibility.md)。
