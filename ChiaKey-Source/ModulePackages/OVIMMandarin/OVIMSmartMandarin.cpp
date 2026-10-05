@@ -596,6 +596,7 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText,
         break;
 
       case OVKeyCode::Tab:
+        if (key->isShiftPressed()) return false;
         if (!m_BPMFReading.isEmpty()) {
           loaderService->beep();
         } else {

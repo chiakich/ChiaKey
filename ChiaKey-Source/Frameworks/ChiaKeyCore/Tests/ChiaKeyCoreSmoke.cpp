@@ -58,6 +58,14 @@ int RunPhraseCompletionSmoke(const std::string& repoRoot,
   typePrefix();
   if (engine->snapshot().candidateState.visible)
     return Fail("disabled associated phrases should disable completion");
+  press(28); // Move between 人 and 工 with completion disabled.
+  auto beforeShiftTab = engine->snapshot();
+  if (press(9, true) ||
+      engine->snapshot().wordSegments.size() != beforeShiftTab.wordSegments.size() ||
+      engine->snapshot().composingText != beforeShiftTab.composingText ||
+      engine->snapshot().cursorPosition != beforeShiftTab.cursorPosition ||
+      engine->snapshot().beeped)
+    return Fail("disabled completion let Shift+Tab change composition");
   engine->runtime()->setAssociatedPhrasesEnabled(true);
   typePrefix();
   auto state = engine->snapshot();
@@ -165,6 +173,13 @@ int RunPhraseCompletionSmoke(const std::string& repoRoot,
   state = engine->snapshot();
   if (state.candidateState.visible || state.cursorPosition != 1)
     return Fail("Left should hide completion and move cursor");
+  beforeShiftTab = state;
+  if (press(9, true) ||
+      engine->snapshot().wordSegments.size() != beforeShiftTab.wordSegments.size() ||
+      engine->snapshot().composingText != beforeShiftTab.composingText ||
+      engine->snapshot().cursorPosition != beforeShiftTab.cursorPosition ||
+      engine->snapshot().beeped)
+    return Fail("Shift+Tab in the middle changed forced breaks");
   press(9);
   state = engine->snapshot();
   if (state.composingText != "人工" || state.wordSegments.size() != 2)

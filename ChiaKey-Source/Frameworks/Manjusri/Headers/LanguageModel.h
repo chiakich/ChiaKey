@@ -1620,17 +1620,23 @@ inline UnigramVector LanguageModel::findPhraseCompletions(
         textMatch + "length(current) > length(?3) "
         "AND length(current) <= 8" + predicatesSQL;
   }
-  sql += " ORDER BY probability DESC, current, qstring LIMIT 32";
+  sql += " ORDER BY probability DESC, current, qstring";
   OVSQLiteStatementRef statement = m_connection->prepare(sql.c_str());
   if (!statement) return results;
   statement->bindTextToColumn(readingPrefix, 1);
   statement->bindTextToColumn(upper, 2);
   statement->bindTextToColumn(textPrefix, 3);
+  // For a fixed prefix, the composer identifies candidates by suffix (or
+  // full text for partial readings), so duplicate texts share one slot.
+  set<string> seen;
   while (statement->step() == SQLITE_ROW) {
+    string text = SafeColumnText(statement.get(), 1);
+    if (!seen.insert(text).second) continue;
     results.push_back(Unigram(SafeColumnText(statement.get(), 0),
-                              SafeColumnText(statement.get(), 1),
+                              text,
                               statement->doubleOfColumn(2),
                               statement->doubleOfColumn(3)));
+    if (results.size() == 32) break;
   }
   return results;
 }

@@ -79,13 +79,13 @@
 }
 - (void)updateDisplay:(PVHorizontalCandidatePanel *)panel
               atPoint:(NSPoint)position {
+  // A key has been processed even when selection hides the panel.
+  _sending = NO;
   // hide if it's invisible--before update
   if (!panel->isVisible()) {
     [[self window] orderOut:self];
     return;
   }
-
-  _sending = NO;
 
   NSPoint newPosition = position;
 
@@ -248,16 +248,22 @@
   string keyString = selectionKey.receivedString();
   if (keyString.empty() && selectionKey.keyCode() == OVKeyCode::Tab)
     keyString = "\t";
+  // typeString posts the selection key after a delay. Keep its highlight
+  // stable until the resulting panel update acknowledges the selection.
+  _sending = YES;
+  [_candidateControl setClickable:NO];
   [[CVSendKey sharedSendKey]
       typeString:[NSString stringWithUTF8String:keyString.c_str()]];
 }
 - (IBAction)gotoNextPage:(id)sender {
+  if (_sending) return;
   _panel->goToNextPage();
   NSPoint p = [[self window] frame].origin;
   p.y = NSMaxY([[self window] frame]);
   [self updateDisplay:_panel atPoint:p];
 }
 - (IBAction)gotoPreviousPage:(id)sender {
+  if (_sending) return;
   _panel->goToPreviousPage();
   NSPoint p = [[self window] frame].origin;
   p.y = NSMaxY([[self window] frame]);

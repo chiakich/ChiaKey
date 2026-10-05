@@ -127,6 +127,18 @@ int main() {
     for (int i = 0; i < 40; ++i)
       db->execute("INSERT INTO unigrams VALUES(%Q, '演出', %f, 0)",
                   (yan + Reading("ㄔㄨ")).c_str(), -0.1 - i * 0.01);
+    // Duplicate probabilities and release/user rows share a candidate slot.
+    db->execute("INSERT INTO userdb.user_unigrams VALUES(%Q, '演出', 0, 0)",
+                (yan + Reading("ㄔㄨ")).c_str());
+    auto distinct = lm.findPhraseCompletions(yan, "演");
+    CHECK(distinct.size() == 2);
+    CHECK(distinct.front().current == "演出");
+    CHECK(distinct.front().probability == 0);
+    CHECK(distinct.back().current == "演算法");
+    auto unfiltered = composer.phraseCompletions();
+    CHECK(unfiltered.size() == 2);
+    CHECK(unfiltered.front().suffix == "出");
+    CHECK(unfiltered.back().suffix == "算法");
     OnlyAlgorithm outputFilter;
     auto filtered = composer.phraseCompletions(&outputFilter);
     CHECK(filtered.size() == 1);
