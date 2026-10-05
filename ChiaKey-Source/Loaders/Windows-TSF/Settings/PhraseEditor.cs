@@ -287,6 +287,8 @@ namespace ChiaKey.Settings
                             largest = dimension; length = bytes; offset = start;
                         }
                     }
+                    if (largest == 0 || length <= 0 || offset < 0 ||
+                        offset > stream.Length || length > stream.Length - offset) return null;
                     stream.Position = offset;
                     byte[] imageBytes = reader.ReadBytes(length);
                     if (imageBytes.Length >= 8 && imageBytes[0] == 137 &&
