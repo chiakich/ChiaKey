@@ -139,3 +139,5 @@
 "Could not read the legacy database." = "Could not read the legacy database.";
 "ChiaKey asked Yahoo! KeyKey to export its phrases, but it did not answer. Switch to Yahoo! KeyKey, type a character to wake it up, then try again. On Apple Silicon this also needs Rosetta 2, because Yahoo! KeyKey has no Apple Silicon version." = "ChiaKey asked Yahoo! KeyKey to export its phrases, but it did not answer. Switch to Yahoo! KeyKey, type a character to wake it up, then try again. On Apple Silicon this also needs Rosetta 2, because Yahoo! KeyKey has no Apple Silicon version.";
 "Imported %lu phrase(s) and %lu other file(s) from Yahoo! KeyKey." = "Imported %lu phrase(s) and %lu other file(s) from Yahoo! KeyKey.";
+
+"Reset Shift English mode when switching apps" = "Reset Shift English mode when switching apps";

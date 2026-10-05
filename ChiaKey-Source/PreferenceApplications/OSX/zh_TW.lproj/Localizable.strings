@@ -139,3 +139,5 @@
 "Could not read the legacy database." = "無法讀取舊版詞庫";
 "ChiaKey asked Yahoo! KeyKey to export its phrases, but it did not answer. Switch to Yahoo! KeyKey, type a character to wake it up, then try again. On Apple Silicon this also needs Rosetta 2, because Yahoo! KeyKey has no Apple Silicon version." = "千秋輸入法已經請 Yahoo! 奇摩輸入法匯出自訂詞，但它沒有回應。請先切換到 Yahoo! 奇摩輸入法隨便打一個字把它喚醒，再回來試一次。在 Apple Silicon 上還需要安裝 Rosetta 2，因為 Yahoo! 奇摩輸入法沒有 Apple Silicon 版本。";
 "Imported %lu phrase(s) and %lu other file(s) from Yahoo! KeyKey." = "已從 Yahoo! 奇摩輸入法匯入 %lu 個自訂詞與 %lu 個其他檔案。";
+
+"Reset Shift English mode when switching apps" = "切換應用程式時解除 Shift 英文模式";

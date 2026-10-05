@@ -70,5 +70,35 @@ int main() {
   session.activateApplication(100, "com.microsoft.Excel");
   assert(!session.enabled());  // closing Spotlight also starts in Chinese
 
+  // Opting out keeps Shift English across apps and overlay clients, even
+  // when an intervening app has no input controller.
+  session.setEnabled(true);
+  session.deactivateApplication(100, false);
+  session.activateApplication(200, "com.apple.TextEdit", false);
+  assert(session.enabled());
+  session.deactivateApplication(100, false);  // late outgoing notification
+  assert(session.enabled());
+  session.activateApplication(200, "com.apple.Spotlight", false);
+  assert(session.enabled());
+  session.activateApplication(200, "com.apple.TextEdit", false);
+  assert(session.enabled());
+  session.deactivateApplication(200, false);
+  session.activateApplication(200, "com.apple.TextEdit", false);
+  assert(session.enabled());
+
+  // Actual input-source changes still clear the temporary mode.
+  assert(session.updateInputSource("com.apple.keylayout.ABC"));
+  assert(!session.enabled());
+  session.updateInputSource(chiaKey);
+  session.setEnabled(true);
+  session.activateApplication(300, "com.apple.Terminal", false);
+  assert(session.enabled());
+  // Turning reset back on takes effect on the next app switch.
+  session.activateApplication(200, "com.apple.TextEdit");
+  assert(!session.enabled());
+  session.setEnabled(true);
+  session.deactivateApplication(200);
+  assert(!session.enabled());
+
   std::puts("Temporary English session tests passed.");
 }

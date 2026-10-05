@@ -10,9 +10,10 @@ class OVCTemporaryEnglishSession {
   bool enabled() const { return _enabled; }
   void setEnabled(bool enabled) { _enabled = enabled; }
 
-  void activateApplication(int application, const char *clientBundle = nullptr) {
+  void activateApplication(int application, const char *clientBundle = nullptr,
+                           bool resetOnApplicationSwitch = true) {
     if (_application != application) {
-      _enabled = false;
+      if (resetOnApplicationSwitch) _enabled = false;
       _application = application;
       _clientBundle.clear();
     }
@@ -20,16 +21,17 @@ class OVCTemporaryEnglishSession {
     // underlying app as frontmost. Track both identities, not client pointers.
     if (clientBundle && *clientBundle) {
       if (!_clientBundle.empty() && _clientBundle != clientBundle) {
-        _enabled = false;
+        if (resetOnApplicationSwitch) _enabled = false;
       }
       _clientBundle = clientBundle;
     }
   }
 
-  void deactivateApplication(int application) {
+  void deactivateApplication(int application,
+                             bool resetOnApplicationSwitch = true) {
     // A late notification from the previous app must not reset the new app.
     if (_application == application) {
-      _enabled = false;
+      if (resetOnApplicationSwitch) _enabled = false;
       _application = 0;
       _clientBundle.clear();
     }
