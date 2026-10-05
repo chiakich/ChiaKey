@@ -170,8 +170,13 @@ int RunPhraseCompletionSmoke(const std::string& repoRoot,
   if (state.composingText != "人工" || state.wordSegments.size() != 2)
     return Fail("Tab in the middle should retain forced-break behavior");
   press(29);
-  if (engine->snapshot().candidateState.visible)
-    return Fail("completion should respect an explicit word break");
+  state = engine->snapshot();
+  // The last character 工 may now have its own completions, but the
+  // explicitly separated 人 / 工 must not complete as 人工智慧.
+  for (const auto& candidate : state.candidateState.candidates) {
+    if (candidate == "智慧")
+      return Fail("completion crossed an explicit word break");
+  }
   typePrefix();
   engine->handleAsciiKey('s');
   if (engine->snapshot().candidateState.visible || engine->snapshot().readingText.empty())

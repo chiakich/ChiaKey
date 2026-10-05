@@ -58,7 +58,7 @@ int main() {
     composer.clear();
     CHECK(composer.insertAt(1, readings[0]));
     composer.update();
-    CHECK(composer.phraseCompletions().empty());
+    CHECK(composer.phraseCompletions().front().suffix == "工");
     CHECK(composer.insertAt(2, readings[1]));
     composer.update();
     CHECK(composer.composedString() == "人工");
@@ -96,6 +96,30 @@ int main() {
     CHECK(!composer.acceptPhraseCompletion(completion));
     CHECK(composer.composedString() == "人工");
     CHECK(composer.cursorRightBound() - composer.cursorLeftBound() == 2);
+  }
+  // A single confirmed character can complete a multi-character suffix.
+  string yan = Reading("ㄧㄢˇ");
+  string suan = Reading("ㄙㄨㄢˋ");
+  string fa = Reading("ㄈㄚˇ");
+  db->execute("INSERT INTO unigrams VALUES(%Q, '演', -1, 0)", yan.c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '算', -1, 0)", suan.c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '法', -1, 0)", fa.c_str());
+  db->execute("INSERT INTO unigrams VALUES(%Q, '演算法', -2, 0)",
+              (yan + suan + fa).c_str());
+  {
+    LanguageModel lm(db, 0, true, false, false);
+    ManjusriComposer composer(&lm);
+    composer.clear();
+    CHECK(composer.phraseCompletions().empty());
+    CHECK(composer.insertAt(1, yan));
+    composer.update();
+    auto completions = composer.phraseCompletions();
+    CHECK(composer.composedString() == "演");
+    CHECK(completions.size() == 1);
+    CHECK(completions.front().suffix == "算法");
+    CHECK(completions.front().prefixLength == 1);
+    CHECK(composer.acceptPhraseCompletion(completions.front()));
+    CHECK(composer.composedString() == "演算法");
   }
   delete db;
   if (failures) return 1;

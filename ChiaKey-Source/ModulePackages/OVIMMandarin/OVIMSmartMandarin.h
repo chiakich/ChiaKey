@@ -106,9 +106,9 @@ class ManjusriComposer {
     vector<string> chars = OVUTF8Helper::SplitStringByCodePoint(m_composedString);
     StringVector readings = m_graph.queryBlocks();
     // Completion relies on one reading block per Han character.
-    if (readings.size() != chars.size() + 2 || chars.size() < 2) return results;
+    if (readings.size() != chars.size() + 2 || chars.empty()) return results;
     size_t maxPrefix = min(chars.size(), size_t(7));
-    for (size_t length = maxPrefix; length >= 2; --length) {
+    for (size_t length = maxPrefix; length >= 1; --length) {
       if (m_graph.phraseCrossesForcedBreak(readings.size() - 1 - length,
                                           length)) continue;
       string text, reading;
