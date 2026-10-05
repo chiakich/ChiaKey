@@ -340,8 +340,9 @@ class CoreContext : public PVLoaderContext {
     const std::size_t page = candidateIndex / panel->candidatesPerPage();
     if (page != panel->currentPage()) panel->goToPage(page);
 
-    OVKey key = panel->candidateKeyAtIndex(
-        candidateIndex - page * panel->candidatesPerPage());
+    const size_t indexOnPage = candidateIndex - page * panel->candidatesPerPage();
+    panel->setHighlightIndex(indexOnPage);
+    OVKey key = panel->selectionKeyAtIndex(indexOnPage);
     return handleKeyEvent(&key);
   }
 };

@@ -49,6 +49,15 @@ using namespace std;
 
 class OVEventHandlingContext : public OVBase {
  public:
+  // Called when building a context for an enabled around filter. An input
+  // method may implement that feature itself and replace the legacy filter.
+  virtual bool activateReplacingAroundFilter(const string&) {
+    return false;
+  }
+
+  // Hosts forward the release only when a context has armed a Shift gesture.
+  virtual bool wantsShiftRelease() const { return false; }
+
   virtual void startSession(OVLoaderService* loaderService) {}
 
   virtual void stopSession(OVLoaderService* loaderService) {}

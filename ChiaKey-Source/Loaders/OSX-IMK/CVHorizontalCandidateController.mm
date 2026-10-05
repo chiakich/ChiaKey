@@ -60,6 +60,12 @@
   [_pageTextField setHidden:YES];
   [_pageTextField setTextColor:_foregroundColor];
 
+  [_promptTextField setDrawsBackground:NO];
+  [_promptTextField setBezeled:NO];
+  [_promptTextField setBordered:NO];
+  [_promptTextField setTextColor:_foregroundColor];
+  [_promptTextField setFont:[NSFont systemFontOfSize:9]];
+
   [_previousButton setHidden:YES];
   [_nextButton setHidden:YES];
 
@@ -147,14 +153,16 @@
   }
 
   if ([prompt length]) {
-    windowFrame.size.height = candidateSize.height + 10;
-    if (windowFrame.size.width < 150) windowFrame.size.width = 150;
+    CGFloat promptHeight = ceil([_promptTextField intrinsicContentSize].height);
+    windowFrame.size.height = candidateSize.height + promptHeight + 6;
     [_promptTextField setHidden:NO];
     [_promptTextField setStringValue:prompt];
+    CGFloat promptWidth = ceil([[_promptTextField attributedStringValue] size].width);
+    windowFrame.size.width = MAX(windowFrame.size.width, promptWidth + 20);
     NSRect promptFrame = [_promptTextField frame];
-    promptFrame.size.width = 80;
-    promptFrame.size.height = 10;
-    promptFrame.origin = NSMakePoint(10, NSMaxY(candidateFrame));
+    promptFrame.size.width = windowFrame.size.width - 20;
+    promptFrame.size.height = promptHeight;
+    promptFrame.origin = NSMakePoint(10, NSMaxY(candidateFrame) + 2);
     [_promptTextField setFrame:promptFrame];
   } else {
     [_promptTextField setHidden:YES];
@@ -163,7 +171,7 @@
   [_previousButton setFrame:goPrevFrame];
   [_nextButton setFrame:goNextFrame];
   [_background
-      setFrame:NSMakeRect(0, 0, windowFrame.size.width, candidateSize.height)];
+      setFrame:NSMakeRect(0, 0, windowFrame.size.width, windowFrame.size.height)];
 
   NSRect frame = [[NSScreen mainScreen] visibleFrame];
   NSArray *screens = [NSScreen screens];
@@ -221,7 +229,12 @@
 - (IBAction)sendKey:(id)sender {
   if (_sending) return;
   int selectedItem = [_candidateControl clickedIndex];
-  string keyString = _panel->candidateKeyAtIndex(selectedItem).receivedString();
+  if (selectedItem < 0) return;
+  _panel->setHighlightIndex(selectedItem);
+  OVKey selectionKey = _panel->selectionKeyAtIndex(selectedItem);
+  string keyString = selectionKey.receivedString();
+  if (keyString.empty() && selectionKey.keyCode() == OVKeyCode::Tab)
+    keyString = "\t";
   [[CVSendKey sharedSendKey]
       typeString:[NSString stringWithUTF8String:keyString.c_str()]];
 }

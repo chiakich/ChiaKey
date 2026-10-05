@@ -490,6 +490,12 @@ class LanguageModel {
 
   virtual bool addUserUnigram(const string& qstring, const string& current);
 
+  // Match both the confirmed text and its reading. The qstring range uses the
+  // existing lexicon index, including on older DBs without a current index.
+  virtual UnigramVector findPhraseCompletions(const string& readingPrefix,
+                                             const string& textPrefix,
+                                             StringFilter* filter = 0);
+
   virtual const Unigram& UNKUnigram();
   virtual const Unigram& BOSUnigram();
   virtual const Unigram& EOSUnigram();
@@ -1559,6 +1565,40 @@ inline const BigramVector LanguageModel::findBigrams(const string& queryString,
     }
   }
 
+  return results;
+}
+
+inline UnigramVector LanguageModel::findPhraseCompletions(
+    const string& readingPrefix, const string& textPrefix, StringFilter* filter) {
+  UnigramVector results;
+  if (readingPrefix.empty() || textPrefix.empty()) return results;
+
+  string upper = readingPrefix;
+  ++upper[upper.size() - 1];  // absolute-order reading bytes are ASCII 48..126
+  string sql = "SELECT qstring, current, probability, backoff FROM " +
+      m_unigramTableName +
+      " WHERE qstring >= ?1 AND qstring < ?2 AND "
+      "substr(current, 1, length(?3)) = ?3 AND length(current) > length(?3) "
+      "AND length(current) <= 8";
+  if (m_cfgUseUserTable) {
+    sql += " UNION SELECT qstring, current, probability, backoff FROM "
+        "userdb.user_unigrams WHERE qstring >= ?1 AND qstring < ?2 AND "
+        "substr(current, 1, length(?3)) = ?3 AND length(current) > length(?3) "
+        "AND length(current) <= 8";
+  }
+  sql += " ORDER BY probability DESC, current, qstring LIMIT 32";
+  OVSQLiteStatementRef statement = m_connection->prepare(sql.c_str());
+  if (!statement) return results;
+  statement->bindTextToColumn(readingPrefix, 1);
+  statement->bindTextToColumn(upper, 2);
+  statement->bindTextToColumn(textPrefix, 3);
+  while (statement->step() == SQLITE_ROW) {
+    string text = SafeColumnText(statement.get(), 1);
+    if (!filter || filter->shouldPass(text))
+      results.push_back(Unigram(SafeColumnText(statement.get(), 0), text,
+                               statement->doubleOfColumn(2),
+                               statement->doubleOfColumn(3)));
+  }
   return results;
 }
 

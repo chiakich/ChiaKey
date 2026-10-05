@@ -707,7 +707,19 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
   NSEventType eventType = [event type];
 
-  if (eventType == NSEventTypeFlagsChanged) {
+  // Shift release normally belongs to the host's language-toggle gesture.
+  // After cycling completions it instead travels through the ordinary input
+  // path, including commit delivery, output filters and candidate-window updates.
+  bool completionShiftReleased =
+      eventType == NSEventTypeFlagsChanged &&
+      ([event keyCode] == 0x38 || [event keyCode] == 0x3c) &&
+      !OVCEventIsShiftPressed(event) && _context && _context->wantsShiftRelease();
+  if (completionShiftReleased) {
+    _shiftKeyPressedForTemporaryEnglish = NO;
+    _shiftKeyTapCanceled = NO;
+  }
+
+  if (eventType == NSEventTypeFlagsChanged && !completionShiftReleased) {
     // Arm the takeover: if a keystroke reaches us before deactivateServer:
     // does, macOS has abandoned the language switch and we finish it instead.
     // The Caps Lock event trailing our own activation belongs to the switch
@@ -770,7 +782,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
       }
     }
 #endif
-  } else if (eventType == NSEventTypeKeyDown) {
+  } else if (eventType == NSEventTypeKeyDown || completionShiftReleased) {
 #if CHIAKEY_DEV_LOGGING
     if (_shiftKeyPressedForTemporaryEnglish) {
       _shiftKeyDownsDuringHold++;
@@ -789,7 +801,7 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
                                                 secureInputComposition);
     bool isHandled = false;
 
-    NSString *chars = [event characters];
+    NSString *chars = completionShiftReleased ? @"" : [event characters];
     NSEventModifierFlags cocoaModifiers = [event modifierFlags];
     unsigned short virtualKeyCode = [event keyCode];
     unsigned int vanillaModifiers = 0;
@@ -880,7 +892,9 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
     bool isPrintable = false;
     UniChar unicharCode = 0;
-    if ([chars length] > 0) {
+    if (completionShiftReleased) {
+      keyImpl = new PVKeyImpl(OVKeyCode::LeftShift, vanillaModifiers);
+    } else if ([chars length] > 0) {
       unicharCode = [chars characterAtIndex:0];
 
       // translates CTRL-[A-Z] to the correct PVKeyImpl
@@ -916,6 +930,11 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
 
       // remap; fix 10.6 "bug"
       switch (unicharCode) {
+        case NSBackTabCharacter:
+          // AppKit reports Shift+Tab as back-tab (0x19), rather than Tab.
+          // Preserve Shift in the modifier mask and normalize the key code.
+          remappedNSEventCode = (UniChar)OVKeyCode::Tab;
+          break;
         case NSUpArrowFunctionKey:
           remappedNSEventCode = (UniChar)OVKeyCode::Up;
           break;
@@ -1151,6 +1170,17 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
     PVOneDimensionalCandidatePanel *oneDimensionalPanel = verticalPanel;
     OVCandidatePanel *lastUsedPanel =
         _context->candidateService()->lastUsedPanel();
+
+    // Core panels can switch between horizontal completion and vertical
+    // selection in one event. Explicitly dismiss the previous native window.
+    if (lastUsedPanel != horizontalPanel || !horizontalPanel->isVisible())
+      [[appDelegate horizontalCandidateController] hide];
+    if (lastUsedPanel != verticalPanel || !verticalPanel->isVisible())
+      [[appDelegate verticalCandidateController] hide];
+    if (lastUsedPanel !=
+            _context->candidateService()->accessPlainTextCandidatePanel() ||
+        !_context->candidateService()->accessPlainTextCandidatePanel()->isVisible())
+      [[[appDelegate plainTextCandidateController] window] orderOut:self];
 
     if (lastUsedPanel == horizontalPanel || lastUsedPanel == verticalPanel) {
       if (lastUsedPanel == verticalPanel) {

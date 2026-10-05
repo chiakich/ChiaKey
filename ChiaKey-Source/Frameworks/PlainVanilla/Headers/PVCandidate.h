@@ -433,6 +433,14 @@ class PVOneDimensionalCandidatePanel : public OVOneDimensionalCandidatePanel {
     return index < m_candidateKeys.size() ? m_candidateKeys[index] : OVKey();
   }
 
+  // Panels without per-item shortcuts can still accept a click/absolute-index
+  // selection by highlighting the item and using their configured accept key.
+  const OVKey selectionKeyAtIndex(size_t index) {
+    if (index < m_candidateKeys.size()) return m_candidateKeys[index];
+    return m_chooseHighlightedCandidateKeys.empty()
+        ? OVKey() : m_chooseHighlightedCandidateKeys[0];
+  }
+
   virtual void setCandidateKeys(const OVKeyVector& keys) {
     m_candidateKeys = keys;
   }

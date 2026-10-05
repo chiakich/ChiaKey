@@ -41,6 +41,7 @@
 
 #include "Mandarin.h"
 #include "Manjusri.h"
+#include "OVAFAssociatedPhrase.h"
 
 namespace OpenVanilla {
 using namespace std;
@@ -52,6 +53,12 @@ class OVIMSmartMandarin;
 class CandidateFilter {
  public:
   virtual bool shouldPass(const string& text) = 0;
+};
+
+struct PhraseCompletion {
+  Unigram phrase;
+  size_t prefixLength = 0;
+  string suffix;
 };
 
 class ManjusriComposer {
@@ -92,6 +99,87 @@ class ManjusriComposer {
   size_t cursorRightBound() { return m_cursorRightBound; }
 
   const string composedString() { return m_composedString; }
+
+  vector<PhraseCompletion> phraseCompletions(StringFilter* filter = 0) {
+    vector<PhraseCompletion> results;
+    set<string> seen;
+    vector<string> chars = OVUTF8Helper::SplitStringByCodePoint(m_composedString);
+    StringVector readings = m_graph.queryBlocks();
+    // Completion relies on one reading block per Han character.
+    if (readings.size() != chars.size() + 2 || chars.size() < 2) return results;
+    size_t maxPrefix = min(chars.size(), size_t(7));
+    for (size_t length = maxPrefix; length >= 2; --length) {
+      if (m_graph.phraseCrossesForcedBreak(readings.size() - 1 - length,
+                                          length)) continue;
+      string text, reading;
+      bool valid = true;
+      for (size_t i = chars.size() - length; i < chars.size(); ++i) {
+        unsigned int cp = OVUTF8Helper::CodePointFromSingleUTF8String(chars[i]);
+        if (!((cp >= 0x3400 && cp <= 0x9fff) ||
+              (cp >= 0x20000 && cp <= 0x323af)) || readings[i + 1].size() != 2) {
+          valid = false;
+          break;
+        }
+        text += chars[i];
+        reading += readings[i + 1];
+      }
+      if (!valid) continue;
+      UnigramVector matches = m_LM->findPhraseCompletions(reading, text, filter);
+      for (const Unigram& phrase : matches) {
+        vector<string> full = OVUTF8Helper::SplitStringByCodePoint(phrase.current);
+        if (phrase.queryString.size() != full.size() * 2) continue;
+        bool validReading = true;
+        for (size_t i = 0; i < phrase.queryString.size(); i += 2) {
+          string syllable = phrase.queryString.substr(i, 2);
+          BPMF bpmf = BPMF::FromAbsoluteOrderString(syllable);
+          if (bpmf.isEmpty() || bpmf.absoluteOrderString() != syllable)
+            validReading = false;
+        }
+        if (!validReading) continue;
+        string suffix = phrase.current.substr(text.size());
+        if (!seen.insert(suffix).second) continue;
+        PhraseCompletion completion;
+        completion.phrase = phrase;
+        completion.prefixLength = length;
+        completion.suffix = suffix;
+        results.push_back(completion);
+        if (results.size() == 3) return results;
+      }
+      if (!results.empty()) return results;
+    }
+    return results;
+  }
+
+  bool acceptPhraseCompletion(const PhraseCompletion& completion,
+                              StringFilter* filter = 0) {
+    if (completion.suffix.empty() || completion.prefixLength >
+        m_cursorRightBound - m_cursorLeftBound) return false;
+    // Stage the graph so missing readings or a forced break cannot partially
+    // insert a completion or disturb the existing selected candidates.
+    Graph staged(m_graph);
+    size_t end = m_cursorRightBound;
+    for (size_t i = completion.prefixLength * 2;
+         i < completion.phrase.queryString.size(); i += 2) {
+      if (!staged.insertQueryBlockAndBuild(
+              completion.phrase.queryString.substr(i, 2), end++, filter))
+        return false;
+    }
+    CandidateVector candidates = staged.candidatesAtIndex(end, true);
+    for (const Candidate& candidate : candidates) {
+      const Node& node = *candidate.second;
+      if (node.location().first == m_cursorRightBound - completion.prefixLength &&
+          node.queryString() == completion.phrase.queryString &&
+          candidate.first.first == completion.phrase.current) {
+        staged.overrideNodeCandidate(node, completion.phrase.current, false);
+        m_graph = staged;
+        m_latestCandidate.clear();
+        m_latestCandidateContextPicks.clear();
+        update();
+        return true;
+      }
+    }
+    return false;
+  }
 
   const vector<string> composedStringAsTextSegments() {
     return FastPathAsTextSegments(m_latestFastPath);
@@ -328,6 +416,16 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
  public:
   OVIMSmartMandarinContext(OVIMSmartMandarin* module);
 
+  virtual bool wantsShiftRelease() const {
+    return m_completionShiftCyclePending && !m_completions.empty();
+  }
+
+  virtual bool activateReplacingAroundFilter(const string& identifier) {
+    if (identifier != OVAFASSOCIATEDPHRASE_IDENTIFIER) return false;
+    m_phraseCompletionEnabled = true;
+    return true;
+  }
+
   virtual void startSession(OVLoaderService* loaderService);
   virtual void stopSession(OVLoaderService* loaderService);
   virtual void clear(OVLoaderService* loaderService);
@@ -352,6 +450,8 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
 
   // aligned with the candidate list the composer last collected
   const vector<bool>& latestCandidateContextPicks() const {
+    static const vector<bool> empty;
+    if (!m_completions.empty()) return empty;
     return m_manjusri.latestCandidateContextPicks();
   }
 
@@ -362,6 +462,9 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
   bool handleQuickUserUnigramKey(const OVKey* key, OVTextBuffer* composingText,
                                  OVLoaderService* loaderService);
   void refreshComposingText(OVTextBuffer* composingText);
+  void refreshPhraseCompletion(OVTextBuffer* composingText,
+                               OVCandidateService* candidateService,
+                               OVLoaderService* loaderService);
 
   OVIMSmartMandarin* m_module;
 
@@ -371,6 +474,10 @@ class OVIMSmartMandarinContext : public OVEventHandlingContext {
 
   bool m_markMode;
   size_t m_markCursor;
+  vector<PhraseCompletion> m_completions;
+  bool m_phraseCompletionEnabled = false;
+  bool m_completionShiftCyclePending = false;
+  string m_completionDismissedText;
 };
 
 class OVIMSmartMandarin : public OVInputMethod {

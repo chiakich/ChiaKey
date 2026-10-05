@@ -36,5 +36,6 @@ build_and_run TestLearningStore
 build_and_run TestLearnedPickSurvivesWalk
 # Drives ManjusriComposer, hence the OVIMMandarin include and Mandarin.cpp above.
 build_and_run TestLearningReversal
+build_and_run TestPhraseCompletion
 
 echo "Learning store tests passed."
