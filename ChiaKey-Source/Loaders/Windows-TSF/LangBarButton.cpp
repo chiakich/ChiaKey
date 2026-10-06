@@ -169,6 +169,7 @@ std::vector<LangBarButton::MenuItem> LangBarButton::menuItems() {
 }
 
 STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) {
+    auto activity = service_->deferReload(); // TrackPopupMenu pumps a nested message loop
     if (click == TF_LBI_CLK_RIGHT) {
         HMENU menu = CreatePopupMenu();
         if (!menu) return E_OUTOFMEMORY;
@@ -200,6 +201,7 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
 }
 
 STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
+    auto activity = service_->deferReload();
     if (!menu) return E_INVALIDARG;
     for (const auto& item : menuItems()) {
         if (item.id == 0) {
@@ -217,6 +219,7 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
 }
 
 STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
+    auto activity = service_->deferReload();
     if (id == kMenuToggleLanguage) service_->toggleChineseMode();
     if (id == kMenuSimplifiedOutput && !service_->toggleSimplifiedOutput()) return E_FAIL;
     if (id == kMenuHalfWidth && service_->isFullWidthMode()) service_->toggleFullWidthMode();

@@ -57,7 +57,7 @@ representation 產生 `app.ico`，同時嵌入設定程式的 Win32 圖示與 ma
 偏好設定採用可調整大小的視窗與自動量測分組，依現有 Windows／macOS 偏好設定的
 圖示分類整理；小螢幕只做垂直捲動。三語排版與縮放 fixture 已接入 CTest。
 浮動狀態列目前不編入 TSF，設定中不提供浮動列、半透明與系統匣選項。
-模式通知與 Windows TSF 語言列保留；已開啟的宿主需重新開啟才會載入新版 DLL。
+模式通知與 Windows TSF 語言列保留；已載入自動更新層的宿主會在輸入閒置時自動載入新版 DLL（詳見 WindowsReload.md）。
 偏好設定視窗直接讀取內嵌的橘色角色圖示；詞彙編輯器使用 Mac 的
 `PhraseEditor.icns` 紫色角色圖示，轉成內嵌的 `phrase-editor.ico`。
 TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
@@ -200,8 +200,9 @@ Windows Server 的原生 x64／Win32 CTest 可驗證引擎與更新／詞彙編�
 本體接受 `chiakich/ChiaKey` 的共同 `vX.Y.Z`／`vX.Y.Z-beta.N`，
 也相容舊 `win-vX.Y.Z`／`win-vX.Y.Z-beta.N` release（排除 draft），尋找版本相符的 `ChiaKey-Windows-X.Y.Z-Setup.exe`，核對該 release 的
 `SHA256SUMS.txt`。安裝前再核對下載內容，透過 Windows `runas` 啟動 Inno 安裝器，
-使用者仍須回應 UAC 並完成安裝流程；取消不更動現有安裝。舊應用程式仍保留原 DLL，
-重新開啟才載入新版。新安裝器以原始桌面使用者執行 `/update-register`，把登入啟動
+使用者仍須回應 UAC 並完成安裝流程；取消不更動現有安裝。已開啟的應用程式在
+輸入閒置時自動載入新版；首次從沒有自動載入層的舊版升級仍須重開一次。
+新安裝器以原始桌面使用者執行 `/update-register`，把登入啟動
 路徑改到新版；舊 helper 注意到路徑改變後退出，新 helper 接手。解除安裝移除啟動項。
 
 詞庫採用與 Mac 相同的 CDN manifest，網路失敗時回到 GitHub。只接受詞庫 repo

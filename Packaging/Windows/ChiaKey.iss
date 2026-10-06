@@ -1,4 +1,4 @@
-﻿; The Windows installer. Built by .github/workflows/release-windows.yml; locally:
+; The Windows installer. Built by .github/workflows/release-windows.yml; locally:
 ;   ISCC /DVersion=0.1.0 /DX64Dir=<x64 Release> /DX86Dir=<x86 Release> /DIconFile=<app.ico>
 ;        /DOutputDir=<dir> Packaging\Windows\ChiaKey.iss
 
@@ -56,8 +56,8 @@ Name: "zh_TW"; MessagesFile: "ChineseTraditional.isl"
 Name: "en"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-zh_TW.FinishedLabel=千秋輸入法已經安裝完成。%n%n已經開著的程式要重新開啟，才會載入新版。如果輸入法清單裡沒有千秋輸入法，請到 Windows 設定的「時間與語言 > 語言與地區」加入「中文 (繁體，台灣)」。
-en.FinishedLabel=ChiaKey has been installed.%n%nApps that are already open need to be restarted to load it. If ChiaKey is not in the input method list, add "Chinese (Traditional, Taiwan)" under Settings > Time & language > Language & region.
+zh_TW.FinishedLabel=千秋輸入法已經安裝完成。%n%n已開啟的程式會在輸入閒置時自動載入新版，不必切換輸入法。組字、候選字與符號窗操作中會延後，直到操作完成。首次從不支援自動重新載入的舊版升級，仍需重開程式一次。如果輸入法清單裡沒有千秋輸入法，請到 Windows 設定的「時間與語言 > 語言與地區」加入「中文 (繁體，台灣)」。
+en.FinishedLabel=ChiaKey has been installed.%n%nOpen apps automatically load the update when input is idle, without switching input methods. Reloading waits for composition, candidate selection and symbol input to finish. The first upgrade from a version without automatic reload support still requires restarting apps once. If ChiaKey is not in the input method list, add "Chinese (Traditional, Taiwan)" under Settings > Time & language > Language & region.
 
 [Files]
 ; the 32-bit DLL registers first, so the profile's icon ends up pointing at the 64-bit one
@@ -94,6 +94,11 @@ Filename: "{app}\{#Version}\ChiaKeySettings.exe"; Parameters: "/update-register"
 Filename: "{app}\{#Version}\ChiaKeyStateHost.exe"; Parameters: "/stop"; Flags: runhidden waituntilterminated skipifdoesntexist
 
 [Registry]
+; Registry entries run after [Files]. Publish only complete installations, in
+; each architecture's view, so an already-running loader can safely switch.
+Root: HKLM32; Subkey: "Software\ChiaKey\Tsf"; ValueType: string; ValueName: "BackendPathV1"; ValueData: "{app}\{#Version}\x86\ChiaKeyTsf.dll"; Flags: uninsdeletevalue uninsdeletekeyifempty; Check: Is64BitInstallMode
+Root: HKLM64; Subkey: "Software\ChiaKey\Tsf"; ValueType: string; ValueName: "BackendPathV1"; ValueData: "{app}\{#Version}\ChiaKeyTsf.dll"; Flags: uninsdeletevalue uninsdeletekeyifempty; Check: Is64BitInstallMode
+Root: HKLM32; Subkey: "Software\ChiaKey\Tsf"; ValueType: string; ValueName: "BackendPathV1"; ValueData: "{app}\{#Version}\ChiaKeyTsf.dll"; Flags: uninsdeletevalue uninsdeletekeyifempty; Check: not Is64BitInstallMode
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "ChiaKeyUpdates"; Flags: uninsdeletevalue
 
 [UninstallDelete]

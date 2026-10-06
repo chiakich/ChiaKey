@@ -25,7 +25,7 @@ class KeyEditSession final : public ITfEditSession {
 public:
     KeyEditSession(TextService* service, ITfContext* context, KeyEvent event)
         : service_(service), context_(context), event_(std::move(event)) {
-        service_->AddRef();
+        service_->retainEditSession();
     }
 
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
@@ -51,7 +51,7 @@ public:
     bool handled() const { return handled_; }
 
 private:
-    ~KeyEditSession() { service_->Release(); }
+    ~KeyEditSession() { service_->releaseEditSession(); }
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
@@ -61,7 +61,8 @@ private:
 
 class TerminateEditSession final : public ITfEditSession {
 public:
-    explicit TerminateEditSession(ITfComposition* composition) : composition_(composition) {}
+    TerminateEditSession(TextService* service, ITfComposition* composition)
+        : service_(service), composition_(composition) { service_->retainEditSession(); }
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
         if (!object) return E_INVALIDARG;
         *object = nullptr;
@@ -88,8 +89,9 @@ public:
     }
 
 private:
-    ~TerminateEditSession() = default;
+    ~TerminateEditSession() { service_->releaseEditSession(); }
     std::atomic<ULONG> references_{1};
+    TextService* service_;
     ComPtr<ITfComposition> composition_;
 };
 
@@ -98,7 +100,7 @@ public:
     CommitModeSwitchEditSession(TextService* service, ITfContext* context, bool moveCaret,
                                 unsigned generation)
         : service_(service), context_(context), moveCaret_(moveCaret), generation_(generation) {
-        service_->AddRef();
+        service_->retainEditSession();
     }
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
         if (!object) return E_INVALIDARG;
@@ -125,7 +127,7 @@ private:
     ~CommitModeSwitchEditSession() {
         // TSF drops a queued session whose context is destroyed before it gets the lock
         if (!ran_) service_->commitSessionDropped(context_.Get(), generation_);
-        service_->Release();
+        service_->releaseEditSession();
     }
     std::atomic<ULONG> references_{1};
     TextService* service_;
@@ -139,7 +141,7 @@ class SymbolEditSession final : public ITfEditSession {
 public:
     SymbolEditSession(TextService* service, ITfContext* context, std::wstring text)
         : service_(service), context_(context), text_(std::move(text)) {
-        service_->AddRef();
+        service_->retainEditSession();
     }
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
         if (!object) return E_INVALIDARG;
@@ -162,7 +164,7 @@ public:
     }
 
 private:
-    ~SymbolEditSession() { service_->Release(); }
+    ~SymbolEditSession() { service_->releaseEditSession(); }
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
@@ -388,6 +390,8 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfFunctionProvider*>(this);
     } else if (iid == IID_ITfFnConfigure || iid == IID_ITfFunction) {
         *object = static_cast<ITfFnConfigure*>(this);
+    } else if (iid == __uuidof(IChiaKeyReloadControl)) {
+        *object = static_cast<IChiaKeyReloadControl*>(this);
     } else {
         return E_NOINTERFACE;
     }
@@ -402,12 +406,40 @@ STDMETHODIMP_(ULONG) TextService::Release() {
     return remaining;
 }
 
+STDMETHODIMP TextService::GetReloadState(DWORD* state) {
+    if (!state) return E_INVALIDARG;
+    *state = (chineseMode_ ? kReloadChinese : 0) | (fullWidthMode_ ? kReloadFullWidth : 0);
+    if (reloadActivity_ || pendingEditSessions_ || reloadKeyDownPending_ || reloadKeyUpPending_ ||
+        composition_ || pendingModeCommit_ ||
+        endingComposition_ || candidateActive_ || shiftTogglePending_ ||
+        !pendingCommitText_.empty() || (engine_ && engine_->hasComposition()) ||
+        symbolWindow_.isVisible() || punctuationKeyboard_.isVisible() ||
+        GetTickCount64() < reloadNotBefore_) return S_FALSE;
+    GUITHREADINFO gui{sizeof(gui)};
+    if (GetGUIThreadInfo(GetCurrentThreadId(), &gui) &&
+        (gui.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE))) return S_FALSE;
+    // Do not split a physical key press across versions (including modifiers).
+    for (int key = 1; key < 256; ++key)
+        if (GetAsyncKeyState(key) & 0x8000) return S_FALSE;
+    return S_OK;
+}
+
+STDMETHODIMP TextService::RestoreReloadState(DWORD state) {
+    ReloadActivity activity(reloadActivity_);
+    if (!engine_ || !engine_->ready()) return E_FAIL;
+    setChineseMode((state & kReloadChinese) != 0);
+    setFullWidthMode((state & kReloadFullWidth) != 0);
+    return S_OK;
+}
+
 STDMETHODIMP TextService::Activate(ITfThreadMgr* threadManager, TfClientId clientId) {
+    ReloadActivity activity(reloadActivity_);
     return ActivateEx(threadManager, clientId, 0);
 }
 
 STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId clientId,
                                      DWORD flags) {
+    ReloadActivity activity(reloadActivity_);
     if (!threadManager || clientId == TF_CLIENTID_NULL) return E_INVALIDARG;
     if (threadManager_) return S_OK;
 
@@ -465,6 +497,8 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 }
 
 STDMETHODIMP TextService::Deactivate() {
+    ReloadActivity activity(reloadActivity_);
+    reloadKeyDownPending_ = reloadKeyUpPending_ = false;
     if (!requestCommitComposition()) {
         Trace("Deactivate: composition could not be committed");
     }
@@ -488,6 +522,7 @@ STDMETHODIMP TextService::Deactivate() {
 }
 
 HRESULT TextService::adviseSinks() {
+    ReloadActivity activity(reloadActivity_);
     ComPtr<ITfKeystrokeMgr> keystrokes;
     HRESULT result = threadManager_.As(&keystrokes);
     if (FAILED(result)) return result;
@@ -536,6 +571,7 @@ HRESULT TextService::adviseSinks() {
 }
 
 void TextService::unadviseSinks() {
+    ReloadActivity activity(reloadActivity_);
     if (!threadManager_) return;
     unadviseTextEditSink();
     unadviseInputModeSink();
@@ -558,6 +594,7 @@ void TextService::unadviseSinks() {
 }
 
 HRESULT TextService::adviseTextEditSink(ITfContext* context) {
+    ReloadActivity activity(reloadActivity_);
     if (textEditContext_.Get() == context && textEditCookie_ != TF_INVALID_COOKIE) {
         return S_OK;
     }
@@ -574,6 +611,7 @@ HRESULT TextService::adviseTextEditSink(ITfContext* context) {
 }
 
 void TextService::unadviseTextEditSink() {
+    ReloadActivity activity(reloadActivity_);
     if (textEditContext_ && textEditCookie_ != TF_INVALID_COOKIE) {
         ComPtr<ITfSource> source;
         if (SUCCEEDED(textEditContext_.As(&source))) source->UnadviseSink(textEditCookie_);
@@ -583,6 +621,7 @@ void TextService::unadviseTextEditSink() {
 }
 
 HRESULT TextService::adviseInputModeSink() {
+    ReloadActivity activity(reloadActivity_);
     ComPtr<ITfCompartmentMgr> manager;
     HRESULT result = threadManager_.As(&manager);
     if (FAILED(result)) return result;
@@ -610,6 +649,7 @@ HRESULT TextService::adviseInputModeSink() {
 }
 
 void TextService::unadviseInputModeSink() {
+    ReloadActivity activity(reloadActivity_);
     if (!threadManager_) return;
     ComPtr<ITfCompartmentMgr> manager;
     ComPtr<ITfCompartment> compartment;
@@ -634,6 +674,7 @@ void TextService::unadviseInputModeSink() {
 }
 
 HRESULT TextService::adviseFunctionProvider() {
+    ReloadActivity activity(reloadActivity_);
     ComPtr<ITfSourceSingle> source;
     HRESULT result = threadManager_.As(&source);
     if (FAILED(result)) return result;
@@ -642,6 +683,7 @@ HRESULT TextService::adviseFunctionProvider() {
 }
 
 void TextService::unadviseFunctionProvider() {
+    ReloadActivity activity(reloadActivity_);
     if (!threadManager_ || clientId_ == TF_CLIENTID_NULL) return;
     ComPtr<ITfSourceSingle> source;
     if (SUCCEEDED(threadManager_.As(&source))) {
@@ -650,6 +692,7 @@ void TextService::unadviseFunctionProvider() {
 }
 
 HRESULT TextService::openSettings(HWND parent, const wchar_t* arguments) const {
+    ReloadActivity activity(reloadActivity_);
     const HINSTANCE launched = ShellExecuteW(parent, L"open", SettingsAppPath().c_str(), arguments,
                                              nullptr, SW_SHOWNORMAL);
     const INT_PTR code = reinterpret_cast<INT_PTR>(launched);
@@ -657,18 +700,21 @@ HRESULT TextService::openSettings(HWND parent, const wchar_t* arguments) const {
 }
 
 STDMETHODIMP TextService::GetType(GUID* guid) {
+    ReloadActivity activity(reloadActivity_);
     if (!guid) return E_INVALIDARG;
     *guid = kTextServiceClsid;
     return S_OK;
 }
 
 STDMETHODIMP TextService::GetDescription(BSTR* description) {
+    ReloadActivity activity(reloadActivity_);
     if (!description) return E_INVALIDARG;
     *description = SysAllocString(kTextServiceDescription);
     return *description ? S_OK : E_OUTOFMEMORY;
 }
 
 STDMETHODIMP TextService::GetFunction(REFGUID guid, REFIID iid, IUnknown** object) {
+    ReloadActivity activity(reloadActivity_);
     if (!object) return E_INVALIDARG;
     *object = nullptr;
     if (guid != GUID_NULL || iid != IID_ITfFnConfigure) return E_NOINTERFACE;
@@ -676,14 +722,19 @@ STDMETHODIMP TextService::GetFunction(REFGUID guid, REFIID iid, IUnknown** objec
 }
 
 STDMETHODIMP TextService::GetDisplayName(BSTR* name) {
+    ReloadActivity activity(reloadActivity_);
     if (!name) return E_INVALIDARG;
     *name = SysAllocString(L"千秋輸入法設定");
     return *name ? S_OK : E_OUTOFMEMORY;
 }
 
-STDMETHODIMP TextService::Show(HWND parent, LANGID, REFGUID) { return openSettings(parent); }
+STDMETHODIMP TextService::Show(HWND parent, LANGID, REFGUID) {
+    ReloadActivity activity(reloadActivity_);
+    return openSettings(parent);
+}
 
 HRESULT TextService::initializeLangBar() {
+    ReloadActivity activity(reloadActivity_);
     if (!threadManager_) return E_UNEXPECTED;
     ComPtr<ITfLangBarItemMgr> manager;
     HRESULT result = threadManager_.As(&manager);
@@ -718,6 +769,7 @@ HRESULT TextService::initializeLangBar() {
 }
 
 void TextService::uninitializeLangBar() {
+    ReloadActivity activity(reloadActivity_);
     ComPtr<ITfLangBarItemMgr> manager;
     if (threadManager_) threadManager_.As(&manager);
     std::array<LangBarButton*, 3> buttons{};
@@ -736,6 +788,7 @@ void TextService::uninitializeLangBar() {
 }
 
 void TextService::refreshLangBar() {
+    ReloadActivity activity(reloadActivity_);
     std::array<LangBarButton*, 3> buttons{};
     {
         std::lock_guard<std::mutex> lock(langBarMutex_);
@@ -752,6 +805,7 @@ void TextService::refreshLangBar() {
 }
 
 void TextService::notifyMode(const std::wstring& text) {
+    ReloadActivity activity(reloadActivity_);
     if (secureMode_ || !CurrentFrontendSettings().showNotifications) return;
     BOOL focused = FALSE;
     if (threadManager_ && SUCCEEDED(threadManager_->IsThreadFocus(&focused)) && focused)
@@ -759,6 +813,7 @@ void TextService::notifyMode(const std::wstring& text) {
 }
 
 void TextService::setChineseMode(bool enabled) {
+    ReloadActivity activity(reloadActivity_);
     // ending a composition without clearing its range commits the visible text
     if (!enabled && !requestCommitComposition()) {
         Trace("InputMode switch deferred: composition commit unavailable");
@@ -785,9 +840,13 @@ void TextService::setChineseMode(bool enabled) {
     if (changed) notifyMode(UiText(enabled ? L"中文模式" : L"英文模式"));
 }
 
-void TextService::toggleChineseMode() { setChineseMode(!chineseMode_); }
+void TextService::toggleChineseMode() {
+    ReloadActivity activity(reloadActivity_);
+    setChineseMode(!chineseMode_);
+}
 
 void TextService::setFullWidthMode(bool enabled) {
+    ReloadActivity activity(reloadActivity_);
     const bool changed = fullWidthMode_ != enabled;
     fullWidthMode_ = enabled;
     ComPtr<ITfCompartmentMgr> manager;
@@ -817,9 +876,13 @@ void TextService::setFullWidthMode(bool enabled) {
     if (changed) notifyMode(UiText(enabled ? L"全形英數模式" : L"半形英數模式"));
 }
 
-void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
+void TextService::toggleFullWidthMode() {
+    ReloadActivity activity(reloadActivity_);
+    setFullWidthMode(!fullWidthMode_);
+}
 
 bool TextService::toggleSimplifiedOutput() {
+    ReloadActivity activity(reloadActivity_);
     RefreshSettings();
     const bool changed = SetSimplifiedOutput(!CurrentFrontendSettings().simplifiedOutput);
     if (changed) {
@@ -830,6 +893,7 @@ bool TextService::toggleSimplifiedOutput() {
 }
 
 bool TextService::selectInputMethod(const std::string& identifier) {
+    ReloadActivity activity(reloadActivity_);
     const bool changed = CurrentInputMethod() != identifier;
     if (changed) {
         // the switch rebuilds every context, which would drop the composition
@@ -843,6 +907,7 @@ bool TextService::selectInputMethod(const std::string& identifier) {
 }
 
 KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
+    ReloadActivity activity(reloadActivity_);
     KeyEvent event;
     event.virtualKey = static_cast<UINT>(wparam);
     event.shift = IsKeyDown(VK_SHIFT);
@@ -864,6 +929,7 @@ KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
 }
 
 bool TextService::isPotentialKey(const KeyEvent& event) const {
+    ReloadActivity activity(reloadActivity_);
     if (CapsLockAlphanumeric(event, CurrentFrontendSettings()) &&
         AlphanumericCharacter(event, CurrentFrontendSettings())) return true;
     if (isFullWidthCharacterKey(event)) return true;
@@ -876,25 +942,30 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
 }
 
 bool TextService::isModeToggleKey(const KeyEvent& event) const {
+    ReloadActivity activity(reloadActivity_);
     if (!event.control || event.alt) return false;
     return event.virtualKey == VK_SPACE;
 }
 
 bool TextService::isShiftToggleKey(const KeyEvent& event) const {
+    ReloadActivity activity(reloadActivity_);
     return IsShiftKey(event.virtualKey) && !event.control && !event.alt &&
            CurrentFrontendSettings().shiftTogglesEnglish &&
            !CurrentFrontendSettings().capsLockTogglesEnglish;
 }
 
 bool TextService::isWidthToggleKey(const KeyEvent& event) const {
+    ReloadActivity activity(reloadActivity_);
     return event.virtualKey == VK_SPACE && event.shift && !event.control && !event.alt;
 }
 
 bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
+    ReloadActivity activity(reloadActivity_);
     return fullWidthMode_ && !event.control && !event.alt && PrintableCharacter(event) != 0;
 }
 
 void TextService::toggleSymbolWindow() {
+    ReloadActivity activity(reloadActivity_);
     if (symbolWindow_.isVisible()) {
         symbolWindow_.close();
         symbolUI_.end();
@@ -905,6 +976,7 @@ void TextService::toggleSymbolWindow() {
 }
 
 void TextService::sendSymbol(const std::wstring& text) {
+    ReloadActivity activity(reloadActivity_);
     ComPtr<ITfDocumentMgr> focused;
     ComPtr<ITfContext> context;
     if (!threadManager_ || clientId_ == TF_CLIENTID_NULL ||
@@ -927,6 +999,8 @@ void TextService::sendSymbol(const std::wstring& text) {
 
 HRESULT TextService::insertSymbol(TfEditCookie editCookie, ITfContext* context,
                                   const std::wstring& text) {
+    ReloadActivity activity(reloadActivity_);
+    reloadNotBefore_ = GetTickCount64() + 500;
     // the sentence being composed goes first, as typing a punctuation key would do
     if (composition_ && compositionContext_.Get() == context) {
         const HRESULT result = commitCompositionForModeSwitch(editCookie, context, true);
@@ -941,6 +1015,7 @@ HRESULT TextService::insertSymbol(TfEditCookie editCookie, ITfContext* context,
 }
 
 STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
+    ReloadActivity activity(reloadActivity_);
     if (!foreground) {
         if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId())
             punctuationKeyboard_.close();
@@ -954,6 +1029,9 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
 
 STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam,
                                         BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
+    ReloadKeyTest tested(reloadKeyDownPending_, eaten);
+    reloadNotBefore_ = GetTickCount64() + 500;
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
     if (!keyboardAvailable(context)) {
@@ -984,6 +1062,9 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPAR
 }
 
 STDMETHODIMP TextService::OnTestKeyUp(ITfContext* context, WPARAM wparam, LPARAM, BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
+    ReloadKeyTest tested(reloadKeyUpPending_, eaten);
+    reloadNotBefore_ = GetTickCount64() + 500;
     if (!eaten) return E_INVALIDARG;
     if (IsShiftKey(static_cast<UINT>(wparam)) && keyboardAvailable(context) &&
         engine_ && engine_->wantsShiftRelease()) {
@@ -1007,6 +1088,9 @@ STDMETHODIMP TextService::OnTestKeyUp(ITfContext* context, WPARAM wparam, LPARAM
 
 STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam,
                                     BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
+    reloadKeyDownPending_ = false;
+    reloadNotBefore_ = GetTickCount64() + 500;
     if (!context || !eaten) return E_INVALIDARG;
     *eaten = FALSE;
     if (!keyboardAvailable(context)) return S_OK;
@@ -1040,12 +1124,14 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
 
 HRESULT TextService::requestEditSession(ITfContext* context, ITfEditSession* session,
                                         HRESULT* editResult, bool* retriedAsync) {
+    ReloadActivity activity(reloadActivity_);
     return RequestWriteEditSession([&](DWORD flags, HRESULT* result) {
         return context->RequestEditSession(clientId_, session, flags, result);
     }, editResult, retriedAsync);
 }
 
 HRESULT TextService::handleFrontendShortcut(ITfContext* context, const KeyEvent& event, BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
     const auto settings = CurrentFrontendSettings();
     switch (ShortcutFor(event, settings)) {
     case FrontendShortcut::NextInputMethod:
@@ -1065,6 +1151,7 @@ HRESULT TextService::handleFrontendShortcut(ITfContext* context, const KeyEvent&
 }
 
 HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
     auto* session = new (std::nothrow) KeyEditSession(this, context, std::move(event));
     if (!session) return E_OUTOFMEMORY;
     HRESULT editResult = E_FAIL;
@@ -1086,6 +1173,9 @@ HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* ea
 }
 
 STDMETHODIMP TextService::OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
+    reloadKeyUpPending_ = false;
+    reloadNotBefore_ = GetTickCount64() + 500;
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
     if (IsShiftKey(static_cast<UINT>(wparam)) && keyboardAvailable(context) &&
@@ -1117,6 +1207,8 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM lpa
 }
 
 STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) {
+    ReloadActivity activity(reloadActivity_);
+    reloadNotBefore_ = GetTickCount64() + 500;
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
     if (!keyboardAvailable(context)) return S_OK;
@@ -1152,6 +1244,8 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
 
 HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
                                 const KeyEvent& event, bool* handled) {
+    ReloadActivity activity(reloadActivity_);
+    reloadNotBefore_ = GetTickCount64() + 500;
     if (!context || !handled) return E_INVALIDARG;
     if (event.candidateIndex != static_cast<size_t>(-1) &&
         (!candidateActive_ || candidateContext_.Get() != context ||
@@ -1262,6 +1356,7 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
 }
 
 HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* context) {
+    ReloadActivity activity(reloadActivity_);
     if (composition_) return compositionContext_.Get() == context ? S_OK : E_UNEXPECTED;
 
     ComPtr<ITfInsertAtSelection> insertion;
@@ -1288,6 +1383,7 @@ HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* cont
 
 void TextService::applyDisplayAttributes(TfEditCookie editCookie, ITfContext* context,
                                          ITfRange* range, const EngineResult& result) {
+    ReloadActivity activity(reloadActivity_);
     if (inputAttributeAtom_ == TF_INVALID_GUIDATOM) return;
     ComPtr<ITfProperty> property;
     if (FAILED(context->GetProperty(GUID_PROP_ATTRIBUTE, &property))) return;
@@ -1312,6 +1408,7 @@ void TextService::applyDisplayAttributes(TfEditCookie editCookie, ITfContext* co
 
 HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext* context,
                                             const EngineResult& result) {
+    ReloadActivity activity(reloadActivity_);
     HRESULT status = ensureComposition(editCookie, context);
     if (FAILED(status)) return status;
     ComPtr<ITfRange> range;
@@ -1337,6 +1434,7 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
 }
 
 void TextService::recordCommittedText(const std::wstring& text) {
+    ReloadActivity activity(reloadActivity_);
     if (text.empty() || secureMode_) return;
     if (!historyHostReady_ && !historyHostPath_.empty() && GetTickCount64() >= nextHistoryHostAttempt_) {
         nextHistoryHostAttempt_ = GetTickCount64() + 10000;
@@ -1351,6 +1449,7 @@ void TextService::recordCommittedText(const std::wstring& text) {
 
 HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
                                 const std::wstring& text, bool filter) {
+    ReloadActivity activity(reloadActivity_);
     if (text.empty()) return S_OK;
     pendingCommitText_.clear();
     const std::wstring output = filter
@@ -1385,6 +1484,7 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
 }
 
 HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
+    ReloadActivity activity(reloadActivity_);
     if (!composition_) return S_OK;
     ComPtr<ITfRange> range, reader;
     HRESULT result = composition_->GetRange(&range);
@@ -1410,6 +1510,7 @@ HRESULT TextService::convertCompositionForCommit(TfEditCookie editCookie) {
 }
 
 HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
+    ReloadActivity activity(reloadActivity_);
     if (!composition_) return S_OK;
     ComPtr<ITfRange> range;
     if (compositionContext_ && SUCCEEDED(composition_->GetRange(&range)) && range) {
@@ -1433,6 +1534,7 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
 }
 
 void TextService::resetCandidateState() {
+    ReloadActivity activity(reloadActivity_);
     ++candidateGeneration_;
     candidateUI_.end();
     candidateWindow_.hide();
@@ -1442,6 +1544,7 @@ void TextService::resetCandidateState() {
 }
 
 bool TextService::requestCommitComposition(bool moveCaret) {
+    ReloadActivity activity(reloadActivity_);
     if (pendingModeCommit_) return true;
     if (!composition_) {
         resetCandidateState();
@@ -1469,6 +1572,7 @@ bool TextService::requestCommitComposition(bool moveCaret) {
 
 HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
                                                     ITfContext* context, bool moveCaret) {
+    ReloadActivity activity(reloadActivity_);
     HRESULT result = S_OK;
     if (composition_ && compositionContext_.Get() == context) {
         result = convertCompositionForCommit(editCookie);
@@ -1493,6 +1597,7 @@ HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
 }
 
 void TextService::commitSessionDropped(ITfContext* context, unsigned generation) {
+    ReloadActivity activity(reloadActivity_);
     if (!pendingModeCommit_ || generation != commitGeneration_) return;
     pendingModeCommit_ = false;
     // the context took its composition with it
@@ -1505,6 +1610,7 @@ void TextService::commitSessionDropped(ITfContext* context, unsigned generation)
 }
 
 void TextService::abandonComposition() {
+    ReloadActivity activity(reloadActivity_);
     resetCandidateState();
     if (engine_) engine_->reset();
 
@@ -1515,7 +1621,7 @@ void TextService::abandonComposition() {
     pendingCommitText_.clear();
 
     if (!oldComposition || !oldContext || clientId_ == TF_CLIENTID_NULL) return;
-    auto* session = new (std::nothrow) TerminateEditSession(oldComposition.Get());
+    auto* session = new (std::nothrow) TerminateEditSession(this, oldComposition.Get());
     if (!session) return;
     HRESULT editResult = E_FAIL;
     oldContext->RequestEditSession(clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE,
@@ -1525,6 +1631,7 @@ void TextService::abandonComposition() {
 
 HRESULT TextService::updateComposition(TfEditCookie editCookie, ITfContext* context,
                                        const EngineResult& result) {
+    ReloadActivity activity(reloadActivity_);
     HRESULT status = commitText(editCookie, context, result.committedText);
     if (FAILED(status)) return status;
 
@@ -1542,6 +1649,7 @@ HRESULT TextService::updateComposition(TfEditCookie editCookie, ITfContext* cont
 
 void TextService::presentAuxiliaryUI(UIElementSession& session, int kind,
                                      std::function<void(bool)> show, std::function<bool()> visible) {
+    ReloadActivity activity(reloadActivity_);
     // Optional palettes and notifications must not pop over an exclusive game.
     if (secureMode_ || uiLessMode_) { session.end(); show(false); return; }
     ComPtr<TextUIElement> element = session.element();
@@ -1561,12 +1669,14 @@ void TextService::presentAuxiliaryUI(UIElementSession& session, int kind,
 }
 
 void TextService::showNotification(const std::wstring& text) {
+    ReloadActivity activity(reloadActivity_);
     presentAuxiliaryUI(notificationUI_, 1,
         [this, text](bool show) { if (show) notificationWindow_.show(text); else notificationWindow_.hide(); },
         [this] { return notificationWindow_.isVisible(); });
 }
 
 void TextService::showSymbolWindow(bool userOpened) {
+    ReloadActivity activity(reloadActivity_);
     presentAuxiliaryUI(symbolUI_, 2,
         [this, userOpened](bool show) {
             symbolWindow_.setHostAllowed(show);
@@ -1577,6 +1687,7 @@ void TextService::showSymbolWindow(bool userOpened) {
 }
 
 bool TextService::keyboardAvailable(ITfContext* context) const {
+    ReloadActivity activity(reloadActivity_);
     if (!context) return false;
     TF_STATUS status{};
     if (SUCCEEDED(context->GetStatus(&status)) && (status.dwDynamicFlags & TF_SD_READONLY)) return false;
@@ -1597,6 +1708,7 @@ bool TextService::keyboardAvailable(ITfContext* context) const {
 
 void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
                                         const EngineResult& result) {
+    ReloadActivity activity(reloadActivity_);
     const bool showCandidates = result.candidatesVisible && !result.candidates.empty();
     if (!showCandidates && result.message.empty()) { resetCandidateState(); return; }
 
@@ -1683,6 +1795,7 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
 }
 bool TextService::selectionMatchesTrackedState(TfEditCookie editCookie,
                                                ITfContext* context) const {
+    ReloadActivity activity(reloadActivity_);
     if (!context) return false;
 
     TF_SELECTION selection{};
@@ -1722,6 +1835,7 @@ bool TextService::selectionMatchesTrackedState(TfEditCookie editCookie,
 
 STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie,
                                     ITfEditRecord* editRecord) {
+    ReloadActivity activity(reloadActivity_);
     if (!context || !editRecord || (!composition_ && !candidateActive_)) return S_OK;
 
     BOOL selectionChanged = FALSE;
@@ -1736,6 +1850,7 @@ STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie
 }
 
 STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie, ITfComposition* composition) {
+    ReloadActivity activity(reloadActivity_);
     if (composition_.Get() == composition) {
         if (!endingComposition_) {
             const HRESULT conversion = convertCompositionForCommit(editCookie);
@@ -1752,9 +1867,13 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie, ITfCo
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnInitDocumentMgr(ITfDocumentMgr*) { return S_OK; }
+STDMETHODIMP TextService::OnInitDocumentMgr(ITfDocumentMgr*) {
+    ReloadActivity activity(reloadActivity_);
+    return S_OK;
+}
 
 STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
+    ReloadActivity activity(reloadActivity_);
     if (compositionContext_ && !pendingModeCommit_) {
         ComPtr<ITfDocumentMgr> owner;
         if (SUCCEEDED(compositionContext_->GetDocumentMgr(&owner)) &&
@@ -1774,6 +1893,7 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
 }
 
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
+    ReloadActivity activity(reloadActivity_);
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
     if (focusedContext.Get() != textEditContext_.Get()) punctuationKeyboard_.close();
@@ -1794,6 +1914,7 @@ STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
 }
 
 STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
+    ReloadActivity activity(reloadActivity_);
     if ((composition_ || candidateActive_) && textEditContext_.Get() != context &&
         !pendingModeCommit_) {
         requestCommitComposition();
@@ -1804,6 +1925,7 @@ STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
 }
 
 STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
+    ReloadActivity activity(reloadActivity_);
     if (compositionContext_.Get() == context) {
         if (!pendingModeCommit_) requestCommitComposition();
     } else if (!composition_ && candidateContext_.Get() == context) {
@@ -1826,12 +1948,14 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
 // one window per app thread, brought up where the user goes as Yahoo's single window was;
 // the window itself hides when another app comes to the front
 STDMETHODIMP TextService::OnSetThreadFocus() {
+    ReloadActivity activity(reloadActivity_);
     RefreshSettings();
     if (!symbolWindow_.isVisible() && ReadSymbolWindowState().visible) showSymbolWindow();
     return S_OK;
 }
 
 STDMETHODIMP TextService::OnKillThreadFocus() {
+    ReloadActivity activity(reloadActivity_);
     // Showing nonactivating IME UI can itself trigger this callback in some hosts.
     if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId())
         punctuationKeyboard_.close();
@@ -1839,6 +1963,7 @@ STDMETHODIMP TextService::OnKillThreadFocus() {
 }
 
 STDMETHODIMP TextService::OnChange(REFGUID guid) {
+    ReloadActivity activity(reloadActivity_);
     if (!threadManager_) return S_OK;
     if (guid != GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION &&
         guid != GUID_COMPARTMENT_KEYBOARD_OPENCLOSE) {
@@ -1864,6 +1989,7 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
 }
 
 STDMETHODIMP TextService::EnumDisplayAttributeInfo(IEnumTfDisplayAttributeInfo** items) {
+    ReloadActivity activity(reloadActivity_);
     if (!items) return E_INVALIDARG;
     *items = new (std::nothrow) DisplayAttributeEnum();
     return *items ? S_OK : E_OUTOFMEMORY;
@@ -1871,6 +1997,7 @@ STDMETHODIMP TextService::EnumDisplayAttributeInfo(IEnumTfDisplayAttributeInfo**
 
 STDMETHODIMP TextService::GetDisplayAttributeInfo(REFGUID guid,
                                                   ITfDisplayAttributeInfo** info) {
+    ReloadActivity activity(reloadActivity_);
     if (!info) return E_INVALIDARG;
     *info = nullptr;
     for (const DisplayAttributeSpec& spec : kDisplayAttributes) {
