@@ -50,6 +50,9 @@ public:
         if (!manager || id == TF_CLIENTID_NULL) return E_INVALIDARG;
         if (switching_) return E_UNEXPECTED;
         if (active_) return S_OK;
+        // A TSF activation boundary is an explicit opportunity to retry a
+        // backend that previously failed during an automatic reload.
+        failedRevision_.clear();
         // Only replace the backend at a TSF activation boundary: never while
         // processing a key, an edit session, or an unfinished composition.
         ComPtr<ITfTextInputProcessorEx> next;
@@ -188,7 +191,8 @@ private:
             return;
         }
         const auto published = published_();
-        if (published.empty() || _wcsicmp(published.c_str(), revision_.c_str()) == 0) return;
+        if (published.empty() || _wcsicmp(published.c_str(), revision_.c_str()) == 0 ||
+            _wcsicmp(published.c_str(), failedRevision_.c_str()) == 0) return;
         ComPtr<IChiaKeyReloadControl> current;
         DWORD state = 0;
         if (FAILED(backend_.As(&current)) || current->GetReloadState(&state) != S_OK) return;
@@ -210,8 +214,10 @@ private:
             } else if (SUCCEEDED(hr)) {
                 backend_ = next;
                 revision_ = revision;
+                failedRevision_.clear();
                 retryAfter_ = 0;
             } else {
+                failedRevision_ = revision;
                 next->Deactivate();
                 const HRESULT restored = backend_->ActivateEx(manager_.Get(), clientId_, flags_);
                 recovering_ = FAILED(restored) || FAILED(current->RestoreReloadState(state));
@@ -231,6 +237,7 @@ private:
     TextServiceFactory latest_;
     TextServiceRevision published_;
     std::wstring revision_;
+    std::wstring failedRevision_;
     ComPtr<ITfTextInputProcessorEx> backend_;
     ComPtr<ITfThreadMgr> manager_;
     TfClientId clientId_ = TF_CLIENTID_NULL;

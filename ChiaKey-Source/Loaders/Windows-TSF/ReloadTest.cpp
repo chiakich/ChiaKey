@@ -172,13 +172,28 @@ int wmain(int argc, wchar_t** argv) {
         version(2, TF_TMAE_UIELEMENTENABLEDONLY);
         Check(attempts1() > failedAttempt, "automatic activation failure was exercised");
         Check(count1() == 0 && count2() == 1, "failed update restores previous active backend");
-        fail(FALSE); waitVersion(1);
+        const int rejectedAttempts = attempts1();
+        PumpFor(5500);
+        Check(attempts1() == rejectedAttempts, "failed revision is not retried automatically");
+        fail(FALSE);
+        Ok(tip->Deactivate(), "deactivate to retry failed revision");
+        Ok(tip->ActivateEx(manager, 1, TF_TMAE_UIELEMENTENABLEDONLY),
+           "manual activation retries failed revision");
+        version(1, TF_TMAE_UIELEMENTENABLEDONLY);
         const int restoreAttempt = attempts2();
         failRestore(TRUE); registry.publish(argv[3]); PumpFor(1500);
         version(1, TF_TMAE_UIELEMENTENABLEDONLY);
         Check(attempts2() > restoreAttempt, "automatic restore failure was exercised");
         Check(count1() == 1 && count2() == 0, "state restore failure rolls back");
-        failRestore(FALSE); waitVersion(2);
+        const int rejectedRestoreAttempts = attempts2();
+        PumpFor(5500);
+        Check(attempts2() == rejectedRestoreAttempts,
+              "failed state restoration is not retried automatically");
+        failRestore(FALSE);
+        Ok(tip->Deactivate(), "deactivate to retry failed state restoration");
+        Ok(tip->ActivateEx(manager, 1, TF_TMAE_UIELEMENTENABLEDONLY),
+           "manual activation retries failed state restoration");
+        version(2, TF_TMAE_UIELEMENTENABLEDONLY);
         // TSF can deactivate the outer object during a nested activation call.
         // The new backend must not remain active after that request returns.
         deactivateDuringActivation(tip.Get()); registry.publish(argv[2]); PumpFor(1500);
