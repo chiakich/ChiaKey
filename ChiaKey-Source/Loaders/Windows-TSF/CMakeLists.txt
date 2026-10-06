@@ -83,6 +83,7 @@ set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/ChiaKeyIcons.rc" PROPER
 add_library(ChiaKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
+    ReloadableTextService.cpp
     LangBarButton.cpp
     PhraseEditorExports.cpp
     SymbolWindow.cpp
@@ -256,6 +257,28 @@ else()
 endif()
 
 if(BUILD_TESTING)
+    foreach(version 1 2)
+        add_library(chiakey_reload_backend_${version} SHARED ReloadTestBackend.cpp ReloadTestBackend.def)
+        # Production updates have the same DLL basename in different version
+        # directories. Exercise that loader-cache case, not just unique names.
+        set_target_properties(chiakey_reload_backend_${version} PROPERTIES
+            OUTPUT_NAME ChiaKeyTsf
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/reload-v${version}"
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/reload-v${version}")
+        target_compile_definitions(chiakey_reload_backend_${version} PRIVATE TEST_BACKEND_VERSION=${version})
+        target_compile_features(chiakey_reload_backend_${version} PRIVATE cxx_std_17)
+        target_compile_options(chiakey_reload_backend_${version} PRIVATE /W4 /permissive- /utf-8)
+        target_link_libraries(chiakey_reload_backend_${version} PRIVATE oleaut32 uuid)
+    endforeach()
+    add_executable(chiakey_reload_test ReloadTest.cpp)
+    target_compile_features(chiakey_reload_test PRIVATE cxx_std_17)
+    target_compile_options(chiakey_reload_test PRIVATE /W4 /permissive- /utf-8)
+    target_link_libraries(chiakey_reload_test PRIVATE advapi32 ole32 user32 uuid)
+    add_dependencies(chiakey_reload_test ChiaKeyTsf chiakey_reload_backend_1 chiakey_reload_backend_2)
+    add_test(NAME chiakey_windows_reload COMMAND chiakey_reload_test
+        "$<TARGET_FILE:ChiaKeyTsf>" "$<TARGET_FILE:chiakey_reload_backend_1>"
+        "$<TARGET_FILE:chiakey_reload_backend_2>")
+    set_tests_properties(chiakey_windows_reload PROPERTIES TIMEOUT 60)
     add_executable(chiakey_phrase_completion_test
         "${CHIAKEY_SOURCE}/Frameworks/Manjusri/Tests/TestPhraseCompletion.cpp")
     target_include_directories(chiakey_phrase_completion_test PRIVATE

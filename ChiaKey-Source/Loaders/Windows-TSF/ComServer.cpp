@@ -8,6 +8,7 @@
 #include "Guids.h"
 #include "ModuleState.h"
 #include "TextService.h"
+#include "ReloadableTextService.h"
 
 using namespace ChiaKey::WindowsTsf;
 
@@ -16,6 +17,60 @@ std::atomic<long> ChiaKey::WindowsTsf::g_objectCount{0};
 std::atomic<long> ChiaKey::WindowsTsf::g_serverLocks{0};
 
 namespace {
+
+HRESULT CreateLocalService(ITfTextInputProcessorEx** service, std::wstring* revision) {
+    wchar_t path[32768]{};
+    const DWORD length = GetModuleFileNameW(g_module, path, static_cast<DWORD>(std::size(path)));
+    if (revision) *revision = length && length < std::size(path) ? path : L"";
+    // Window classes and outstanding TSF objects can outlive an activation.
+    // Keep their code mapped; upgrades release sessions, not executable pages.
+    HMODULE pinned = nullptr;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                               GET_MODULE_HANDLE_EX_FLAG_PIN,
+                           reinterpret_cast<LPCWSTR>(g_module), &pinned))
+        return HRESULT_FROM_WIN32(GetLastError());
+    return TextService::CreateInstance(nullptr, IID_ITfTextInputProcessorEx,
+                                       reinterpret_cast<void**>(service));
+}
+
+std::wstring PublishedBackendPath() {
+    wchar_t path[32768]{};
+    DWORD bytes = sizeof(path);
+    // Use the machine registration and the caller's native registry view:
+    // x86 applications must load the x86 backend, including on x64 Windows.
+    // The installer publishes this only after ALL version files are copied.
+    // COM registration alone can point at an incompletely installed version.
+    const LSTATUS read = RegGetValueW(HKEY_LOCAL_MACHINE, L"Software\\ChiaKey\\Tsf",
+                                      L"BackendPathV1",
+                                      RRF_RT_REG_SZ, nullptr, path, &bytes);
+    if (read != ERROR_SUCCESS) return {};
+    if (wcslen(path) < 3 || path[1] != L':' || path[2] != L'\\') return {};
+    return path;
+}
+
+HRESULT CreateLatestService(ITfTextInputProcessorEx** service, std::wstring* revision) {
+    *service = nullptr;
+    const auto path = PublishedBackendPath();
+    if (path.empty()) return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+    // A removed volume / interrupted update must not display a loader error
+    // dialog inside the typing application's UI thread.
+    DWORD previousMode = 0;
+    const BOOL modeChanged = SetThreadErrorMode(GetThreadErrorMode() | SEM_FAILCRITICALERRORS,
+                                                &previousMode);
+    HMODULE module = LoadLibraryExW(path.c_str(), nullptr,
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+    const DWORD loadError = GetLastError();
+    if (modeChanged) SetThreadErrorMode(previousMode, nullptr);
+    if (!module) return HRESULT_FROM_WIN32(loadError);
+    using Factory = HRESULT (WINAPI*)(ITfTextInputProcessorEx**);
+    // Versioned entry point is the loader/backend ABI. Do not call the COM
+    // factory here: it would create another loader recursively.
+    const auto create = reinterpret_cast<Factory>(GetProcAddress(module, "ChiaKeyCreateTextServiceV1"));
+    const HRESULT hr = create ? create(service) : HRESULT_FROM_WIN32(ERROR_PROC_NOT_FOUND);
+    if (SUCCEEDED(hr) && revision) *revision = path;
+    FreeLibrary(module); // successful factory pins its own module
+    return hr;
+}
 
 class ClassFactory final : public IClassFactory {
 public:
@@ -38,7 +93,8 @@ public:
         return remaining;
     }
     STDMETHODIMP CreateInstance(IUnknown* outer, REFIID iid, void** object) override {
-        return TextService::CreateInstance(outer, iid, object);
+        return CreateReloadableTextService(outer, iid, object, CreateLatestService, CreateLocalService,
+                                            PublishedBackendPath);
     }
     STDMETHODIMP LockServer(BOOL lock) override {
         lock ? ++g_serverLocks : --g_serverLocks;
@@ -186,6 +242,12 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
 
 extern "C" HRESULT __stdcall DllCanUnloadNow() {
     return g_objectCount.load() == 0 && g_serverLocks.load() == 0 ? S_OK : S_FALSE;
+}
+
+extern "C" HRESULT __stdcall ChiaKeyCreateTextServiceV1(ITfTextInputProcessorEx** service) {
+    if (!service) return E_INVALIDARG;
+    *service = nullptr;
+    return CreateLocalService(service, nullptr);
 }
 
 extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID clsid, REFIID iid, void** object) {

@@ -18,6 +18,7 @@
 #include "SharedState.h"
 #include "NotificationWindow.h"
 #include "UIElement.h"
+#include "ReloadControl.h"
 
 namespace ChiaKey::WindowsTsf {
 
@@ -32,7 +33,8 @@ class TextService final : public ITfTextInputProcessorEx,
                           public ITfCompartmentEventSink,
                           public ITfDisplayAttributeProvider,
                           public ITfFunctionProvider,
-                          public ITfFnConfigure {
+                          public ITfFnConfigure,
+                          public IChiaKeyReloadControl {
 public:
     static HRESULT CreateInstance(IUnknown* outer, REFIID iid, void** object);
 
@@ -47,6 +49,11 @@ public:
     STDMETHODIMP Activate(ITfThreadMgr* threadManager, TfClientId clientId) override;
     STDMETHODIMP ActivateEx(ITfThreadMgr* threadManager, TfClientId clientId, DWORD flags) override;
     STDMETHODIMP Deactivate() override;
+    STDMETHODIMP GetReloadState(DWORD* state) override;
+    STDMETHODIMP RestoreReloadState(DWORD state) override;
+    void retainEditSession() { ++pendingEditSessions_; AddRef(); }
+    void releaseEditSession() { --pendingEditSessions_; Release(); }
+    ReloadActivity deferReload() { return ReloadActivity(reloadActivity_); }
 
     // ITfKeyEventSink
     STDMETHODIMP OnSetFocus(BOOL foreground) override;
@@ -160,6 +167,11 @@ private:
     bool selectionMatchesTrackedState(TfEditCookie editCookie, ITfContext* context) const;
 
     std::atomic<ULONG> referenceCount_{1};
+    mutable unsigned reloadActivity_ = 0;
+    unsigned pendingEditSessions_ = 0;
+    ULONGLONG reloadNotBefore_ = 0;
+    bool reloadKeyDownPending_ = false;
+    bool reloadKeyUpPending_ = false;
     Microsoft::WRL::ComPtr<ITfThreadMgr> threadManager_;
     TfClientId clientId_ = TF_CLIENTID_NULL;
     DWORD threadManagerCookie_ = TF_INVALID_COOKIE;

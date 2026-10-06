@@ -39,7 +39,19 @@ if (-not $Unregister) {
 }
 
 # no unregister before an upgrade: it raises a Simplified Chinese dictionary notice
-$regsvr32 = Join-Path $env:SystemRoot 'System32\regsvr32.exe'
+$image = [IO.File]::ReadAllBytes($resolvedDll)
+$peOffset = [BitConverter]::ToInt32($image, 0x3c)
+$machine = [BitConverter]::ToUInt16($image, $peOffset + 4)
+if ($machine -eq 0x8664) {
+    $view = [Microsoft.Win32.RegistryView]::Registry64
+    $systemFolder = if ([Environment]::Is64BitProcess) { 'System32' } else { 'Sysnative' }
+} elseif ($machine -eq 0x14c) {
+    $view = [Microsoft.Win32.RegistryView]::Registry32
+    $systemFolder = if ([Environment]::Is64BitOperatingSystem) { 'SysWOW64' } else { 'System32' }
+} else {
+    throw 'Only x86 and x64 TIP DLLs are supported.'
+}
+$regsvr32 = Join-Path $env:SystemRoot ($systemFolder + '\regsvr32.exe')
 $argumentString = '/s '
 if ($Unregister) { $argumentString += '/u ' }
 $argumentString += '"{0}"' -f $resolvedDll
@@ -48,6 +60,24 @@ $registration = Start-Process -FilePath $regsvr32 -ArgumentList $argumentString 
 if ($registration.ExitCode -ne 0) {
     throw "regsvr32 failed with exit code $($registration.ExitCode)."
 }
+
+# Publish after registration succeeds. Use complete, separate build directories
+# for updates: rebuilding a DLL in place still requires releasing that file.
+$machineRegistry = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
+    [Microsoft.Win32.RegistryHive]::LocalMachine, $view)
+try {
+    $backendKey = $machineRegistry.CreateSubKey('Software\ChiaKey\Tsf')
+    try {
+        if ($Unregister) {
+            if ($backendKey.GetValue('BackendPathV1') -eq $resolvedDll) {
+                $backendKey.DeleteValue('BackendPathV1', $false)
+            }
+        } else {
+            $backendKey.SetValue('BackendPathV1', $resolvedDll,
+                [Microsoft.Win32.RegistryValueKind]::String)
+        }
+    } finally { $backendKey.Dispose() }
+} finally { $machineRegistry.Dispose() }
 
 $operation = if ($Unregister) { 'Unregistered' } else { 'Registered' }
 Write-Host "$operation ChiaKey TSF: $resolvedDll"

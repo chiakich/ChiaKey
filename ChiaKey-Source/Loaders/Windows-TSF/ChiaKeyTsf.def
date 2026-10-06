@@ -1,6 +1,7 @@
 LIBRARY "ChiaKeyTsf"
 
 EXPORTS
+    ChiaKeyCreateTextServiceV1
     DllCanUnloadNow PRIVATE
     DllGetClassObject PRIVATE
     DllRegisterServer PRIVATE

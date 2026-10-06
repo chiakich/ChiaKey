@@ -1,0 +1,9 @@
+EXPORTS
+    ChiaKeyCreateTextServiceV1
+    FailActivation
+    SetBusy
+    FailRestore
+    SetInputState
+    ActiveCount
+    ActivationAttempts
+    DeactivateDuringActivation
