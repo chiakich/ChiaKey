@@ -119,6 +119,14 @@ public:
     HRESULT insertSymbol(TfEditCookie editCookie, ITfContext* context, const std::wstring& text);
 
 private:
+    friend struct TextServiceFocusTest;
+    class KeyEditActivity;
+    void finishKeyEdit();
+    void reconcileDocumentFocus();
+    void finishKeyPress(UINT virtualKey);
+    unsigned keyEditDepth_ = 0;
+    UINT keyDownVirtualKey_ = 0;
+    bool deferredDocumentFocus_ = false;
     HRESULT adviseFunctionProvider();
     void unadviseFunctionProvider();
     ~TextService();
