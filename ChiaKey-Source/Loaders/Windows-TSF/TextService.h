@@ -127,6 +127,7 @@ private:
     class KeyEditActivity;
     void finishKeyEdit();
     void reconcileDocumentFocus();
+    void pruneReleasedKeys();
     void finishKeyPress(UINT virtualKey);
     unsigned keyEditDepth_ = 0;
     unsigned pendingKeyFocusSessions_ = 0;

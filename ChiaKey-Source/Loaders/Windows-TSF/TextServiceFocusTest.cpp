@@ -1,5 +1,6 @@
 #include "TextService.h"
 #include "ModuleState.h"
+#include <array>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
@@ -12,6 +13,23 @@ void Check(bool pass, const char* message) {
     if (!pass) throw std::runtime_error(message);
     std::cout << "PASS: " << message << '\n';
 }
+// SetKeyboardState changes only this test thread's key-state table; no input
+// events are sent to other applications. Restore it even when a check throws.
+class KeyboardState final {
+    std::array<BYTE, 256> saved_{};
+    std::array<BYTE, 256> state_{};
+public:
+    KeyboardState() {
+        if (!GetKeyboardState(saved_.data()) || !SetKeyboardState(state_.data()))
+            throw std::runtime_error("could not initialize test keyboard state");
+    }
+    ~KeyboardState() { SetKeyboardState(saved_.data()); }
+    void setDown(UINT key, bool down) {
+        state_.at(key) = down ? 0x80 : 0;
+        if (!SetKeyboardState(state_.data()))
+            throw std::runtime_error("could not set test keyboard state");
+    }
+};
 class Context final : public ITfContext, public ITfSource {
     ULONG refs_ = 1;
 public:
@@ -124,6 +142,7 @@ public:
 // windows, lexicon, user settings, or loading a test DLL into Office.
 struct TextServiceFocusTest {
     static void Run() {
+        KeyboardState keyboard;
         ComPtr<Context> oldContext, composing, other;
         oldContext.Attach(new Context); composing.Attach(new Context); other.Attach(new Context);
         ComPtr<Document> active, different;
@@ -155,11 +174,13 @@ struct TextServiceFocusTest {
               "queued edit reconciles restored focus without committing");
         seed();
         service->keyEditDepth_ = 1; service->pressedVirtualKeys_.insert('S');
+        keyboard.setDown('S', true);
         service->OnSetFocus(nullptr, active.Get());
         service->OnSetFocus(active.Get(), nullptr);
         service->finishKeyEdit();
         Check(service->deferredDocumentFocus_, "defer focus until the physical key release");
         BOOL eaten = TRUE;
+        keyboard.setDown('S', false);
         service->OnTestKeyUp(composing.Get(), 'S', 0, &eaten);
         Check(!eaten && !service->deferredDocumentFocus_ && service->composition_ && composing->requests == 0,
               "unclaimed key-up test still reconciles final focus");
@@ -178,14 +199,18 @@ struct TextServiceFocusTest {
         seed();
         service->keyEditDepth_ = 1;
         service->pressedVirtualKeys_.insert('S');
+        keyboard.setDown('S', true);
         service->pressedVirtualKeys_.insert('U');
+        keyboard.setDown('U', true);
         service->OnSetFocus(nullptr, active.Get());
         service->finishKeyEdit();
+        keyboard.setDown('U', false);
         service->OnTestKeyUp(composing.Get(), 'U', 0, &eaten);
         service->OnKeyUp(composing.Get(), 'U', 0, &eaten);
         Check(service->deferredDocumentFocus_ && service->pressedVirtualKeys_.count('S') &&
                   composing->requests == 2,
               "releasing one overlapping key does not reconcile transient focus");
+        keyboard.setDown('S', false);
         service->OnTestKeyUp(composing.Get(), 'S', 0, &eaten);
         Check(!service->deferredDocumentFocus_ && service->pressedVirtualKeys_.empty() &&
                   composing->requests == 2,
@@ -194,6 +219,7 @@ struct TextServiceFocusTest {
         seed();
         service->keyEditDepth_ = 1;
         service->pressedVirtualKeys_.insert('S');
+        keyboard.setDown('S', true);
         manager->focused = different;
         service->OnSetFocus(different.Get(), active.Get());
         service->finishKeyEdit();
@@ -202,6 +228,26 @@ struct TextServiceFocusTest {
                   service->textEditContext_.Get() == other.Get() && composing->requests == 3,
               "leaving the thread clears keys whose release goes to another app");
 
+        seed();
+        const unsigned lostReleaseRequests = composing->requests;
+        service->keyEditDepth_ = 1;
+        service->pressedVirtualKeys_.insert('S');
+        service->pressedVirtualKeys_.insert('U');
+        keyboard.setDown('S', true);
+        keyboard.setDown('U', false); // key-up was consumed by another host window
+        manager->focused = different;
+        service->OnSetFocus(different.Get(), active.Get());
+        Check(service->pressedVirtualKeys_.size() == 1 && service->pressedVirtualKeys_.count('S') &&
+                  service->deferredDocumentFocus_ && composing->requests == lostReleaseRequests,
+              "focus callback prunes released keys while preserving held overlapping keys");
+        // No OnTestKeyUp or OnKeyUp is delivered for the final key either.
+        keyboard.setDown('S', false);
+        service->finishKeyEdit();
+        Check(service->pressedVirtualKeys_.empty() && !service->deferredDocumentFocus_ &&
+                  composing->requests == lostReleaseRequests + 1 &&
+                  service->textEditContext_.Get() == other.Get(),
+              "edit completion reconciles a document switch despite missing key-up callbacks");
+
         // Reject candidate selection before engine/settings access so the actual
         // production edit session can run against these minimal context doubles.
         KeyEvent event;
@@ -209,6 +255,7 @@ struct TextServiceFocusTest {
         seed();
         composing->keyScheduling = Context::KeyScheduling::Queued;
         service->pressedVirtualKeys_.insert('S');
+        keyboard.setDown('S', true);
         service->runKeySession(composing.Get(), event, &eaten);
         Check(eaten && composing->queued && service->pendingKeyFocusSessions_ == 1,
               "TF_S_ASYNC keeps the key session tracked after the request returns");
@@ -220,6 +267,7 @@ struct TextServiceFocusTest {
         const unsigned previousAdvises = other->advised;
         manager->focused = different;
         service->OnSetFocus(different.Get(), active.Get());
+        keyboard.setDown('S', false);
         service->OnTestKeyUp(composing.Get(), 'S', 0, &eaten);
         Check(service->deferredDocumentFocus_ && composing->requests == queuedRequests &&
                   other->advised == previousAdvises,

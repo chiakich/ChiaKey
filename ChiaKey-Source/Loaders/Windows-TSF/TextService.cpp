@@ -390,7 +390,16 @@ void TextService::finishKeyPress(UINT virtualKey) {
     reconcileDocumentFocus();
 }
 
+void TextService::pruneReleasedKeys() {
+    // A same-thread host window may consume key-up without notifying this sink.
+    for (auto it = pressedVirtualKeys_.begin(); it != pressedVirtualKeys_.end();) {
+        if (!IsKeyDown(*it)) it = pressedVirtualKeys_.erase(it);
+        else ++it;
+    }
+}
+
 void TextService::reconcileDocumentFocus() {
+    pruneReleasedKeys();
     if (keyEditDepth_ || pendingKeyFocusSessions_ || !pressedVirtualKeys_.empty() ||
         !deferredDocumentFocus_) return;
     deferredDocumentFocus_ = false;
@@ -1960,6 +1969,7 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
 
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     ReloadActivity activity(reloadActivity_);
+    pruneReleasedKeys();
     if (keyEditDepth_ || pendingKeyFocusSessions_ || (!pressedVirtualKeys_.empty() &&
         GetWindowThreadProcessId(GetForegroundWindow(), nullptr) == GetCurrentThreadId())) {
         deferredDocumentFocus_ = true;
