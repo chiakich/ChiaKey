@@ -2,6 +2,7 @@
 #include "ModuleState.h"
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 namespace ChiaKey::WindowsTsf {
 HMODULE g_module = nullptr;
 std::atomic<long> g_objectCount{0}, g_serverLocks{0};
@@ -15,6 +16,10 @@ class Context final : public ITfContext, public ITfSource {
     ULONG refs_ = 1;
 public:
     unsigned requests = 0;
+    enum class KeyScheduling { ReadOnly, Queued, Inline, Rejected };
+    KeyScheduling keyScheduling = KeyScheduling::ReadOnly;
+    ComPtr<ITfEditSession> queued;
+    unsigned advised = 0;
     STDMETHODIMP QueryInterface(REFIID iid, void** p) override {
         *p = nullptr;
         if (iid == IID_IUnknown || iid == IID_ITfContext) *p = static_cast<ITfContext*>(this);
@@ -24,7 +29,19 @@ public:
     }
     STDMETHODIMP_(ULONG) AddRef() override { return ++refs_; }
     STDMETHODIMP_(ULONG) Release() override { ULONG n = --refs_; if (!n) delete this; return n; }
-    STDMETHODIMP RequestEditSession(TfClientId, ITfEditSession*, DWORD, HRESULT* result) override { ++requests; *result = TF_E_READONLY; return S_OK; }
+    STDMETHODIMP RequestEditSession(TfClientId, ITfEditSession* session, DWORD flags,
+                                    HRESULT* result) override {
+        ++requests;
+        if (keyScheduling == KeyScheduling::ReadOnly) { *result = TF_E_READONLY; return S_OK; }
+        if (flags & TF_ES_SYNC) { *result = TF_E_SYNCHRONOUS; return S_OK; }
+        const auto scheduling = keyScheduling;
+        keyScheduling = KeyScheduling::ReadOnly;
+        if (scheduling == KeyScheduling::Rejected) { *result = E_FAIL; return E_FAIL; }
+        if (scheduling == KeyScheduling::Inline) { *result = session->DoEditSession(1); return S_OK; }
+        queued = session;
+        *result = TF_S_ASYNC;
+        return S_OK;
+    }
     STDMETHODIMP InWriteSession(TfClientId, BOOL*) override { return E_NOTIMPL; }
     STDMETHODIMP GetSelection(TfEditCookie, ULONG, ULONG, TF_SELECTION*, ULONG*) override { return E_NOTIMPL; }
     STDMETHODIMP SetSelection(TfEditCookie, ULONG, const TF_SELECTION*) override { return E_NOTIMPL; }
@@ -39,7 +56,7 @@ public:
     STDMETHODIMP EnumProperties(IEnumTfProperties**) override { return E_NOTIMPL; }
     STDMETHODIMP GetDocumentMgr(ITfDocumentMgr**) override { return E_NOTIMPL; }
     STDMETHODIMP CreateRangeBackup(TfEditCookie, ITfRange*, ITfRangeBackup**) override { return E_NOTIMPL; }
-    STDMETHODIMP AdviseSink(REFIID, IUnknown*, DWORD* cookie) override { *cookie = 1; return S_OK; }
+    STDMETHODIMP AdviseSink(REFIID, IUnknown*, DWORD* cookie) override { ++advised; *cookie = 1; return S_OK; }
     STDMETHODIMP UnadviseSink(DWORD) override { return S_OK; }
 };
 class Document final : public ITfDocumentMgr {
@@ -137,7 +154,7 @@ struct TextServiceFocusTest {
         Check(!service->deferredDocumentFocus_ && service->composition_ && composing->requests == 0,
               "queued edit reconciles restored focus without committing");
         seed();
-        service->keyEditDepth_ = 1; service->keyDownVirtualKey_ = 'S';
+        service->keyEditDepth_ = 1; service->pressedVirtualKeys_.insert('S');
         service->OnSetFocus(nullptr, active.Get());
         service->OnSetFocus(active.Get(), nullptr);
         service->finishKeyEdit();
@@ -158,6 +175,85 @@ struct TextServiceFocusTest {
         service->finishKeyEdit();
         Check(composing->requests == 2 && !service->textEditContext_,
               "genuine loss of focus still commits and disconnects sink");
+        seed();
+        service->keyEditDepth_ = 1;
+        service->pressedVirtualKeys_.insert('S');
+        service->pressedVirtualKeys_.insert('U');
+        service->OnSetFocus(nullptr, active.Get());
+        service->finishKeyEdit();
+        service->OnTestKeyUp(composing.Get(), 'U', 0, &eaten);
+        service->OnKeyUp(composing.Get(), 'U', 0, &eaten);
+        Check(service->deferredDocumentFocus_ && service->pressedVirtualKeys_.count('S') &&
+                  composing->requests == 2,
+              "releasing one overlapping key does not reconcile transient focus");
+        service->OnTestKeyUp(composing.Get(), 'S', 0, &eaten);
+        Check(!service->deferredDocumentFocus_ && service->pressedVirtualKeys_.empty() &&
+                  composing->requests == 2,
+              "only the final overlapping key release reconciles restored focus");
+
+        seed();
+        service->keyEditDepth_ = 1;
+        service->pressedVirtualKeys_.insert('S');
+        manager->focused = different;
+        service->OnSetFocus(different.Get(), active.Get());
+        service->finishKeyEdit();
+        service->OnKillThreadFocus();
+        Check(service->pressedVirtualKeys_.empty() && !service->deferredDocumentFocus_ &&
+                  service->textEditContext_.Get() == other.Get() && composing->requests == 3,
+              "leaving the thread clears keys whose release goes to another app");
+
+        // Reject candidate selection before engine/settings access so the actual
+        // production edit session can run against these minimal context doubles.
+        KeyEvent event;
+        event.candidateIndex = 0;
+        seed();
+        composing->keyScheduling = Context::KeyScheduling::Queued;
+        service->pressedVirtualKeys_.insert('S');
+        service->runKeySession(composing.Get(), event, &eaten);
+        Check(eaten && composing->queued && service->pendingKeyFocusSessions_ == 1,
+              "TF_S_ASYNC keeps the key session tracked after the request returns");
+        auto firstQueued = std::move(composing->queued);
+        composing->keyScheduling = Context::KeyScheduling::Queued;
+        service->runKeySession(composing.Get(), event, &eaten);
+        Check(service->pendingKeyFocusSessions_ == 2, "each queued key session retains focus deferral");
+        const unsigned queuedRequests = composing->requests;
+        const unsigned previousAdvises = other->advised;
+        manager->focused = different;
+        service->OnSetFocus(different.Get(), active.Get());
+        service->OnTestKeyUp(composing.Get(), 'S', 0, &eaten);
+        Check(service->deferredDocumentFocus_ && composing->requests == queuedRequests &&
+                  other->advised == previousAdvises,
+              "key-up and document switch cannot commit ahead of a queued key session");
+        firstQueued->DoEditSession(1);
+        Check(service->pendingKeyFocusSessions_ == 1 && service->deferredDocumentFocus_ &&
+                  composing->requests == queuedRequests && other->advised == previousAdvises,
+              "focus stays deferred until every queued key session has executed");
+        firstQueued.Reset();
+        auto queued = std::move(composing->queued);
+        queued->DoEditSession(1);
+        Check(service->pendingKeyFocusSessions_ == 0 && !service->deferredDocumentFocus_ &&
+                  composing->requests == queuedRequests + 1 &&
+                  service->textEditContext_.Get() == other.Get(),
+              "commit and sink reconnection follow queued key execution");
+        queued.Reset();
+
+        for (auto scheduling : {Context::KeyScheduling::Inline, Context::KeyScheduling::Rejected}) {
+            seed();
+            composing->keyScheduling = scheduling;
+            service->runKeySession(composing.Get(), event, &eaten);
+            Check(service->pendingKeyFocusSessions_ == 0,
+                  "inline async retry and rejected scheduling leave no pending focus session");
+        }
+        seed();
+        composing->keyScheduling = Context::KeyScheduling::Queued;
+        service->runKeySession(composing.Get(), event, &eaten);
+        const unsigned droppedRequests = composing->requests;
+        manager->focused = different;
+        service->OnSetFocus(different.Get(), active.Get());
+        composing->queued.Reset();
+        Check(service->pendingKeyFocusSessions_ == 0 && !service->deferredDocumentFocus_ &&
+                  composing->requests == droppedRequests + 1,
+              "dropping a queued key session releases focus deferral");
         service->composition_.Reset(); service->compositionContext_.Reset();
         service->threadManager_.Reset();
     }

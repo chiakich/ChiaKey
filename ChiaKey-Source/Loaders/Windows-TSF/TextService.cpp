@@ -26,6 +26,7 @@ public:
     KeyEditSession(TextService* service, ITfContext* context, KeyEvent event)
         : service_(service), context_(context), event_(std::move(event)) {
         service_->retainEditSession();
+        service_->retainKeyFocusSession();
     }
 
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
@@ -45,18 +46,30 @@ public:
         return remaining;
     }
     STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
-        return service_->processKey(editCookie, context_.Get(), event_, &handled_);
+        const HRESULT result = service_->processKey(editCookie, context_.Get(), event_, &handled_);
+        finishFocusTracking();
+        return result;
+    }
+
+    void finishFocusTracking() {
+        if (!trackingFocus_) return;
+        trackingFocus_ = false;
+        service_->releaseKeyFocusSession();
     }
 
     bool handled() const { return handled_; }
 
 private:
-    ~KeyEditSession() { service_->releaseEditSession(); }
+    ~KeyEditSession() {
+        finishFocusTracking();
+        service_->releaseEditSession();
+    }
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
     KeyEvent event_;
     bool handled_ = false;
+    bool trackingFocus_ = true;
 };
 
 class TerminateEditSession final : public ITfEditSession {
@@ -368,14 +381,18 @@ void TextService::finishKeyEdit() {
     if (--keyEditDepth_ == 0) reconcileDocumentFocus();
 }
 
+void TextService::releaseKeyFocusSession() {
+    if (--pendingKeyFocusSessions_ == 0) reconcileDocumentFocus();
+}
+
 void TextService::finishKeyPress(UINT virtualKey) {
-    if (keyDownVirtualKey_ != virtualKey) return;
-    keyDownVirtualKey_ = 0;
+    if (!pressedVirtualKeys_.erase(virtualKey)) return;
     reconcileDocumentFocus();
 }
 
 void TextService::reconcileDocumentFocus() {
-    if (keyEditDepth_ || keyDownVirtualKey_ || !deferredDocumentFocus_) return;
+    if (keyEditDepth_ || pendingKeyFocusSessions_ || !pressedVirtualKeys_.empty() ||
+        !deferredDocumentFocus_) return;
     deferredDocumentFocus_ = false;
     ComPtr<ITfDocumentMgr> focused;
     if (threadManager_ && SUCCEEDED(threadManager_->GetFocus(&focused))) {
@@ -534,7 +551,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 
 STDMETHODIMP TextService::Deactivate() {
     ReloadActivity activity(reloadActivity_);
-    keyDownVirtualKey_ = 0;
+    pressedVirtualKeys_.clear();
     deferredDocumentFocus_ = false;
     reloadKeyDownPending_ = reloadKeyUpPending_ = false;
     if (!requestCommitComposition()) {
@@ -1137,7 +1154,7 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     *eaten = FALSE;
     if (!keyboardAvailable(context)) return S_OK;
     KeyEvent event = translateKey(wparam, lparam);
-    keyDownVirtualKey_ = static_cast<UINT>(wparam);
+    pressedVirtualKeys_.insert(static_cast<UINT>(wparam));
     if (punctuationKeyboard_.isVisible()) {
         shiftTogglePending_ = false;
         if (!PunctuationModifier(event.virtualKey)) return runKeySession(context, std::move(event), eaten);
@@ -1201,6 +1218,9 @@ HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* ea
     HRESULT editResult = E_FAIL;
     bool retriedAsync = false;
     HRESULT requestResult = requestEditSession(context, session, &editResult, &retriedAsync);
+    // Keep focus deferred only for a session that TSF actually queued.
+    // Inline execution and rejected requests have already finished or cannot run.
+    if (FAILED(requestResult) || editResult != TF_S_ASYNC) session->finishFocusTracking();
     if (retriedAsync) {
         // the session may run after this returns, so the key is claimed now
         if (SUCCEEDED(requestResult) && SUCCEEDED(editResult)) *eaten = TRUE;
@@ -1940,13 +1960,13 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
 
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     ReloadActivity activity(reloadActivity_);
-    if (keyEditDepth_ || (keyDownVirtualKey_ &&
+    if (keyEditDepth_ || pendingKeyFocusSessions_ || (!pressedVirtualKeys_.empty() &&
         GetWindowThreadProcessId(GetForegroundWindow(), nullptr) == GetCurrentThreadId())) {
         deferredDocumentFocus_ = true;
         Trace("Document focus deferred during key input");
         return S_OK;
     }
-    keyDownVirtualKey_ = 0;
+    pressedVirtualKeys_.clear();
     deferredDocumentFocus_ = false;
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
@@ -2012,8 +2032,12 @@ STDMETHODIMP TextService::OnSetThreadFocus() {
 STDMETHODIMP TextService::OnKillThreadFocus() {
     ReloadActivity activity(reloadActivity_);
     // Showing nonactivating IME UI can itself trigger this callback in some hosts.
-    if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId())
+    if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId()) {
+        // Key-up may be delivered to the other application instead of this sink.
+        pressedVirtualKeys_.clear();
+        reconcileDocumentFocus();
         punctuationKeyboard_.close();
+    }
     return S_OK;
 }
 
