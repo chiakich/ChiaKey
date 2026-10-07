@@ -797,7 +797,8 @@ HRESULT TextService::initializeLangBar() {
 
     LangBarButton* buttons[] = {modeIcon, switchLanguage, fullHalf};
     for (LangBarButton* button : buttons) {
-        result = manager->AddItem(button);
+        result = button->startThemeTracking();
+        if (SUCCEEDED(result)) result = manager->AddItem(button);
         if (FAILED(result)) {
             uninitializeLangBar();
             return result;
@@ -820,6 +821,7 @@ void TextService::uninitializeLangBar() {
     }
     for (LangBarButton* button : buttons) {
         if (!button) continue;
+        button->stopThemeTracking();
         if (manager) manager->RemoveItem(button);
         button->Release();
     }

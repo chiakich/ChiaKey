@@ -13,7 +13,7 @@ $invariant = [Globalization.CultureInfo]::InvariantCulture
 
 # State glyphs follow the taskbar theme. Windows reads the profile's brand
 # resource directly, so it needs its own contrasting background in either theme.
-$onLight = '#1A1A1A'
+$onLight = '#000000'
 $onDark = '#FFFFFF'
 $modeSizes = 16, 20, 24, 32, 40, 48
 $badgeSizes = 16, 20, 24, 32, 40, 48, 64, 256

@@ -48,9 +48,14 @@ public:
     STDMETHODIMP UnadviseSink(DWORD cookie) override;
 
     void update();
+    HRESULT startThemeTracking();
+    void stopThemeTracking();
 
 private:
     ~LangBarButton();
+    static LRESULT CALLBACK ThemeWindowProc(HWND, UINT, WPARAM, LPARAM, UINT_PTR, DWORD_PTR);
+    HWND themeWindow_ = nullptr;
+    bool taskbarIsLight_ = true;
     const wchar_t* label() const;
 
     // one popup menu entry; id 0 draws a separator
