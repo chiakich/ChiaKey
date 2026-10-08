@@ -26,6 +26,7 @@ public:
     KeyEditSession(TextService* service, ITfContext* context, KeyEvent event)
         : service_(service), context_(context), event_(std::move(event)) {
         service_->retainEditSession();
+        service_->retainKeyFocusSession();
     }
 
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
@@ -45,18 +46,30 @@ public:
         return remaining;
     }
     STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
-        return service_->processKey(editCookie, context_.Get(), event_, &handled_);
+        const HRESULT result = service_->processKey(editCookie, context_.Get(), event_, &handled_);
+        finishFocusTracking();
+        return result;
+    }
+
+    void finishFocusTracking() {
+        if (!trackingFocus_) return;
+        trackingFocus_ = false;
+        service_->releaseKeyFocusSession();
     }
 
     bool handled() const { return handled_; }
 
 private:
-    ~KeyEditSession() { service_->releaseEditSession(); }
+    ~KeyEditSession() {
+        finishFocusTracking();
+        service_->releaseEditSession();
+    }
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
     KeyEvent event_;
     bool handled_ = false;
+    bool trackingFocus_ = true;
 };
 
 class TerminateEditSession final : public ITfEditSession {
@@ -349,6 +362,55 @@ HRESULT MoveCaret(TfEditCookie editCookie, ITfContext* context, ITfRange* range)
 
 }  // namespace
 
+// Hosts can pump TSF focus callbacks while a key edit is writing the first
+// preedit. Excel briefly clears focus here before restoring the same context.
+// Cover both the request (synchronous callbacks) and processKey (queued edits).
+class TextService::KeyEditActivity final {
+public:
+    explicit KeyEditActivity(TextService& service) : service_(service) {
+        ++service_.keyEditDepth_;
+    }
+    ~KeyEditActivity() { service_.finishKeyEdit(); }
+    KeyEditActivity(const KeyEditActivity&) = delete;
+    KeyEditActivity& operator=(const KeyEditActivity&) = delete;
+private:
+    TextService& service_;
+};
+
+void TextService::finishKeyEdit() {
+    if (--keyEditDepth_ == 0) reconcileDocumentFocus();
+}
+
+void TextService::releaseKeyFocusSession() {
+    if (--pendingKeyFocusSessions_ == 0) reconcileDocumentFocus();
+}
+
+void TextService::finishKeyPress(UINT virtualKey) {
+    if (!pressedVirtualKeys_.erase(virtualKey)) return;
+    reconcileDocumentFocus();
+}
+
+void TextService::pruneReleasedKeys() {
+    // A same-thread host window may consume key-up without notifying this sink.
+    for (auto it = pressedVirtualKeys_.begin(); it != pressedVirtualKeys_.end();) {
+        if (!IsKeyDown(*it)) it = pressedVirtualKeys_.erase(it);
+        else ++it;
+    }
+}
+
+void TextService::reconcileDocumentFocus() {
+    pruneReleasedKeys();
+    if (keyEditDepth_ || pendingKeyFocusSessions_ || !pressedVirtualKeys_.empty() ||
+        !deferredDocumentFocus_) return;
+    deferredDocumentFocus_ = false;
+    ComPtr<ITfDocumentMgr> focused;
+    if (threadManager_ && SUCCEEDED(threadManager_->GetFocus(&focused))) {
+        // Query the final focus instead of replaying transient notifications.
+        // A genuine switch must still commit and reconnect the text-edit sink.
+        OnSetFocus(focused.Get(), nullptr);
+    }
+}
+
 TextService::TextService() { ++g_objectCount; }
 TextService::~TextService() {
     candidateUI_.end(); notificationUI_.end(); symbolUI_.end(); punctuationUI_.end();
@@ -498,6 +560,8 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 
 STDMETHODIMP TextService::Deactivate() {
     ReloadActivity activity(reloadActivity_);
+    pressedVirtualKeys_.clear();
+    deferredDocumentFocus_ = false;
     reloadKeyDownPending_ = reloadKeyUpPending_ = false;
     if (!requestCommitComposition()) {
         Trace("Deactivate: composition could not be committed");
@@ -759,7 +823,8 @@ HRESULT TextService::initializeLangBar() {
 
     LangBarButton* buttons[] = {modeIcon, switchLanguage, fullHalf};
     for (LangBarButton* button : buttons) {
-        result = manager->AddItem(button);
+        result = button->startThemeTracking();
+        if (SUCCEEDED(result)) result = manager->AddItem(button);
         if (FAILED(result)) {
             uninitializeLangBar();
             return result;
@@ -782,6 +847,7 @@ void TextService::uninitializeLangBar() {
     }
     for (LangBarButton* button : buttons) {
         if (!button) continue;
+        button->stopThemeTracking();
         if (manager) manager->RemoveItem(button);
         button->Release();
     }
@@ -1063,6 +1129,8 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPAR
 
 STDMETHODIMP TextService::OnTestKeyUp(ITfContext* context, WPARAM wparam, LPARAM, BOOL* eaten) {
     ReloadActivity activity(reloadActivity_);
+    // TSF does not call OnKeyUp for unclaimed releases, but still tests them.
+    finishKeyPress(static_cast<UINT>(wparam));
     ReloadKeyTest tested(reloadKeyUpPending_, eaten);
     reloadNotBefore_ = GetTickCount64() + 500;
     if (!eaten) return E_INVALIDARG;
@@ -1095,6 +1163,7 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     *eaten = FALSE;
     if (!keyboardAvailable(context)) return S_OK;
     KeyEvent event = translateKey(wparam, lparam);
+    pressedVirtualKeys_.insert(static_cast<UINT>(wparam));
     if (punctuationKeyboard_.isVisible()) {
         shiftTogglePending_ = false;
         if (!PunctuationModifier(event.virtualKey)) return runKeySession(context, std::move(event), eaten);
@@ -1152,11 +1221,15 @@ HRESULT TextService::handleFrontendShortcut(ITfContext* context, const KeyEvent&
 
 HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* eaten) {
     ReloadActivity activity(reloadActivity_);
+    KeyEditActivity keyActivity(*this);
     auto* session = new (std::nothrow) KeyEditSession(this, context, std::move(event));
     if (!session) return E_OUTOFMEMORY;
     HRESULT editResult = E_FAIL;
     bool retriedAsync = false;
     HRESULT requestResult = requestEditSession(context, session, &editResult, &retriedAsync);
+    // Keep focus deferred only for a session that TSF actually queued.
+    // Inline execution and rejected requests have already finished or cannot run.
+    if (FAILED(requestResult) || editResult != TF_S_ASYNC) session->finishFocusTracking();
     if (retriedAsync) {
         // the session may run after this returns, so the key is claimed now
         if (SUCCEEDED(requestResult) && SUCCEEDED(editResult)) *eaten = TRUE;
@@ -1174,6 +1247,7 @@ HRESULT TextService::runKeySession(ITfContext* context, KeyEvent event, BOOL* ea
 
 STDMETHODIMP TextService::OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM lparam, BOOL* eaten) {
     ReloadActivity activity(reloadActivity_);
+    finishKeyPress(static_cast<UINT>(wparam));
     reloadKeyUpPending_ = false;
     reloadNotBefore_ = GetTickCount64() + 500;
     if (!eaten) return E_INVALIDARG;
@@ -1245,6 +1319,7 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL
 HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
                                 const KeyEvent& event, bool* handled) {
     ReloadActivity activity(reloadActivity_);
+    KeyEditActivity keyActivity(*this);
     reloadNotBefore_ = GetTickCount64() + 500;
     if (!context || !handled) return E_INVALIDARG;
     if (event.candidateIndex != static_cast<size_t>(-1) &&
@@ -1894,11 +1969,21 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
 
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     ReloadActivity activity(reloadActivity_);
+    pruneReleasedKeys();
+    if (keyEditDepth_ || pendingKeyFocusSessions_ || (!pressedVirtualKeys_.empty() &&
+        GetWindowThreadProcessId(GetForegroundWindow(), nullptr) == GetCurrentThreadId())) {
+        deferredDocumentFocus_ = true;
+        Trace("Document focus deferred during key input");
+        return S_OK;
+    }
+    pressedVirtualKeys_.clear();
+    deferredDocumentFocus_ = false;
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
     if (focusedContext.Get() != textEditContext_.Get()) punctuationKeyboard_.close();
+    ITfContext* trackedContext = composition_ ? compositionContext_.Get() : candidateContext_.Get();
     if ((composition_ || candidateActive_) &&
-        textEditContext_.Get() != focusedContext.Get() && !pendingModeCommit_) {
+        trackedContext != focusedContext.Get() && !pendingModeCommit_) {
         if (!requestCommitComposition()) {
             Trace("Document focus changed: composition could not be committed");
         }
@@ -1957,8 +2042,12 @@ STDMETHODIMP TextService::OnSetThreadFocus() {
 STDMETHODIMP TextService::OnKillThreadFocus() {
     ReloadActivity activity(reloadActivity_);
     // Showing nonactivating IME UI can itself trigger this callback in some hosts.
-    if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId())
+    if (GetWindowThreadProcessId(GetForegroundWindow(), nullptr) != GetCurrentThreadId()) {
+        // Key-up may be delivered to the other application instead of this sink.
+        pressedVirtualKeys_.clear();
+        reconcileDocumentFocus();
         punctuationKeyboard_.close();
+    }
     return S_OK;
 }
 

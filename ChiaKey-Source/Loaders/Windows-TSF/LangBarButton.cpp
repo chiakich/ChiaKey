@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cwchar>
 #include <new>
+#include <commctrl.h>
 
 #include "ChiaKeyEngine.h"
 #include "Guids.h"
@@ -27,21 +28,21 @@ constexpr wchar_t kSimplifiedOutputLabel[] = L"簡體輸出";
 constexpr wchar_t kPhraseEditorLabel[] = L"詞彙編輯器…";
 constexpr UINT kMenuFirstInputMethod = 100;
 
+constexpr UINT kRefreshTheme = WM_APP + 1;
+
 bool TaskbarIsLight() {
-    DWORD value = 0;
-    DWORD size = sizeof(value);
-    return RegGetValueW(HKEY_CURRENT_USER,
-                        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                        L"SystemUsesLightTheme", RRF_RT_REG_DWORD, nullptr, &value,
-                        &size) == ERROR_SUCCESS &&
-           value != 0;
+    DWORD light = 1;
+    DWORD size = sizeof(light);
+    RegGetValueW(HKEY_CURRENT_USER,
+                 L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                 L"SystemUsesLightTheme", RRF_RT_REG_DWORD, nullptr, &light, &size);
+    return light != 0;
 }
 
-// each icon ID is followed by its dark-taskbar variant
-HICON LoadThemedIcon(int lightId) {
-    const int id = TaskbarIsLight() ? lightId : lightId + 1;
-    // the tray draws at the system DPI, whatever DPI the host app runs at
+// Modern taskbar icons use explicit alpha black/white resources.
+HICON LoadModeIcon(int id) {
     const int size = GetSystemMetricsForDpi(SM_CXSMICON, GetDpiForSystem());
+    if (!TaskbarIsLight()) ++id;
     return static_cast<HICON>(
         LoadImageW(g_module, MAKEINTRESOURCEW(id), IMAGE_ICON, size, size, LR_DEFAULTCOLOR));
 }
@@ -75,6 +76,7 @@ LangBarButton::LangBarButton(TextService* service, REFGUID guid, Kind kind)
 }
 
 LangBarButton::~LangBarButton() {
+    stopThemeTracking();
     std::vector<std::pair<DWORD, ITfLangBarItemSink*>> sinks;
     {
         std::lock_guard<std::mutex> lock(sinksMutex_);
@@ -245,7 +247,7 @@ STDMETHODIMP LangBarButton::GetIcon(HICON* icon) {
     if (!icon) return E_INVALIDARG;
     int id = service_->isChineseMode() ? ChineseIconFor(CurrentInputMethod()) : IDI_ENGLISH;
     if (kind_ == Kind::FullHalf) id = service_->isFullWidthMode() ? IDI_FULL_WIDTH : IDI_HALF_WIDTH;
-    *icon = LoadThemedIcon(id);
+    *icon = LoadModeIcon(id);
     return *icon ? S_OK : E_FAIL;
 }
 
@@ -287,6 +289,54 @@ STDMETHODIMP LangBarButton::UnadviseSink(DWORD cookie) {
     }
     sink->Release();
     return S_OK;
+}
+
+HRESULT LangBarButton::startThemeTracking() {
+    if (themeWindow_) return S_OK;
+    taskbarIsLight_ = TaskbarIsLight();
+    // Message-only windows do not receive broadcast settings/theme changes.
+    // A hidden top-level STATIC avoids registering a class that outlives the DLL.
+    themeWindow_ = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, L"STATIC",
+        L"ChiaKey input mode theme", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, g_module, nullptr);
+    if (!themeWindow_) return HRESULT_FROM_WIN32(GetLastError());
+    if (!SetWindowSubclass(themeWindow_, ThemeWindowProc, 1, reinterpret_cast<DWORD_PTR>(this))) {
+        DestroyWindow(themeWindow_);
+        themeWindow_ = nullptr;
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+void LangBarButton::stopThemeTracking() {
+    if (!themeWindow_) return;
+    HWND window = themeWindow_;
+    themeWindow_ = nullptr;
+    RemoveWindowSubclass(window, ThemeWindowProc, 1);
+    DestroyWindow(window);
+}
+
+LRESULT CALLBACK LangBarButton::ThemeWindowProc(HWND window, UINT message, WPARAM wparam,
+                                               LPARAM lparam, UINT_PTR, DWORD_PTR data) {
+    auto* button = reinterpret_cast<LangBarButton*>(data);
+    if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED || message == WM_SYSCOLORCHANGE) {
+        // Do not call back into TSF inside a synchronous system broadcast.
+        PostMessageW(window, kRefreshTheme, 0, 0);
+        return 0;
+    }
+    if (message == kRefreshTheme) {
+        const bool light = TaskbarIsLight();
+        if (light != button->taskbarIsLight_) {
+            button->taskbarIsLight_ = light;
+            button->AddRef(); // OnUpdate may reenter and deactivate the service.
+            {
+                auto activity = button->service_->deferReload();
+                button->update();
+            }
+            button->Release();
+        }
+        return 0;
+    }
+    return DefSubclassProc(window, message, wparam, lparam);
 }
 
 void LangBarButton::update() {

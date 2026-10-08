@@ -285,6 +285,21 @@ if(BUILD_TESTING)
         "${CHIAKEY_SOURCE}/ModulePackages/OVIMMandarin")
     target_link_libraries(chiakey_phrase_completion_test PRIVATE chiakey_core)
     add_test(NAME chiakey_phrase_completion COMMAND chiakey_phrase_completion_test)
+    add_executable(chiakey_tsf_focus_test
+        TextServiceFocusTest.cpp TextService.cpp LangBarButton.cpp CandidateWindow.cpp
+        SymbolWindow.cpp PunctuationKeyboard.cpp NotificationWindow.cpp UIElement.cpp)
+    target_compile_options(chiakey_tsf_focus_test PRIVATE /W4 /permissive-)
+    target_link_libraries(chiakey_tsf_focus_test PRIVATE chiakey_tsf_engine
+        comctl32 gdi32 msimg32 oleaut32 user32 uuid uxtheme)
+    add_test(NAME chiakey_tsf_document_focus COMMAND chiakey_tsf_focus_test)
+    add_executable(chiakey_langbar_theme_test
+        LangBarThemeTest.cpp TextService.cpp LangBarButton.cpp CandidateWindow.cpp
+        SymbolWindow.cpp PunctuationKeyboard.cpp NotificationWindow.cpp UIElement.cpp)
+    target_compile_options(chiakey_langbar_theme_test PRIVATE /W4 /permissive-)
+    target_link_libraries(chiakey_langbar_theme_test PRIVATE chiakey_tsf_engine
+        comctl32 gdi32 msimg32 oleaut32 user32 uuid uxtheme)
+    add_dependencies(chiakey_langbar_theme_test ChiaKeyTsf)
+    add_test(NAME chiakey_langbar_theme COMMAND chiakey_langbar_theme_test "$<TARGET_FILE:ChiaKeyTsf>")
     add_executable(chiakey_ui_element_test UIElementTest.cpp UIElement.cpp)
     target_compile_features(chiakey_ui_element_test PRIVATE cxx_std_17)
     target_compile_definitions(chiakey_ui_element_test PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)

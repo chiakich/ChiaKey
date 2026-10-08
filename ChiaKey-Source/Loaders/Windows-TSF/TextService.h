@@ -8,6 +8,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 
 #include "CandidateWindow.h"
@@ -53,6 +54,9 @@ public:
     STDMETHODIMP RestoreReloadState(DWORD state) override;
     void retainEditSession() { ++pendingEditSessions_; AddRef(); }
     void releaseEditSession() { --pendingEditSessions_; Release(); }
+    // Key sessions hold focus through scheduling, execution, or cancellation.
+    void retainKeyFocusSession() { ++pendingKeyFocusSessions_; }
+    void releaseKeyFocusSession();
     ReloadActivity deferReload() { return ReloadActivity(reloadActivity_); }
 
     // ITfKeyEventSink
@@ -119,6 +123,16 @@ public:
     HRESULT insertSymbol(TfEditCookie editCookie, ITfContext* context, const std::wstring& text);
 
 private:
+    friend struct TextServiceFocusTest;
+    class KeyEditActivity;
+    void finishKeyEdit();
+    void reconcileDocumentFocus();
+    void pruneReleasedKeys();
+    void finishKeyPress(UINT virtualKey);
+    unsigned keyEditDepth_ = 0;
+    unsigned pendingKeyFocusSessions_ = 0;
+    std::set<UINT> pressedVirtualKeys_;
+    bool deferredDocumentFocus_ = false;
     HRESULT adviseFunctionProvider();
     void unadviseFunctionProvider();
     ~TextService();

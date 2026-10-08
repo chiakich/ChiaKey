@@ -11,13 +11,14 @@ Add-Type -AssemblyName PresentationCore, WindowsBase
 [Windows.Media.RenderOptions]::ProcessRenderMode = [Windows.Interop.RenderMode]::SoftwareOnly
 $invariant = [Globalization.CultureInfo]::InvariantCulture
 
-# State glyphs follow the taskbar theme; the product glyph stays black and transparent.
-$onLight = '#1A1A1A'
+# State glyphs follow the taskbar theme. Windows reads the profile's brand
+# resource directly, so it needs its own contrasting background in either theme.
+$onLight = '#000000'
 $onDark = '#FFFFFF'
 $modeSizes = 16, 20, 24, 32, 40, 48
 $badgeSizes = 16, 20, 24, 32, 40, 48, 64, 256
 $targets = @(
-    @{ Name = 'badge'; Svg = 'qian'; Color = '#000000'; Sizes = $badgeSizes },
+    @{ Name = 'badge'; Svg = 'badge'; Color = $onDark; Sizes = $badgeSizes },
     @{ Name = 'app'; Artwork = $AppIconPath; Sizes = $badgeSizes },
     @{ Name = 'phrase-editor'; Artwork = $PhraseIconPath; Sizes = $badgeSizes },
     @{ Name = 'chinese-on-light'; Svg = 'chinese'; Color = $onLight; Sizes = $modeSizes },
