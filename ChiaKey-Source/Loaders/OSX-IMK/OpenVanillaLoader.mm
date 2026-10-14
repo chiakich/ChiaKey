@@ -23,6 +23,7 @@
 
 NSString *CVLoaderUpdateCannedMessagesNotification =
     @"CVLoaderUpdateCannedMessagesNotification";
+NSString *OVLBootDidFinishNotification = @"OVLBootDidFinishNotification";
 
 static const char *kChiaKeySourceDatabaseFile = "ChiaKeySource.db";
 static const char *kLegacyKeyKeySourceDatabaseFile = "KeyKeySource.db";
@@ -215,6 +216,16 @@ using namespace OpenVanilla;
   OVLBootFinished = finished;
   if (finished) [OVLBootCondition broadcast];
   [OVLBootCondition unlock];
+
+  // Delivered on the main queue: handlers drive the IMK thread (a deferred
+  // reload), which must not run on the boot thread that just unlocked.
+  if (finished && [OpenVanillaLoader sharedLoader]) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [[NSNotificationCenter defaultCenter]
+          postNotificationName:OVLBootDidFinishNotification
+                        object:[OpenVanillaLoader sharedInstance]];
+    });
+  }
 }
 + (BOOL)waitForLoaderReadyWithTimeout:(NSTimeInterval)timeout {
   NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
@@ -517,32 +528,30 @@ using namespace OpenVanilla;
   OVModulePackage *pkg;
   OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
 
-  pkg = new OVIMMandarinPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage("OVIMMandarinPackage", pkg);
+  // Each initialize() reads its own data -- the Mandarin package constructs
+  // the language model over the cooked lexicon -- so on a cold disk this is
+  // where boot time goes. The per-package timing names the culprit from
+  // `log show --predicate 'process == "ChiaKey"'` without a sampler.
+#define OVL_ADD_TIMED_STATIC_PACKAGE(className, name)                \
+  do {                                                               \
+    pkg = new className;                                             \
+    CFAbsoluteTime initStart = CFAbsoluteTimeGetCurrent();           \
+    pkg->initialize(&pathInfo, _loaderService);                      \
+    NSLog(@"ChiaKey: boot: %s init in %.2fs", name,                  \
+          CFAbsoluteTimeGetCurrent() - initStart);                   \
+    _staticModuleLoadingSystem->addInitializedPackage(name, pkg);    \
+  } while (0)
 
-  pkg = new OVIMGenericPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage("OVIMGenericPackage", pkg);
+  OVL_ADD_TIMED_STATIC_PACKAGE(OVIMMandarinPackage, "OVIMMandarinPackage");
+  OVL_ADD_TIMED_STATIC_PACKAGE(OVIMGenericPackage, "OVIMGenericPackage");
+  OVL_ADD_TIMED_STATIC_PACKAGE(OVOFFullWidthCharacterPackage,
+                               "OVOFFullWidthCharacterPackage");
+  OVL_ADD_TIMED_STATIC_PACKAGE(OVOFHanConvertPackage, "OVOFHanConvertPackage");
+  OVL_ADD_TIMED_STATIC_PACKAGE(OVAFBopomofoCorrectionPackage,
+                               "OVAFBopomofoCorrectionPackage");
+  OVL_ADD_TIMED_STATIC_PACKAGE(OVAFEvalPackage, "OVAFEvalPackage");
 
-  pkg = new OVOFFullWidthCharacterPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage(
-      "OVOFFullWidthCharacterPackage", pkg);
-
-  pkg = new OVOFHanConvertPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage("OVOFHanConvertPackage",
-                                                    pkg);
-
-  pkg = new OVAFBopomofoCorrectionPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage(
-      "OVAFBopomofoCorrectionPackage", pkg);
-
-  pkg = new OVAFEvalPackage;
-  pkg->initialize(&pathInfo, _loaderService);
-  _staticModuleLoadingSystem->addInitializedPackage("OVAFEvalPackage", pkg);
+#undef OVL_ADD_TIMED_STATIC_PACKAGE
 }
 
 - (void)reload {
@@ -582,6 +591,12 @@ using namespace OpenVanilla;
 - (bool)start:(NSArray *)loadPaths {
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
   [[OpenVanillaLoader sharedLock] lock];
+
+  // Stage timings land in the unified log so a slow cold boot (an HDD reading
+  // the lexicon, say) reads straight off
+  // `log show --predicate 'process == "ChiaKey"'`.
+  CFAbsoluteTime bootStart = CFAbsoluteTimeGetCurrent();
+  CFAbsoluteTime stageStart = bootStart;
 
   if (_loader) {
     // Returning with the shared lock held would deadlock every controller's
@@ -641,6 +656,9 @@ using namespace OpenVanilla;
       OVPathHelper::PathCat(loaderUserDataPath, "UserData.db");
   _userPersistence = new OVLoaderUserPersistence(userPersistenceDBPath);
   [self createDatabaseServices];
+  NSLog(@"ChiaKey: boot: database services in %.2fs",
+        CFAbsoluteTimeGetCurrent() - stageStart);
+  stageStart = CFAbsoluteTimeGetCurrent();
 
   // allows user modules...
   string userModulePath = OVPathHelper::PathCat(loaderUserDataPath, "Modules");
@@ -663,6 +681,9 @@ using namespace OpenVanilla;
   _staticModuleLoadingSystem =
       new PVStaticModulePackageLoadingSystem(pathInfo, true);
   [self _addInitializedStaticMoudlePackages];
+  NSLog(@"ChiaKey: boot: module packages in %.2fs",
+        CFAbsoluteTimeGetCurrent() - stageStart);
+  stageStart = CFAbsoluteTimeGetCurrent();
 
   vector<PVModulePackageLoadingSystem *> loadingSystems;
   loadingSystems.push_back(_staticModuleLoadingSystem);
@@ -704,6 +725,10 @@ using namespace OpenVanilla;
   HealDefaultPrimaryInputMethodIfNeeded(_loader);
   bool applyCapsLockDelayOverride =
       kvm.stringValueForKey("ApplyCapsLockDelayOverride") != "false";
+
+  NSLog(@"ChiaKey: boot: loader core in %.2fs, ready in %.2fs total",
+        CFAbsoluteTimeGetCurrent() - stageStart,
+        CFAbsoluteTimeGetCurrent() - bootStart);
 
   // NSLog(@"unlocking");
   [[OpenVanillaLoader sharedLock] unlock];

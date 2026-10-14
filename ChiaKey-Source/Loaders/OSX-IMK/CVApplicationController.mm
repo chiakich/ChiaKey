@@ -54,6 +54,14 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 
   _loader = nil;
 
+  // Registered here rather than at launch: this runs before the loader boot
+  // thread exists, so a reload deferred mid-boot can never miss its wakeup.
+  [[NSNotificationCenter defaultCenter]
+      addObserver:self
+         selector:@selector(_loaderDidFinishBoot:)
+             name:OVLBootDidFinishNotification
+           object:nil];
+
   _plainTextCandidateController = [CVPlainTextCandidateController new];
   _horizontalCandidateController = [CVHorizontalCandidateController new];
   _verticalCandidateController = [CVVerticalCandidateController new];
@@ -84,6 +92,7 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
   [_aboutController release];
   [_inputMethodToggleWindowController release];
   [[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
   [_userPhrasePollTimer invalidate];
   [_userPhrasePollTimer release];
   [_autoUpdateCheckTimer invalidate];
@@ -227,10 +236,37 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 }
 
 // These are local UI/notification helpers, not exported IPC entry points.
-- (void)reloadOpenVanilla {
+// Answers whether the reload actually ran: NO means boot still owns the
+// shared lock and the request was remembered to run once boot reports ready.
+- (BOOL)reloadOpenVanilla {
+  // Boot owns the shared lock for the whole load, so a reload arriving while
+  // it runs would park the IMK thread on that lock until boot finishes --
+  // exactly the unresponsive-input-method state this class must never create.
+  // Dropping it outright is not an option either: whatever changed on disk
+  // (a lexicon install, a module blacklist) may postdate what boot already
+  // read, so the reload is deferred to OVLBootDidFinishNotification instead.
+  if (![OpenVanillaLoader waitForLoaderReadyWithTimeout:0]) {
+    if (!_reloadDeferredWhileBooting) {
+      _reloadDeferredWhileBooting = YES;
+      NSLog(@"ChiaKey: reload deferred; loader boot still in progress");
+    }
+    return NO;
+  }
+
   NSLog(@"Reloading OpenVanilla");
   [[OpenVanillaLoader sharedInstance] reload];
   NSLog(@"Finished reloading OpenVanilla");
+  return YES;
+}
+
+// A reload that could not run during boot runs here. Registered in
+// _initializeControllerIfNeeded, which runs before the boot thread exists,
+// so no deferral can predate the observer.
+- (void)_loaderDidFinishBoot:(NSNotification *)notification {
+  if (!_reloadDeferredWhileBooting) return;
+  _reloadDeferredWhileBooting = NO;
+  NSLog(@"ChiaKey: running the reload deferred while boot was in progress");
+  [self reloadOpenVanilla];
 }
 
 - (NSString *)primaryInputMethod {
@@ -604,7 +640,12 @@ static BOOL CVCodePointIsAllowedPhraseCharacter(unsigned int codePoint) {
 }
 
 - (void)_reloadAndSettleLexiconState {
-  [self reloadOpenVanilla];
+  // Settling judges a freshly installed lexicon through the loader (rollback
+  // or prune), so it must not run on a reload that never happened: deferred
+  // means stale state, and settling on it would retire or roll back a
+  // lexicon the engine has not even opened. Left unsettled, the hourly
+  // lexicon check retries the whole flow.
+  if (![self reloadOpenVanilla]) return;
   [self _settleLexiconStateAfterLoad];
 }
 

@@ -35,6 +35,10 @@
   // per process launch and this process can stay alive for weeks.
   NSTimer *_autoUpdateCheckTimer;
 
+  // A reload that arrived while loader boot still held the shared lock; it
+  // runs when OVLBootDidFinishNotification reports the loader is ready.
+  BOOL _reloadDeferredWhileBooting;
+
   // <lithoglyph>
   OVSQLiteConnection *_userPhraseDB;
   // </lithoglyph>

@@ -103,3 +103,6 @@ using namespace CareService;
 @end
 
 extern NSString *CVLoaderUpdateCannedMessagesNotification;
+// Posted on the main queue once boot has produced a loader, so deferred work
+// (a reload that arrived mid-boot, say) can run then.
+extern NSString *OVLBootDidFinishNotification;
