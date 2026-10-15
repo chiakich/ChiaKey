@@ -5,6 +5,7 @@
 
 #import "BPMFUserPhraseHelper.h"
 #import "CVApplicationController.h"
+#import "ChiaKeyInputMethodProcessLifecycle.h"
 #import "ChiaKeyServiceCoordination.h"
 #import "ChiaKeyUserPhraseCoordination.h"
 #import "OpenVanillaConfig.h"
@@ -420,12 +421,26 @@ int main(int argc, char *argv[]) {
                  (long)[[NSUserDefaults standardUserDefaults]
                      integerForKey:@"NSInitialToolTipDelay"]);
 
-  OVInputMethodServer =
-      [[IMKServer alloc] initWithName:OPENVANILLA_CONNECTION_NAME
-                     bundleIdentifier:[[NSBundle mainBundle] bundleIdentifier]];
+  // Retried, because the usual reason this fails is the previous instance of
+  // this very input method not having released the connection name yet --
+  // macOS starts the new one before the old one is gone. Exiting there turns a
+  // handover that takes milliseconds into a launch spent for nothing, and
+  // macOS only allows a few of those per login session before it greys the
+  // input method out until the user logs out again. Never kill the holder:
+  // that process may still be serving a client's keystrokes.
+  NSString *ownBundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+  OVInputMethodServer = ChiaKeyCreateWithServerLaunchRetry(
+      ^id(void) {
+        return [[IMKServer alloc] initWithName:OPENVANILLA_CONNECTION_NAME
+                              bundleIdentifier:ownBundleIdentifier];
+      },
+      nil);
 
   if (!OVInputMethodServer) {
-    NSLog(@"input method server init failed!");
+    NSLog(@"%@", ChiaKeyServerLaunchFailureMessage(
+                     OPENVANILLA_CONNECTION_NAME,
+                     [[NSBundle mainBundle] bundlePath],
+                     ChiaKeyOtherRunningInstanceDescriptions()));
     return 1;
   }
 
@@ -462,7 +477,19 @@ int main(int argc, char *argv[]) {
   [[NSApplication sharedApplication] run];
 
   // [OpenVanillaController cleanUpAutoUpdate];
-  [ovl shutDown];
+  // A loader that could not be torn down means another thread is still inside
+  // it, holding the shared lock (a boot, or a reload). Carrying on would
+  // release that very lock out from under it and run every destructor in the
+  // process while it works -- a crash on the way out, which holds the
+  // connection name longer than any clean exit and so makes the next launch
+  // the one that gives up. Leaving now hands the ports back immediately; the
+  // kernel reclaims the rest, and the databases are journalled.
+  if (![ovl shutDown]) {
+    NSLog(@"ChiaKey: exiting without loader teardown; work is still in "
+          @"flight on another thread");
+    [pool drain];
+    _exit(0);
+  }
   [OpenVanillaLoader releaseSharedObjects];
   [NSApp setDelegate:nil];
   [applicationController release];

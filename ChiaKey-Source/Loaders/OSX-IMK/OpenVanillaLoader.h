@@ -5,6 +5,7 @@
 #import <PlainVanilla/PlainVanilla.h>
 
 // temporarily so, will make into CareService.framework
+#import "ChiaKeyInputMethodProcessLifecycle.h"
 #import "CVEncodingService.h"
 #include "OVLoaderUserPersistence.h"
 #include "SystemInfo.h"
@@ -50,17 +51,29 @@ using namespace CareService;
 + (PVLoaderService *)sharedLoaderService;
 + (NSLock *)sharedLock;
 + (void)releaseSharedObjects;
+// Deletes a context whose controller has gone away, or parks it until a reload
+// in flight is done: ~PVLoaderContext unregisters itself from the set the
+// reload is walking. Main thread only.
++ (void)deleteContextWhenLoaderIsIdle:(PVLoaderContext *)context;
 // start: runs on a background thread, so a client can ask for a controller
 // before there is a loader to build one from. Blocks until boot has finished
-// one way or the other, and answers whether a loader came out of it.
+// one way or the other, and answers whether a loader came out of it. Also NO
+// for the length of a reload, which leaves the loader just as unusable.
 + (BOOL)waitForLoaderReadyWithTimeout:(NSTimeInterval)timeout;
 
 #pragma mark Instance methods
 - (id)init;
 - (void)dealloc;
 - (bool)start:(NSArray *)loadPaths;
-- (void)shutDown;
+// NO when another thread still holds the shared lock at the deadline and the
+// loader was left standing; the caller must then leave the process without
+// touching it (see main.mm).
+- (BOOL)shutDown;
 - (void)reload;
+// Runs -reload off the calling thread and calls `completion` back on the main
+// thread. The only way the IME asks for a reload: -reload itself holds the
+// shared lock for its whole length.
+- (void)reloadInBackgroundWithCompletion:(void (^)(void))completion;
 - (PVLoader *)loader;
 - (void)noteUserExplicitlySelectedInputMethod;
 - (PVLoaderService *)loaderService;
@@ -84,6 +97,7 @@ using namespace CareService;
 // Preferences app can read it without a mach service.
 - (void)publishServiceStatus;
 // Applies PendingModuleBlacklist.plist if present, persists it, republishes.
+// For the startup path; a reload does this on its own.
 - (void)applyPendingModuleBlacklistAndPublish;
 
 #pragma mark Phrase Editor coordination

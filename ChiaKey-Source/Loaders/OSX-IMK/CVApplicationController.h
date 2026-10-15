@@ -10,6 +10,7 @@
 #import "CVSymbolController.h"
 #import "CVToolTipController.h"
 #import "CVVerticalCandidateController.h"
+#import "ChiaKeyInputMethodProcessLifecycle.h"
 #import "OpenVanillaLoader.h"
 
 @interface CVApplicationController
@@ -35,9 +36,10 @@
   // per process launch and this process can stay alive for weeks.
   NSTimer *_autoUpdateCheckTimer;
 
-  // A reload that arrived while loader boot still held the shared lock; it
-  // runs when OVLBootDidFinishNotification reports the loader is ready.
-  BOOL _reloadDeferredWhileBooting;
+  // At most one reload runs at a time and none is dropped; a request that
+  // cannot start waits for OVLBootDidFinishNotification or for the reload in
+  // flight. See ChiaKeyInputMethodProcessLifecycle.h.
+  ChiaKeyReloadQueue _reloadQueue;
 
   // <lithoglyph>
   OVSQLiteConnection *_userPhraseDB;

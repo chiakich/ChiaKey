@@ -36,6 +36,10 @@ using namespace OpenVanilla;
   NSTimeInterval _lastActivationTime;
   BOOL _bridgingToASCIISource;
 
+  // An activateServer: that found no usable loader behind it; the next IMK
+  // callback runs the activation setup it had to skip.
+  BOOL _activationPending;
+
   // application-specific fixes
   BOOL _doNotClearContextStateEvenWithForcedCommit;
   BOOL _updateCommitStringBeforeCommit;
