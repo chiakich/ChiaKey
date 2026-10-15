@@ -661,9 +661,14 @@ using namespace OpenVanilla;
 
   // NSLog(@"loaded: %@", [self dynamicallyLoadedModulePackageInfo]);
 
-  [[OpenVanillaLoader sharedLock] unlock];
-
+  // Inside the lock, because this reads the very objects shutDown deletes
+  // (_loader and both loading systems) and runs on the reload's background
+  // thread: unlocking first lets shutDown win the lock and free them while
+  // this is still walking them. Neither getter takes the lock, so holding it
+  // across them cannot deadlock.
   [self publishServiceStatus];
+
+  [[OpenVanillaLoader sharedLock] unlock];
 }
 - (bool)start:(NSArray *)loadPaths {
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
