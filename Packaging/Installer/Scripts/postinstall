@@ -2,20 +2,43 @@
 
 APP_REL="Library/Input Methods/ChiaKey.app"
 LEGACY_REL="Library/Input Methods/千秋輸入法.app"
+EXPECTED_BUNDLE_ID="com.chiakey.inputmethod.ChiaKey"
+# Scripts/build-release-package.sh rewrites the assignment line below with the
+# package's CFBundleVersion -- only that line, so the placeholder literal in
+# the version comparison further down stays meaningful. The bare placeholder
+# means a hand-run script (tests, debugging) and only skips the version
+# equality check; every placement check stays active.
+EXPECTED_VERSION="__COMPONENT_VERSION__"
 
-/usr/bin/pkill -x ChiaKey >/dev/null 2>&1 || true
-/usr/bin/pkill -x 千秋輸入法 >/dev/null 2>&1 || true
-/usr/bin/pkill -f '/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
-/usr/bin/pkill -f '/Users/.*/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
+# Scripts/test-postinstall-placement.sh rewrites the assignment line below with
+# a scratch directory that plays the role of "/": process kills and console-user
+# discovery are disabled, and the fake console user is <sandbox>/Users/tester.
+# Never read from the environment: this script runs as root from PackageKit,
+# which passes the caller's environment through, and nothing outside the build
+# may redirect which copies it deletes.
+SANDBOX_DIR=""
 
-console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
+console_user=""
 console_home=""
 console_uid=""
-if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
-   /usr/bin/id -u "${console_user}" >/dev/null 2>&1; then
-  console_uid="$(/usr/bin/id -u "${console_user}")"
-  console_home="$(/usr/bin/dscl . -read "/Users/${console_user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}' || true)"
+if [ -z "${SANDBOX_DIR}" ]; then
+  /usr/bin/pkill -x ChiaKey >/dev/null 2>&1 || true
+  /usr/bin/pkill -x 千秋輸入法 >/dev/null 2>&1 || true
+  /usr/bin/pkill -f '/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
+  /usr/bin/pkill -f '/Users/.*/Library/Input Methods/ChiaKey.app/Contents/MacOS/ChiaKey' >/dev/null 2>&1 || true
+
+  console_user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
+  if [ -n "${console_user}" ] && [ "${console_user}" != "root" ] &&
+     /usr/bin/id -u "${console_user}" >/dev/null 2>&1; then
+    console_uid="$(/usr/bin/id -u "${console_user}")"
+    console_home="$(/usr/bin/dscl . -read "/Users/${console_user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}' || true)"
+  fi
+else
+  console_home="${SANDBOX_DIR}/Users/tester"
 fi
+
+system_domain="${SANDBOX_DIR}"
+users_dir="${SANDBOX_DIR}/Users"
 
 # Physical path of a directory, or empty if it does not exist. Used to compare
 # candidate paths that may differ textually but resolve to the same bundle.
@@ -31,23 +54,44 @@ canon() {
 # slashes so joining with APP_REL never produces a "//" prefix.
 target_root="$(printf '%s' "${2:-}" | /usr/bin/sed 's:/*$::')"
 
-# The bundle this run installed: prefer the chosen target location ("$2"),
-# then the console user's home, then the system domain.
-keep_app=""
-for candidate in \
-  "${target_root}/${APP_REL}" \
-  "${console_home}/${APP_REL}" \
-  "/${APP_REL}"; do
-  if [ -x "${candidate}/Contents/MacOS/ChiaKey" ]; then
-    keep_app="${candidate}"
-    break
-  fi
-done
+fail() {
+  echo "ChiaKey postinstall: $*" >&2
+  exit 1
+}
 
-keep_canon=""
-if [ -n "${keep_app}" ]; then
-  keep_canon="$(canon "${keep_app}" || true)"
+# The bundle this run must have installed: the chosen destination, and only
+# that. If PackageKit relocated the payload somewhere else (issue #25), the
+# honest outcome is a failed install, never registering some stale copy that
+# happens to lie around.
+keep_app="${target_root}/${APP_REL}"
+expected_bin="${keep_app}/Contents/MacOS/ChiaKey"
+expected_plist="${keep_app}/Contents/Info.plist"
+
+if [ ! -x "${expected_bin}" ]; then
+  fail "expected the newly installed app at ${keep_app}, but it is missing. PackageKit may have relocated the payload onto another copy of ${EXPECTED_BUNDLE_ID} (check /var/log/install.log for \"relocated\"); refusing to register whatever else is on disk."
 fi
+
+installed_bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${expected_plist}" 2>/dev/null || true)"
+if [ "${installed_bundle_id}" != "${EXPECTED_BUNDLE_ID}" ]; then
+  fail "expected bundle id ${EXPECTED_BUNDLE_ID} at ${keep_app}, found ${installed_bundle_id:-<none>}."
+fi
+
+if [ "${EXPECTED_VERSION}" != "__COMPONENT_VERSION__" ]; then
+  installed_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${expected_plist}" 2>/dev/null || true)"
+  if [ "${installed_version}" != "${EXPECTED_VERSION}" ]; then
+    # A newer bundle on disk is a different failure: PackageKit skips the
+    # payload for a version-checked bundle, so say which one to uninstall
+    # instead of blaming the payload's landing spot.
+    newest="$(printf '%s\n%s\n' "${EXPECTED_VERSION}" "${installed_version}" |
+      /usr/bin/sort -V 2>/dev/null | /usr/bin/tail -n 1)"
+    if [ -n "${installed_version}" ] && [ "${newest}" = "${installed_version}" ]; then
+      fail "a newer ChiaKey (${installed_version}) is already installed at ${keep_app}; this package carries ${EXPECTED_VERSION} and PackageKit kept the newer bundle. Remove the installed copy first if you meant to go back to ${EXPECTED_VERSION}."
+    fi
+    fail "expected version ${EXPECTED_VERSION} at ${keep_app}, found ${installed_version:-<none>}; the payload did not land where this package installed."
+  fi
+fi
+
+keep_canon="$(canon "${keep_app}" || true)"
 
 # Remove one duplicate bundle unless it is the copy we are keeping.
 remove_duplicate() {
@@ -69,69 +113,63 @@ remove_duplicate() {
 # Only prune once we are sure which copy to keep; never leave zero copies.
 # Scoped to what this install owns: as root, sweeping /Users/* would delete
 # other accounts' installs.
-if [ -n "${keep_canon}" ]; then
-  remove_duplicate "/${APP_REL}"
-  remove_duplicate "/${LEGACY_REL}"
-  for home in "${target_root}" "${console_home}"; do
-    [ -n "${home}" ] || continue
-    [ -d "${home}" ] || continue
-    remove_duplicate "${home}/${APP_REL}"
-    remove_duplicate "${home}/${LEGACY_REL}"
-  done
+remove_duplicate "${system_domain}/${APP_REL}"
+remove_duplicate "${system_domain}/${LEGACY_REL}"
+for home in "${target_root}" "${console_home}"; do
+  [ -n "${home}" ] || continue
+  [ -d "${home}" ] || continue
+  remove_duplicate "${home}/${APP_REL}"
+  remove_duplicate "${home}/${LEGACY_REL}"
+done
 
-  # Still shadows the system-wide copy for that account, so say so.
-  for home in /Users/*; do
-    [ -d "${home}" ] || continue
-    for rel in "${APP_REL}" "${LEGACY_REL}"; do
-      [ -e "${home}/${rel}" ] || continue
-      other_canon="$(canon "${home}/${rel}" || true)"
-      [ "${other_canon}" = "${keep_canon}" ] && continue
-      echo "ChiaKey postinstall: leaving another account's copy in place: ${home}/${rel}" >&2
-    done
+# Still shadows the system-wide copy for that account, so say so.
+for home in "${users_dir}"/*; do
+  [ -d "${home}" ] || continue
+  for rel in "${APP_REL}" "${LEGACY_REL}"; do
+    [ -e "${home}/${rel}" ] || continue
+    other_canon="$(canon "${home}/${rel}" || true)"
+    [ "${other_canon}" = "${keep_canon}" ] && continue
+    echo "ChiaKey postinstall: leaving another account's copy in place: ${home}/${rel}" >&2
   done
+done
+
+app_bin="${keep_app}/Contents/MacOS/ChiaKey"
+echo "ChiaKey postinstall: registering input source with ${app_bin}" >&2
+# A system-wide install runs this as root. launchctl asuser only adopts the
+# console user's Mach bootstrap, not their uid, so sudo -u drops privilege as
+# well -- otherwise TIS registers the input source for root, not the user. A
+# per-user install already runs as that user, so invoke the binary directly.
+# "install" reports what it did on stdout: registered|registration-skipped,
+# then already-enabled|newly-enabled|enable-requested|enable-timeout.
+#
+# Only Installer.app gets --wait-for-approval, which blocks until the user
+# answers macOS's consent dialog -- its conclusion pane asks for a logout and
+# must not offer that before the input source is enabled. The wait is capped
+# at half a minute, and the welcome pane warns that the install pauses there.
+# /usr/sbin/installer sets COMMAND_LINE_INSTALL, and that covers the updater
+# too: nobody is watching a dialog there, so waiting would just hang it.
+wait_flag=""
+if [ -z "${COMMAND_LINE_INSTALL:-}" ]; then
+  wait_flag="--wait-for-approval"
 fi
 
-if [ -n "${keep_app}" ]; then
-  app_bin="${keep_app}/Contents/MacOS/ChiaKey"
-  echo "ChiaKey postinstall: registering input source with ${app_bin}" >&2
-  # A system-wide install runs this as root. launchctl asuser only adopts the
-  # console user's Mach bootstrap, not their uid, so sudo -u drops privilege as
-  # well -- otherwise TIS registers the input source for root, not the user. A
-  # per-user install already runs as that user, so invoke the binary directly.
-  # "install" reports what it did on stdout: registered|registration-skipped,
-  # then already-enabled|newly-enabled|enable-requested|enable-timeout.
-  #
-  # Only Installer.app gets --wait-for-approval, which blocks until the user
-  # answers macOS's consent dialog -- its conclusion pane asks for a logout and
-  # must not offer that before the input source is enabled. The wait is capped
-  # at half a minute, and the welcome pane warns that the install pauses there.
-  # /usr/sbin/installer sets COMMAND_LINE_INSTALL, and that covers the updater
-  # too: nobody is watching a dialog there, so waiting would just hang it.
-  wait_flag=""
-  if [ -z "${COMMAND_LINE_INSTALL:-}" ]; then
-    wait_flag="--wait-for-approval"
-  fi
-
-  if [ "$(/usr/bin/id -u)" = "0" ] && [ -n "${console_uid:-}" ]; then
-    install_output="$(/bin/launchctl asuser "${console_uid}" \
-      /usr/bin/sudo -u "${console_user}" "${app_bin}" install ${wait_flag})"
-    install_status=$?
-  else
-    install_output="$("${app_bin}" install ${wait_flag})"
-    install_status=$?
-  fi
-  echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}: $(echo "${install_output}" | /usr/bin/tr '\n' ' ')" >&2
-  # A killed approval wait -- the user losing patience, arriving here as 143 for
-  # SIGTERM, 128+n for any signal -- leaves a perfectly good install behind, and
-  # the conclusion pane already explains how to add the input source by hand, so
-  # that must not become PackageKit's "Install Failed". Any other non-zero
-  # status means registration itself failed: report it, because hiding it sends
-  # the user off to log out for an input method that was never registered.
-  if [ "${install_status}" != "0" ] && [ "${install_status}" -lt 128 ]; then
-    exit "${install_status}"
-  fi
+if [ "$(/usr/bin/id -u)" = "0" ] && [ -n "${console_uid:-}" ]; then
+  install_output="$(/bin/launchctl asuser "${console_uid}" \
+    /usr/bin/sudo -u "${console_user}" "${app_bin}" install ${wait_flag})"
+  install_status=$?
 else
-  echo "ChiaKey postinstall: cannot find installed ChiaKey executable" >&2
+  install_output="$("${app_bin}" install ${wait_flag})"
+  install_status=$?
+fi
+echo "ChiaKey postinstall: ChiaKey install exited with ${install_status}: $(echo "${install_output}" | /usr/bin/tr '\n' ' ')" >&2
+# A killed approval wait -- the user losing patience, arriving here as 143 for
+# SIGTERM, 128+n for any signal -- leaves a perfectly good install behind, and
+# the conclusion pane already explains how to add the input source by hand, so
+# that must not become PackageKit's "Install Failed". Any other non-zero
+# status means registration itself failed: report it, because hiding it sends
+# the user off to log out for an input method that was never registered.
+if [ "${install_status}" != "0" ] && [ "${install_status}" -lt 128 ]; then
+  exit "${install_status}"
 fi
 
 exit 0

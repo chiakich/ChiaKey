@@ -483,6 +483,7 @@ BUILT_RESOURCES="${BUILT_APP}/Contents/Resources"
 STAGE_ROOT="${WORK_DIR}/pkg-root"
 PKG_SCRIPTS_DIR="${WORK_DIR}/pkg-scripts"
 COMPONENT_PKG="${WORK_DIR}/ChiaKey-component.pkg"
+COMPONENT_PLIST="${WORK_DIR}/ChiaKey-component.plist"
 EXPANDED_COMPONENT_DIR="${WORK_DIR}/ChiaKey-component-expanded"
 CLEAN_COMPONENT_PKG="${WORK_DIR}/ChiaKey-component-clean.pkg"
 CLEAN_COMPONENT_PKG_NAME="$(basename "${CLEAN_COMPONENT_PKG}")"
@@ -508,6 +509,8 @@ rebuild_component_package_without_metadata_payload() {
   run /usr/bin/find "${EXPANDED_COMPONENT_DIR}" -name "._*" -delete
   run /usr/bin/find "${EXPANDED_COMPONENT_DIR}" -name ".DS_Store" -delete
   run /usr/bin/xattr -cr "${EXPANDED_COMPONENT_DIR}"
+  run "${ROOT_DIR}/Scripts/verify-pkg-no-relocation.sh" \
+    --sanitize "${EXPANDED_COMPONENT_DIR}"
   run /usr/sbin/pkgutil --flatten "${EXPANDED_COMPONENT_DIR}" "${CLEAN_COMPONENT_PKG}"
 }
 
@@ -652,8 +655,33 @@ run /usr/bin/find "${STAGE_ROOT}" -name "._*" -delete
 run /usr/bin/find "${STAGE_ROOT}" -name ".DS_Store" -delete
 run /usr/bin/xattr -cr "${STAGE_ROOT}"
 
-run /bin/cp "${INSTALLER_SCRIPTS_DIR}/postinstall" "${PKG_SCRIPTS_DIR}/postinstall"
+# Inject the package version so postinstall can refuse a payload that did not
+# land where this package installed (issue #25). Only the assignment line is
+# rewritten: a global replace would also rewrite the placeholder literal the
+# script compares against, silently disabling the check.
+print_command /usr/bin/sed -e "s|^EXPECTED_VERSION=.*|EXPECTED_VERSION=\"${VERSION}\"|" \
+  "${INSTALLER_SCRIPTS_DIR}/postinstall" ">" "${PKG_SCRIPTS_DIR}/postinstall"
+/usr/bin/sed -e "s|^EXPECTED_VERSION=.*|EXPECTED_VERSION=\"${VERSION}\"|" \
+  "${INSTALLER_SCRIPTS_DIR}/postinstall" >"${PKG_SCRIPTS_DIR}/postinstall"
+if /usr/bin/grep -q '^EXPECTED_VERSION="__COMPONENT_VERSION__"' "${PKG_SCRIPTS_DIR}/postinstall"; then
+  echo "Failed to substitute the package version into the postinstall script." >&2
+  exit 1
+fi
 run /bin/chmod 755 "${PKG_SCRIPTS_DIR}/postinstall"
+
+# pkgbuild emits <relocate> bundle rules for every bundle in the payload. With
+# those rules present PackageKit may redirect the payload onto any existing
+# copy with the same bundle id -- e.g. a Downloads backup -- even though the
+# top-level relocatable attribute already reads "false" (issue #25). Analyze
+# the staged root and force every bundle entry non-relocatable (and not
+# version-checked, so the payload always overwrites) before handing the plist
+# back to pkgbuild. That still leaves an empty <relocate/> element behind, so
+# the PackageInfo sanitation inside
+# rebuild_component_package_without_metadata_payload is required too, not a
+# fallback.
+run /bin/rm -f "${COMPONENT_PLIST}"
+run /usr/bin/pkgbuild --analyze --root "${STAGE_ROOT}" "${COMPONENT_PLIST}"
+run "${ROOT_DIR}/Scripts/force-component-nonrelocatable.py" "${COMPONENT_PLIST}"
 
 run /usr/bin/pkgbuild \
   --root "${STAGE_ROOT}" \
@@ -661,6 +689,7 @@ run /usr/bin/pkgbuild \
   --version "${VERSION}" \
   --install-location "/" \
   --scripts "${PKG_SCRIPTS_DIR}" \
+  --component-plist "${COMPONENT_PLIST}" \
   --ownership recommended \
   --min-os-version "${MIN_OS_VERSION}" \
   "${COMPONENT_PKG}"
@@ -701,6 +730,7 @@ if [[ "${KEEP_WORK_DIR}" != "1" ]]; then
     "${STAGE_ROOT}" \
     "${PKG_SCRIPTS_DIR}" \
     "${COMPONENT_PKG}" \
+    "${COMPONENT_PLIST}" \
     "${EXPANDED_COMPONENT_DIR}" \
     "${CLEAN_COMPONENT_PKG}" \
     "${DISTRIBUTION_FILE}" \

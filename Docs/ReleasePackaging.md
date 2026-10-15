@@ -55,6 +55,33 @@ release packaging 預設會使用 GitHub 上最新的 ChiaKey-Lexicon release，
 包進 app。它不會從 raw source 重建 DB，也不會默默使用本機 CookedDatabase 作為
 正式 release 詞庫。
 
+## Payload 落點與 relocation gate（issue #25）
+
+`pkgbuild` 預設會為 payload 裡的每個 bundle 產生 `<relocate>` 規則，PackageKit
+會依規則把 payload 搬到同 Bundle ID 的既有 copy（例如 Downloads 裡的備份），
+頂層 `relocatable="false"` 屬性擋不住。打包流程因此多了三道：
+
+1. `pkgbuild --analyze` 之後，`Scripts/force-component-nonrelocatable.py` 把每個
+   bundle entry 的 `BundleIsRelocatable` 與 `BundleIsVersionChecked` 設為
+   `false`（後者讓 payload 一律覆寫，否則磁碟上版本較新時 PackageKit 會跳過
+   payload），再以 `--component-plist` 傳回 `pkgbuild`。
+2. 重打包 clean payload 時，`Scripts/verify-pkg-no-relocation.sh --sanitize` 從
+   展開後的 `PackageInfo` 移除殘留的 `<relocate>` 元素——強制 component plist 後
+   仍會留下一個空的 `<relocate/>`，所以這一步是必要流程，不是備援。
+3. `Scripts/verify-pkg-no-relocation.sh <pkg>` 對最終出貨的 pkg 再驗一次；
+   release workflow 在 build 後跑它（dry-run 未簽章也照樣擋）。
+
+`Packaging/Installer/Scripts/postinstall` 只認本次安裝的目標路徑，執行檔不存在、
+Bundle ID 或 `CFBundleVersion` 不符就讓安裝失敗，不再 fallback 註冊既有的舊 copy。
+版本由打包流程注入該腳本的 `EXPECTED_VERSION=` 單行。
+
+回歸測試（release workflow 在 build 前執行）：
+
+```sh
+Scripts/test-postinstall-placement.sh
+Scripts/test-pkg-relocation-metadata.sh
+```
+
 ## 正式簽章與 notarization
 
 公開 release 應使用：

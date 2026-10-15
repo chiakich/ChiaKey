@@ -76,6 +76,16 @@ jobs:
       - name: Verify symbol metadata compatibility
         run: Scripts/test-symbol-metadata.sh
 
+      # Issue #25: a relocatable component lets PackageKit redirect the payload
+      # onto another copy with the same bundle id, and a postinstall that
+      # quietly registers whatever it finds hides the damage. Gate both before
+      # anything is built.
+      - name: Installer regression tests
+        run: |
+          set -euo pipefail
+          Scripts/test-postinstall-placement.sh
+          Scripts/test-pkg-relocation-metadata.sh
+
       # The updater refuses anything not Developer ID-signed and notarized, so
       # an ad-hoc build must not become a release. Checked before the tag.
       - name: Require signing and notarization secrets
@@ -301,6 +311,10 @@ jobs:
               exit 1
             fi
           fi
+
+          # Issue #25 acceptance: the shipped package must not carry PackageKit
+          # relocation metadata. Unsigned dry-run packages can still be gated.
+          Scripts/verify-pkg-no-relocation.sh "$pkg"
 
           lexicon_version="$(cat artifacts/release/lexicon-version.txt 2>/dev/null || true)"
           echo "Bundled lexicon: ${lexicon_version:-<unknown>}"
