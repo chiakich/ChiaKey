@@ -25,5 +25,7 @@ jobs:
           python3 Scripts/tests/test_appcast_publisher.py
           bash Scripts/test-macos-release-selection.sh
           bash Scripts/test-legacy-macos-release-selection.sh
+      - name: Check input method process lifecycle policy
+        run: Scripts/test-input-method-process-lifecycle.sh
       - name: Check new and legacy lexicon metadata and button layout
         run: Scripts/test-symbol-metadata.sh

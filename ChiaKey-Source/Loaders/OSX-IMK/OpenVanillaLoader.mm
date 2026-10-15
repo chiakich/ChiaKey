@@ -4,6 +4,7 @@
 
 #include <set>
 #include <sstream>
+#include <vector>
 
 #import "BPMFUserPhraseHelper.h"
 #import "CVCapsLockDelayOverride.h"
@@ -175,7 +176,22 @@ NSLock *OVLSharedLock = nil;
 static NSCondition *OVLBootCondition = nil;
 static BOOL OVLBootFinished = NO;
 
+// A reload leaves the loader as unusable as a boot in progress does:
+// prepareReload deletes the module managers and the sandwich behind every
+// context. Set before the work is handed to another thread and cleared after
+// it is back, both on the main thread, so every IMK callback -- which runs
+// there too -- sees one value for its whole length.
+static volatile BOOL OVLReloadInProgress = NO;
+
+// Contexts handed over by controllers that went away mid-reload; see
+// deleteContextWhenLoaderIsIdle:. Main thread only, so no lock.
+static std::vector<PVLoaderContext *> OVLContextsAwaitingDelete;
+
 using namespace OpenVanilla;
+
+@interface OpenVanillaLoader ()
+- (void)_applyPendingModuleBlacklist;
+@end
 
 @implementation OpenVanillaLoader
 
@@ -206,6 +222,23 @@ using namespace OpenVanilla;
   }
 
   return OVLSharedLock;
+}
++ (void)deleteContextWhenLoaderIsIdle:(PVLoaderContext *)context {
+  if (!context) return;
+
+  if (OVLReloadInProgress) {
+    OVLContextsAwaitingDelete.push_back(context);
+    return;
+  }
+
+  delete context;
+}
++ (void)_deleteContextsAwaitingDelete {
+  for (std::vector<PVLoaderContext *>::iterator iter =
+           OVLContextsAwaitingDelete.begin();
+       iter != OVLContextsAwaitingDelete.end(); ++iter)
+    delete *iter;
+  OVLContextsAwaitingDelete.clear();
 }
 + (void)releaseSharedObjects {
   [OVLSharedInstance release];
@@ -240,7 +273,11 @@ using namespace OpenVanilla;
   BOOL finished = OVLBootFinished;
   [OVLBootCondition unlock];
 
-  return finished && [OpenVanillaLoader sharedLoader] != 0;
+  // Deliberately not waited out: a reload is short next to a boot, and every
+  // caller here would rather be told "not now" than hold up the thread IMK
+  // talks to.
+  return finished && !OVLReloadInProgress &&
+         [OpenVanillaLoader sharedLoader] != 0;
 }
 + (NSString *)locale {
   // See here http://developer.apple.com/qa/qa2006/qa1391.html
@@ -554,8 +591,48 @@ using namespace OpenVanilla;
 #undef OVL_ADD_TIMED_STATIC_PACKAGE
 }
 
+- (void)reloadInBackgroundWithCompletion:(void (^)(void))completion {
+  // Unloading every module bundle, rescanning the module paths and reopening
+  // the databases takes seconds on a cold disk. Spending them on the thread
+  // IMK talks to is how the input method stops answering, and a process that
+  // stops answering is one macOS kills -- against the few input-method
+  // restarts a login session allows. The flag is what keeps the main thread
+  // off the loader meanwhile: every IMK entry point asks
+  // waitForLoaderReadyWithTimeout: first and passes the client's keys through
+  // when the answer is no, exactly as it does during boot.
+  OVLReloadInProgress = YES;
+
+  void (^handler)(void) = [completion copy];
+  dispatch_async(
+      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSAutoreleasePool *pool = [NSAutoreleasePool new];
+
+        [self reload];
+
+        [pool drain];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+          OVLReloadInProgress = NO;
+          [OpenVanillaLoader _deleteContextsAwaitingDelete];
+          if (handler) handler();
+          [handler release];
+        });
+      });
+}
 - (void)reload {
   [[OpenVanillaLoader sharedLock] lock];
+
+  // Nothing to rebuild: shutDown got the lock first and tore the loader down
+  // while this reload was still waiting for it.
+  if (!_loader) {
+    [[OpenVanillaLoader sharedLock] unlock];
+    return;
+  }
+
+  // Here rather than in the caller: a pending blacklist rewrites the very
+  // config this rebuild reads, and under this lock is the only place left
+  // where touching the loader is allowed while a reload runs.
+  [self _applyPendingModuleBlacklist];
 
   // finalize loader's inner workings
   _loaderService->logger("OpenVanilla")
@@ -584,9 +661,14 @@ using namespace OpenVanilla;
 
   // NSLog(@"loaded: %@", [self dynamicallyLoadedModulePackageInfo]);
 
-  [[OpenVanillaLoader sharedLock] unlock];
-
+  // Inside the lock, because this reads the very objects shutDown deletes
+  // (_loader and both loading systems) and runs on the reload's background
+  // thread: unlocking first lets shutDown win the lock and free them while
+  // this is still walking them. Neither getter takes the lock, so holding it
+  // across them cannot deadlock.
   [self publishServiceStatus];
+
+  [[OpenVanillaLoader sharedLock] unlock];
 }
 - (bool)start:(NSArray *)loadPaths {
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
@@ -757,9 +839,22 @@ using namespace OpenVanilla;
   [pool drain];
   return true;
 }
-- (void)shutDown {
+- (BOOL)shutDown {
   [OpenVanillaLoader noteBootFinished:NO];
-  [[OpenVanillaLoader sharedLock] lock];
+
+  // Taking this lock outright is what used to hang the exit: boot holds it for
+  // the whole load, and a reload for the whole reload, so an input-source
+  // switch during either one left macOS to kill the process -- which holds the
+  // connection name longer than a clean exit and makes the NEXT launch the one
+  // that finds the name taken and gives up. Nothing here is worth that: these
+  // are a dying process's final frees.
+  if (!ChiaKeyTakeLockBeforeTimeout([OpenVanillaLoader sharedLock],
+                                    kChiaKeyLoaderShutDownLockTimeout)) {
+    NSLog(@"ChiaKey: the loader is still in use after %.1fs; leaving it "
+          @"standing rather than waiting to be killed",
+          (double)kChiaKeyLoaderShutDownLockTimeout);
+    return NO;
+  }
 
   if (_loader) {
     delete _loader;
@@ -812,6 +907,7 @@ using namespace OpenVanilla;
   }
 
   [[OpenVanillaLoader sharedLock] unlock];
+  return YES;
 }
 - (PVLoader *)loader {
   return _loader;
@@ -868,8 +964,10 @@ using namespace OpenVanilla;
   bool result = BPMFUserPhraseHelper::Import(db, ufn);
   delete db;
 
-  // flush the config, thus flush its LM cache
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+  // flush the config, thus flush its LM cache -- unless a reload is already
+  // rebuilding the module manager this would reach into.
+  if (_loader && [OpenVanillaLoader waitForLoaderReadyWithTimeout:0])
+    _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
   return result;
 }
 
@@ -1050,7 +1148,10 @@ using namespace OpenVanilla;
   }
 
   [self _insertUserPhrase:phrase reading:reading];
-  _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+  // The phrase is in the database either way; the sync only asks the module
+  // to re-read its config next round, which a reload in flight does anyway.
+  if ([OpenVanillaLoader waitForLoaderReadyWithTimeout:0])
+    _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 #pragma mark Phrase Editor coordination
 
@@ -1099,13 +1200,16 @@ using namespace OpenVanilla;
     _userPhraseDB->execute("COMMIT");
   }
 
-  if (_loader) _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+  if (_loader && [OpenVanillaLoader waitForLoaderReadyWithTimeout:0])
+    _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 
 - (void)userPhraseDBDidChangeExternally {
   // A distributed notification can arrive before the background start:
-  // finishes building the loader.
-  if (!_loader) return;
+  // finishes building the loader, or while a reload is replacing the module
+  // manager this would reach into. Skipping costs nothing during a reload:
+  // the reload re-reads every module's config anyway.
+  if (!_loader || ![OpenVanillaLoader waitForLoaderReadyWithTimeout:0]) return;
   _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 
@@ -1363,16 +1467,23 @@ using namespace OpenVanilla;
   }
 }
 
-- (void)applyPendingModuleBlacklistAndPublish {
+- (void)_applyPendingModuleBlacklist {
   if (!_loader) return;
 
   NSString *path = ChiaKeyPendingModuleBlacklistPath();
   NSArray *identifiers = [NSArray arrayWithContentsOfFile:path];
-  if (identifiers) {
-    [self setBlackListOfPackageIdentifers:identifiers];
-    _loader->syncLoaderConfig(true);
-    [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
-  }
+  if (!identifiers) return;
+
+  [self setBlackListOfPackageIdentifers:identifiers];
+  _loader->syncLoaderConfig(true);
+  [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+}
+- (void)applyPendingModuleBlacklistAndPublish {
+  // Skipped while a reload owns the loader; nothing is lost, since every
+  // reload applies the pending blacklist itself.
+  if (![OpenVanillaLoader waitForLoaderReadyWithTimeout:0]) return;
+
+  [self _applyPendingModuleBlacklist];
   [self publishServiceStatus];
 }
 
