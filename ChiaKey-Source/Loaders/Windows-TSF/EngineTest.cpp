@@ -616,6 +616,11 @@ void TestLegacyFrontendBehavior() {
           NextInputMethod("SmartMandarin", {}, settings) == "SmartMandarin",
           "empty and fully hidden menus preserve the current method");
 
+    Check(!ShiftHeld(true, false, true), "stale Shift after a seen release does not type English");
+    Check(ShiftHeld(true, false, false), "queued Shift+letter keeps Shift after the key is released");
+    Check(ShiftHeld(true, true, true), "Shift held down still counts");
+    Check(!ShiftHeld(false, true, false), "the thread state decides when it shows Shift up");
+
     KeyEvent latin = Key('A'); latin.capsLock = true; latin.text = L"A";
     Check(!CapsLockAlphanumeric(latin, settings), "Caps Lock mode is opt in");
     settings.capsLockTogglesEnglish = true;

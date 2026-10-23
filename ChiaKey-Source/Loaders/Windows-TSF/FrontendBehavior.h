@@ -48,6 +48,14 @@ inline std::string NextInputMethod(const std::string& current,
     return current; // Never switch to an unavailable or entirely hidden method.
 }
 
+// A host can leave its thread's key state showing Shift down after the release reached
+// the text service, e.g. when a Shift tap toggled the mode; Smart Mandarin then types the
+// next letters as English. Shift counts as held only if the last Shift event seen here
+// was a press or the key is physically down, so queued Shift+letter input still works.
+inline bool ShiftHeld(bool threadState, bool physicallyDown, bool releaseSeenLast) {
+    return threadState && (physicallyDown || !releaseSeenLast);
+}
+
 inline bool CapsLockAlphanumeric(const KeyEvent& event, const FrontendSettings& settings) {
     return settings.capsLockTogglesEnglish && event.capsLock;
 }

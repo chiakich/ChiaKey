@@ -214,6 +214,8 @@ private:
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;
+    // whether the last Shift event the key sinks saw was a release; see ShiftHeld
+    bool shiftReleaseSeen_ = false;
     bool candidateActive_ = false;
     unsigned candidateGeneration_ = 0;
     bool endingComposition_ = false;
