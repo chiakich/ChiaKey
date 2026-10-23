@@ -168,6 +168,7 @@ namespace ChiaKey.Settings
         private CheckBox controlBackslash;
         private CheckBox shiftTogglesEnglish;
         private CheckBox capsLockTogglesEnglish;
+        private CheckBox shiftSpaceTogglesFullWidth;
         private ComboBox converterShortcut;
         private ComboBox repeatShortcut;
         private ComboBox reverseLookup;
@@ -429,6 +430,7 @@ namespace ChiaKey.Settings
             shiftTogglesEnglish = Check(basic, "使用單擊 Shift 按鍵切換中英模式");
             capsLockTogglesEnglish = Check(basic, "使用 Caps Lock 按鍵切換中英文");
             capsLockTogglesEnglish.CheckedChanged += delegate { shiftTogglesEnglish.Enabled = !capsLockTogglesEnglish.Checked; };
+            shiftSpaceTogglesFullWidth = Check(basic, "使用 Shift + 空白鍵切換全半形");
             associatedPhrases = Check(basic, "輸入後顯示聯想詞");
             simplifiedOutput = Check(basic, "簡體輸出");
             notifications = Check(basic, "使用提示視窗");
@@ -975,6 +977,7 @@ namespace ChiaKey.Settings
             controlBackslash.Checked = frontend.GetBool("ToggleInputMethodWithControlBackslash", true);
             shiftTogglesEnglish.Checked = frontend.GetBool("ShiftTogglesTemporaryEnglish", true);
             capsLockTogglesEnglish.Checked = frontend.GetBool("EnablesCapsLockAsAlphanumericModeToggle", false);
+            shiftSpaceTogglesFullWidth.Checked = frontend.GetBool("ShiftSpaceTogglesFullWidth", true);
             Select(converterShortcut, new Choice[0], frontend.GetString("ChineseConverterToggleKey", "s"));
             Select(repeatShortcut, new Choice[0], frontend.GetString("RepeatLastCommitTextKey", "g"));
             Select(reverseLookup, new Choice[0], frontend.GetString("ReverseLookupMethod", ""));
@@ -1055,6 +1058,7 @@ namespace ChiaKey.Settings
             frontend.SetBool("ToggleInputMethodWithControlBackslash", controlBackslash.Checked);
             frontend.SetBool("ShiftTogglesTemporaryEnglish", shiftTogglesEnglish.Checked);
             frontend.SetBool("EnablesCapsLockAsAlphanumericModeToggle", capsLockTogglesEnglish.Checked);
+            frontend.SetBool("ShiftSpaceTogglesFullWidth", shiftSpaceTogglesFullWidth.Checked);
             frontend.SetString("ChineseConverterToggleKey", Selected(converterShortcut));
             frontend.SetString("RepeatLastCommitTextKey", Selected(repeatShortcut));
             frontend.SetString("ReverseLookupMethod", Selected(reverseLookup));

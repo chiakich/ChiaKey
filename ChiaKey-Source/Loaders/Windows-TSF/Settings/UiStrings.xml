@@ -111,6 +111,10 @@ Total: {2:N0}</en>
     <en>Use Shift key to toggle Chinese / English mode.</en>
   </string>
   <string>
+    <source>使用 Shift + 空白鍵切換全半形</source>
+    <en>Use Shift + Space to toggle full-width / half-width.</en>
+  </string>
+  <string>
     <source>使用提示視窗</source>
     <en>Use notify window.</en>
   </string>

@@ -75,6 +75,7 @@ struct FrontendSettings {
     bool toggleWithControlBackslash = true;
     bool shiftTogglesEnglish = true;
     bool capsLockTogglesEnglish = false;
+    bool shiftSpaceTogglesFullWidth = true;
     std::string chineseConverterToggleKey = "s";
     std::string repeatLastCommitTextKey = "g";
     std::string soundFilename = "Default";

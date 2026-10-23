@@ -296,6 +296,7 @@ void TestSettings(const std::string& writableDir) {
                    Entry("ToggleInputMethodWithControlBackslash", "false") +
                    Entry("ShiftTogglesTemporaryEnglish", "false") +
                    Entry("EnablesCapsLockAsAlphanumericModeToggle", "true") +
+                   Entry("ShiftSpaceTogglesFullWidth", "false") +
                    Entry("ChineseConverterToggleKey", "k") +
                    Entry("RepeatLastCommitTextKey", "r") +
                    Entry("SoundFilename", "C:/Windows/Media/notify.wav") +
@@ -317,6 +318,7 @@ void TestSettings(const std::string& writableDir) {
     Check(!frontend.toggleWithControlBackslash, "boolean settings are read");
     Check(frontend.textColor == "White", "missing keys keep their defaults");
     Check(!frontend.shiftTogglesEnglish, "the Shift tap toggle can be turned off");
+    Check(!frontend.shiftSpaceTogglesFullWidth, "the Shift+Space width toggle can be turned off");
     Check(frontend.capsLockTogglesEnglish && frontend.chineseConverterToggleKey == "k" &&
               frontend.repeatLastCommitTextKey == "r" && !frontend.showNotifications && frontend.keyboardFollowsCursor &&
               frontend.soundFilename == "C:/Windows/Media/notify.wav",

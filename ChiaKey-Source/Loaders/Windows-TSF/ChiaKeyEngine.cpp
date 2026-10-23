@@ -750,6 +750,8 @@ FrontendSettings ReadFrontendSettings(const std::string& preferencesPath) {
         BoolValue(map, "ShiftTogglesTemporaryEnglish", settings.shiftTogglesEnglish);
     settings.capsLockTogglesEnglish = BoolValue(
         map, "EnablesCapsLockAsAlphanumericModeToggle", settings.capsLockTogglesEnglish);
+    settings.shiftSpaceTogglesFullWidth =
+        BoolValue(map, "ShiftSpaceTogglesFullWidth", settings.shiftSpaceTogglesFullWidth);
     settings.chineseConverterToggleKey =
         StringValue(map, "ChineseConverterToggleKey", settings.chineseConverterToggleKey);
     settings.repeatLastCommitTextKey =

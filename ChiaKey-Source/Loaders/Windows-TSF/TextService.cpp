@@ -1022,7 +1022,8 @@ bool TextService::isShiftToggleKey(const KeyEvent& event) const {
 
 bool TextService::isWidthToggleKey(const KeyEvent& event) const {
     ReloadActivity activity(reloadActivity_);
-    return event.virtualKey == VK_SPACE && event.shift && !event.control && !event.alt;
+    return event.virtualKey == VK_SPACE && event.shift && !event.control && !event.alt &&
+           CurrentFrontendSettings().shiftSpaceTogglesFullWidth;
 }
 
 bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
