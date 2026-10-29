@@ -3,6 +3,7 @@
 // 4-column / 2-column shape).
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <thread>
@@ -853,6 +854,156 @@ static void TestCachedBigramsComeBackSorted() {
   remove(path.c_str());
 }
 
+// A hand-added phrase lands at the lexicon's 99th-percentile probability, not
+// above every real word; a lexicon with no real words falls back to -1.0.
+static void TestAddedPhraseGetsNeutralPrior() {
+  const string path = TempPath("learningstore-phrase-prior.db");
+  const string userPath = TempPath("learningstore-phrase-prior-user.db");
+  remove(path.c_str());
+  remove(userPath.c_str());
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+  assert(db);
+  db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
+  db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
+  // 300 real words from -0.01 downwards, plus the rows that sit at or above 0
+  for (int i = 1; i <= 300; i++)
+    db->execute("INSERT INTO unigrams VALUES('q%d', 'w%d', -0.01 * %d, 0.0)",
+                i, i, i);
+  db->execute("INSERT INTO unigrams VALUES('!', '', 0.0, 0.0)");
+  db->execute("INSERT INTO unigrams VALUES('p', '、', 0.001, 0.0)");
+  db->execute("ATTACH DATABASE %Q AS userdb", userPath.c_str());
+  db->execute(
+      "CREATE TABLE userdb.user_unigrams (qstring, current, probability, "
+      "backoff)");
+
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    CHECK(lm.addUserUnigram("new", "NEW"));
+    // the same phrase again is still refused, not reinforced
+    CHECK(!lm.addUserUnigram("new", "NEW"));
+  }
+
+  double stored = 1.0;
+  {
+    OVSQLiteStatementRef s = db->prepare(
+        "SELECT probability FROM userdb.user_unigrams WHERE qstring = 'new'");
+    if (s) {
+      while (s->step() == SQLITE_ROW) stored = s->doubleOfColumn(0);
+    }
+  }
+  // 300 real words: the cut-off is the 4th highest, -0.04
+  CHECK(fabs(stored - (-0.04)) < 1e-9);
+
+  // no real words at all: fall back to what the Phrase Editor writes
+  CHECK(db->execute("DELETE FROM unigrams WHERE probability < 0") == SQLITE_OK);
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    CHECK(lm.addUserUnigram("bare", "BARE"));
+  }
+  stored = 1.0;
+  {
+    OVSQLiteStatementRef s = db->prepare(
+        "SELECT probability FROM userdb.user_unigrams WHERE qstring = 'bare'");
+    if (s) {
+      while (s->step() == SQLITE_ROW) stored = s->doubleOfColumn(0);
+    }
+  }
+  CHECK(fabs(stored - (-1.0)) < 1e-9);
+
+  // a supplement lexicon takes over the unigram table name; the percentile
+  // must be read through the schema-qualified name, not a quoted one
+  db->execute("ATTACH DATABASE ':memory:' AS supplement");
+  db->execute(
+      "CREATE TABLE supplement.unigrams (qstring, current, probability, "
+      "backoff)");
+  for (int i = 1; i <= 200; i++)
+    db->execute(
+        "INSERT INTO supplement.unigrams VALUES('s%d', 'v%d', -0.01 * %d, 0.0)",
+        i, i, i);
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    CHECK(lm.addUserUnigram("supp", "SUPP"));
+  }
+  stored = 1.0;
+  {
+    OVSQLiteStatementRef s = db->prepare(
+        "SELECT probability FROM userdb.user_unigrams WHERE qstring = 'supp'");
+    if (s) {
+      while (s->step() == SQLITE_ROW) stored = s->doubleOfColumn(0);
+    }
+  }
+  // 200 real words: the cut-off is the 3rd highest, -0.03
+  CHECK(fabs(stored - (-0.03)) < 1e-9);
+
+  delete db;
+  remove(path.c_str());
+  remove(userPath.c_str());
+}
+
+static double UserProbability(OVSQLiteConnection* db, const string& qstring) {
+  double stored = 1.0;
+  OVSQLiteStatementRef s = db->prepare(
+      "SELECT probability FROM userdb.user_unigrams WHERE qstring = %Q",
+      qstring.c_str());
+  if (s) {
+    while (s->step() == SQLITE_ROW) stored = s->doubleOfColumn(0);
+  }
+  return stored;
+}
+
+static void TestOldPhraseWeightsMigrate() {
+  const string path = TempPath("learningstore-phrase-migrate.db");
+  const string userPath = TempPath("learningstore-phrase-migrate-user.db");
+  remove(path.c_str());
+  remove(userPath.c_str());
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+  assert(db);
+  db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
+  db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
+  for (int i = 1; i <= 300; i++)
+    db->execute("INSERT INTO unigrams VALUES('q%d', 'w%d', -0.01 * %d, 0.0)",
+                i, i, i);
+  db->execute("ATTACH DATABASE %Q AS userdb", userPath.c_str());
+  db->execute(
+      "CREATE TABLE userdb.user_unigrams (qstring, current, probability, "
+      "backoff)");
+  // the engine's old maximum, its zero fallback, the editors' -1.0 as a number
+  // and as the text an importer bound, and one weight nobody wrote by default
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('max', 'A', 0.001, 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('zero', 'B', -1e-7, 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('ed', 'C', -1.0, 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('txt', 'D', '-1.0', 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('own', 'E', -2.5, 0)");
+
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    CHECK(lm.migrateUserPhrasePriors());
+  }
+  CHECK(fabs(UserProbability(db, "max") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "zero") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "ed") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "txt") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "own") - (-2.5)) < 1e-9);
+
+  // the editor's lock suspends every user-DB write, this one included
+  const string lockPath = TempPath("learningstore-phrase-migrate.editing");
+  FILE* lock = fopen(lockPath.c_str(), "w");
+  if (lock) fclose(lock);
+  db->execute("UPDATE userdb.user_unigrams SET probability = 0.001 "
+              "WHERE qstring = 'max'");
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    lm.setUserPhraseEditingLockPath(lockPath);
+    CHECK(!lm.migrateUserPhrasePriors());
+  }
+  CHECK(fabs(UserProbability(db, "max") - 0.001) < 1e-9);
+  remove(lockPath.c_str());
+
+  delete db;
+  remove(path.c_str());
+  remove(userPath.c_str());
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -876,6 +1027,8 @@ int main(int argc, char** argv) {
   TestEvictionDoesNotRecountContext();
   TestRevertingAnOverrideDropsItsBreadth();
   TestCachedBigramsComeBackSorted();
+  TestAddedPhraseGetsNeutralPrior();
+  TestOldPhraseWeightsMigrate();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;

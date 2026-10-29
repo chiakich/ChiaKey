@@ -262,8 +262,9 @@ static void TestLegacyImportNormalizesAndFilters() {
       importLegacyUserPhraseDBFromFile:WriteExportFile(@"legacy-export.txt")]);
 
   CHECK(CountRows("user_unigrams") == 2);
-  CHECK(ProbabilityOf("\xe6\xac\x8a\xe9\x87\x8d") == -1.0);  // was -3.5
-  CHECK(ProbabilityOf("\xe7\x94\xb2\xe4\xb9\x99") == -1.0);  // was -4.5
+  // the fixture lexicon's p99, what a hand-added phrase gets
+  CHECK(ProbabilityOf("\xe6\xac\x8a\xe9\x87\x8d") == -2.0);  // was -3.5
+  CHECK(ProbabilityOf("\xe7\x94\xb2\xe4\xb9\x99") == -2.0);  // was -4.5
 
   // 權 -> 重 survives (the lexicon has both); 甲 -> 乙 does not.
   CHECK(CountRows("user_bigram_cache") == 1);

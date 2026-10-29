@@ -20,6 +20,7 @@ file for terms.
 #include <vector>
 
 #include "MJSRLearningCacheTables.h"
+#include "MJSRUserPhrasePrior.h"
 #include "OVDependency.h"
 #include "STLDependency.h"
 
@@ -489,6 +490,8 @@ class LanguageModel {
                               StringFilter* filter = 0);
 
   virtual bool addUserUnigram(const string& qstring, const string& current);
+  // Returns false when nothing could be written, e.g. the editor holds its lock.
+  virtual bool migrateUserPhrasePriors();
 
   // Match both the confirmed text and its reading. The qstring range uses the
   // existing lexicon index, including on older DBs without a current index.
@@ -524,7 +527,7 @@ class LanguageModel {
   // What a learned bigram is worth, as an explicit decision rather than a
   // side effect. This used to come from cachedMaxUnigramProbability(), which on
   // the shipped lexicon evaluates to ~0.0 -- log10(1), a certainty no real
-  // n-gram can have -- only because the BOS/EOS marker rows carry probability 0.
+  // n-gram can have -- only because a few punctuation rows sit at 0 or +0.001.
   // So a single selection outscored every bigram in the lexicon (they span
   // -3.35 to -0.05, median -1.10), by accident.
   //
@@ -637,6 +640,7 @@ class LanguageModel {
   }
 
   virtual double cachedMaxUnigramProbability();
+  virtual double cachedUserPhrasePriorProbability();
 
   // Only call once the override writes are known to have reached the disk.
   void markUserCandidateOverrideCacheClean() {
@@ -666,6 +670,7 @@ class LanguageModel {
   OVSQLiteStatementRef m_insertUserUnigram;
 
   double m_maxUnigramProbability;
+  double m_userPhrasePriorProbability;
 
   Unigram m_UNK;
   Unigram m_BOS;
@@ -1431,6 +1436,7 @@ inline LanguageModel::LanguageModel(
       m_selectUnigram(),
       m_insertUserUnigram(),
       m_maxUnigramProbability(0.0),
+      m_userPhrasePriorProbability(0.0),
       m_UNKText("*"),
       m_BOSText("!"),
       m_EOSText("$"),
@@ -1819,7 +1825,8 @@ inline bool LanguageModel::addUserUnigram(const string& qstring,
   m_insertUserUnigram->reset();
   m_insertUserUnigram->bindTextToColumn(qstring, 1);
   m_insertUserUnigram->bindTextToColumn(current, 2);
-  m_insertUserUnigram->bindDoubleToColumn(cachedMaxUnigramProbability(), 3);
+  m_insertUserUnigram->bindDoubleToColumn(cachedUserPhrasePriorProbability(),
+                                          3);
   m_insertUserUnigram->bindDoubleToColumn(m_UNK.backoff, 4);
   // Reporting success regardless let the IME tell the user a phrase was
   // added while the write had failed.
@@ -1847,6 +1854,22 @@ inline double LanguageModel::cachedMaxUnigramProbability() {
   if (m_maxUnigramProbability == 0.0) m_maxUnigramProbability = -0.0000001;
 
   return m_maxUnigramProbability;
+}
+
+inline double LanguageModel::cachedUserPhrasePriorProbability() {
+  if (m_userPhrasePriorProbability == 0.0)
+    m_userPhrasePriorProbability = UserPhrasePriorProbability(
+        m_connection->connection(), m_unigramTableName);
+  return m_userPhrasePriorProbability;
+}
+
+inline bool LanguageModel::migrateUserPhrasePriors() {
+  if (!m_cfgUseUserTable || userPhraseWritesSuspended()) return false;
+  const bool migrated =
+      MigrateUserPhrasePriors(m_connection->connection(), "userdb.user_unigrams",
+                              cachedUserPhrasePriorProbability());
+  if (migrated) flushCache();
+  return migrated;
 }
 
 inline void LanguageModel::flushCache() {

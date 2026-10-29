@@ -12,6 +12,7 @@
 
 #include "MJSRExportCipher.h"
 #include "MJSRLearningCacheTables.h"
+#include "MJSRUserPhrasePrior.h"
 #include "Mandarin.h"
 
 #include <sqlite3.h>
@@ -462,13 +463,21 @@ class UserPhraseStore::Impl {
     WriteFileAtomically(OVPathHelper::PathCat(writablePath, kDirtyFlagName), stamp.str());
   }
 
+  // the engine's value, so a phrase scores the same wherever it was added
+  double userPhrasePrior() {
+    if (userPhrasePriorProbability == 0.0)
+      userPhrasePriorProbability = Manjusri::UserPhrasePriorProbability(lexicon, "unigrams");
+    return userPhrasePriorProbability;
+  }
+
   bool insert(const std::string& phrase, const std::string& qstring) {
     Statement statement(user,
                         "INSERT INTO user_unigrams (qstring, current, probability, backoff) "
-                        "VALUES (?, ?, -1.0, 0.0)");
+                        "VALUES (?, ?, ?, 0.0)");
     if (!statement) return false;
     statement.bind(1, qstring);
     statement.bind(2, phrase);
+    sqlite3_bind_double(statement.get(), 3, userPhrasePrior());
     return statement.step() == SQLITE_DONE;
   }
 
@@ -575,6 +584,7 @@ class UserPhraseStore::Impl {
   std::string writablePath;
   sqlite3* user = nullptr;
   sqlite3* lexicon = nullptr;
+  double userPhrasePriorProbability = 0.0;
   bool sessionActive = false;
   unsigned long long dirtyGeneration = 0;
 };
@@ -822,6 +832,8 @@ bool UserPhraseStore::importFrom(const std::string& path, bool* learningDataRest
     impl_->execute("ROLLBACK");
     return false;
   }
+  // backups made before the p99 prior carry the old placeholder weights
+  Manjusri::MigrateUserPhrasePriors(impl_->user, "user_unigrams", impl_->userPhrasePrior());
 
   // a block too large is reported; one we cannot read costs only the learning
   bool restored = !blobTooLarge;

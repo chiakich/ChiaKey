@@ -1474,6 +1474,9 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo,
   m_LM->setUserPhraseEditingLockPath(OVPathHelper::PathCat(
       pathInfo->writablePath, "SmartMandarinUserData.editing"));
 
+  // Phrases added before the p99 prior still carry the lexicon maximum or -1.0.
+  m_LM->migrateUserPhrasePriors();
+
   // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "loading user bigram
   // cache" << endl;
   m_LM->loadUserBigramCache();
