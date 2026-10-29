@@ -1867,7 +1867,7 @@ inline double LanguageModel::cachedUserPhrasePriorProbability() {
   // Over real words only: punctuation and marker rows sit at 0 or above.
   int count = 0;
   OVSQLiteStatementRef countWords = m_connection->prepare(
-      "SELECT COUNT(*) FROM '%s' WHERE probability < 0",
+      "SELECT COUNT(*) FROM %s WHERE probability < 0",
       m_unigramTableName.c_str());
   if (countWords) {
     while (countWords->step() == SQLITE_ROW) count = countWords->intOfColumn(0);
@@ -1875,7 +1875,7 @@ inline double LanguageModel::cachedUserPhrasePriorProbability() {
 
   if (count > 0) {
     OVSQLiteStatementRef select = m_connection->prepare(
-        "SELECT probability FROM '%s' WHERE probability < 0 "
+        "SELECT probability FROM %s WHERE probability < 0 "
         "ORDER BY probability DESC LIMIT 1 OFFSET %d",
         m_unigramTableName.c_str(), count / 100);
     if (select) {

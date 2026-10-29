@@ -910,6 +910,31 @@ static void TestAddedPhraseGetsNeutralPrior() {
   }
   CHECK(fabs(stored - (-1.0)) < 1e-9);
 
+  // a supplement lexicon takes over the unigram table name; the percentile
+  // must be read through the schema-qualified name, not a quoted one
+  db->execute("ATTACH DATABASE ':memory:' AS supplement");
+  db->execute(
+      "CREATE TABLE supplement.unigrams (qstring, current, probability, "
+      "backoff)");
+  for (int i = 1; i <= 200; i++)
+    db->execute(
+        "INSERT INTO supplement.unigrams VALUES('s%d', 'v%d', -0.01 * %d, 0.0)",
+        i, i, i);
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    CHECK(lm.addUserUnigram("supp", "SUPP"));
+  }
+  stored = 1.0;
+  {
+    OVSQLiteStatementRef s = db->prepare(
+        "SELECT probability FROM userdb.user_unigrams WHERE qstring = 'supp'");
+    if (s) {
+      while (s->step() == SQLITE_ROW) stored = s->doubleOfColumn(0);
+    }
+  }
+  // 200 real words: the cut-off is the 3rd highest, -0.03
+  CHECK(fabs(stored - (-0.03)) < 1e-9);
+
   delete db;
   remove(path.c_str());
   remove(userPath.c_str());
