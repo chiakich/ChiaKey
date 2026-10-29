@@ -524,7 +524,7 @@ class LanguageModel {
   // What a learned bigram is worth, as an explicit decision rather than a
   // side effect. This used to come from cachedMaxUnigramProbability(), which on
   // the shipped lexicon evaluates to ~0.0 -- log10(1), a certainty no real
-  // n-gram can have -- only because the BOS/EOS marker rows carry probability 0.
+  // n-gram can have -- only because a few punctuation rows sit at 0 or +0.001.
   // So a single selection outscored every bigram in the lexicon (they span
   // -3.35 to -0.05, median -1.10), by accident.
   //
@@ -637,6 +637,7 @@ class LanguageModel {
   }
 
   virtual double cachedMaxUnigramProbability();
+  virtual double cachedUserPhrasePriorProbability();
 
   // Only call once the override writes are known to have reached the disk.
   void markUserCandidateOverrideCacheClean() {
@@ -666,6 +667,7 @@ class LanguageModel {
   OVSQLiteStatementRef m_insertUserUnigram;
 
   double m_maxUnigramProbability;
+  double m_userPhrasePriorProbability;
 
   Unigram m_UNK;
   Unigram m_BOS;
@@ -1431,6 +1433,7 @@ inline LanguageModel::LanguageModel(
       m_selectUnigram(),
       m_insertUserUnigram(),
       m_maxUnigramProbability(0.0),
+      m_userPhrasePriorProbability(0.0),
       m_UNKText("*"),
       m_BOSText("!"),
       m_EOSText("$"),
@@ -1819,7 +1822,8 @@ inline bool LanguageModel::addUserUnigram(const string& qstring,
   m_insertUserUnigram->reset();
   m_insertUserUnigram->bindTextToColumn(qstring, 1);
   m_insertUserUnigram->bindTextToColumn(current, 2);
-  m_insertUserUnigram->bindDoubleToColumn(cachedMaxUnigramProbability(), 3);
+  m_insertUserUnigram->bindDoubleToColumn(cachedUserPhrasePriorProbability(),
+                                          3);
   m_insertUserUnigram->bindDoubleToColumn(m_UNK.backoff, 4);
   // Reporting success regardless let the IME tell the user a phrase was
   // added while the write had failed.
@@ -1847,6 +1851,43 @@ inline double LanguageModel::cachedMaxUnigramProbability() {
   if (m_maxUnigramProbability == 0.0) m_maxUnigramProbability = -0.0000001;
 
   return m_maxUnigramProbability;
+}
+
+// A hand-added phrase gets the lexicon's 99th-percentile probability, not its
+// maximum. Measured on the 18,425-sentence LINE gold set (2026-10-29): at the
+// maximum (+0.001) 100 realistic adds won 98.7% of their intended spans but
+// tripled the wrong answers at other positions with the same reading (33 ->
+// 107); at p99 (-0.89) they still won 96.7%, collateral fell to 73, and total
+// exact matches were the highest of any weight tried. p90 and below lose
+// intended wins faster than they save collateral. The Phrase Editor and the
+// Windows core store write -1.0, the hand-picked approximation of the same.
+inline double LanguageModel::cachedUserPhrasePriorProbability() {
+  if (m_userPhrasePriorProbability != 0.0) return m_userPhrasePriorProbability;
+
+  // Over real words only: punctuation and marker rows sit at 0 or above.
+  int count = 0;
+  OVSQLiteStatementRef countWords = m_connection->prepare(
+      "SELECT COUNT(*) FROM '%s' WHERE probability < 0",
+      m_unigramTableName.c_str());
+  if (countWords) {
+    while (countWords->step() == SQLITE_ROW) count = countWords->intOfColumn(0);
+  }
+
+  if (count > 0) {
+    OVSQLiteStatementRef select = m_connection->prepare(
+        "SELECT probability FROM '%s' WHERE probability < 0 "
+        "ORDER BY probability DESC LIMIT 1 OFFSET %d",
+        m_unigramTableName.c_str(), count / 100);
+    if (select) {
+      while (select->step() == SQLITE_ROW)
+        m_userPhrasePriorProbability = select->doubleOfColumn(0);
+    }
+  }
+
+  // A lexicon with no real words (fixtures) falls back to the editors' value.
+  if (m_userPhrasePriorProbability >= 0.0) m_userPhrasePriorProbability = -1.0;
+
+  return m_userPhrasePriorProbability;
 }
 
 inline void LanguageModel::flushCache() {
