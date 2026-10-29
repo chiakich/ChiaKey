@@ -7,6 +7,7 @@
 #include <ChiaKeyCore/UserPhraseStore.h>
 
 #include <sqlite3.h>
+#include "MJSRUserPhrasePrior.h"
 #include <sys/stat.h>
 
 #if defined(_WIN32)
@@ -1014,6 +1015,31 @@ int UserUnigramRows(const std::string& database, const std::string& phrase) {
   return count;
 }
 
+double UserUnigramProbability(const std::string& database, const std::string& phrase) {
+  sqlite3* handle = nullptr;
+  double probability = 1.0;
+  if (sqlite3_open_v2(database.c_str(), &handle, SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK) {
+    sqlite3_stmt* statement = nullptr;
+    if (sqlite3_prepare_v2(handle, "SELECT probability FROM user_unigrams WHERE current = ?", -1,
+                           &statement, nullptr) == SQLITE_OK) {
+      sqlite3_bind_text(statement, 1, phrase.c_str(), -1, SQLITE_TRANSIENT);
+      if (sqlite3_step(statement) == SQLITE_ROW) probability = sqlite3_column_double(statement, 0);
+    }
+    sqlite3_finalize(statement);
+  }
+  sqlite3_close(handle);
+  return probability;
+}
+
+double LexiconUserPhrasePrior(const std::string& lexicon) {
+  sqlite3* handle = nullptr;
+  double prior = Manjusri::kFallbackUserPhrasePrior;
+  if (sqlite3_open_v2(lexicon.c_str(), &handle, SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK)
+    prior = Manjusri::UserPhrasePriorProbability(handle, "unigrams");
+  sqlite3_close(handle);
+  return prior;
+}
+
 bool TypeKeys(ChiaKey::Engine* engine, const char* keys) {
   for (const char* key = keys; *key; ++key) {
     if (!engine->handleAsciiKey(*key)) return false;
@@ -1250,6 +1276,12 @@ int RunRuntimeSmoke(const std::string& repoRoot, const std::string& writableDir,
     if (!store->add("測詞", "ㄘㄜˋ,ㄘˊ", &added) || added.rowid <= 0 ||
         added.reading != "ㄘㄜˋ,ㄘˊ") {
       return Fail("could not add a phrase with its own reading");
+    }
+    // the editor writes what the engine writes, not a fixed -1.0
+    const double expectedPrior = LexiconUserPhrasePrior(lexiconDatabasePath);
+    if (expectedPrior == Manjusri::kFallbackUserPhrasePrior ||
+        UserUnigramProbability(writableDir + "/SmartMandarinUserData.db", "測詞") != expectedPrior) {
+      return Fail("an added phrase did not get the lexicon's p99 prior");
     }
     if (store->add("三字詞", "ㄙㄢ", nullptr)) {
       return Fail("a reading shorter than the phrase was accepted");

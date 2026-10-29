@@ -285,8 +285,14 @@ static void TestLegacyImportRenormalizesProbability(void) {
                                                 kPhraseLines]);
   CHECK([store importLegacyUserPhraseDBFromFile:path]);
   CHECK(CountRows("user_unigrams") == 2);
-  CHECK([FirstTextValue("SELECT probability FROM user_unigrams LIMIT 1")
-      isEqualToString:@"-1.0"]);
+  // Whatever lexicon this machine has: its p99, or -1.0 without one.
+  CHECK([FirstTextValue(
+      "SELECT COUNT(DISTINCT probability) FROM user_unigrams")
+      isEqualToString:@"1"]);
+  const double probability =
+      [FirstTextValue("SELECT probability FROM user_unigrams LIMIT 1")
+          doubleValue];
+  CHECK(probability < 0.0 && probability >= -1.0);
   [store release];
 }
 

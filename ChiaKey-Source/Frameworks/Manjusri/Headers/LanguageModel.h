@@ -20,6 +20,7 @@ file for terms.
 #include <vector>
 
 #include "MJSRLearningCacheTables.h"
+#include "MJSRUserPhrasePrior.h"
 #include "OVDependency.h"
 #include "STLDependency.h"
 
@@ -489,6 +490,8 @@ class LanguageModel {
                               StringFilter* filter = 0);
 
   virtual bool addUserUnigram(const string& qstring, const string& current);
+  // Returns false when nothing could be written, e.g. the editor holds its lock.
+  virtual bool migrateUserPhrasePriors();
 
   // Match both the confirmed text and its reading. The qstring range uses the
   // existing lexicon index, including on older DBs without a current index.
@@ -1853,41 +1856,20 @@ inline double LanguageModel::cachedMaxUnigramProbability() {
   return m_maxUnigramProbability;
 }
 
-// A hand-added phrase gets the lexicon's 99th-percentile probability, not its
-// maximum. Measured on the 18,425-sentence LINE gold set (2026-10-29): at the
-// maximum (+0.001) 100 realistic adds won 98.7% of their intended spans but
-// tripled the wrong answers at other positions with the same reading (33 ->
-// 107); at p99 (-0.89) they still won 96.7%, collateral fell to 73, and total
-// exact matches were the highest of any weight tried. p90 and below lose
-// intended wins faster than they save collateral. The Phrase Editor and the
-// Windows core store write -1.0, the hand-picked approximation of the same.
 inline double LanguageModel::cachedUserPhrasePriorProbability() {
-  if (m_userPhrasePriorProbability != 0.0) return m_userPhrasePriorProbability;
-
-  // Over real words only: punctuation and marker rows sit at 0 or above.
-  int count = 0;
-  OVSQLiteStatementRef countWords = m_connection->prepare(
-      "SELECT COUNT(*) FROM %s WHERE probability < 0",
-      m_unigramTableName.c_str());
-  if (countWords) {
-    while (countWords->step() == SQLITE_ROW) count = countWords->intOfColumn(0);
-  }
-
-  if (count > 0) {
-    OVSQLiteStatementRef select = m_connection->prepare(
-        "SELECT probability FROM %s WHERE probability < 0 "
-        "ORDER BY probability DESC LIMIT 1 OFFSET %d",
-        m_unigramTableName.c_str(), count / 100);
-    if (select) {
-      while (select->step() == SQLITE_ROW)
-        m_userPhrasePriorProbability = select->doubleOfColumn(0);
-    }
-  }
-
-  // A lexicon with no real words (fixtures) falls back to the editors' value.
-  if (m_userPhrasePriorProbability >= 0.0) m_userPhrasePriorProbability = -1.0;
-
+  if (m_userPhrasePriorProbability == 0.0)
+    m_userPhrasePriorProbability = UserPhrasePriorProbability(
+        m_connection->connection(), m_unigramTableName);
   return m_userPhrasePriorProbability;
+}
+
+inline bool LanguageModel::migrateUserPhrasePriors() {
+  if (!m_cfgUseUserTable || userPhraseWritesSuspended()) return false;
+  const bool migrated =
+      MigrateUserPhrasePriors(m_connection->connection(), "userdb.user_unigrams",
+                              cachedUserPhrasePriorProbability());
+  if (migrated) flushCache();
+  return migrated;
 }
 
 inline void LanguageModel::flushCache() {

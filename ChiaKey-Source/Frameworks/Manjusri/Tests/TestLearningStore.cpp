@@ -940,6 +940,70 @@ static void TestAddedPhraseGetsNeutralPrior() {
   remove(userPath.c_str());
 }
 
+static double UserProbability(OVSQLiteConnection* db, const string& qstring) {
+  double stored = 1.0;
+  OVSQLiteStatementRef s = db->prepare(
+      "SELECT probability FROM userdb.user_unigrams WHERE qstring = %Q",
+      qstring.c_str());
+  if (s) {
+    while (s->step() == SQLITE_ROW) stored = s->doubleOfColumn(0);
+  }
+  return stored;
+}
+
+static void TestOldPhraseWeightsMigrate() {
+  const string path = TempPath("learningstore-phrase-migrate.db");
+  const string userPath = TempPath("learningstore-phrase-migrate-user.db");
+  remove(path.c_str());
+  remove(userPath.c_str());
+  OVSQLiteConnection* db = OVSQLiteConnection::Open(path);
+  assert(db);
+  db->execute("CREATE TABLE unigrams (qstring, current, probability, backoff)");
+  db->execute("CREATE TABLE bigrams (qstring, previous, current, probability)");
+  for (int i = 1; i <= 300; i++)
+    db->execute("INSERT INTO unigrams VALUES('q%d', 'w%d', -0.01 * %d, 0.0)",
+                i, i, i);
+  db->execute("ATTACH DATABASE %Q AS userdb", userPath.c_str());
+  db->execute(
+      "CREATE TABLE userdb.user_unigrams (qstring, current, probability, "
+      "backoff)");
+  // the engine's old maximum, its zero fallback, the editors' -1.0 as a number
+  // and as the text an importer bound, and one weight nobody wrote by default
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('max', 'A', 0.001, 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('zero', 'B', -1e-7, 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('ed', 'C', -1.0, 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('txt', 'D', '-1.0', 0)");
+  db->execute("INSERT INTO userdb.user_unigrams VALUES('own', 'E', -2.5, 0)");
+
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    CHECK(lm.migrateUserPhrasePriors());
+  }
+  CHECK(fabs(UserProbability(db, "max") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "zero") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "ed") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "txt") - (-0.04)) < 1e-9);
+  CHECK(fabs(UserProbability(db, "own") - (-2.5)) < 1e-9);
+
+  // the editor's lock suspends every user-DB write, this one included
+  const string lockPath = TempPath("learningstore-phrase-migrate.editing");
+  FILE* lock = fopen(lockPath.c_str(), "w");
+  if (lock) fclose(lock);
+  db->execute("UPDATE userdb.user_unigrams SET probability = 0.001 "
+              "WHERE qstring = 'max'");
+  {
+    LanguageModel lm(db, 0, true, false, false, true, true);
+    lm.setUserPhraseEditingLockPath(lockPath);
+    CHECK(!lm.migrateUserPhrasePriors());
+  }
+  CHECK(fabs(UserProbability(db, "max") - 0.001) < 1e-9);
+  remove(lockPath.c_str());
+
+  delete db;
+  remove(path.c_str());
+  remove(userPath.c_str());
+}
+
 int main(int argc, char** argv) {
   if (argc > 1) g_tempDir = argv[1];
 
@@ -964,6 +1028,7 @@ int main(int argc, char** argv) {
   TestRevertingAnOverrideDropsItsBreadth();
   TestCachedBigramsComeBackSorted();
   TestAddedPhraseGetsNeutralPrior();
+  TestOldPhraseWeightsMigrate();
 
   if (failures) {
     cerr << failures << " check(s) failed" << endl;

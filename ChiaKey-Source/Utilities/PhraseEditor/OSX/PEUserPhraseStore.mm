@@ -24,6 +24,7 @@
 #import "ChiaKeyUserPhraseCoordination.h"
 #include "MJSRExportCipher.h"
 #include "MJSRLearningCacheTables.h"
+#include "MJSRUserPhrasePrior.h"
 #include "Mandarin.h"
 
 using Formosa::Mandarin::BPMF;
@@ -134,6 +135,7 @@ static std::string PEEscapeForLike(const std::string &s) {
   sqlite3 *_userDB;
   sqlite3 *_lexDB;  // main lexicon, read-only, lazily opened, may stay NULL
   BOOL _lexTried;
+  double _userPhrasePrior;  // 0 until first read from the lexicon
 
   BOOL _sessionActive;
   id _editingActivity;
@@ -488,17 +490,26 @@ static std::string PEOrderClause(PEPhraseSortKey sortKey, BOOL ascending) {
 
 #pragma mark Mutations
 
+// The engine's value, so a phrase scores the same wherever it was added.
+- (double)_userPhrasePrior {
+  if (_userPhrasePrior == 0.0)
+    _userPhrasePrior =
+        Manjusri::UserPhrasePriorProbability([self _lexiconDB], "unigrams");
+  return _userPhrasePrior;
+}
+
 - (BOOL)_insertPhrase:(NSString *)phrase reading:(NSString *)reading {
   sqlite3_stmt *st = NULL;
   if (sqlite3_prepare_v2(_userDB,
                          "INSERT INTO user_unigrams (qstring, current, "
-                         "probability, backoff) VALUES (?, ?, -1.0, 0.0)",
+                         "probability, backoff) VALUES (?, ?, ?, 0.0)",
                          -1, &st, NULL) != SQLITE_OK) {
     return NO;
   }
   sqlite3_bind_text(st, 1, PEQstringFromComposed(PEStdString(reading)).c_str(),
                     -1, SQLITE_TRANSIENT);
   sqlite3_bind_text(st, 2, [phrase UTF8String], -1, SQLITE_TRANSIENT);
+  sqlite3_bind_double(st, 3, [self _userPhrasePrior]);
   BOOL ok = (sqlite3_step(st) == SQLITE_DONE);
   sqlite3_finalize(st);
   return ok;
@@ -1159,7 +1170,8 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
     // lexicon, and they are read as-is: user_unigrams is UNIONed straight into
     // the unigram lookup, where they compete with our own numbers. Left alone,
     // a phrase the user deliberately added years ago can land below this
-    // lexicon's median and never win. Give it what a hand-added phrase gets.
+    // lexicon's median and never win. Give it what a hand-added phrase gets:
+    // the -1.0 placeholder is moved onto the prior once the import commits.
     const char *prob =
         legacy ? "-1.0"
                : ([fields count] > 2 ? [[fields objectAtIndex:2] UTF8String]
@@ -1181,6 +1193,10 @@ static std::string PECurrentReadingOfKey(const std::string &key) {
   sqlite3_exec(_userDB, headerValid ? "COMMIT" : "ROLLBACK", NULL, NULL, NULL);
   sqlite3_finalize(insert);
   if (!headerValid) return NO;
+
+  // Backups made before the p99 prior carry the old placeholder weights.
+  Manjusri::MigrateUserPhrasePriors(_userDB, "user_unigrams",
+                                    [self _userPhrasePrior]);
 
   // Restore the learning-data blob, if present. Refusing the block for size
   // is reported; a block we cannot read is not (matches the C++ importer).
