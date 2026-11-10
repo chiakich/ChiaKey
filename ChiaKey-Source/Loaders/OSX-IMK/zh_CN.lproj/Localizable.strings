@@ -36,3 +36,4 @@
 "Log Out…" = "注销…";
 "Later" = "稍后";
 "ChiaKey could not start the logout. Choose Log Out from the Apple menu, then log back in." = "千秋输入法无法启动注销。请从 Apple 菜单选择“注销”，然后重新登录。";
+"%@ is in secure password entry mode, so macOS has locked third-party input methods. Leave the password field on that page to unlock." = "检测到 %@ 处于密码输入安全模式，系统已锁定第三方输入法。回到该页面离开密码框即可解除。";

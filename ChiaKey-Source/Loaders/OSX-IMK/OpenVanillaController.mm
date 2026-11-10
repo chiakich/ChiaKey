@@ -702,6 +702,13 @@ static NSString *OVCTextForTemporaryEnglishMode(NSEvent *event) {
   // This client is leaving; whatever activation it never got is moot.
   _activationPending = NO;
 
+  // Being pushed out by a password field is the only signal Secure Input
+  // started; there is no notification for it.
+  [(CVApplicationController *)[NSApp delegate]
+      performSelectorOnMainThread:@selector(checkSecureInputLeakSoon)
+                       withObject:nil
+                    waitUntilDone:NO];
+
   if (stillActiveContext) {
     [OpenVanillaController setActiveContext:nil sender:nil];
   }
