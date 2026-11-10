@@ -95,6 +95,14 @@ NSPoint c_lastLocation;
   NSRect rect = [a boundingRectWithSize:NSMakeSize(width, 1600)
                                 options:NSStringDrawingUsesLineFragmentOrigin];
   float height = rect.size.height;
+  // The nib's fixed height clips anything past three lines.
+  NSRect windowFrame = [[self window] frame];
+  CGFloat neededHeight = ceil(height) + 12;
+  if (neededHeight > windowFrame.size.height) {
+    windowFrame.origin.y -= neededHeight - windowFrame.size.height;
+    windowFrame.size.height = neededHeight;
+    [[self window] setFrame:windowFrame display:NO];
+  }
   float x = [_messageTextField frame].origin.x;
   float y = ([[self window] frame].size.height - height) / 2;
   NSRect newFrame = NSMakeRect(x, y, width, height);

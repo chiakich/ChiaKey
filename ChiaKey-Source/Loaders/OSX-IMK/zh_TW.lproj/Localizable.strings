@@ -36,3 +36,4 @@
 "Log Out…" = "登出…";
 "Later" = "稍後";
 "ChiaKey could not start the logout. Choose Log Out from the Apple menu, then log back in." = "千秋輸入法無法啟動登出。請從 Apple 選單選擇「登出」，然後重新登入。";
+"%@ is in secure password entry mode, so macOS has locked third-party input methods. Leave the password field on that page to unlock." = "偵測到 %@ 處於密碼輸入安全模式，系統已鎖定第三方輸入法。回到該頁面離開密碼欄位即可解除。";

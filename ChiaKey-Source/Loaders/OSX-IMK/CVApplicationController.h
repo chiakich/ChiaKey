@@ -45,6 +45,7 @@
   // See ChiaKeySecureInputWatch.h.
   ChiaKeySecureInputWatchPhase _secureInputWatchPhase;
   CVSecureInputWarningController *_secureInputWarningController;
+  ChiaKeySecureInputLeakWatch _secureInputLeakWatch;
 
   // <lithoglyph>
   OVSQLiteConnection *_userPhraseDB;
@@ -69,4 +70,5 @@
 @end
 
 @interface CVApplicationController (AppDelegate)
+- (void)checkSecureInputLeakSoon;
 @end
