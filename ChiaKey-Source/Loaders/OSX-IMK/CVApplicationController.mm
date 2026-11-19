@@ -945,6 +945,63 @@ static NSString *CVExecutablePathForPID(pid_t pid) {
   }
 }
 
+- (void)_scheduleSecureInputLeakCheckAfterDelay:(NSTimeInterval)delay {
+  [NSObject cancelPreviousPerformRequestsWithTarget:self
+                                           selector:@selector(_checkSecureInputLeak)
+                                             object:nil];
+  [self performSelector:@selector(_checkSecureInputLeak)
+             withObject:nil
+             afterDelay:delay];
+}
+
+- (void)checkSecureInputLeakSoon {
+  [self _scheduleSecureInputLeakCheckAfterDelay:
+            kChiaKeySecureInputLeakFirstCheckDelay];
+}
+
+- (void)_notifySecureInputLeak {
+  NSString *appName = [[NSRunningApplication
+      runningApplicationWithProcessIdentifier:_secureInputLeakWatch.originPID]
+      localizedName];
+  // No name means the app has quit, which releases the hold anyway.
+  if (![appName length]) return;
+  [CVNotifyController
+      notifyAndStay:[NSString
+                        stringWithFormat:
+                            LFLSTR(@"%@ is in secure password entry mode, so "
+                                   @"macOS has locked third-party input "
+                                   @"methods. Leave the password field on "
+                                   @"that page to unlock."),
+                            appName]];
+}
+
+// Polls only while a hold is live, so an idle session pays nothing.
+- (void)_checkSecureInputLeak {
+  NSDictionary *session =
+      [(NSDictionary *)CGSessionCopyCurrentDictionary() autorelease];
+  ChiaKeySecureInputSession state =
+      ChiaKeySecureInputSessionFromDictionary(session);
+  NSString *holderPath =
+      state.holderPID > 0 ? CVExecutablePathForPID(state.holderPID) : nil;
+  pid_t frontPID =
+      [[[NSWorkspace sharedWorkspace] frontmostApplication] processIdentifier];
+
+  // Key events themselves are hidden during a hold; only their age is not.
+  NSTimeInterval lastKeyDownAt =
+      [[NSProcessInfo processInfo] systemUptime] -
+      CGEventSourceSecondsSinceLastEventType(kCGEventSourceStateHIDSystemState,
+                                             kCGEventKeyDown);
+
+  ChiaKeySecureInputLeakAction action = ChiaKeySecureInputLeakAdvance(
+      &_secureInputLeakWatch,
+      ChiaKeySecureInputIsHeldByApp(state, holderPath), frontPID,
+      lastKeyDownAt);
+  if (action == ChiaKeySecureInputLeakStop) return;
+  if (action == ChiaKeySecureInputLeakNotify) [self _notifySecureInputLeak];
+  [self _scheduleSecureInputLeakCheckAfterDelay:
+            kChiaKeySecureInputLeakPollInterval];
+}
+
 - (void)_sessionDidUnlock:(NSNotification *)notification {
   ChiaKeySecureInputWatchRestart(&_secureInputWatchPhase);
   [self _scheduleSecureInputCheckAfterDelay:kChiaKeySecureInputFirstCheckDelay];

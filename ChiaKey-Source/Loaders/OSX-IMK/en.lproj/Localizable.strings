@@ -36,3 +36,4 @@
 "Log Out…" = "Log Out…";
 "Later" = "Later";
 "ChiaKey could not start the logout. Choose Log Out from the Apple menu, then log back in." = "ChiaKey could not start the logout. Choose Log Out from the Apple menu, then log back in.";
+"%@ is in secure password entry mode, so macOS has locked third-party input methods. Leave the password field on that page to unlock." = "%@ is in secure password entry mode, so macOS has locked third-party input methods. Leave the password field on that page to unlock.";
