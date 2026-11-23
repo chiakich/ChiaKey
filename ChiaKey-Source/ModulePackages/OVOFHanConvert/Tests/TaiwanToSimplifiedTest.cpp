@@ -78,6 +78,7 @@ int ChiaKeyCases() {
   Expect("hunhe", ConvertTaiwanToSimplified("混合著水"), "混合着水");
   Expect("lunzhu", ConvertTaiwanToSimplified("討論著"), "讨论着");
   Expect("pao", ConvertTaiwanToSimplified("砲兵"), "炮兵");
+  Expect("buke zi ji", ConvertTaiwanToSimplified("不可貲計"), "不可赀计");
   Expect("ni", ConvertTaiwanToSimplified("妳好"), "你好");
   Expect("ascii", ConvertTaiwanToSimplified("abc 123\n"), "abc 123\n");
   Expect("supplementary", ConvertTaiwanToSimplified("\xF0\xA0\x80\x80\xE8\xAA\xAA"),

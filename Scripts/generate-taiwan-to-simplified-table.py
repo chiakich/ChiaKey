@@ -17,6 +17,10 @@ REVERSE_PREFER = "# @reverse-prefer:"
 OVERRIDABLE = ("TWVariantsRevPhrases", "TSPhrases", "TSCharacters")
 # MSVC rejects string literals over 64 KiB; offsets are also stored as uint16_t.
 POOL_LIMIT = 65535
+# Entry lengths are stored as uint8_t.
+ENTRY_LIMIT = 255
+# Phrases that keep a character TSCharacters always simplifies, on purpose.
+KEEPS_TRADITIONAL = {"八濛山"}
 
 
 def entries(path):
@@ -88,11 +92,25 @@ def merge(phrases, characters):
     return {k: v for k, v in merged.items() if len(k) > 1 or k != v}
 
 
-def check(tables, overrides, variants, simplify, errors):
+def check(tables, overrides, variants, simplify, errors, upstream):
     for name, table in tables.items():
         for key, value in table.items():
             if len(key) != len(value):
                 errors.append(f"{name}: {key} -> {value} changes the character count")
+            if max(len(key.encode("utf-8")), len(value.encode("utf-8"))) > ENTRY_LIMIT:
+                errors.append(f"{name}: {key} -> {value} exceeds {ENTRY_LIMIT} UTF-8 bytes")
+    # A phrase value is final, so a character it leaves unsimplified stays
+    # Traditional (OpenCC 1.4.2 maps 不可貲計 to 不可赀計).
+    characters = {}
+    for _, key, values in entries(DATA / "TSCharacters.txt"):
+        characters.setdefault(key, values)
+    for key, value in tables["TSPhrases"].items():
+        if upstream or key in KEEPS_TRADITIONAL:
+            continue
+        for character in value:
+            options = characters.get(character, [character])
+            if len(options) == 1 and options[0] != character:
+                errors.append(f"TSPhrases: {key} -> {value} leaves Traditional {character}")
     st = read_dict("STCharacters")
     st_values = {v for _, _, values in entries(DATA / "STCharacters.txt") for v in values}
     traditional_only = st_values - set(st)
@@ -122,6 +140,11 @@ class Pool:
 
 
 def literal(character):
+    if character in '"\\?':
+        return "\\" + character
+    # Octal escapes stop after three digits, unlike \x.
+    if ord(character) < 0x20 or ord(character) == 0x7F:
+        return "\\%03o" % ord(character)
     # Compatibility ideographs look identical to their unified forms and any
     # NFC pass over the source would silently rewrite them.
     if unicodedata.normalize("NFC", character) != character:
@@ -156,18 +179,18 @@ def emit_table(name, table):
     return "\n".join(lines)
 
 
-def generate(overrides_path):
+def generate(overrides_path, upstream=False):
     errors = []
     tables = {
         "TWVariantsRevPhrases": read_dict("TWVariantsRevPhrases"),
         "TSPhrases": read_dict("TSPhrases"),
         "TSCharacters": read_dict("TSCharacters"),
     }
-    overrides = apply_overrides(tables, overrides_path, errors)
+    overrides = [] if upstream else apply_overrides(tables, overrides_path, errors)
     normalization = {k: v for k, v in read_dict("CJK_Compatibility_Ideographs").items() if k != v}
     variants = merge(tables["TWVariantsRevPhrases"], reverse_variants("TWVariants"))
     simplify = merge(tables["TSPhrases"], tables["TSCharacters"])
-    check(dict(tables, Normalization=normalization), overrides, variants, simplify, errors)
+    check(dict(tables, Normalization=normalization), overrides, variants, simplify, errors, upstream)
     if errors:
         raise SystemExit("\n".join(errors))
     # Segmentation needs every TSPhrases key, including identity entries.
@@ -193,8 +216,10 @@ def main():
     parser.add_argument("--check", action="store_true", help="fail if the table is stale")
     parser.add_argument("--overrides", type=pathlib.Path, default=OVERRIDES)
     parser.add_argument("--output", type=pathlib.Path, default=OUTPUT)
+    parser.add_argument("--upstream-only", action="store_true",
+                        help="OpenCC data alone, for its own test cases")
     args = parser.parse_args()
-    text = generate(args.overrides)
+    text = generate(args.overrides, args.upstream_only)
     if args.check:
         if not args.output.exists() or args.output.read_text(encoding="utf-8") != text:
             print(f"{args.output} is stale; rerun {pathlib.Path(__file__).name}", file=sys.stderr)

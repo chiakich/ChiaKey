@@ -27,6 +27,9 @@ TWVariantsRevPhrases	迎合著	迎合着
 TWVariantsRevPhrases	湊合著	湊合着
 TWVariantsRevPhrases	彰顯著	彰顯着
 
+# OpenCC 1.4.2 leaves 計 unsimplified in this phrase.
+TSPhrases	不可貲計	不可赀计
+
 # Variants OpenCC keeps as-is but mainland text writes in the standard form.
 # Only pairs from the first batch of variant consolidation (第一批異體字整理表)
 # that ChiaKey's lexicon uses; the old VXHC table's other one-off mappings were

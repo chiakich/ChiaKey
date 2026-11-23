@@ -839,7 +839,7 @@ inline const string PVLoaderContext::residueComposingTextBeforeDeactivation() {
   // get out all remaining composing buffer text and pass it thru the AFs and
   // OFs
   if (m_composingText->composedText().size()) {
-    m_composingText->commit();
+    m_composingText->commitWordSegments();
     committedTextSegments = m_composingText->composedCommittedTextSegments();
 
     // cerr << "new segs: " << OVStringHelper::Join(committedTextSegments) <<

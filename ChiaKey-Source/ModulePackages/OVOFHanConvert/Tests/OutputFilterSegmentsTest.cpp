@@ -3,6 +3,7 @@
 
 #include "OVOFFullWidthCharacter.h"
 #include "OVOFHanConvert.h"
+#include "PVTextBuffer.h"
 
 using namespace OpenVanilla;
 
@@ -16,6 +17,19 @@ void Expect(const std::string& name, const std::vector<std::string>& actual,
   ++failures;
   std::cerr << "FAIL " << name << ": got [" << OVStringHelper::Join(actual, "|")
             << "] expected [" << OVStringHelper::Join(expected, "|") << "]\n";
+}
+
+std::vector<std::string> CommitWords(const std::string& text,
+                                     const std::vector<OVTextBuffer::RangePair>& words) {
+  PVTextBuffer buffer;
+  buffer.setText(text);
+  buffer.setWordSegments(words);
+  buffer.commitWordSegments();
+  if (!buffer.isEmpty() || !buffer.isCommitted()) {
+    ++failures;
+    std::cerr << "FAIL commit state for " << text << "\n";
+  }
+  return buffer.composedCommittedTextSegments();
 }
 
 // Mirrors PVLoaderContext's output filter loop.
@@ -41,6 +55,13 @@ int main() {
          {"Ａ　", "着", "名为"});
   Expect("simplify then full width", Run({simplify.get(), fullWidth.get()}, words),
          {"生活", "着", "名为"});
+  typedef OVTextBuffer::RangePair Range;
+  Expect("commit words", CommitWords("生活著名為", {Range(0, 2), Range(2, 1), Range(3, 2)}), words);
+  Expect("commit gaps", CommitWords("生活著名為", {Range(2, 1)}), {"生活", "著", "名為"});
+  Expect("commit unmarked", CommitWords("生活著名為", {}), {"生活著名為"});
+  Expect("commit overlapping", CommitWords("生活著名為", {Range(0, 3), Range(2, 3)}), {"生活著名為"});
+  Expect("commit past end", CommitWords("生活", {Range(0, 5)}), {"生活"});
+
   if (simplify->filterText("生活著名為", nullptr) != "生活著名为") {
     ++failures;
     std::cerr << "FAIL flat filterText\n";

@@ -34,7 +34,8 @@
 namespace OpenVanilla {
 const unsigned int OVFrameworkInfo::c_MajorVersion = 1;
 const unsigned int OVFrameworkInfo::c_MinorVersion = 5;
-const unsigned int OVFrameworkInfo::c_TinyVersion = 0;
+// Bumped for OVEventHandlingContext::filterTextSegments, a new vtable slot.
+const unsigned int OVFrameworkInfo::c_TinyVersion = 1;
 
 #ifndef OPENVANILLA_SVN_VERSION
 const unsigned int OVFrameworkInfo::c_FrameworkBuildNumber = 0;
