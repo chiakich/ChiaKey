@@ -64,6 +64,16 @@ const string OVOFFullWidthCharacterContext::filterText(
   return OVUTF8::FromUTF16(wInputText);
 }
 
+// Works per character, so it keeps the words apart for later filters.
+const vector<string> OVOFFullWidthCharacterContext::filterTextSegments(
+    const vector<string>& segments, OVLoaderService* loaderService) {
+  vector<string> output;
+  for (size_t index = 0; index < segments.size(); ++index) {
+    output.push_back(filterText(segments[index], loaderService));
+  }
+  return output;
+}
+
 const string OVOFFullWidthCharacter::identifier() const {
   return OVOFFULLWIDTHCHARACTER_IDENTIFIER;
 }

@@ -1,0 +1,111 @@
+# ChiaKey changes on top of OpenCC's tw2s dictionaries.
+# Format: dictionary<TAB>key<TAB>value
+# An entry adds to or replaces the key in that OpenCC dictionary. Keys and
+# values must have the same number of characters.
+
+# 著 read zhù (writing, eminence) must stay 著. OpenCC 1.4.2 protects 著作 and
+# 著名 but not these. Left out on purpose because the same two characters are
+# common as verb + 著 particle: 論著 (討論著), 譯著 (翻譯著), 編著 (編著辮子),
+# 著有 (看著有點), 親著 (母親著急), 著績.
+TWVariantsRevPhrases	原著	原著
+TWVariantsRevPhrases	土著	土著
+TWVariantsRevPhrases	專著	專著
+TWVariantsRevPhrases	拙著	拙著
+TWVariantsRevPhrases	撰著	撰著
+TWVariantsRevPhrases	炳著	炳著
+TWVariantsRevPhrases	遺著	遺著
+TWVariantsRevPhrases	卓著	卓著
+TWVariantsRevPhrases	見微知著	見微知著
+TWVariantsRevPhrases	視微知著	視微知著
+TWVariantsRevPhrases	彰明較著	彰明較著
+TWVariantsRevPhrases	寒梅著花未	寒梅著花未
+
+# Lexicon words where OpenCC's 合著 / 顯著 exceptions swallow a 著 particle.
+TWVariantsRevPhrases	混合著	混合着
+TWVariantsRevPhrases	配合著	配合着
+TWVariantsRevPhrases	迎合著	迎合着
+TWVariantsRevPhrases	湊合著	湊合着
+TWVariantsRevPhrases	彰顯著	彰顯着
+
+# Variants OpenCC keeps as-is but mainland text writes in the standard form.
+# Only pairs from the first batch of variant consolidation (第一批異體字整理表)
+# that ChiaKey's lexicon uses; the old VXHC table's other one-off mappings were
+# often wrong (惇→敦, 槃→盘, 蜋→螓) and are not carried over.
+TSCharacters	砲	炮
+TSCharacters	鎗	枪
+TSCharacters	妳	你
+TSCharacters	瞇	眯
+TSCharacters	痲	麻
+TSCharacters	姪	侄
+TSCharacters	伕	夫
+TSCharacters	燄	焰
+TSCharacters	暱	昵
+TSCharacters	籐	藤
+TSCharacters	揹	背
+TSCharacters	瑯	琅
+TSCharacters	隄	堤
+TSCharacters	荳	豆
+TSCharacters	牠	它
+TSCharacters	耡	锄
+TSCharacters	斲	斫
+TSCharacters	唚	吣
+TSCharacters	搥	捶
+TSCharacters	銲	焊
+TSCharacters	倣	仿
+TSCharacters	搾	榨
+TSCharacters	摀	捂
+TSCharacters	珮	佩
+TSCharacters	煖	暖
+TSCharacters	歛	敛
+TSCharacters	礡	礴
+TSCharacters	櫺	棂
+TSCharacters	賸	剩
+TSCharacters	餽	馈
+TSCharacters	坵	丘
+TSCharacters	撢	掸
+TSCharacters	毬	球
+TSCharacters	觔	筋
+TSCharacters	肐	胳
+TSCharacters	傚	效
+TSCharacters	勗	勖
+TSCharacters	囓	啮
+TSCharacters	慴	慑
+TSCharacters	糢	模
+TSCharacters	踡	蜷
+TSCharacters	遯	遁
+TSCharacters	鼇	鳌
+TSCharacters	慇	殷
+TSCharacters	懃	勤
+TSCharacters	粧	妆
+TSCharacters	梱	捆
+TSCharacters	啣	衔
+TSCharacters	嬝	袅
+TSCharacters	跼	局
+TSCharacters	阨	厄
+TSCharacters	燐	磷
+TSCharacters	搨	拓
+TSCharacters	遝	沓
+TSCharacters	墑	墒
+TSCharacters	玡	琊
+TSCharacters	鑤	刨
+TSCharacters	寘	置
+TSCharacters	玆	兹
+TSCharacters	咷	啕
+TSCharacters	絏	绁
+TSCharacters	褵	缡
+TSCharacters	螘	蚁
+TSCharacters	衖	弄
+TSCharacters	觝	抵
+TSCharacters	諠	喧
+TSCharacters	蹧	糟
+TSCharacters	骻	胯
+TSCharacters	髣	仿
+TSCharacters	蜋	螂
+TSCharacters	叡	睿
+TSCharacters	毘	毗
+TSCharacters	雰	氛
+TSCharacters	勦	剿
+TSCharacters	拑	钳
+TSCharacters	阬	坑
+TSCharacters	迆	迤
+TSCharacters	燿	耀

@@ -115,7 +115,7 @@ void TestOutputConversion() {
           "fallback preserves engine selection and commits");
     const std::wstring traditional = L"千秋輸入法，臺灣測試繁體龍門";
     Check(FilterCommittedText(traditional, true) == L"千秋输入法，台湾测试繁体龙门",
-          "simplified output uses the Mac conversion table");
+          "simplified output uses the Mac converter");
     Check(FilterCommittedText(traditional, false) == traditional,
           "traditional output preserves the original text");
     Check(FilterCommittedText(L"ABC 123 ㄅ，。😀\U00020000測試", true) ==
@@ -124,6 +124,12 @@ void TestOutputConversion() {
     Check(FilterCommittedText(L"", true).empty(), "empty output remains empty");
     Check(FilterCommittedText(L"汉语输入", true) == L"汉语输入",
           "already simplified text remains simplified");
+    Check(FilterCommittedText(L"頭髮著作原著混合著", true) == L"头发著作原著混合着",
+          "simplified output converts phrases, not just characters");
+    const std::wstring loneSurrogates = std::wstring(L"臺") + L'\xD800' + L"灣" + L'\xDC00';
+    Check(FilterCommittedText(loneSurrogates, true) ==
+              std::wstring(L"台") + L'\xD800' + L"湾" + L'\xDC00',
+          "conversion keeps lone surrogates in place");
     ChiaKey::EngineState state;
     state.composingText = "繁體";
     state.committedText = "繁體";

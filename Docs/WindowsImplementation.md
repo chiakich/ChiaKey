@@ -65,7 +65,8 @@ TIP profile 的 `badge.ico` 則由 `qian.svg` 產生，
 
 「一般設定」與語言列右鍵選單提供「簡體輸出」，預設關閉，選項保存於
 `Preferences/Windows.plist` 的 `SimplifiedOutput`。送出文字時沿用 Mac
-`OVOFHanConvert-TC2SC` 的字元表；組字、候選與學習資料維持原始繁體。
+`OVOFHanConvert-TC2SC` 的詞級轉換（OpenCC `tw2s` 字典加上
+`TaiwanToSimplifiedOverrides.txt`）；組字、候選與學習資料維持原始繁體。
 英文、符號、emoji 與 UTF-16 surrogate pair 原樣保留；切換中英、焦點移動
 和宿主結束組字時也會套用輸出轉換。
 

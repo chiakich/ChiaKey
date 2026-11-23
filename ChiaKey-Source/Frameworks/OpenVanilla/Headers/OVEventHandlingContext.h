@@ -114,6 +114,14 @@ class OVEventHandlingContext : public OVBase {
                                   OVLoaderService* loaderService) {
     return inputText;
   }
+
+  // Filters that depend on word boundaries override this; the default merges
+  // the words, so it returns a single segment.
+  virtual const vector<string> filterTextSegments(
+      const vector<string>& segments, OVLoaderService* loaderService) {
+    return vector<string>(
+        1, filterText(OVStringHelper::Join(segments), loaderService));
+  }
 };
 };  // namespace OpenVanilla
 
