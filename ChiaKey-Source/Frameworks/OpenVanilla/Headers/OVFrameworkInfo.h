@@ -67,9 +67,12 @@ class OVFrameworkInfo {
   }
 
  protected:
-  static const unsigned int c_MajorVersion;
-  static const unsigned int c_MinorVersion;
-  static const unsigned int c_TinyVersion;
+  // Compiled into each module so a dynamically loaded package reports the
+  // headers it was built with, not the host framework's version.
+  // Tiny version bumped for OVEventHandlingContext::filterTextSegments.
+  static constexpr unsigned int c_MajorVersion = 1;
+  static constexpr unsigned int c_MinorVersion = 5;
+  static constexpr unsigned int c_TinyVersion = 1;
   static const unsigned int c_FrameworkBuildNumber;
 };
 };  // namespace OpenVanilla

@@ -25,3 +25,5 @@ expat.
 OpenSSL.
 
 UnitTest++.
+
+OpenCC dictionaries (c) Carbo Kuo and contributors, Apache License 2.0.

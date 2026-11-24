@@ -279,7 +279,7 @@
 		6AB5B3280D5C8EDE0040CD26 /* OVOFHanConvert.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B3230D5C8EDE0040CD26 /* OVOFHanConvert.h */; };
 		6AB5B3290D5C8EDE0040CD26 /* OVOFHanConvertPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B3240D5C8EDE0040CD26 /* OVOFHanConvertPackage.h */; };
 		6AB5B32A0D5C8EDE0040CD26 /* VXHCSC2TCTable.c in Sources */ = {isa = PBXBuildFile; fileRef = 6AB5B3250D5C8EDE0040CD26 /* VXHCSC2TCTable.c */; };
-		6AB5B32B0D5C8EDE0040CD26 /* VXHCTC2SCTable.c in Sources */ = {isa = PBXBuildFile; fileRef = 6AB5B3260D5C8EDE0040CD26 /* VXHCTC2SCTable.c */; };
+		6AB5B32B0D5C8EDE0040CD26 /* TaiwanToSimplified.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AB5B3260D5C8EDE0040CD26 /* TaiwanToSimplified.cpp */; };
 		6AB5B3300D5C8EFE0040CD26 /* OVOFFullWidthCharacter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AB5B32D0D5C8EFE0040CD26 /* OVOFFullWidthCharacter.cpp */; };
 		6AB5B3310D5C8EFE0040CD26 /* OVOFFullWidthCharacter.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B32E0D5C8EFE0040CD26 /* OVOFFullWidthCharacter.h */; };
 		6AB5B3320D5C8EFE0040CD26 /* OVOFFullWidthCharacterPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AB5B32F0D5C8EFE0040CD26 /* OVOFFullWidthCharacterPackage.h */; };
@@ -1050,7 +1050,7 @@
 		6AB5B3230D5C8EDE0040CD26 /* OVOFHanConvert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVOFHanConvert.h; path = ModulePackages/OVOFHanConvert/OVOFHanConvert.h; sourceTree = "<group>"; };
 		6AB5B3240D5C8EDE0040CD26 /* OVOFHanConvertPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVOFHanConvertPackage.h; path = ModulePackages/OVOFHanConvert/OVOFHanConvertPackage.h; sourceTree = "<group>"; };
 		6AB5B3250D5C8EDE0040CD26 /* VXHCSC2TCTable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = VXHCSC2TCTable.c; path = ModulePackages/OVOFHanConvert/VXHCSC2TCTable.c; sourceTree = "<group>"; };
-		6AB5B3260D5C8EDE0040CD26 /* VXHCTC2SCTable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = VXHCTC2SCTable.c; path = ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c; sourceTree = "<group>"; };
+		6AB5B3260D5C8EDE0040CD26 /* TaiwanToSimplified.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TaiwanToSimplified.cpp; path = ModulePackages/OVOFHanConvert/TaiwanToSimplified.cpp; sourceTree = "<group>"; };
 		6AB5B32D0D5C8EFE0040CD26 /* OVOFFullWidthCharacter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OVOFFullWidthCharacter.cpp; path = ModulePackages/OVOFFullWidthCharacter/OVOFFullWidthCharacter.cpp; sourceTree = "<group>"; };
 		6AB5B32E0D5C8EFE0040CD26 /* OVOFFullWidthCharacter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVOFFullWidthCharacter.h; path = ModulePackages/OVOFFullWidthCharacter/OVOFFullWidthCharacter.h; sourceTree = "<group>"; };
 		6AB5B32F0D5C8EFE0040CD26 /* OVOFFullWidthCharacterPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OVOFFullWidthCharacterPackage.h; path = ModulePackages/OVOFFullWidthCharacter/OVOFFullWidthCharacterPackage.h; sourceTree = "<group>"; };
@@ -1986,7 +1986,7 @@
 				6AB5B3230D5C8EDE0040CD26 /* OVOFHanConvert.h */,
 				6AB5B3240D5C8EDE0040CD26 /* OVOFHanConvertPackage.h */,
 				6AB5B3250D5C8EDE0040CD26 /* VXHCSC2TCTable.c */,
-				6AB5B3260D5C8EDE0040CD26 /* VXHCTC2SCTable.c */,
+				6AB5B3260D5C8EDE0040CD26 /* TaiwanToSimplified.cpp */,
 			);
 			name = HanConvertPackage;
 			sourceTree = "<group>";
@@ -3715,7 +3715,7 @@
 				6AB5B31E0D5C8E920040CD26 /* OVIMTraditionalMandarin.cpp in Sources */,
 				6AB5B3270D5C8EDE0040CD26 /* OVOFHanConvert.cpp in Sources */,
 				6AB5B32A0D5C8EDE0040CD26 /* VXHCSC2TCTable.c in Sources */,
-				6AB5B32B0D5C8EDE0040CD26 /* VXHCTC2SCTable.c in Sources */,
+				6AB5B32B0D5C8EDE0040CD26 /* TaiwanToSimplified.cpp in Sources */,
 				6AB5B3300D5C8EFE0040CD26 /* OVOFFullWidthCharacter.cpp in Sources */,
 				6A39CD9A0D5CCFB100E40413 /* OVIMGenericPackage.cpp in Sources */,
 				6AEBCFE60D5D7CD900ABF19D /* OVAFBopomofoCorrection.cpp in Sources */,

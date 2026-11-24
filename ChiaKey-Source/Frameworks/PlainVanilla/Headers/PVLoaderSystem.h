@@ -66,6 +66,7 @@ class PVLoaderContext : public OVBase {
   // through the sandwich -- through the activated output filters, so that
   // filters such as the full-width one still apply to it.
   virtual const string applyOutputFilters(const string& text);
+  const string applyOutputFilters(const vector<string>& segments);
 
   // called by the platform-dependent IME code
   virtual bool shouldUpdateCandidate();
@@ -838,7 +839,7 @@ inline const string PVLoaderContext::residueComposingTextBeforeDeactivation() {
   // get out all remaining composing buffer text and pass it thru the AFs and
   // OFs
   if (m_composingText->composedText().size()) {
-    m_composingText->commit();
+    m_composingText->commitWordSegments();
     committedTextSegments = m_composingText->composedCommittedTextSegments();
 
     // cerr << "new segs: " << OVStringHelper::Join(committedTextSegments) <<
@@ -862,30 +863,32 @@ inline const string PVLoaderContext::residueComposingTextBeforeDeactivation() {
     }
   }
 
-  string committedText = OVStringHelper::Join(committedTextSegments);
-  // cerr << "new text: " << committedText << endl;
-  committedText = applyOutputFilters(committedText);
-  // cerr << "new text: " << committedText << endl;
-
-  return committedText;
+  return applyOutputFilters(committedTextSegments);
 }
 
 inline const string PVLoaderContext::applyOutputFilters(const string& text) {
+  return applyOutputFilters(vector<string>(1, text));
+}
+
+inline const string PVLoaderContext::applyOutputFilters(
+    const vector<string>& segments) {
+  string text = OVStringHelper::Join(segments);
   if (!text.length()) return text;
   if (!shouldEnter(m_loader ? m_loader->loaderService() : 0, true)) return text;
 
-  string filteredText = text;
+  // Keep the IME's words apart so phrase-level filters never match across them.
+  vector<string> filteredSegments = segments;
   for (vector<OVEventHandlingContext*>::iterator iter =
            m_sandwich->outputFilters.begin();
        iter != m_sandwich->outputFilters.end(); ++iter) {
-    if (!filteredText.length()) break;
+    if (!text.length()) break;
 
-    string newText =
-        (*iter)->filterText(filteredText, m_loader->loaderService());
-    if (newText != filteredText) filteredText = newText;
+    filteredSegments =
+        (*iter)->filterTextSegments(filteredSegments, m_loader->loaderService());
+    text = OVStringHelper::Join(filteredSegments);
   }
 
-  return filteredText;
+  return text;
 }
 
 inline bool PVLoaderContext::wantsShiftRelease() {
@@ -1066,12 +1069,19 @@ inline bool PVLoaderContext::handleKeyEvent(OVKey* key) {
       m_composingText->setComposedCommittedText(committedText);
     }
 
+    // Around filters may rewrite the text; fall back to one segment if the
+    // words no longer add up to it.
+    vector<string> filteredSegments =
+        OVStringHelper::Join(committedTextSegments) == committedText
+            ? committedTextSegments
+            : vector<string>(1, committedText);
     for (iter = m_sandwich->outputFilters.begin();
          iter != m_sandwich->outputFilters.end(); ++iter) {
       if (!committedText.length()) break;
 
-      string newText = (*iter)->filterText(committedText, loaderService);
-      if (newText != committedText) committedText = newText;
+      filteredSegments =
+          (*iter)->filterTextSegments(filteredSegments, loaderService);
+      committedText = OVStringHelper::Join(filteredSegments);
     }
 
     m_composingText->setComposedCommittedText(committedText);

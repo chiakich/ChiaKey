@@ -78,6 +78,7 @@ Source: "{#X86Dir}\ChiaKeyStateHost.exe"; DestDir: "{app}\{#Version}"; Flags: ig
 Source: "{#X64Dir}\WebView2-LICENSE.txt"; DestDir: "{app}\{#Version}"; Flags: ignoreversion
 Source: "{#X64Dir}\phrase-editor.ico"; DestDir: "{app}\{#Version}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}\{#Version}"; DestName: "LICENSE.txt"; Flags: ignoreversion
+Source: "..\..\ChiaKey-Source\ModulePackages\OVOFHanConvert\OpenCC\LICENSE"; DestDir: "{app}\{#Version}"; DestName: "OpenCC-LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\千秋輸入法\千秋輸入法設定"; Filename: "{app}\{#Version}\ChiaKeySettings.exe"; AppUserModelID: "ChiaKey.Settings"

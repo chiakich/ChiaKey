@@ -46,6 +46,8 @@ class OVOFTC2SCContext : public OVEventHandlingContext {
  public:
   virtual const string filterText(const string& inputText,
                                   OVLoaderService* loaderService);
+  virtual const vector<string> filterTextSegments(
+      const vector<string>& segments, OVLoaderService* loaderService);
 };
 
 class OVOFSC2TCContext : public OVEventHandlingContext {

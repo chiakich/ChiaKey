@@ -13,6 +13,7 @@ EXTERNAL_LIBRARY_VERSIONS_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/VER
 UNITTEST_COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/UnitTest++/COPYING"
 EXPAT_COPYING_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/expat/COPYING"
 ZLIB_README_FILE="${ROOT_DIR}/ChiaKey-Source/ExternalLibraries/zlib/README"
+OPENCC_LICENSE_FILE="${ROOT_DIR}/ChiaKey-Source/ModulePackages/OVOFHanConvert/OpenCC/LICENSE"
 LEXICON_INSTALL_SCRIPT="${ROOT_DIR}/Scripts/install-lexicon-release.sh"
 LOCAL_LEXICON_BUNDLE_SCRIPT="${ROOT_DIR}/Scripts/bundle-local-lexicon.sh"
 ACTIVE_LEXICON_DB="${HOME}/Library/Application Support/ChiaKey/Lexicons/active/ChiaKeySource.db"
@@ -205,7 +206,7 @@ copy_legal_notices() {
 
   run /bin/rm -rf "${legal_dir}"
   run /bin/mkdir -p "${legal_dir}" "${external_dir}/UnitTest++" \
-    "${external_dir}/expat" "${external_dir}/zlib"
+    "${external_dir}/expat" "${external_dir}/zlib" "${external_dir}/OpenCC"
 
   run /bin/cp "${LICENSE_FILE}" "${legal_dir}/LICENSE"
   run /bin/cp "${COPYING_FILE}" "${legal_dir}/ChiaKey-COPYING"
@@ -215,6 +216,7 @@ copy_legal_notices() {
   run /bin/cp "${UNITTEST_COPYING_FILE}" "${external_dir}/UnitTest++/COPYING"
   run /bin/cp "${EXPAT_COPYING_FILE}" "${external_dir}/expat/COPYING"
   run /bin/cp "${ZLIB_README_FILE}" "${external_dir}/zlib/README"
+  run /bin/cp "${OPENCC_LICENSE_FILE}" "${external_dir}/OpenCC/LICENSE"
 }
 
 run_bundle_local_lexicon() {

@@ -64,7 +64,7 @@ namespace ChiaKey.Settings
             }
             if (Normalize(target) == "zh-CN")
             {
-                StringBuilder output = new StringBuilder(source.Length + 1);
+                StringBuilder output = new StringBuilder(source.Length * 2 + 1);
                 if (ChiaKeySimplifyText(source, output, output.Capacity) > 0) return output.ToString();
             }
             return source;

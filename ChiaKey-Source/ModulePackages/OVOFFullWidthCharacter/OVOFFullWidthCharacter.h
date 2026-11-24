@@ -44,6 +44,8 @@ using namespace std;
 
 class OVOFFullWidthCharacterContext : public OVEventHandlingContext {
  public:
+  virtual const vector<string> filterTextSegments(
+      const vector<string>& segments, OVLoaderService* loaderService);
   virtual const string filterText(const string& inputText,
                                   OVLoaderService* loaderService);
 };

@@ -61,6 +61,8 @@ class PVTextBuffer : public OVTextBuffer {
 
   virtual void commit();
   virtual void commitAsTextSegment();
+  // Like commit(), but each marked word becomes its own committed segment.
+  void commitWordSegments();
 
   virtual void commit(const string& text);
   virtual void commitAsTextSegment(const string& text);
@@ -175,6 +177,8 @@ inline void PVTextBuffer::setText(const string& text) {
   if (text != composedText()) {
     m_codePoints = OVUTF8Helper::SplitStringByCodePoint(text);
     m_cursorPosition = m_codePoints.size();
+    // Ranges set for the old text no longer describe the new one.
+    m_wordSegments.clear();
     m_stateChanged = true;
   }
 }
@@ -213,6 +217,46 @@ inline void PVTextBuffer::commitAsTextSegment() {
   string composedTextString = composedText();
   m_composedCommittedText += composedTextString;
   m_composedCommittedTextSegments.push_back(composedTextString);
+  string tmp = m_toolTip;
+  clear();
+  m_toolTip = tmp;
+  m_stateChanged = true;
+  m_isCommitted = true;
+}
+
+inline void PVTextBuffer::commitWordSegments() {
+  if (m_wordSegments.empty()) {
+    commit();
+    return;
+  }
+  vector<string> words;
+  size_t end = 0;
+  for (vector<OVTextBuffer::RangePair>::const_iterator iter =
+           m_wordSegments.begin();
+       iter != m_wordSegments.end(); ++iter) {
+    if (iter->first < end || iter->second == 0 ||
+        iter->first + iter->second > m_codePoints.size()) {
+      commit();
+      return;
+    }
+    if (iter->first > end) {
+      words.push_back(OVUTF8Helper::CombineCodePoints(vector<string>(
+          m_codePoints.begin() + end, m_codePoints.begin() + iter->first)));
+    }
+    end = iter->first + iter->second;
+    words.push_back(OVUTF8Helper::CombineCodePoints(vector<string>(
+        m_codePoints.begin() + iter->first, m_codePoints.begin() + end)));
+  }
+  if (end < m_codePoints.size()) {
+    words.push_back(OVUTF8Helper::CombineCodePoints(
+        vector<string>(m_codePoints.begin() + end, m_codePoints.end())));
+  }
+  for (vector<string>::const_iterator iter = words.begin();
+       iter != words.end(); ++iter) {
+    m_composedCommittedText += *iter;
+    m_composedCommittedTextSegments.push_back(*iter);
+  }
+
   string tmp = m_toolTip;
   clear();
   m_toolTip = tmp;

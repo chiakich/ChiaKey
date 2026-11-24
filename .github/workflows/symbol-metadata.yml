@@ -31,3 +31,5 @@ jobs:
         run: Scripts/test-secure-input-watch.sh
       - name: Check new and legacy lexicon metadata and button layout
         run: Scripts/test-symbol-metadata.sh
+      - name: Check Traditional to Simplified conversion
+        run: Scripts/test-taiwan-to-simplified.sh

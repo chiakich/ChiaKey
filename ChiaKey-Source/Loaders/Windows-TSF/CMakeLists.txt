@@ -28,10 +28,11 @@ add_library(chiakey_tsf_engine STATIC
     FrontendBehavior.cpp
     SharedState.cpp
     OutputFilter.cpp
-    "${CHIAKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c"
+    "${CHIAKEY_SOURCE}/ModulePackages/OVOFHanConvert/TaiwanToSimplified.cpp"
     UpdateLexicon.cpp
 )
 target_include_directories(chiakey_tsf_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(chiakey_tsf_engine PRIVATE "${CHIAKEY_SOURCE}/ModulePackages/OVOFHanConvert")
 target_link_libraries(chiakey_tsf_engine PUBLIC chiakey_core advapi32 ole32 shell32 user32 winmm)
 
 add_executable(ChiaKeyStateHost WIN32 StateHost.cpp)

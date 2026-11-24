@@ -32,10 +32,6 @@
 #endif
 
 namespace OpenVanilla {
-const unsigned int OVFrameworkInfo::c_MajorVersion = 1;
-const unsigned int OVFrameworkInfo::c_MinorVersion = 5;
-const unsigned int OVFrameworkInfo::c_TinyVersion = 0;
-
 #ifndef OPENVANILLA_SVN_VERSION
 const unsigned int OVFrameworkInfo::c_FrameworkBuildNumber = 0;
 #else

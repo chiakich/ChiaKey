@@ -27,6 +27,7 @@
 //
 
 #include "OVOFHanConvert.h"
+#include "TaiwanToSimplified.h"
 
 #include <cctype>
 #include <cstdio>
@@ -37,9 +38,6 @@ using namespace OpenVanilla;
 
 const size_t vxSC2TCTableSize = 8189;
 extern "C" unsigned short vxSC2TCTable[];
-
-const size_t vxTC2SCTableSize = 3059;
-extern "C" unsigned short vxTC2SCTable[];
 
 struct VXHCData {
   unsigned short key, value;
@@ -62,25 +60,18 @@ unsigned short VXHCFind(unsigned key, unsigned short* table, size_t size) {
   return d->value;
 }
 
-unsigned short VXUCS2TradToSimpChinese(unsigned short c) {
-  return VXHCFind(c, vxTC2SCTable, vxTC2SCTableSize);
-}
-
 unsigned short VXUCS2SimpToTradChinese(unsigned short c) {
   return VXHCFind(c, vxSC2TCTable, vxSC2TCTableSize);
 }
 
 const string OVOFTC2SCContext::filterText(const string& inputText,
                                           OVLoaderService* loaderService) {
-  wstring wideText = OVUTF16::FromUTF8(inputText);
+  return ChiaKey::ConvertTaiwanToSimplified(inputText);
+}
 
-  for (wstring::iterator iter = wideText.begin(); iter != wideText.end();
-       ++iter) {
-    unsigned short value = VXUCS2TradToSimpChinese((unsigned short)*iter);
-    *iter = value ? value : *iter;
-  }
-
-  return OVUTF8::FromUTF16(wideText);
+const vector<string> OVOFTC2SCContext::filterTextSegments(
+    const vector<string>& segments, OVLoaderService* loaderService) {
+  return ChiaKey::ConvertTaiwanToSimplified(segments);
 }
 
 const string OVOFSC2TCContext::filterText(const string& inputText,
