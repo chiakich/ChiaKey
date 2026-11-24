@@ -177,6 +177,8 @@ inline void PVTextBuffer::setText(const string& text) {
   if (text != composedText()) {
     m_codePoints = OVUTF8Helper::SplitStringByCodePoint(text);
     m_cursorPosition = m_codePoints.size();
+    // Ranges set for the old text no longer describe the new one.
+    m_wordSegments.clear();
     m_stateChanged = true;
   }
 }
@@ -223,6 +225,10 @@ inline void PVTextBuffer::commitAsTextSegment() {
 }
 
 inline void PVTextBuffer::commitWordSegments() {
+  if (m_wordSegments.empty()) {
+    commit();
+    return;
+  }
   vector<string> words;
   size_t end = 0;
   for (vector<OVTextBuffer::RangePair>::const_iterator iter =
@@ -245,11 +251,6 @@ inline void PVTextBuffer::commitWordSegments() {
     words.push_back(OVUTF8Helper::CombineCodePoints(
         vector<string>(m_codePoints.begin() + end, m_codePoints.end())));
   }
-  if (words.size() < 2) {
-    commit();
-    return;
-  }
-
   for (vector<string>::const_iterator iter = words.begin();
        iter != words.end(); ++iter) {
     m_composedCommittedText += *iter;

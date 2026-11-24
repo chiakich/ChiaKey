@@ -62,6 +62,24 @@ int main() {
   Expect("commit overlapping", CommitWords("生活著名為", {Range(0, 3), Range(2, 3)}), {"生活著名為"});
   Expect("commit past end", CommitWords("生活", {Range(0, 5)}), {"生活"});
 
+  // A lone word must not merge into a segment committed before it.
+  PVTextBuffer buffer;
+  buffer.commitAsTextSegment("著");
+  buffer.setText("名為");
+  buffer.setWordSegments({Range(0, 2)});
+  buffer.commitWordSegments();
+  Expect("commit after segment", buffer.composedCommittedTextSegments(), {"著", "名為"});
+
+  // New text drops ranges that described the old text.
+  PVTextBuffer edited;
+  edited.setText("生活著名為");
+  edited.setWordSegments({Range(0, 2), Range(2, 1), Range(3, 2)});
+  edited.setText("生活著名");
+  if (!edited.wordSegments().empty()) {
+    ++failures;
+    std::cerr << "FAIL setText keeps stale word segments\n";
+  }
+
   if (simplify->filterText("生活著名為", nullptr) != "生活著名为") {
     ++failures;
     std::cerr << "FAIL flat filterText\n";
